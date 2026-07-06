@@ -1,16 +1,22 @@
 # EEIT 23 第一組 期末專題報告
 ## 初始構想方案
+<details>
+<summary> 點擊展開 </summary>
+<br>
+
 - 工廠
-![架構圖](/proposal/工廠.jpg)
+[![架構圖](/proposal/工廠.drawio.svg)](https://app.diagrams.net/?mode=github)
 
 - 飯店
-![架構圖](/proposal/飯店.jpg)
+[![架構圖](/proposal/飯店.drawio.svg)](https://app.diagrams.net/?mode=github)
 
 - 虛擬貨幣交易平台
 ![架構圖](/proposal/虛擬貨幣.jpg)
 
-- 書店
-![架構圖](/proposal/書店.jpg)
+- 電子書商城
+[![架構圖](/proposal/書店.drawio.svg)](https://app.diagrams.net/?mode=github)
+
+</details>
 
 ## 小組成員
 
