@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="第1頁" id="BZ6GNqRuLozJhOzkGnNW">
+    <mxGraphModel dx="2183" dy="751" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-6" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="yC6JHNVzJhNCBKJ2GHzk-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-9" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="yC6JHNVzJhNCBKJ2GHzk-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-14" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="yC6JHNVzJhNCBKJ2GHzk-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-16" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="yC6JHNVzJhNCBKJ2GHzk-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-18" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="yC6JHNVzJhNCBKJ2GHzk-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="飯店" vertex="1">
+          <mxGeometry height="60" width="120" x="174" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-13" edge="1" parent="1" source="yC6JHNVzJhNCBKJ2GHzk-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="yC6JHNVzJhNCBKJ2GHzk-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="餐飲系統" vertex="1">
+          <mxGeometry height="60" width="120" x="670" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="訂房系統" vertex="1">
+          <mxGeometry height="60" width="120" x="174" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="會員管理" vertex="1">
+          <mxGeometry height="60" width="120" x="-40" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="客房服務" vertex="1">
+          <mxGeometry height="60" width="120" x="670" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="房型介紹" vertex="1">
+          <mxGeometry height="60" width="120" x="360" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="yC6JHNVzJhNCBKJ2GHzk-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="景點介紹" vertex="1">
+          <mxGeometry height="60" width="120" x="530" y="260" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
