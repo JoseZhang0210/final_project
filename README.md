@@ -5,16 +5,24 @@
 <br>
 
 - 工廠
-[![架構圖](/proposal/工廠.drawio.svg)](/proposal/工廠.drawio.svg)
+<a href="./proposal/工廠.drawio.svg" target="_blank">
+  <img src="./proposal/工廠.drawio.svg" alt="點擊放大圖片" width="100%">
+</a>
 
 - 飯店
-[![架構圖](/proposal/飯店.drawio.svg)](/proposal/飯店.drawio.svg)
+<a href="./proposal/飯店.drawio.svg" target="_blank">
+  <img src="./proposal/飯店.drawio.svg" alt="點擊放大圖片" width="100%">
+</a>
 
 - 虛擬貨幣交易平台
-[![架構圖](/proposal/虛擬貨幣.jpg)](/proposal/虛擬貨幣.jpg)
+<a href="./proposal/虛擬貨幣.jpg" target="_blank">
+  <img src="./proposal/虛擬貨幣.jpg" alt="點擊放大圖片" width="100%">
+</a>
 
 - 電子書商城
-[![架構圖](/proposal/書店.drawio.svg)](/proposal/書店.drawio.svg)
+<a href="./proposal/書店.drawio.svg" target="_blank">
+  <img src="./proposal/書店.drawio.svg" alt="點擊放大圖片" width="100%">
+</a>
 
 </details>
 
