@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="第1頁" id="WWpRvmmRoTB13QPnM2OF">
+    <mxGraphModel dx="1356" dy="751" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-7" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="UmO4Se00U5iFOQnxMbfq-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="工廠" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="工單(產線異常回報)" vertex="1">
+          <mxGeometry height="60" width="120" x="560" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-13" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-15" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-17" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-19" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-21" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="首頁" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="訂單" vertex="1">
+          <mxGeometry height="60" width="120" x="80" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-8" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="UmO4Se00U5iFOQnxMbfq-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="登入" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="客戶" vertex="1">
+          <mxGeometry height="60" width="120" x="240" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="倉儲" vertex="1">
+          <mxGeometry height="60" width="120" x="400" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-23" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-25" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-27" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-30" edge="1" parent="1" source="UmO4Se00U5iFOQnxMbfq-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="UmO4Se00U5iFOQnxMbfq-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="員工功能區" vertex="1">
+          <mxGeometry height="60" width="120" x="560" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="工單(設備異常回報)" vertex="1">
+          <mxGeometry height="60" width="120" x="720" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="會議室申請" vertex="1">
+          <mxGeometry height="60" width="120" x="880" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="請假申請" vertex="1">
+          <mxGeometry height="60" width="120" x="1040" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="UmO4Se00U5iFOQnxMbfq-29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="員工福利" vertex="1">
+          <mxGeometry height="60" width="120" x="1200" y="460" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
