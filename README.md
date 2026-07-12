@@ -5,12 +5,14 @@
 <br>
 
 - 工廠
-<a href="./proposal/工廠.drawio.svg" target="_blank"></a>
+<a href="./proposal/工廠.drawio.svg" target="_blank">
+  <img src="./proposal/工廠.drawio.svg" alt="點擊放大圖片" width="100%">
+</a>
 
 - 飯店
-
+<a href="./proposal/飯店.drawio.svg" target="_blank">
   <img src="./proposal/飯店.drawio.svg" alt="點擊放大圖片" width="100%">
-
+</a>
 
 - 虛擬貨幣交易平台
 <a href="./proposal/虛擬貨幣.jpg" target="_blank">
