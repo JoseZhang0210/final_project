@@ -34,10 +34,12 @@
 - [功能](./doc/function_List.md)
 
 - 顧客網頁
-![顧客網頁](./doc/sitemap_Client.drawio.svg)
+
+![顧客網頁架構圖](./doc/sitemap_Client.drawio.svg)
 
 - 員工網頁
-![員工網頁](./doc/sitemap_employee.drawio.svg)
+
+![員工網頁架構圖](./doc/sitemap_employee.drawio.svg)
 
 </details>
 
