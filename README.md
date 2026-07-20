@@ -47,8 +47,8 @@
 
 感謝所有小組成員一起完善這份專題
 
-<a href="https://github.com/JoseZhang0210/final_project/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=JoseZhang0210/final_project" />
+<a href="https://github.com/josezhang0210/final_project/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=josezhang0210/final_project" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks)..
