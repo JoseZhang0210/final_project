@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>新增商品</title>
+    <a th:href="@{/products/add}">
+    新增商品
+</a>
+</head>
+
+
+<body>
+
+<h1>新增商品</h1>
+
+<form th:action="@{/products/save}"
+      th:object="${product}"
+      method="post">
+
+    <div>
+        <label>商品名稱</label>
+        <input type="text"
+               th:field="*{productName}"
+               required>
+    </div>
+
+    <div>
+        <label>商品分類</label>
+
+        <select th:field="*{category}"
+                required>
+            <option value="">請選擇分類</option>
+
+            <option
+                th:each="category : ${categories}"
+                th:value="${category.categoryId}"
+                th:text="${category.categoryName}">
+            </option>
+        </select>
+    </div>
+
+    <div>
+        <label>商品描述</label>
+        <textarea th:field="*{description}"></textarea>
+    </div>
+
+    <div>
+        <label>價格</label>
+        <input type="number"
+               th:field="*{price}"
+               min="0"
+               step="0.01"
+               required>
+    </div>
+
+    <div>
+        <label>庫存</label>
+        <input type="number"
+               th:field="*{stock}"
+               min="0"
+               required>
+    </div>
+
+    <div>
+        <label>圖片網址</label>
+        <input type="text"
+               th:field="*{imageUrl}">
+    </div>
+
+    <div>
+        <label>商品狀態</label>
+
+        <select th:field="*{status}">
+            <option value="ACTIVE">上架</option>
+            <option value="INACTIVE">下架</option>
+            <option value="OUT_OF_STOCK">缺貨</option>
+        </select>
+    </div>
+
+    <button type="submit">
+        新增商品
+    </button>
+
+    <a th:href="@{/products}">
+        返回商品列表
+    </a>
+
+</form>
+
+</body>
+</html>
