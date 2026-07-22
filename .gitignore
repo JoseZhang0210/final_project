@@ -2,6 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=maven,java,windows,eclipse,macos,visualstudiocode
 
 ### Eclipse ###
+workspace.metadata
 .metadata
 bin/
 tmp/
