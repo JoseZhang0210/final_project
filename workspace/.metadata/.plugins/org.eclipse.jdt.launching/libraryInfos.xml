@@ -11,7 +11,7 @@
             <entry path="null"/>
         </endorsedDirs>
     </libraryInfo>
-    <libraryInfo home="C:\JDK17" version="17.0.19"/>
+    <libraryInfo home="C:\JDK17" version="17.0.16"/>
     <libraryInfo home="C:\Program Files\Java\jre1.8.0_321" version="1.8.0_321">
         <bootpath>
             <entry path="C:\Program Files\Java\jre1.8.0_321\lib\resources.jar"/>
