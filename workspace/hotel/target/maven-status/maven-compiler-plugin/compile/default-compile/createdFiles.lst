@@ -1,8 +1,0 @@
-com\example\demo\controller\HomeController.class
-com\example\demo\service\ProductService.class
-com\example\demo\repository\CategoryRepository.class
-com\example\demo\entity\Category.class
-com\example\demo\repository\ProductRepository.class
-com\example\demo\entity\Product.class
-com\example\demo\HotelApplication.class
-com\example\demo\controller\ProductController.class
