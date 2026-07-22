@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理系統</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        h1{
+            margin-bottom: 20px;
+        }
+
+        table{
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,td{
+            border: 1px solid #cccccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th{
+            background-color: #f2f2f2;
+        }
+
+        .btn{
+            padding: 6px 12px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>飯店商城商品管理</h1>
+
+<a th:href="@{/products/add}">
+    <button class="btn">新增商品</button>
+</a>
+
+<br><br>
+
+<table>
+
+    <thead>
+
+    <tr>
+        <th>商品ID</th>
+        <th>商品名稱</th>
+        <th>商品分類</th>
+        <th>價格</th>
+        <th>庫存</th>
+        <th>商品狀態</th>
+        <th>操作</th>
+    </tr>
+
+    </thead>
+
+
+    <tbody>
+
+    <tr th:each="product : ${products}">
+
+        <td th:text="${product.productId}"></td>
+
+        <td th:text="${product.productName}"></td>
+
+        <td th:text="${product.category.categoryName}"></td>
+
+        <td th:text="${product.price}"></td>
+
+        <td th:text="${product.stock}"></td>
+
+        <td th:text="${product.status}"></td>
+
+        <td>
+
+            <a th:href="@{/products/edit/{id}(id=${product.productId})}">
+                <button class="btn">修改</button>
+            </a>
+
+
+            <a th:href="@{/products/delete/{id}(id=${product.productId})}"
+               onclick="return confirm('確定要刪除這筆商品資料嗎？')">
+
+                <button class="btn">刪除</button>
+
+            </a>
+
+        </td>
+
+    </tr>
+
+    </tbody>
+
+</table>
+
+</body>
+</html>
