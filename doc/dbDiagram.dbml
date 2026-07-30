@@ -1,0 +1,294 @@
+Table account [headercolor: #175e7a] {
+	account_id integer [ pk, increment ]
+	username varchar(50) [ not null ]
+	password varchar(255) [ not null ]
+	status varchar(20) [ not null ]
+}
+
+Table department [headercolor: #175e7a] {
+	department_id integer [ pk, increment ]
+	department_name varchar(50) [ not null ]
+}
+
+Table employee [headercolor: #175e7a] {
+	employee_id integer [ pk, increment ]
+	department_id integer [ not null ]
+	account_id integer [ not null ]
+	position varchar(50) [ not null ]
+}
+
+Table permission [headercolor: #175e7a] {
+	permission_id integer [ pk ]
+	permission_code varchar(50) [ not null ]
+	permission_name varchar(50) [ not null ]
+}
+
+Table employee_permission [headercolor: #175e7a] {
+	permission_id integer [ pk, not null ]
+	employee_id integer [ pk, not null ]
+}
+
+Table member [headercolor: #175e7a] {
+	member_id integer [ pk, increment ]
+	account_id integer [ not null ]
+}
+
+Table profile [headercolor: #175e7a] {
+	profile_id integer [ pk, increment ]
+	account_id integer [ not null ]
+	name varchar(50) [ not null ]
+	email varchar(100)
+	phone varchar(20)
+	zipcode varchar(10)
+	city varchar(50)
+	district varchar(50)
+	address varchar(200)
+	created_at datetime [ not null ]
+	birthday date
+	gender varchar(10)
+	updated_at datetime
+}
+
+Table image [headercolor: #175e7a] {
+	image_id integer [ pk ]
+	path varchar(50) [ not null ]
+	image_desc varchar(10)
+}
+
+Table category [headercolor: #175e7a] {
+	category_id integer [ pk ]
+	category_name varchar(50)
+	parent_category integer
+}
+
+Table product [headercolor: #175e7a] {
+	product_id integer [ pk ]
+	product_name varchar(50) [ not null ]
+	category_id integer [ not null ]
+	description varchar(50) [ not null ]
+	price integer [ not null ]
+	stock integer [ not null ]
+	image_id integer
+	status varchar(50)
+}
+
+Table payment [headercolor: #175e7a] {
+	payment_id integer [ pk ]
+	payment_method varchar(50)
+	payment_time datetime
+	total_price integer [ not null ]
+	payment_status varchar(50) [ not null ]
+	member_id integer
+}
+
+Table order [headercolor: #175e7a] {
+	order_id integer [ pk ]
+	member_id integer [ not null ]
+	order_date datetime [ not null ]
+	is_ordered bit [ not null ]
+	payment_id integer [ not null ]
+}
+
+Table order_item [headercolor: #175e7a] {
+	order_id integer [ pk, not null ]
+	product_id integer [ pk, not null ]
+	quantity integer [ not null ]
+}
+
+Table room_type [headercolor: #175e7a] {
+	room_type_id integer [ pk, increment ]
+	type_name varchar(50) [ not null ]
+	bed_type varchar(50) [ not null ]
+	description varchar(50)
+	price_per_night integer [ not null ]
+	capacity integer [ not null ]
+	image_id integer
+}
+
+Table room [headercolor: #175e7a] {
+	room_id integer [ pk, increment ]
+	room_number integer [ not null ]
+	room_type_id integer [ not null ]
+	floor integer [ not null ]
+	status varchar(50) [ not null ]
+}
+
+Table room_task [headercolor: #175e7a] {
+	task_id integer [ pk, increment ]
+	room_id integer [ not null ]
+	employee_id integer [ not null ]
+	remark varchar(50)
+	priority varchar(50) [ not null ]
+	create_at datetime [ not null ]
+	completed_at datetime
+	task_type varchar(50) [ not null ]
+	task_status varchar(50) [ not null ]
+}
+
+Table booking_order [headercolor: #175e7a] {
+	booking_order_id integer [ pk ]
+	member_id integer [ not null ]
+	total_price integer [ not null ]
+	order_status varchar(50) [ not null ]
+	create_at datetime [ not null ]
+	payment_id integer [ not null ]
+}
+
+Table booking [headercolor: #175e7a] {
+	booking_id integer [ pk, increment ]
+	booking_order_id integer [ not null ]
+	check_in_date datetime [ not null ]
+	check_out_date datetime [ not null ]
+	guest_num integer [ not null ]
+	booking_status varchar(50) [ not null ]
+	room_id integer
+	room_type_id integer [ not null ]
+}
+
+Table venue [headercolor: #175e7a] {
+	venue_id integer [ pk ]
+	venue_name varchar(50) [ not null ]
+	capacity integer [ not null ]
+	price_per_day integer [ not null ]
+	venue_status varchar(50) [ not null ]
+}
+
+Table rental [headercolor: #175e7a] {
+	rental_id integer [ pk ]
+	venue_id integer [ not null ]
+	member_id integer [ not null ]
+	event_name varchar(50) [ not null ]
+	rental_date datetime [ not null ]
+	guest_count integer [ not null ]
+	payment_id integer [ not null ]
+	rental_status varchar(50)
+}
+
+Table restaurant [headercolor: #175e7a] {
+	restaurant_id integer [ pk ]
+	restaurant_name varchar(50) [ not null ]
+	address varchar(50) [ not null ]
+	phone varchar(50) [ not null ]
+	open_time varchar(50) [ not null ]
+	close_time varchar(50) [ not null ]
+	capacity varchar(50) [ not null ]
+	description varchar(50)
+}
+
+Table reservation [headercolor: #175e7a] {
+	reservation_id integer [ pk ]
+	member_id integer [ not null ]
+	restaurant_id integer [ not null ]
+	reservation_time datetime [ not null ]
+	people_count integer [ not null ]
+	status varchar(50) [ not null ]
+	create_time datetime [ not null ]
+}
+
+Ref fk_employee_department_id_department {
+	employee.department_id > department.department_id [ delete: no action, update: no action ]
+}
+
+Ref fk_employee_account_id_account {
+	employee.account_id - account.account_id [ delete: no action, update: no action ]
+}
+
+Ref fk_employee_permission_permission_id_permission {
+	employee_permission.permission_id - permission.permission_id [ delete: no action, update: no action ]
+}
+
+Ref fk_employee_permission_employee_id_employee {
+	employee_permission.employee_id - employee.employee_id [ delete: no action, update: no action ]
+}
+
+Ref fk_member_account_id_account {
+	member.account_id - account.account_id [ delete: no action, update: no action ]
+}
+
+Ref fk_profile_account_id_account {
+	profile.account_id - account.account_id [ delete: no action, update: no action ]
+}
+
+Ref fk_product_category_id_category {
+	product.category_id > category.category_id [ delete: no action, update: no action ]
+}
+
+Ref fk_category_category_id_category {
+	category.category_id > category.parent_category [ delete: no action, update: no action ]
+}
+
+Ref fk_payment_member_id_member {
+	payment.member_id > member.member_id [ delete: no action, update: no action ]
+}
+
+Ref fk_reservation_member_id_member {
+	reservation.member_id > member.member_id [ delete: no action, update: no action ]
+}
+
+Ref fk_reservation_restaurant_id_restaurant {
+	reservation.restaurant_id > restaurant.restaurant_id [ delete: no action, update: no action ]
+}
+
+Ref fk_booking_booking_order_id_booking_order {
+	booking.booking_order_id > booking_order.booking_order_id [ delete: no action, update: no action ]
+}
+
+Ref fk_booking_room_id_room {
+	booking.room_id > room.room_id [ delete: no action, update: no action ]
+}
+
+Ref fk_booking_room_type_id_room_type {
+	booking.room_type_id > room_type.room_type_id [ delete: no action, update: no action ]
+}
+
+Ref fk_booking_order_member_id_member {
+	booking_order.member_id > member.member_id [ delete: no action, update: no action ]
+}
+
+Ref fk_booking_order_payment_id_payment {
+	booking_order.payment_id - payment.payment_id [ delete: no action, update: no action ]
+}
+
+Ref fk_room_task_room_id_room {
+	room_task.room_id > room.room_id [ delete: no action, update: no action ]
+}
+
+Ref fk_room_task_employee_id_employee {
+	room_task.employee_id > employee.employee_id [ delete: no action, update: no action ]
+}
+
+Ref fk_room_room_type_id_room_type {
+	room.room_type_id > room_type.room_type_id [ delete: no action, update: no action ]
+}
+
+Ref fk_room_type_image_id_image {
+	room_type.image_id > image.image_id [ delete: no action, update: no action ]
+}
+
+Ref fk_order_item_product_id_product {
+	order_item.product_id > product.product_id [ delete: no action, update: no action ]
+}
+
+Ref fk_order_payment_id_payment {
+	order.payment_id - payment.payment_id [ delete: no action, update: no action ]
+}
+
+Ref fk_order_member_id_member {
+	order.member_id > member.member_id [ delete: no action, update: no action ]
+}
+
+Ref fk_order_item_order_id_order {
+	order_item.order_id > order.order_id [ delete: no action, update: no action ]
+}
+
+Ref fk_rental_venue_id_venue {
+	rental.venue_id > venue.venue_id [ delete: no action, update: no action ]
+}
+
+Ref fk_rental_member_id_member {
+	rental.member_id > member.member_id [ delete: no action, update: no action ]
+}
+
+Ref fk_rental_payment_id_payment {
+	rental.payment_id > payment.payment_id [ delete: no action, update: no action ]
+}
