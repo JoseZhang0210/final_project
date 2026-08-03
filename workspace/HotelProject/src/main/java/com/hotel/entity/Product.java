@@ -17,14 +17,14 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ProductID")
+    @Column(name = "Product_ID")
     private Integer productId;
 
-    @Column(name = "ProductName", nullable = false)
+    @Column(name = "Product_Name", nullable = false)
     private String productName;
 
     @ManyToOne
-    @JoinColumn(name = "CategoryID", nullable = false)
+    @JoinColumn(name = "Category_ID", nullable = false)
     private Category category;
 
     @Column(name = "Description")

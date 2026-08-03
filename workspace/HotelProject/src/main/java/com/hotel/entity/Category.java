@@ -15,15 +15,15 @@ public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CategoryID")
+    @Column(name = "Category_ID")
     private Integer categoryId;
 
-    @Column(name = "CategoryName", nullable = false, length = 50)
+    @Column(name = "Category_Name", nullable = false, length = 50)
     private String categoryName;
 
     @ManyToOne
-    @JoinColumn(name = "ParentCategoryID")
-    private Category parentCategory;
+    @JoinColumn(name = "Parent_Category_ID")
+    private Category parent_Category;
 
     public Integer getCategoryId() {
         return categoryId;
@@ -42,10 +42,10 @@ public class Category {
     }
 
     public Category getParentCategory() {
-        return parentCategory;
+        return parent_Category;
     }
 
     public void setParentCategory(Category parentCategory) {
-        this.parentCategory = parentCategory;
+        this.parent_Category = parentCategory;
     }
 }
