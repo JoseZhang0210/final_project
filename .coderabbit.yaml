@@ -5,7 +5,7 @@ version: "1.0"
 language: "zh-TW"
 
 reviews:
-  profile: "compact" # 改為精簡模式，避免 CodeRabbit 產生過多、過長的留言
+  profile: "chill" 
   
   # 路徑過濾器：排除不需審查的檔案與資料夾
   path_filters:
