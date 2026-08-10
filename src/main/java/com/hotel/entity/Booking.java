@@ -19,30 +19,30 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Booking {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "booking_id")
-	private Integer bookingId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "booking_id")
+    private Integer bookingId;
 
-	@Column(name = "booking_order_id")
-	private Integer bookingOrderId;
+    @Column(name = "booking_order_id")
+    private Integer bookingOrderId;
 
-	@Column(name = "check_in_date")
-	private Date checkInDate;
+    @Column(name = "check_in_date")
+    private Date checkInDate;
 
-	@Column(name = "check_in_date")
-	private Date checkOutDate;
+    @Column(name = "check_out_date")
+    private Date checkOutDate;
 
-	@Column(name = "guest_num")
-	private Integer guestNum;
+    @Column(name = "guest_num")
+    private Integer guestNum;
 
-	@Column(name = "booking_status")
-	private String bookingStatus;
+    @Column(name = "booking_status")
+    private String bookingStatus;
 
-	@Column(name = "room_id")
-	private Integer roomId;
+    @Column(name = "room_id")
+    private Integer roomId;
 
-	@Column(name = "room_type_id")
-	private Integer roomTypeId;
+    @Column(name = "room_type_id")
+    private Integer roomTypeId;
 
 }

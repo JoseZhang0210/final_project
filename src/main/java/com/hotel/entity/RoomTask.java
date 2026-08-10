@@ -13,30 +13,39 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "booking_order")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingOrder {
+@Table(name = "room_task")
+public class RoomTask {
 
     @Id
-    @Column(name = "booking_order_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer bookingOrderId;
+    @Column(name = "task_id")
+    private Integer taskId;
 
-    @Column(name = "member_id")
-    private Integer memberid;
+    @Column(name = "room_id")
+    private Integer roomId;
 
-    @Column(name = "booking_total_price")
-    private Integer bookingTotalPrice;
+    @Column(name = "employee_id")
+    private Integer employeeId;
 
-    @Column(name = "order_status")
-    private String orderStatus;
+    @Column(name = "remark")
+    private String remark;
+
+    @Column(name = "priority")
+    private String priority;
 
     @Column(name = "created_at")
     private Date createdAt;
 
-    @Column(name = "payment_id")
-    private Integer paymentId;
+    @Column(name = "completed_at")
+    private Date completedAt;
+
+    @Column(name = "task_type")
+    private String taskType;
+
+    @Column(name = "task_status")
+    private String taskStatus;
 
 }
