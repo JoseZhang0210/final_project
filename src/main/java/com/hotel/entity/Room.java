@@ -27,10 +27,7 @@ public class Room {
     private String roomNumber;
 
     @Column(name = "room_type_id")
-    private String roomTypeId;
-
-    @Column(name = "room_status")
-    private String roomStatus;
+    private Integer roomTypeId;
 
     @Column(name = "floor")
     private Integer floor;

@@ -19,6 +19,7 @@ public class RoomType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "room_type_id")
     private Integer roomTypeId;
 
     @Column(name = "type_name")
@@ -37,6 +38,6 @@ public class RoomType {
     private Integer capacity;
 
     @Column(name = "image_id")
-    private String imageId;
+    private Integer imageId;
 
 }
