@@ -19,26 +19,24 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BookingOrder {
 
-	@Id
-	@Column(name = "booking_order_id")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer bookingOrderId;
+    @Id
+    @Column(name = "booking_order_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer bookingOrderId;
 
-	@Column(name = "member_id")
-	private Integer memberid;
+    @Column(name = "member_id")
+    private Integer memberid;
 
-	@Column(name = "booking_total_price")
-	private Integer bookingTotalPrice;
+    @Column(name = "booking_total_price")
+    private Integer bookingTotalPrice;
 
-	@Column(name = "order_status")
-	private String orderStatus;
+    @Column(name = "order_status")
+    private String orderStatus;
 
-	@Column(name = "created_at")
-	private Date createdAt;
+    @Column(name = "created_at")
+    private Date createdAt;
 
-	@Column(name = "payment_id")
-	private Integer paymentId;
-
-	
+    @Column(name = "payment_id")
+    private Integer paymentId;
 
 }

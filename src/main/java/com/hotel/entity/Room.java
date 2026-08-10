@@ -33,6 +33,6 @@ public class Room {
     private Integer floor;
 
     @Column(name = "room_status")
-    private String room_status;
+    private String roomStatus;
 
 }
