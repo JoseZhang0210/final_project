@@ -19,24 +19,28 @@ public class RoomTypeService {
         this.roomTypeRepository = roomTypeRepository;
     }
 
-    //Create
+    // Create
     public RoomType insert(RoomType roomType) {
+        // 若 imageId 為 0，強制轉為 null，避免外鍵約束失敗
+        if (roomType.getImageId() != null && roomType.getImageId() == 0) {
+            roomType.setImageId(null);
+        }
         return roomTypeRepository.save(roomType);
     }
 
-    //Read All
+    // Read All
     @Transactional(readOnly = true)
     public List<RoomType> findAll() {
         return roomTypeRepository.findAll();
     }
 
-    //Read by ID
+    // Read by ID
     @Transactional(readOnly = true)
     public Optional<RoomType> findById(Integer id) {
         return roomTypeRepository.findById(id);
     }
 
-    //Update
+    // Update
     public RoomType update(Integer id, RoomType updatedRoomType) {
         return roomTypeRepository.findById(id)
                 .map(roomType -> {
@@ -55,15 +59,20 @@ public class RoomTypeService {
                     if (updatedRoomType.getCapacity() != null) {
                         roomType.setCapacity(updatedRoomType.getCapacity());
                     }
-                    if (updatedRoomType.getImageId() != null) {
+                    
+                    // 修正 imageId 邏輯：若是 0 則設為 null，否則更新為新傳入的值
+                    if (updatedRoomType.getImageId() != null && updatedRoomType.getImageId() == 0) {
+                        roomType.setImageId(null);
+                    } else {
                         roomType.setImageId(updatedRoomType.getImageId());
                     }
+                    
                     return roomTypeRepository.save(roomType);
                 })
                 .orElseThrow(() -> new RuntimeException("RoomType not found with id: " + id));
     }
 
-    //Delete By Id
+    // Delete By Id
     public boolean deleteById(Integer id) {
         if (roomTypeRepository.existsById(id)) {
             roomTypeRepository.deleteById(id);

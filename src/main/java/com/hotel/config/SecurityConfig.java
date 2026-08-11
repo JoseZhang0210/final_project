@@ -19,17 +19,19 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-//	@Bean
-//	InMemoryUserDetailsManager inMemoryUserDetailManager() {
-//		UserDetails user = User.withUsername("user").password("{noop}123").build();
-//		return new InMemoryUserDetailsManager(List.of(user));
-//	}
+	// @Bean
+	// InMemoryUserDetailsManager inMemoryUserDetailManager() {
+	// UserDetails user = User.withUsername("user").password("{noop}123").build();
+	// return new InMemoryUserDetailsManager(List.of(user));
+	// }
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 		return httpSecurity.formLogin(Customizer.withDefaults())
 				.authorizeHttpRequests(requests -> requests.requestMatchers(HttpMethod.GET, "/").permitAll()
-						.requestMatchers(HttpMethod.GET, "/register").permitAll().anyRequest().authenticated())
+						.requestMatchers(HttpMethod.GET, "/register").permitAll()
+						.requestMatchers(HttpMethod.POST, "/accounts").permitAll()
+						.anyRequest().authenticated())
 				.formLogin(Customizer.withDefaults()).csrf(csrf -> csrf.disable()).build();
 	}
 
