@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐廳管理</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            background: #f5f6f8;
+            color: #222;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        input,
+        textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            border: 0;
+            border-radius: 5px;
+            padding: 10px 16px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-save {
+            background: #1976d2;
+        }
+
+        .btn-clear {
+            background: #777;
+            margin-left: 8px;
+        }
+
+        .btn-edit {
+            background: #f57c00;
+            margin-right: 6px;
+        }
+
+        .btn-delete {
+            background: #d32f2f;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #263238;
+            color: white;
+        }
+
+        #message {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #2e7d32;
+        }
+
+        .error {
+            color: #d32f2f;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>飯店餐廳管理</h1>
+
+        <div class="card">
+            <h2 id="formTitle">新增餐廳</h2>
+
+            <form id="restaurantForm">
+                <input type="hidden" id="restaurantId">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="restaurantName">餐廳名稱 *</label>
+                        <input type="text" id="restaurantName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">電話</label>
+                        <input type="text" id="phone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">地址</label>
+                        <input type="text" id="address">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="capacity">容納人數</label>
+                        <input type="number" id="capacity" min="1">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">餐廳介紹</label>
+                        <textarea id="description"></textarea>
+                    </div>
+                </div>
+
+                <br>
+
+                <button type="submit" class="btn-save">儲存</button>
+                <button type="button" class="btn-clear" id="clearButton">
+                    清除
+                </button>
+
+                <div id="message"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>餐廳列表</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>餐廳名稱</th>
+                        <th>地址</th>
+                        <th>電話</th>
+                        <th>容納人數</th>
+                        <th>餐廳介紹</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+
+                <tbody id="restaurantTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "/restaurant";
+
+        const form = document.getElementById("restaurantForm");
+        const formTitle = document.getElementById("formTitle");
+        const message = document.getElementById("message");
+
+        const restaurantId = document.getElementById("restaurantId");
+        const restaurantName = document.getElementById("restaurantName");
+        const address = document.getElementById("address");
+        const phone = document.getElementById("phone");
+        const capacity = document.getElementById("capacity");
+        const description = document.getElementById("description");
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = type;
+        }
+
+        function clearForm() {
+            form.reset();
+            restaurantId.value = "";
+            formTitle.textContent = "新增餐廳";
+            message.textContent = "";
+        }
+
+        async function loadRestaurants() {
+            const response = await fetch(API_URL);
+
+            if (!response.ok) {
+                showMessage("讀取餐廳資料失敗", "error");
+                return;
+            }
+
+            const restaurants = await response.json();
+            const tableBody =
+                document.getElementById("restaurantTableBody");
+
+            tableBody.innerHTML = "";
+
+            restaurants.forEach(function (restaurant) {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${restaurant.restaurantId}</td>
+                    <td>${restaurant.restaurantName ?? ""}</td>
+                    <td>${restaurant.address ?? ""}</td>
+                    <td>${restaurant.phone ?? ""}</td>
+                    <td>${restaurant.capacity ?? ""}</td>
+                    <td>${restaurant.description ?? ""}</td>
+                    <td></td>
+                `;
+
+                const actionCell = row.lastElementChild;
+
+                const editButton = document.createElement("button");
+                editButton.textContent = "修改";
+                editButton.className = "btn-edit";
+                editButton.addEventListener("click", function () {
+                    editRestaurant(restaurant);
+                });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "刪除";
+                deleteButton.className = "btn-delete";
+                deleteButton.addEventListener("click", function () {
+                    deleteRestaurant(restaurant.restaurantId);
+                });
+
+                actionCell.appendChild(editButton);
+                actionCell.appendChild(deleteButton);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function editRestaurant(restaurant) {
+            restaurantId.value = restaurant.restaurantId;
+            restaurantName.value = restaurant.restaurantName ?? "";
+            address.value = restaurant.address ?? "";
+            phone.value = restaurant.phone ?? "";
+            capacity.value = restaurant.capacity ?? "";
+            description.value = restaurant.description ?? "";
+
+            formTitle.textContent =
+                "修改餐廳 ID：" + restaurant.restaurantId;
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        }
+
+        async function deleteRestaurant(id) {
+            const confirmDelete =
+                confirm("確定要刪除這間餐廳嗎？");
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            const response = await fetch(API_URL + "/" + id, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                showMessage("餐廳已刪除", "success");
+                clearForm();
+                loadRestaurants();
+            } else {
+                showMessage("刪除失敗", "error");
+            }
+        }
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const id = restaurantId.value;
+
+            const restaurant = {
+                restaurantName: restaurantName.value,
+                address: address.value,
+                phone: phone.value,
+                capacity: capacity.value === ""
+                    ? null
+                    : Number(capacity.value),
+                description: description.value
+            };
+
+            const response = await fetch(
+                id === "" ? API_URL : API_URL + "/" + id,
+                {
+                    method: id === "" ? "POST" : "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(restaurant)
+                }
+            );
+
+            if (response.ok) {
+                showMessage(
+                    id === "" ? "新增成功" : "修改成功",
+                    "success"
+                );
+
+                clearForm();
+                loadRestaurants();
+            } else {
+                showMessage("儲存失敗", "error");
+            }
+        });
+
+        document.getElementById("clearButton")
+            .addEventListener("click", clearForm);
+
+        loadRestaurants();
+    </script>
+</body>
+
+</html>
