@@ -1,5 +1,4 @@
 # CodeRabbit 專案設定檔
-version: "1.0"
 
 # 全域語言設定：統一使用繁體中文回應
 language: "zh-TW"
