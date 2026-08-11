@@ -296,25 +296,42 @@ CREATE TABLE [dbo].[rental](
 ) ON [PRIMARY]
 GO
 /****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-SET ANSI_NULLS ON
+CREATE TABLE [dbo].[reservation] (
+    [reservation_id]   INT IDENTITY(1,1) NOT NULL,
+    [member_id]        INT NULL,
+    [contact_name]     NVARCHAR(50) NULL,
+    [contact_phone]    VARCHAR(20) NULL,
+    [restaurant_id]    INT NOT NULL,
+    [reservation_date] DATE NOT NULL,
+    [time_id]          INT NOT NULL,
+    [people_count]     INT NOT NULL,
+    [status]           NVARCHAR(20) NOT NULL
+        CONSTRAINT [DF_reservation_status] DEFAULT (N'已訂位'),
+    [create_time]      DATETIME NOT NULL
+        CONSTRAINT [DF_reservation_create_time] DEFAULT (GETDATE()),
+
+    CONSTRAINT [PK_reservation]
+        PRIMARY KEY CLUSTERED ([reservation_id] ASC),
+
+    CONSTRAINT [FK_reservation_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id]),
+
+    CONSTRAINT [FK_reservation_restaurant_time]
+        FOREIGN KEY ([time_id])
+        REFERENCES [dbo].[restaurant_time]([time_id]),
+
+    CONSTRAINT [CK_reservation_member_or_contact]
+        CHECK (
+            [member_id] IS NOT NULL
+            OR (
+                [contact_name] IS NOT NULL
+                AND [contact_phone] IS NOT NULL
+            )
+        )
+);
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[reservation](
-	[reservation_id] [int] IDENTITY(1,1) NOT NULL,
-	[member_id] [int] NOT NULL,
-	[restaurant_id] [int] NOT NULL,
-	[reservation_date] [date] NOT NULL,
-	[time_id] [int] NOT NULL,
-	[people_count] [int] NOT NULL,
-	[status] [nvarchar](20) NOT NULL,
-	[create_time] [datetime] NOT NULL,
- CONSTRAINT [PK_reservation] PRIMARY KEY CLUSTERED 
-(
-	[reservation_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+	
 /****** 物件:  Table [dbo].[restaurant]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
