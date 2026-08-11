@@ -295,45 +295,72 @@ CREATE TABLE [dbo].[rental](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/7/29 下午 04:42:11 ******/
-SET ANSI_NULLS ON
+
+/****** 物件:  Table [dbo].[restaurant]    指令碼日期: 2026/8/11 下午 10:10:11 ******/
+CREATE TABLE [dbo].[restaurant] (
+    [restaurant_id]   INT IDENTITY(1,1) NOT NULL,
+    [restaurant_name] NVARCHAR(100) NOT NULL,
+    [address]         NVARCHAR(200) NULL,
+    [phone]           VARCHAR(20) NULL,
+    [capacity]        INT NULL,
+    [description]     NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_restaurant]
+        PRIMARY KEY CLUSTERED ([restaurant_id] ASC)
+);
 GO
-SET QUOTED_IDENTIFIER ON
+	
+/****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 10:09:11 ******/
+CREATE TABLE [dbo].[restaurant_time] (
+    [time_id]       INT IDENTITY(1,1) NOT NULL,
+    [restaurant_id] INT NOT NULL,
+    [meal_type]     NVARCHAR(20) NOT NULL,
+    [open_time]     TIME(7) NOT NULL,
+    [close_time]    TIME(7) NOT NULL,
+
+    CONSTRAINT [PK_restaurant_time]
+        PRIMARY KEY CLUSTERED ([time_id] ASC),
+
+    CONSTRAINT [FK_restaurant_time_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id])
+);
 GO
-CREATE TABLE [dbo].[reservation](
-	[reservation_id] [int] NOT NULL,
-	[member_id] [int] NOT NULL,
-	[restaurant_id] [int] NOT NULL,
-	[reservation_time] [datetime] NOT NULL,
-	[people_count] [int] NOT NULL,
-	[status] [nvarchar](50) NOT NULL,
-	[create_time] [datetime] NOT NULL,
- CONSTRAINT [PK_reservation] PRIMARY KEY CLUSTERED 
-(
-	[reservation_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+
+/****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 10:09:11 ******/
+CREATE TABLE [dbo].[reservation] (
+    [reservation_id]   INT IDENTITY(1,1) NOT NULL,
+    [member_id]        INT NOT NULL,
+    [restaurant_id]    INT NOT NULL,
+    [reservation_date] DATE NOT NULL,
+    [time_id]          INT NOT NULL,
+    [people_count]     INT NOT NULL,
+    [status]           NVARCHAR(20) NOT NULL
+        CONSTRAINT [DF_reservation_status] DEFAULT (N'已訂位'),
+    [create_time]      DATETIME NOT NULL
+        CONSTRAINT [DF_reservation_create_time] DEFAULT (GETDATE()),
+
+    CONSTRAINT [PK_reservation]
+        PRIMARY KEY CLUSTERED ([reservation_id] ASC),
+
+    CONSTRAINT [FK_reservation_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id]),
+
+    CONSTRAINT [FK_reservation_restaurant_time]
+        FOREIGN KEY ([time_id])
+        REFERENCES [dbo].[restaurant_time]([time_id])
+);
 GO
-/****** 物件:  Table [dbo].[restaurant]    指令碼日期: 2026/7/29 下午 04:42:11 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[restaurant](
-	[restaurant_id] [int] NOT NULL,
-	[restaurant_name] [nvarchar](50) NOT NULL,
-	[address] [nvarchar](50) NOT NULL,
-	[phone] [nvarchar](50) NOT NULL,
-	[open_time] [nvarchar](50) NOT NULL,
-	[close_time] [nvarchar](50) NOT NULL,
-	[capacity] [nvarchar](50) NOT NULL,
-	[description] [nvarchar](50) NULL,
- CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED 
-(
-	[restaurant_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+
+/*
+  會員模組整合完成後，再執行下列外鍵。
+
+  ALTER TABLE [dbo].[reservation]
+  ADD CONSTRAINT [FK_reservation_member]
+  FOREIGN KEY ([member_id])
+  REFERENCES [dbo].[member]([member_id]);
+*/
 /****** 物件:  Table [dbo].[room]    指令碼日期: 2026/7/29 下午 04:42:11 ******/
 SET ANSI_NULLS ON
 GO
