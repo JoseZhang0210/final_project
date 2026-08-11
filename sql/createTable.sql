@@ -295,6 +295,43 @@ CREATE TABLE [dbo].[rental](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+
+/****** 物件:  Table [dbo].[restaurant]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[restaurant](
+	[restaurant_id] [int] IDENTITY(1,1) NOT NULL,
+	[restaurant_name] [nvarchar](100) NOT NULL,
+	[address] [nvarchar](200) NULL,
+	[phone] [varchar](20) NULL,
+	[capacity] [int] NULL,
+	[description] [nvarchar](max) NULL,
+ CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED 
+(
+	[restaurant_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[restaurant_time](
+	[time_id] [int] IDENTITY(1,1) NOT NULL,
+	[restaurant_id] [int] NOT NULL,
+	[meal_type] [nvarchar](20) NOT NULL,
+	[open_time] [time](7) NOT NULL,
+	[close_time] [time](7) NOT NULL,
+ CONSTRAINT [PK_restaurant_time] PRIMARY KEY CLUSTERED 
+(
+	[time_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+	
 /****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 CREATE TABLE [dbo].[reservation] (
     [reservation_id]   INT IDENTITY(1,1) NOT NULL,
@@ -332,41 +369,7 @@ CREATE TABLE [dbo].[reservation] (
 );
 GO
 	
-/****** 物件:  Table [dbo].[restaurant]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[restaurant](
-	[restaurant_id] [int] IDENTITY(1,1) NOT NULL,
-	[restaurant_name] [nvarchar](100) NOT NULL,
-	[address] [nvarchar](200) NULL,
-	[phone] [varchar](20) NULL,
-	[capacity] [int] NULL,
-	[description] [nvarchar](max) NULL,
- CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED 
-(
-	[restaurant_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-/****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[restaurant_time](
-	[time_id] [int] IDENTITY(1,1) NOT NULL,
-	[restaurant_id] [int] NOT NULL,
-	[meal_type] [nvarchar](20) NOT NULL,
-	[open_time] [time](7) NOT NULL,
-	[close_time] [time](7) NOT NULL,
- CONSTRAINT [PK_restaurant_time] PRIMARY KEY CLUSTERED 
-(
-	[time_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+
 /****** 物件:  Table [dbo].[room]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
