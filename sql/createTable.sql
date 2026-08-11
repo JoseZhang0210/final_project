@@ -330,7 +330,9 @@ GO
 /****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 10:09:11 ******/
 CREATE TABLE [dbo].[reservation] (
     [reservation_id]   INT IDENTITY(1,1) NOT NULL,
-    [member_id]        INT NOT NULL,
+    [member_id]        INT NULL,
+    [contact_name]     NVARCHAR(50) NULL,
+    [contact_phone]    VARCHAR(20) NULL,
     [restaurant_id]    INT NOT NULL,
     [reservation_date] DATE NOT NULL,
     [time_id]          INT NOT NULL,
@@ -349,7 +351,16 @@ CREATE TABLE [dbo].[reservation] (
 
     CONSTRAINT [FK_reservation_restaurant_time]
         FOREIGN KEY ([time_id])
-        REFERENCES [dbo].[restaurant_time]([time_id])
+        REFERENCES [dbo].[restaurant_time]([time_id]),
+
+    CONSTRAINT [CK_reservation_member_or_contact]
+        CHECK (
+            [member_id] IS NOT NULL
+            OR (
+                [contact_name] IS NOT NULL
+                AND [contact_phone] IS NOT NULL
+            )
+        )
 );
 GO
 
