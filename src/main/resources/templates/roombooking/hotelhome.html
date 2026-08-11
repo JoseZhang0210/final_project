@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene Stay - Wellness Without Walls</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f8f9ff",
+                        "surface-variant": "#d3e4fe",
+                        "on-background": "#0b1c30",
+                        "secondary": "#ae2f34",
+                        "tertiary-fixed-dim": "#c4c7c9",
+                        "surface": "#f8f9ff",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#43474e",
+                        "secondary-container": "#ff6b6b",
+                        "on-surface": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#444749",
+                        "tertiary-container": "#333638",
+                        "outline-variant": "#c4c6cf",
+                        "on-primary-fixed-variant": "#2d476f",
+                        "on-primary-fixed": "#001b3c",
+                        "tertiary-fixed": "#e0e3e5",
+                        "on-tertiary-fixed": "#191c1e",
+                        "secondary-fixed-dim": "#ffb3b0",
+                        "primary-fixed-dim": "#adc7f7",
+                        "on-secondary-container": "#6d0010",
+                        "surface-container-high": "#dce9ff",
+                        "background": "#f8f9ff",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#86a0cd",
+                        "surface-container-highest": "#d3e4fe",
+                        "primary": "#002045",
+                        "on-tertiary-container": "#9c9fa1",
+                        "on-secondary-fixed-variant": "#8c1520",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#1d2123",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "outline": "#74777f",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "primary-fixed": "#d6e3ff",
+                        "surface-tint": "#455f88",
+                        "on-secondary-fixed": "#410006",
+                        "secondary-fixed": "#ffdad8",
+                        "inverse-surface": "#213145",
+                        "surface-container-low": "#eff4ff",
+                        "inverse-primary": "#adc7f7",
+                        "primary-container": "#1a365d",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-md": "12px",
+                        "container-margin": "20px",
+                        "stack-sm": "4px",
+                        "gutter": "16px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-50 bg-surface shadow-sm w-full">
+<div class="flex flex-col w-full max-w-full mx-auto px-container-margin py-stack-md">
+<div class="flex items-center justify-between">
+<a class="font-display-lg text-display-lg font-bold text-primary tracking-tighter" href="#">Serene Stay</a>
+<nav class="hidden md:flex items-center space-x-gutter">
+<a class="font-label-md text-label-md text-secondary font-semibold border-b-2 border-secondary pb-1" href="#">Hotels &amp; Resorts</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300" href="#">Offers</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300" href="#">Dining</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300" href="#">Experiences</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300" href="#">Events</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-300" href="#">Loyalty</a>
+</nav>
+<div class="flex items-center space-x-gutter">
+<button aria-label="Language" class="hidden md:flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-300">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</button>
+<button aria-label="Sign In" class="hidden md:flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-300">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</button>
+<a class="hidden md:inline-flex items-center justify-center px-4 py-2 font-label-md text-label-md text-on-surface-variant border border-outline-variant rounded hover:bg-surface-container-low transition-colors duration-300" href="#">Sign In</a>
+<a class="inline-flex items-center justify-center px-4 py-2 font-label-md text-label-md bg-secondary text-on-secondary rounded hover:opacity-90 transition-opacity duration-200" href="#">Book Now</a>
+</div>
+</div>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 bg-black/40 z-10"></div>
+<img alt="Serene Stay Hero" class="absolute inset-0 w-full h-full object-cover z-0" data-alt="A cinematic, wide-angle shot of a luxurious modern hotel exterior at sunrise. The architecture is sleek and contemporary, blending seamlessly with a lush natural landscape. Soft, warm light spills across the scene, creating an atmosphere of profound tranquility and high-end wellness. The sky is a gradient of pale blues and soft oranges." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAl7fDS5YA9qBDbohDEdPDPmWP971x5R7x0e6kM89skBEv9rdHkZlLzIyxu8QMgL4hVlzm0XWUHBhNRhRei1wshO4Bl3QJr4DOV6E3XCcaiKt-tfDDgmhZBPE_6eiOl9ydEtCW3SFhcxTVpkaQJ0taIt0ulugUhM9UUSdjZ6hnj1kslI1l_I-mNGYJsfd7tFFGoDaA8Em8SbGlzkRuPSCkRlj12leBC1eYgekLlRDQr-Kd3Z772JJsCg"/>
+<div class="relative z-20 text-center text-on-secondary px-container-margin max-w-4xl mx-auto flex flex-col items-center">
+<p class="font-label-md text-label-md uppercase tracking-[0.2em] mb-stack-sm text-surface-variant">Serene Stay Introduces</p>
+<h1 class="font-display-lg text-display-lg md:text-[56px] md:leading-[64px] font-bold mb-stack-lg drop-shadow-lg">WELLNESS WITHOUT WALLS</h1>
+<a class="inline-flex items-center justify-center px-8 py-4 font-label-md text-label-md bg-primary text-on-primary rounded hover:bg-primary-container transition-colors duration-300" href="#">Discover More</a>
+</div>
+<!-- Booking Widget -->
+<div class="absolute bottom-0 left-0 right-0 z-30 translate-y-1/2 px-container-margin hidden md:block">
+<div class="max-w-5xl mx-auto bg-surface rounded-xl shadow-[0px_8px_30px_rgba(26,54,93,0.1)] p-stack-lg flex items-center gap-gutter">
+<div class="flex-1">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Where to?</label>
+<input class="w-full bg-surface-bright border-b border-outline-variant focus:border-primary focus:ring-0 px-0 py-2 text-body-lg text-on-surface placeholder-tertiary-fixed-dim" placeholder="Destination or Hotel" type="text"/>
+</div>
+<div class="flex-1 border-l border-outline-variant pl-gutter">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Dates</label>
+<input class="w-full bg-surface-bright border-b border-outline-variant focus:border-primary focus:ring-0 px-0 py-2 text-body-lg text-on-surface placeholder-tertiary-fixed-dim" placeholder="Check in - Check out" type="text"/>
+</div>
+<div class="flex-1 border-l border-outline-variant pl-gutter">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">Guests</label>
+<input class="w-full bg-surface-bright border-b border-outline-variant focus:border-primary focus:ring-0 px-0 py-2 text-body-lg text-on-surface placeholder-tertiary-fixed-dim" placeholder="1 Room, 2 Adults" type="text"/>
+</div>
+<button class="bg-secondary text-on-secondary px-6 py-4 rounded font-label-md text-label-md hover:opacity-90 transition-opacity">Check Rates</button>
+</div>
+</div>
+</section>
+<!-- Spacer for the floating widget on desktop -->
+<div class="h-24 hidden md:block"></div>
+<!-- Featured Section: Wellbeing -->
+<section class="py-24 px-container-margin max-w-7xl mx-auto text-center">
+<h2 class="font-display-lg text-display-lg text-primary mb-stack-md">DISCOVER WELLBEING THAT MOVES <i class="font-normal italic">intuitively</i> WITH YOU</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl mx-auto mb-stack-lg leading-relaxed">
+                Inspired by a "no excuses" philosophy, we believe in wellness thoughtfully meeting you where you are, moving with your rhythm and honoring your needs, intentions and energy. Each destination delivers unique spaces to feel your best through performance training, restorative rituals, or signature moments rooted in each destination.
+            </p>
+<a class="inline-flex items-center justify-center px-6 py-3 font-label-md text-label-md border-2 border-primary text-primary hover:bg-primary hover:text-on-primary transition-colors duration-300 rounded" href="#">Explore Wellness</a>
+</section>
+<!-- Bento Grid: Featured Hotels -->
+<section class="py-16 px-container-margin max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-stack-lg">
+<h2 class="font-headline-md text-headline-md text-primary">Featured Destinations</h2>
+<a class="font-label-md text-label-md text-secondary hover:underline flex items-center gap-1" href="#">VIEW ALL <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span></a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter h-auto md:h-[600px]">
+<!-- Large Item -->
+<div class="md:col-span-2 relative rounded-xl overflow-hidden group cursor-pointer shadow-[0px_4px_20px_rgba(26,54,93,0.05)] h-64 md:h-full">
+<img alt="Long Beach Resort" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A stunning wide shot of a luxury beachfront resort in Long Beach, California. The grand historic building stands tall against a vibrant blue sky, with a pristine sandy beach in the foreground. Palm trees sway gently. The lighting is bright and sunny, evoking a classic, high-end Southern California vacation vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKMh8Bibqrn-Q0DOjSP77D0UuyPlZVFtgevrqtlGzEHt5UcHWq6Ch53_zpC0b0WA4uRaFIedN-8DDb5Wu0B_qDeNgIgCCY7wRPodUp9yKwWwxWpgszolH0ApCzbyX9djzzZWHJ8Rw5zVxAZf-WbrDXt7uP_op9-rTBw4THvMfoMHaoLZFzzgcENcgkwcLuDOzKRB2DDUgEY_cTSwIH4DpoNZTw65hV-auWLqmuFPjMOMeQUHz8h3UGhg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-stack-lg w-full flex justify-between items-end">
+<div>
+<span class="font-label-md text-label-md text-surface-variant uppercase tracking-wider block mb-1">Dream Beach Destination</span>
+<h3 class="font-headline-sm text-headline-sm text-on-secondary">Serene Breakers Long Beach</h3>
+</div>
+<span class="bg-surface text-primary px-4 py-2 font-label-md text-label-md rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:block">Discover</span>
+</div>
+</div>
+<!-- Stacked Items -->
+<div class="flex flex-col gap-gutter h-full">
+<div class="flex-1 relative rounded-xl overflow-hidden group cursor-pointer shadow-[0px_4px_20px_rgba(26,54,93,0.05)] h-64 md:h-auto">
+<img alt="Scottsdale Resort" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A close-up view of a beautifully designed outdoor pool area at a luxury desert resort in Scottsdale. The water is a brilliant turquoise, contrasting with the warm terra-cotta tones of the surrounding architecture and desert landscaping. Elegant lounge chairs and private cabanas line the pool edge under a clear, bright sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJVco_0kgEPGkJNfAgY76Me1AE-UXi9UNASY5mLlu-w4f25l6fRYwWESHZp_O3wyqcCD-LYJR-oNKKmVzEt3RDSpnCuJ9rNG4n7y0P_fLKbwYrNqRun3ceOCvBl2FNEbX7EqVVG8XzPikbtFUkPS8cHdJyVnTWhP2lE_xNZNmFAhrk__5tYYNZ6v11sbiMr_WcVf_RndzUREaCc53dzphMqVmQRxDNvp3qAvcNMLhSUWj0lfWXhdU8Yg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-stack-md w-full">
+<span class="font-label-md text-label-md text-surface-variant uppercase tracking-wider block mb-1">Desert Oasis</span>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-secondary">Serene Scottsdale Princess</h3>
+</div>
+</div>
+<div class="flex-1 relative rounded-xl overflow-hidden group cursor-pointer shadow-[0px_4px_20px_rgba(26,54,93,0.05)] h-64 md:h-auto">
+<img alt="Toronto Hotel" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="An elegant evening shot of a historic, stately hotel in downtown Toronto. The grand stone facade is warmly illuminated against the twilight sky. The scene conveys urban luxury and timeless sophistication, with bustling city energy subtly suggested in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFUN05tSmP4joB4PKumVnDBJnRiJmOWp6VE9l3oaiUKK68G3V5H3VnObZhDp-cdEiP1Cn1cwYtd1fIomF-SddsKocIsLykgDWA46GA10xnfN5_RyfIiAilGJnP8Kx6D_9SHjy12QYtMBi0qmZhzFiu8x-H_PCNIGbay6mGAjoSIO972OQaR77QxDysyEGeJ6GCXtjB-NWJD5SjOShegZKLfmmJKDda9zNXjuR3GnvQxz9C6x7-ixzIJg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-stack-md w-full">
+<span class="font-label-md text-label-md text-surface-variant uppercase tracking-wider block mb-1">A Stately Landmark</span>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-secondary">Serene Royal York</h3>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Special Offers List -->
+<section class="py-16 bg-surface-bright">
+<div class="max-w-7xl mx-auto px-container-margin">
+<div class="flex flex-col md:flex-row justify-between items-baseline mb-stack-lg border-b border-outline-variant pb-stack-sm">
+<h2 class="font-headline-md text-headline-md text-primary">Our Offers</h2>
+<a class="font-label-md text-label-md text-secondary hover:underline mt-4 md:mt-0" href="#">SEE ALL OFFERS</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<!-- Offer 1 -->
+<div class="bg-surface rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(26,54,93,0.05)] flex flex-col group">
+<div class="h-48 relative overflow-hidden">
+<img alt="Summer Offer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A bright, cheerful scene of a family enjoying breakfast on a sun-drenched balcony overlooking the ocean. The table is laden with fresh fruits, pastries, and coffee. The aesthetic is light, airy, and inviting, capturing the essence of a perfect summer morning on vacation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwhycYsPNV26F3doGo1aiDMQo-QaafZOJDKEdj1ez83AANsS6Njks7Fi4tYORX7kYrTgN-kur13I2Qum-8u3GtRmsbIGlidptrxM2eG70oaAFHQPGes3frUDmdlJ5qf_T2gUqonJOsbWPT6FL7_Zbcgtmkgr456G-8GX2hspW4dtCOFr0i7KDRbN6hcPrgHM0-NM_NFyrydcn4MpGq95HtYOrYCTqb0XlbDSvIo8D6qTIlHMZN901pAQ"/>
+</div>
+<div class="p-stack-md flex-1 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Endless Summer Memories</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-stack-md flex-1">Enjoy up to 20% off and breakfast at participating hotels worldwide. With savings that increase with your stay, more time means more room for special.</p>
+<a class="font-label-md text-label-md text-secondary border border-secondary px-4 py-2 rounded text-center hover:bg-secondary hover:text-on-secondary transition-colors" href="#">Discover</a>
+</div>
+</div>
+<!-- Offer 2 -->
+<div class="bg-surface rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(26,54,93,0.05)] flex flex-col group">
+<div class="h-48 relative overflow-hidden">
+<img alt="Golf Offer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A breathtaking view of a lush, perfectly manicured golf course set against a backdrop of dramatic, snow-capped mountains. A golfer is captured mid-swing in the crisp, bright morning light. The scene emphasizes premium leisure and spectacular natural beauty." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChLnRB0J8wwNWHm-kXqmcJW3ISJdKBPG6ZS7dAm00_BCN3r9UJZ-YGgYL_vhNjcIH61yL5K1efKQ2RSpGn9eRu_MOycuKVDbhnIJlfFPBPayKzRp-YlyOS7xZawc6JLDvwff4kLjf_p_C5jxe_9DN5lwVcEhiJ8DHEJlUeg9nBt2dMK7m8odyPJyMMDF1qtRJtmd16OMD8OgvAdGrENOSnzi_2AeN1c4JamXIupgvKvX3WJm7J1lRpaw"/>
+</div>
+<div class="p-stack-md flex-1 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Unrivaled Fairways</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-stack-md flex-1">Perfect your swing at unforgettable courses around the world. Find exclusive stay-and-play packages.</p>
+<a class="font-label-md text-label-md text-secondary border border-secondary px-4 py-2 rounded text-center hover:bg-secondary hover:text-on-secondary transition-colors" href="#">Discover</a>
+</div>
+</div>
+<!-- Offer 3 -->
+<div class="bg-surface rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(26,54,93,0.05)] flex flex-col group">
+<div class="h-48 relative overflow-hidden">
+<img alt="Member Offer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A couple driving a vintage convertible car along a scenic coastal highway. The ocean sparkles in the background under a clear blue sky. The image conveys a sense of freedom, luxury travel, and classic road trip adventures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxTx9oIn3wfsSdcItEV0wbXzDttlSTDbHgFjMwd1BuS44s056R2uC8OsgUK3d3q8_iVpE0tZ-SDtubgzYP7t38SBmZMclk2hkK_8wcIILbyMJetXWEvVXi3tsvZsDxVqXuWuiN_SnXSXUEXR3P-oQYz0gZzq_rt7zJ9otzGz6Y-Yrql1lj2FtZHBak4JUsL1tRjRwa0R_4hZCBaAexnd2fj6KGb9J2GOlBTqrInj8_rWaRRF3Bh8hLIA"/>
+</div>
+<div class="p-stack-md flex-1 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Member Exclusive Offer</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-stack-md flex-1">Members can enjoy 15% off and receive a $50 dining credit at participating destinations in North &amp; Central America.</p>
+<a class="font-label-md text-label-md text-secondary border border-secondary px-4 py-2 rounded text-center hover:bg-secondary hover:text-on-secondary transition-colors" href="#">Discover More</a>
+</div>
+</div>
+<!-- Offer 4 -->
+<div class="bg-surface rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(26,54,93,0.05)] flex flex-col group">
+<div class="h-48 relative overflow-hidden">
+<img alt="Adventure Offer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A vibrant street scene featuring a classic cable car navigating a steep hill in a bustling, sunny city. The architecture is charming and historic. The mood is adventurous and inviting, perfect for city explorers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkJSv8Zdn-60YPzEXbYwyJvpCaRQTu4Ps_hlfeorr92iR5VxJSkqV4g4wmxcPo5TgQLTwm6MWNTpkcUmmhU4yK5_HeGVMpzo6_i60AvAcGL8VulOoLfn7WSE3zMsZBgqtZJHhzbv1AvdaRTyilqvxQ71OrhYRukuFgflBzDt8JxWf9nq9ZZLfAitBNRY5eA4_XhLGYEmgriXbW5KnTvYs_gPcvj-IChnD6hD-eSl6YwnZkOzGYXvc9-Q"/>
+</div>
+<div class="p-stack-md flex-1 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2">Adventure Awaits</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-stack-md flex-1">Find your next adventure amidst beachfront retreats, storied city locales, wine country, or desert wonders.</p>
+<a class="font-label-md text-label-md text-secondary border border-secondary px-4 py-2 rounded text-center hover:bg-secondary hover:text-on-secondary transition-colors" href="#">Discover More</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Amenities / Upgrades -->
+<section class="py-24 px-container-margin max-w-7xl mx-auto flex flex-col md:flex-row gap-12 items-center">
+<div class="flex-1">
+<h2 class="font-display-lg text-display-lg text-primary mb-stack-md">Upgrade to Serene Gold for an exclusive experience</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-stack-lg">Indulge in unparalleled luxury with Serene Gold, where you are treated to an exclusive, privileged hotel-within-a-hotel experience designed for discerning guests seeking elegance and sophistication during their stay.</p>
+<ul class="space-y-4 mb-stack-lg">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wide">Private Lounge Access</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wide">All-Day Honor Bar</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wide">Complimentary Breakfast &amp; Canapes</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wide">Dedicated Concierge</span>
+</li>
+</ul>
+<a class="inline-flex items-center justify-center px-6 py-3 font-label-md text-label-md bg-primary text-on-primary rounded hover:bg-primary-container transition-colors" href="#">Discover Serene Gold</a>
+</div>
+<div class="flex-1 w-full h-[500px] relative rounded-2xl overflow-hidden shadow-[0px_8px_30px_rgba(26,54,93,0.1)]">
+<img alt="Serene Gold Lounge" class="absolute inset-0 w-full h-full object-cover" data-alt="A sophisticated, softly lit interior of an exclusive hotel lounge. A couple is relaxing on plush seating, enjoying cocktails and conversation. The decor is rich, featuring warm woods, curated art pieces, and elegant lighting fixtures. Large windows reveal a beautiful twilight view of a city skyline or natural landscape. The atmosphere is highly premium, calm, and exclusive." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSRCsIlVPJ3KQN_E7EsNTxIcB4sMTdWrl2lZxotUtx-0w1LhDNaz13EVKsxobDHj3xOYXt--WsUvEz0nlk-B8cXzoZsZkzv2wzRDUOXb4P15beygHNPfWRygz8oOhVN5HY7cmbW-BD_E4OolJxXatGq5OC9TM0W5vAK7BPWZIHAjDDBmZmauxVo3CNzQqYLGIQJX0aHhX-VIXoP3zQLRbvw5u7_dGnFg2LArA8euRMBVhEhYlHB2JgDQ"/>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-primary text-on-primary w-full px-container-margin py-stack-lg flex flex-col md:flex-row justify-between items-center gap-gutter">
+<div class="flex flex-col items-center md:items-start gap-4">
+<span class="font-display-lg text-display-lg font-bold text-on-primary">Serene Stay</span>
+<p class="font-body-md text-body-md opacity-80">© 2024 Serene Stay Hotels &amp; Resorts. All rights reserved.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Terms of Use</a>
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Accessibility</a>
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Contact Us</a>
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Sitemap</a>
+<a class="font-label-md text-label-md text-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary transition-all duration-200 focus:ring-2 focus:ring-secondary-container" href="#">Cookies</a>
+</nav>
+</footer>
+</body></html>
