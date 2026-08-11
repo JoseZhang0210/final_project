@@ -37,7 +37,7 @@ public class RoomType {
     @Column(name = "capacity")
     private Integer capacity;
 
-    @Column(name = "image_id")
+    @Column(name = "image_id", nullable= true)
     private Integer imageId;
 
 }

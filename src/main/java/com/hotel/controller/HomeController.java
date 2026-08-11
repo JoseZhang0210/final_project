@@ -19,6 +19,7 @@ public class HomeController {
         return "register";
 
     }
+//    ********************************
     @GetMapping("/hotelhome")
     public String hotelhome() {
     	
@@ -43,5 +44,12 @@ public class HomeController {
         return "roombooking/bookingcheck"; 
      
     }
+    @GetMapping("/roomtypeCRUD")
+    public String roomtypeCRUD() {
+       
+        return "roombooking/roomtypeCRUD"; 
+     
+    }
+//    ********************************************
     
 }

@@ -1,23 +1,22 @@
 package com.hotel.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.beans.propertyeditors.CustomNumberEditor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.hotel.entity.RoomType;
 import com.hotel.service.RoomTypeService;
 
-@RestController
-@RequestMapping("/api/room-types")
+@Controller
+@RequestMapping("/roomtype")
 public class RoomTypeController {
 
     private final RoomTypeService roomTypeService;
@@ -26,46 +25,47 @@ public class RoomTypeController {
         this.roomTypeService = roomTypeService;
     }
 
-    // Create
-    @PostMapping
-    public ResponseEntity<RoomType> createRoomType(@RequestBody RoomType roomType) {
-        RoomType savedRoomType = roomTypeService.insert(roomType);
-        return new ResponseEntity<>(savedRoomType, HttpStatus.CREATED);
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
     }
 
-    // Read All
-    @GetMapping
-    public ResponseEntity<List<RoomType>> getAllRoomTypes() {
-        List<RoomType> roomTypes = roomTypeService.findAll();
-        return ResponseEntity.ok(roomTypes);
+    @GetMapping("/crud")
+    public String showCrudPage(Model model) {
+        model.addAttribute("roomTypes", roomTypeService.findAll());
+        return "roombooking/roomtypeCRUD";
     }
 
-    // Read by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<RoomType> getRoomTypeById(@PathVariable Integer id) {
-        return roomTypeService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    // Update
-    @PutMapping("/{id}")
-    public ResponseEntity<RoomType> updateRoomType(@PathVariable Integer id, @RequestBody RoomType roomTypeDetails) {
+    @PostMapping("/save")
+    public String saveRoomType(@ModelAttribute RoomType roomType, RedirectAttributes redirectAttributes) {
         try {
-            RoomType updatedRoomType = roomTypeService.update(id, roomTypeDetails);
-            return ResponseEntity.ok(updatedRoomType);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            if (roomType.getRoomTypeId() != null) {
+                roomTypeService.update(roomType.getRoomTypeId(), roomType);
+                redirectAttributes.addFlashAttribute("successMsg", "房型更新成功！");
+            } else {
+                roomTypeService.insert(roomType);
+                redirectAttributes.addFlashAttribute("successMsg", "房型新增成功！");
+            }
+        } catch (Exception e) {
+            // 擷取外鍵約束或其他 SQL 錯誤並提示使用者
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("FK_room_type_image")) {
+                redirectAttributes.addFlashAttribute("errorMsg", "【圖片 ID】填寫不正確：資料庫中找不到此圖片 ID！");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMsg", "儲存失敗，請檢查欄位格式是否正確！");
+            }
         }
+        return "redirect:/roomtype/crud";
     }
 
-    // Delete
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoomType(@PathVariable Integer id) {
-        boolean deleted = roomTypeService.deleteById(id);
-        if (deleted) {
-            return ResponseEntity.noContent().build();
+    @GetMapping("/delete/{id}")
+    public String deleteRoomType(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            roomTypeService.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMsg", "房型刪除成功！");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMsg", "刪除失敗：該房型可能已被其他資料關聯！");
         }
-        return ResponseEntity.notFound().build();
+        return "redirect:/roomtype/crud";
     }
 }

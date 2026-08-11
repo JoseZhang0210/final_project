@@ -1,16 +1,27 @@
 package com.hotel.controller;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.springframework.beans.propertyeditors.CustomDateEditor;
+import org.springframework.beans.propertyeditors.CustomNumberEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.hotel.entity.Booking;
 import com.hotel.entity.BookingOrder;
 import com.hotel.service.BookingOrderService;
 
 @Controller
+@RequestMapping("/bookingorder")
 public class BookingOrderController {
 
     private final BookingOrderService bookingOrderService;
@@ -19,74 +30,58 @@ public class BookingOrderController {
         this.bookingOrderService = bookingOrderService;
     }
 
-    // 1. 顯示所有訂單列表
-    @GetMapping("/booking-orders")
-    public String showBookingOrders(Model model) {
-        model.addAttribute(
-                "bookingOrders",
-                bookingOrderService.findAll());
-
-        return "booking-orders/list";
+    // 自動處理空白數字轉 null 以及日期格式解析
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
+        binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, true));
     }
 
-    // 2. 顯示新增訂單表單
-    @GetMapping("/booking-orders/add")
-    public String showAddForm(Model model) {
-        BookingOrder bookingOrder = new BookingOrder();
-        bookingOrder.setOrderStatus("PENDING"); // 預設狀態
-
-        model.addAttribute("bookingOrder", bookingOrder);
-
-        return "booking-orders/add";
+    // 1. 顯示管理頁面
+    @GetMapping("/crud")
+    public String showCrudPage(Model model) {
+        model.addAttribute("orders", bookingOrderService.findAll());
+        return "roombooking/roomtypeCRUD";
     }
 
-    // 3. 處理新增訂單表單提交
-    @PostMapping("/booking-orders/save")
-    public String saveBookingOrder(
-            @ModelAttribute BookingOrder bookingOrder
-    ) {
-        bookingOrderService.insert(bookingOrder);
-        return "redirect:/booking-orders";
-    }
-
-    // 4. 顯示編輯訂單表單
-    @GetMapping("/booking-orders/edit/{id}")
-    public String showEditForm(
-            @PathVariable Integer id,
-            Model model
-    ) {
-        BookingOrder bookingOrder = bookingOrderService.findById(id).orElse(null);
-
-        if (bookingOrder == null) {
-            return "redirect:/booking-orders";
-        }
-
-        model.addAttribute("bookingOrder", bookingOrder);
-
-        return "booking-orders/edit";
-    }
-
-    // 5. 處理更新訂單表單提交
-    @PostMapping("/booking-orders/update/{id}")
-    public String updateBookingOrder(
-            @PathVariable Integer id,
-            @ModelAttribute BookingOrder formOrder
-    ) {
+    // 2. 處理新增 / 更新
+    @PostMapping("/save")
+    public String saveBookingOrder(@ModelAttribute BookingOrder bookingOrder, RedirectAttributes redirectAttributes) {
         try {
-            bookingOrderService.update(id, formOrder);
-        } catch (RuntimeException e) {
-            return "redirect:/booking-orders";
-        }
+            // 建立雙向關聯
+            if (bookingOrder.getBookings() != null) {
+                for (Booking booking : bookingOrder.getBookings()) {
+                    booking.setBookingOrder(bookingOrder);
+                }
+            }
 
-        return "redirect:/booking-orders";
+            if (bookingOrder.getBookingOrderId() != null && bookingOrder.getBookingOrderId() > 0) {
+                bookingOrderService.update(bookingOrder.getBookingOrderId(), bookingOrder);
+                redirectAttributes.addFlashAttribute("successMsg", "訂單更新成功！");
+            } else {
+                if (bookingOrder.getCreatedAt() == null) {
+                    bookingOrder.setCreatedAt(new Date());
+                }
+                bookingOrderService.insert(bookingOrder);
+                redirectAttributes.addFlashAttribute("successMsg", "訂單新增成功！");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMsg", "儲存失敗：" + e.getMessage());
+        }
+        return "redirect:/bookingorder/crud";
     }
 
-    // 6. 刪除訂單
-    @GetMapping("/booking-orders/delete/{id}")
-    public String deleteBookingOrder(
-            @PathVariable Integer id
-    ) {
-        bookingOrderService.deleteById(id);
-        return "redirect:/booking-orders";
+    // 3. 刪除訂單
+    @GetMapping("/delete/{id}")
+    public String deleteBookingOrder(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        try {
+            bookingOrderService.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMsg", "訂單刪除成功！");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMsg", "刪除失敗：" + e.getMessage());
+        }
+        return "redirect:/bookingorder/crud";
     }
 }
