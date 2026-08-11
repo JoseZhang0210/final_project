@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>新增場地</title>
+</head>
+<body>
+
+<h1>新增場地</h1>
+
+<form th:action="@{/venues/save}" th:object="${venue}" method="post">
+
+    <p>
+        場地 ID：
+        <input type="number" th:field="*{venueId}" required>
+    </p>
+
+    <p>
+        場地名稱：
+        <input type="text" th:field="*{venueName}" maxlength="50" required>
+    </p>
+
+    <p>
+        容納人數：
+        <input type="number" th:field="*{capacity}" min="1" required>
+    </p>
+
+    <p>
+        每日租借價格：
+        <input type="number" th:field="*{pricePerDay}" min="0" required>
+    </p>
+
+    <p>
+        場地狀態：
+        <select th:field="*{venueStatus}">
+            <option value="AVAILABLE">AVAILABLE－可租借</option>
+            <option value="MAINTENANCE">MAINTENANCE－維修中</option>
+            <option value="DISABLED">DISABLED－停止使用</option>
+        </select>
+    </p>
+
+    <button type="submit">儲存</button>
+    <a th:href="@{/venues}">取消</a>
+
+</form>
+
+</body>
+</html>
