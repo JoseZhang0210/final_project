@@ -161,7 +161,7 @@ CREATE TABLE [booking_order] (
 	[member_id] INTEGER NOT NULL,
 	[booking_total_price] INTEGER NOT NULL,
 	[order_status] VARCHAR(50) NOT NULL,
-	[create_at] DATETIME NOT NULL,
+	[created_at] DATETIME NOT NULL,
 	[payment_id] INTEGER NOT NULL,
 	PRIMARY KEY([booking_order_id])
 );
