@@ -5,12 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "Category", schema = "dbo")
+@Table(name = "Category")
 public class Category {
 
     @Id
@@ -18,12 +16,20 @@ public class Category {
     @Column(name = "Category_ID")
     private Integer categoryId;
 
-    @Column(name = "Category_Name", nullable = false, length = 50)
+    @Column(
+        name = "Category_Name",
+        nullable = false,
+        length = 50,
+        unique = true
+    )
     private String categoryName;
 
-    @ManyToOne
-    @JoinColumn(name = "Parent_Category_ID")
-    private Category parent_Category;
+    public Category() {
+    }
+
+    public Category(String categoryName) {
+        this.categoryName = categoryName;
+    }
 
     public Integer getCategoryId() {
         return categoryId;
@@ -39,13 +45,5 @@ public class Category {
 
     public void setCategoryName(String categoryName) {
         this.categoryName = categoryName;
-    }
-
-    public Category getParentCategory() {
-        return parent_Category;
-    }
-
-    public void setParentCategory(Category parentCategory) {
-        this.parent_Category = parentCategory;
     }
 }

@@ -1,111 +1,494 @@
+```html
 <!DOCTYPE html>
-<html lang="zh-Hant"
-      xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
-    <title>商品管理系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>商品管理系統｜飯店商城</title>
 
     <style>
-
-        body{
-            font-family: Arial, sans-serif;
-            margin: 40px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        h1{
-            margin-bottom: 20px;
+        body {
+            min-height: 100vh;
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            background-color: #f5f2ec;
+            color: #333;
         }
 
-        table{
+        /* 頂部導覽列 */
+        .navbar {
+            height: 80px;
+            padding: 0 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2f2a24;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo {
+            color: #d5b06f;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 28px;
+        }
+
+        .navbar-links a {
+            color: #f5f5f5;
+            text-decoration: none;
+            font-size: 15px;
+            transition: color 0.3s;
+        }
+
+        .navbar-links a:hover {
+            color: #d5b06f;
+        }
+
+        /* 主要內容 */
+        .container {
+            width: min(1200px, 92%);
+            margin: 45px auto;
+        }
+
+        .page-header {
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .title-area h1 {
+            margin-bottom: 8px;
+            color: #4a3b2a;
+            font-size: 32px;
+        }
+
+        .title-area p {
+            color: #777;
+            font-size: 15px;
+        }
+
+        /* 按鈕共用樣式 */
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 9px 16px;
+            border: none;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .buy-form {
+            min-width: 180px;
+        }
+
+        .buy-field {
+            margin-bottom: 7px;
+        }
+
+        .buy-field label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .buy-field input {
             width: 100%;
-            border-collapse: collapse;
+            padding: 7px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
 
-        th,td{
-            border: 1px solid #cccccc;
-            padding: 10px;
+        .buy-field input[type="number"] {
             text-align: center;
         }
 
-        th{
-            background-color: #f2f2f2;
+        .btn-buy {
+            width: 100%;
+            margin-top: 5px;
+            background-color: #27864b;
+            color: white;
         }
 
-        .btn{
+        .btn-buy:hover {
+            background-color: #1d6638;
+        }
+
+        .cannot-buy {
+            color: #b3443c;
+            font-weight: bold;
+        }
+
+        .btn-add {
+            padding: 12px 22px;
+            background-color: #a67c3c;
+            color: white;
+            box-shadow: 0 4px 10px rgba(166, 124, 60, 0.25);
+        }
+
+        .btn-add:hover {
+            background-color: #89632d;
+            transform: translateY(-2px);
+        }
+
+        .btn-edit {
+            background-color: #e8f0ff;
+            color: #315f9f;
+        }
+
+        .btn-edit:hover {
+            background-color: #315f9f;
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #fde9e7;
+            color: #b3443c;
+        }
+
+        .btn-delete:hover {
+            background-color: #b3443c;
+            color: white;
+        }
+
+        /* 表格卡片 */
+        .table-card {
+            overflow: hidden;
+            background-color: white;
+            border-radius: 14px;
+            box-shadow: 0 5px 22px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 900px;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #4a3b2a;
+            color: white;
+        }
+
+        th,
+        td {
+            padding: 16px 14px;
+            text-align: center;
+            border-bottom: 1px solid #eee7dd;
+        }
+
+        th {
+            font-size: 14px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        td {
+            color: #555;
+            font-size: 14px;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        tbody tr:hover {
+            background-color: #fcfaf6;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .product-name {
+            color: #4a3b2a;
+            font-weight: bold;
+        }
+
+        .price {
+            color: #9b6d2e;
+            font-weight: bold;
+        }
+
+        .stock-low {
+            color: #c14c43;
+            font-weight: bold;
+        }
+
+        /* 狀態標籤 */
+        .status {
+            display: inline-block;
+            min-width: 76px;
             padding: 6px 12px;
-            cursor: pointer;
-            margin-right: 5px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
         }
 
-    </style>
+        .status-active {
+            background-color: #e5f6eb;
+            color: #257641;
+        }
 
+        .status-inactive {
+            background-color: #eeeeee;
+            color: #666;
+        }
+
+        .status-out {
+            background-color: #fde9e7;
+            color: #b3443c;
+        }
+
+        .status-default {
+            background-color: #fff3d8;
+            color: #95691f;
+        }
+
+        /* 操作按鈕區 */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 無商品資料 */
+        .empty-message {
+            padding: 55px 20px;
+            color: #888;
+            font-size: 16px;
+        }
+
+        /* 頁尾 */
+        footer {
+            margin-top: 55px;
+            padding: 24px;
+            background-color: #2f2a24;
+            color: #ccc;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* 平板與手機 */
+        @media (max-width: 768px) {
+            .navbar {
+                height: auto;
+                padding-top: 18px;
+                padding-bottom: 18px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .navbar-links {
+                gap: 16px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .container {
+                margin-top: 30px;
+            }
+
+            .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .title-area h1 {
+                font-size: 27px;
+            }
+
+            .btn-add {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<h1>飯店商城商品管理</h1>
+    <header class="navbar">
+        <div class="logo">HOTEL SHOP</div>
 
-<a th:href="@{/products/add}">
-    <button class="btn">新增商品</button>
-</a>
+        <nav class="navbar-links">
+            <a th:href="@{/}">商城首頁</a>
+            <a th:href="@{/products}">商品管理</a>
+            <a th:href="@{/products/add}">新增商品</a>
+            <a th:href="@{/orders}">訂單管理</a>
+        </nav>
+    </header>
 
-<br><br>
+    <main class="container">
 
-<table>
+        <section class="page-header">
+            <div class="title-area">
+                <h1>飯店商城商品管理</h1>
+                <p>管理商品名稱、分類、價格、庫存與銷售狀態。</p>
+            </div>
 
-    <thead>
-
-    <tr>
-        <th>商品ID</th>
-        <th>商品名稱</th>
-        <th>商品分類</th>
-        <th>價格</th>
-        <th>庫存</th>
-        <th>商品狀態</th>
-        <th>操作</th>
-    </tr>
-
-    </thead>
-
-
-    <tbody>
-
-    <tr th:each="product : ${products}">
-
-        <td th:text="${product.productId}"></td>
-
-        <td th:text="${product.productName}"></td>
-
-        <td th:text="${product.category.categoryName}"></td>
-
-        <td th:text="${product.price}"></td>
-
-        <td th:text="${product.stock}"></td>
-
-        <td th:text="${product.status}"></td>
-
-        <td>
-
-            <a th:href="@{/products/edit/{id}(id=${product.productId})}">
-                <button class="btn">修改</button>
+            <a class="btn btn-add" th:href="@{/products/add}">
+                ＋ 新增商品
             </a>
+        </section>
 
+        <section class="table-card">
 
-            <a th:href="@{/products/delete/{id}(id=${product.productId})}"
-               onclick="return confirm('確定要刪除這筆商品資料嗎？')">
+            <div class="table-wrapper">
 
-                <button class="btn">刪除</button>
+                <table>
 
-            </a>
+                    <thead>
+                        <tr>
+                            <th>商品 ID</th>
+                            <th>商品名稱</th>
+                            <th>商品分類</th>
+                            <th>價格</th>
+                            <th>庫存</th>
+                            <th>商品狀態</th>
+                            <th>購買</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
 
-        </td>
+                    <tbody>
 
-    </tr>
+                        <!-- 沒有商品資料時顯示 -->
+                        <tr th:if="${products == null or #lists.isEmpty(products)}">
+                            <td colspan="8" class="empty-message">
+                                目前沒有商品資料，請點擊「新增商品」建立第一筆商品。
+                            </td>
+                        </tr>
 
-    </tbody>
+                        <!-- 商品資料 -->
+                        <tr th:each="product : ${products}">
 
-</table>
+                            <td th:text="${product.productId}">
+                                1
+                            </td>
+
+                            <td class="product-name" th:text="${product.productName}">
+                                飯店枕頭
+                            </td>
+
+                            <td th:text="${product.category != null
+                                  ? product.category.categoryName
+                                  : '未分類'}">
+                                寢具用品
+                            </td>
+
+                            <td class="price"
+                                th:text="${'$' + #numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')}">
+                                $1,500
+                            </td>
+
+                            <td th:classappend="${product.stock != null and product.stock <= 5}
+                                         ? 'stock-low'" th:text="${product.stock}">
+                                20
+                            </td>
+
+                            <td>
+
+                                <span class="status" th:classappend="${product.status == 'ACTIVE'}
+                                              ? 'status-active'
+                                              : (${product.status == 'INACTIVE'}
+                                                  ? 'status-inactive'
+                                                  : (${product.status == 'OUT_OF_STOCK'}
+                                                      ? 'status-out'
+                                                      : 'status-default'))" th:text="${product.status == 'ACTIVE'}
+                                       ? '販售中'
+                                       : (${product.status == 'INACTIVE'}
+                                           ? '已下架'
+                                           : (${product.status == 'OUT_OF_STOCK'}
+                                               ? '已售完'
+                                               : product.status))">
+                                    販售中
+                                </span>
+
+                            </td>
+                            <td>
+
+                                <form th:if="${product.status == 'ACTIVE' and product.stock > 0}"
+                                    th:action="@{/orders/add}" method="post" class="buy-form">
+
+                                    <input type="hidden" name="productId" th:value="${product.productId}">
+
+                                    <div class="buy-field">
+                                        <label>數量</label>
+
+                                        <input type="number" name="quantity" value="0" min="0" th:max="${product.stock}"
+                                            required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-buy">
+                                        購買
+                                    </button>
+
+                                </form>
+
+                                <span th:if="${product.status != 'ACTIVE' or product.stock <= 0}" class="cannot-buy">
+                                    無法購買
+                                </span>
+
+                            </td>
+                            <td>
+
+                                <div class="action-buttons">
+
+                                    <a class="btn btn-edit" th:href="@{/products/edit/{id}
+                                         (id=${product.productId})}">
+                                        修改
+                                    </a>
+
+                                    <a class="btn btn-delete" th:href="@{/products/delete/{id}
+                                         (id=${product.productId})}"
+                                        onclick="return confirm('確定要刪除這筆商品資料嗎？刪除後將無法復原。')">
+                                        刪除
+                                    </a>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>© 2026 Hotel Shop 飯店商城｜商品管理系統</p>
+    </footer>
 
 </body>
+
 </html>
+```

@@ -14,114 +14,129 @@ import com.hotel.service.ProductService;
 @Controller
 public class ProductController {
 
-    private final ProductService productService;
-    private final CategoryRepository categoryRepository;
+        private final ProductService productService;
+        private final CategoryRepository categoryRepository;
 
-    public ProductController(
-            ProductService productService,
-            CategoryRepository categoryRepository) {
+        public ProductController(
+                        ProductService productService,
+                        CategoryRepository categoryRepository) {
 
-        this.productService = productService;
-        this.categoryRepository = categoryRepository;
-    }
+                this.productService = productService;
+                this.categoryRepository = categoryRepository;
+        }
 
-    @GetMapping("/products")
-    public String showProducts(Model model) {
-        model.addAttribute(
-                "products",
-                productService.findAllProducts());
+        // 商品管理列表
+        @GetMapping("/products")
+        public String showProducts(Model model) {
 
-        return "products/list";
-    }
+                model.addAttribute(
+                                "products",
+                                productService.findAllProducts());
 
-    @GetMapping("/products/add")
-    public String showAddForm(Model model) {
+                return "products/list";
+        }
 
-        Product product = new Product();
-        product.setStatus("ACTIVE");
+        // 顯示新增商品頁面
+        @GetMapping("/products/add")
+        public String showAddForm(Model model) {
 
-        model.addAttribute("product", product);
-        model.addAttribute(
-                "categories",
-                categoryRepository.findAll());
+                Product product = new Product();
+                product.setStatus("ACTIVE");
 
-        return "products/add";
-    }
+                model.addAttribute(
+                                "product",
+                                product);
 
-@GetMapping("/products/edit/{id}")
-public String showEditForm(
-        @PathVariable Integer id,
-        Model model
-) {
-    Product product = productService.findById(id);
+                model.addAttribute(
+                                "categories",
+                                categoryRepository.findAll());
 
-    if (product == null) {
-        return "redirect:/products";
-    }
+                return "products/add";
+        }
 
-    model.addAttribute("product", product);
-    model.addAttribute(
-            "categories",
-            categoryRepository.findAll()
-    );
+        // 顯示修改商品頁面
+        @GetMapping("/products/edit/{id}")
+        public String showEditForm(
+                        @PathVariable Integer id,
+                        Model model) {
 
-    return "products/edit";
-}
+                Product product = productService.findById(id);
 
-@PostMapping("/products/update")
-public String updateProduct(
-        @ModelAttribute Product formProduct
-) {
-    Product existingProduct =
-            productService.findById(formProduct.getProductId());
+                if (product == null) {
+                        return "redirect:/products";
+                }
 
-    if (existingProduct == null) {
-        return "redirect:/products";
-    }
+                model.addAttribute(
+                                "product",
+                                product);
 
-    existingProduct.setProductName(
-            formProduct.getProductName()
-    );
+                model.addAttribute(
+                                "categories",
+                                categoryRepository.findAll());
 
-    existingProduct.setCategory(
-            formProduct.getCategory()
-    );
+                return "products/edit";
+        }
 
-    existingProduct.setDescription(
-            formProduct.getDescription()
-    );
+        // 更新商品
+        @PostMapping("/products/update")
+        public String updateProduct(
+                        @ModelAttribute Product formProduct) {
 
-    existingProduct.setPrice(
-            formProduct.getPrice()
-    );
+                Product existingProduct = productService.findById(
+                                formProduct.getProductId());
 
-    existingProduct.setStock(
-            formProduct.getStock()
-    );
+                if (existingProduct == null) {
+                        return "redirect:/products";
+                }
 
-    existingProduct.setImageUrl(
-            formProduct.getImageUrl()
-    );
+                existingProduct.setProductName(
+                                formProduct.getProductName());
 
-    existingProduct.setStatus(
-            formProduct.getStatus()
-    );
+                existingProduct.setCategory(
+                                formProduct.getCategory());
 
-    productService.save(existingProduct);
+                existingProduct.setDescription(
+                                formProduct.getDescription());
 
-    return "redirect:/products";
-}
+                existingProduct.setPrice(
+                                formProduct.getPrice());
 
-@GetMapping("/products/delete/{id}")
-public String deleteProduct(
-        @PathVariable Integer id
-) {
-    Product product = productService.findById(id);
+                existingProduct.setStock(
+                                formProduct.getStock());
 
-    if (product != null) {
-        productService.deleteById(id);
-    }
+                existingProduct.setImageUrl(
+                                formProduct.getImageUrl());
 
-    return "redirect:/products";
-}
+                existingProduct.setStatus(
+                                formProduct.getStatus());
+
+                productService.save(existingProduct);
+
+                return "redirect:/products";
+        }
+
+        // 刪除商品
+        @GetMapping("/products/delete/{id}")
+        public String deleteProduct(
+                        @PathVariable Integer id) {
+
+                Product product = productService.findById(id);
+
+                if (product != null) {
+                        productService.deleteById(id);
+                }
+
+                return "redirect:/products";
+        }
+
+        // 顧客商城頁
+        @GetMapping("/shop")
+        public String showShop(Model model) {
+
+                model.addAttribute(
+                                "products",
+                                productService.getActiveProducts());
+
+                return "products/shop";
+        }
 }

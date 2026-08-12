@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>大飯店｜飯店商城</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            background-color: #f8f6f1;
+            color: #333;
+        }
+
+        /* 導覽列 */
+        header {
+            background-color: #ffffff;
+            padding: 18px 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            color: #9b7435;
+        }
+
+        nav a {
+            color: #444;
+            text-decoration: none;
+            margin-left: 28px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: #b58a46;
+        }
+
+        /* 首頁主視覺 */
+        .hero {
+            min-height: 560px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+
+            background:
+                linear-gradient(rgba(0, 0, 0, 0.45),
+                    rgba(0, 0, 0, 0.45)),
+                url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center / cover no-repeat;
+
+            color: white;
+            padding: 40px 20px;
+        }
+
+        .hero-content {
+            max-width: 750px;
+        }
+
+        .hero h1 {
+            font-size: 52px;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            line-height: 1.8;
+            margin-bottom: 35px;
+        }
+
+        .shop-button {
+            display: inline-block;
+            padding: 14px 34px;
+            background-color: #b58a46;
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 18px;
+            transition: 0.3s;
+        }
+
+        .shop-button:hover {
+            background-color: #8f692f;
+            transform: translateY(-3px);
+        }
+
+        /* 特色區塊 */
+        .features {
+            padding: 70px 8%;
+            text-align: center;
+        }
+
+        .features h2 {
+            font-size: 32px;
+            margin-bottom: 40px;
+            color: #6f5328;
+        }
+
+        .feature-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .feature-card {
+            width: 280px;
+            background-color: white;
+            padding: 35px 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
+            transition: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .feature-icon {
+            font-size: 42px;
+            margin-bottom: 18px;
+        }
+
+        .feature-card h3 {
+            color: #9b7435;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        footer {
+            background-color: #2f2a24;
+            color: #ddd;
+            text-align: center;
+            padding: 24px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">斧頭幫大飯店</div>
+
+        <nav>
+            <a href="/">首頁</a>
+            <a href="/products">商城商品</a>
+            <a href="/orders">我的訂單</a>
+            <a href="/login">登入</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>飯店商城</h1>
+
+                <p>
+                    將飯店的舒適與質感帶回家，
+                    精選寢具、沐浴用品及特色商品，為生活增添美好體驗。
+                </p>
+
+                <a href="/products" class="shop-button">
+                    開始購物
+                </a>
+            </div>
+        </section>
+
+        <section class="features">
+            <h2>商城特色</h2>
+
+            <div class="feature-container">
+                <div class="feature-card">
+                    <div class="feature-icon">🏨</div>
+                    <h3>飯店嚴選</h3>
+                    <p>精選飯店使用的高品質商品，讓您在家也能享受飯店級體驗。</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎁</div>
+                    <h3>精美商品</h3>
+                    <p>提供寢具、香氛、沐浴用品與特色伴手禮等多元商品。</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚚</div>
+                    <h3>安心配送</h3>
+                    <p>快速且安全的配送服務，讓您輕鬆收到喜愛的商品。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 Hotel Shop 飯店商城｜All Rights Reserved</p>
+    </footer>
+
+</body>
+
+</html>
