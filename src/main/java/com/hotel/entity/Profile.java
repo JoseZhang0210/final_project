@@ -5,16 +5,21 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "profile")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Profile {
 
@@ -23,8 +28,9 @@ public class Profile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "account_id", nullable = false, unique = true)
-    private Integer accountId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false, unique = true)
+    private Account account;
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
@@ -59,10 +65,10 @@ public class Profile {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Profile(Integer accountId, String name, String email, String phone, String zipcode,
-                   String city, String district, String address, LocalDateTime createdAt,
-                   LocalDate birthday, String gender, LocalDateTime updatedAt) {
-        this.accountId = accountId;
+    public Profile(Account account, String name, String email, String phone, String zipcode,
+            String city, String district, String address, LocalDateTime createdAt,
+            LocalDate birthday, String gender, LocalDateTime updatedAt) {
+        this.account = account;
         this.name = name;
         this.email = email;
         this.phone = phone;
