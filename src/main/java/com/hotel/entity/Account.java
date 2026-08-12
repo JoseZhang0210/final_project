@@ -20,13 +20,13 @@ public class Account {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(name = "username")
+	@Column(name = "username", nullable = false, length = 50, unique = true)
 	private String username;
 
-	@Column(name = "password")
+	@Column(name = "password", nullable = false, length = 255)
 	private String password;
 
-	@Column(name = "status")
+	@Column(name = "status", nullable = false, length = 20)
 	private String status;
 
 	public Account(String username, String password, String status) {
@@ -34,5 +34,4 @@ public class Account {
 		this.password = password;
 		this.status = status;
 	}
-
 }
