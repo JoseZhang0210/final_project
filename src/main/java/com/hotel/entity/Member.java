@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -31,12 +32,19 @@ public class Member {
 
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "account_id", nullable = false, unique = true)
+	@Setter(AccessLevel.NONE)
 	private Account account;
 
 	@OneToMany(mappedBy = "member")
 	private List<Payment> payments = new ArrayList<>();
 
 	public Member(Account account) {
+		if (account != null) {
+			account.setMemberRelation(this);
+		}
+	}
+
+	void setAccount(Account account) {
 		this.account = account;
 	}
 }

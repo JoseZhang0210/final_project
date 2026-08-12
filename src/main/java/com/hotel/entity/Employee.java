@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -36,6 +37,7 @@ public class Employee {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false, unique = true)
+    @Setter(AccessLevel.NONE)
     private Account account;
 
     @Column(name = "position", nullable = false, length = 50)
@@ -49,8 +51,14 @@ public class Employee {
 
     public Employee(Department department, Account account, String position, Boolean isAdmin) {
         this.department = department;
-        this.account = account;
+        if (account != null) {
+            account.setEmployeeRelation(this);
+        }
         this.position = position;
         this.isAdmin = isAdmin;
+    }
+
+    void setAccount(Account account) {
+        this.account = account;
     }
 }

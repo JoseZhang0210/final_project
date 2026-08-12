@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,6 +31,7 @@ public class Profile {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false, unique = true)
+    @Setter(AccessLevel.NONE)
     private Account account;
 
     @Column(name = "name", nullable = false, length = 50)
@@ -68,7 +70,9 @@ public class Profile {
     public Profile(Account account, String name, String email, String phone, String zipcode,
             String city, String district, String address, LocalDateTime createdAt,
             LocalDate birthday, String gender, LocalDateTime updatedAt) {
-        this.account = account;
+        if (account != null) {
+            account.setProfileRelation(this);
+        }
         this.name = name;
         this.email = email;
         this.phone = phone;
@@ -80,5 +84,9 @@ public class Profile {
         this.birthday = birthday;
         this.gender = gender;
         this.updatedAt = updatedAt;
+    }
+
+    void setAccount(Account account) {
+        this.account = account;
     }
 }
