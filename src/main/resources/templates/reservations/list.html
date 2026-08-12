@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐廳訂位管理</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, "Microsoft JhengHei", sans-serif;
+            background: #f5f6f8;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: auto;
+        }
+
+        .card {
+            margin-bottom: 24px;
+            padding: 24px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        input,
+        select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: 0;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            background: #1976d2;
+        }
+
+        .btn-clear {
+            background: #777;
+            margin-left: 8px;
+        }
+
+        .btn-edit {
+            background: #f57c00;
+            margin-right: 6px;
+        }
+
+        .btn-delete {
+            background: #d32f2f;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #263238;
+            color: white;
+        }
+
+        #message {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #2e7d32;
+        }
+
+        .error {
+            color: #d32f2f;
+        }
+
+        #memberId {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        #memberId::-webkit-outer-spin-button,
+        #memberId::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>餐廳訂位管理</h1>
+
+        <div class="card">
+            <h2 id="formTitle">新增訂位</h2>
+
+            <form id="reservationForm">
+                <input type="hidden" id="reservationId">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="memberId">會員帳號 ID（選填）</label>
+                        <input type="number" id="memberId" min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactName">訂位人姓名</label>
+                        <input type="text" id="contactName">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactPhone">訂位人電話</label>
+                        <input type="text" id="contactPhone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="restaurantId">餐廳 *</label>
+                        <select id="restaurantId" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reservationDate">訂位日期 *</label>
+                        <input type="date" id="reservationDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timeId">訂位時段 *</label>
+                        <select id="timeId" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="peopleCount">訂位人數 *</label>
+                        <input type="number" id="peopleCount" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="status">訂位狀態 *</label>
+                        <select id="status" required>
+                            <option value="已訂位">訂位</option>
+                            <option value="已取消">取消</option>
+                            <option value="已完成">已完成</option>
+                        </select>
+                    </div>
+                </div>
+
+                <br>
+
+                <button type="submit" class="btn-save">儲存</button>
+                <button type="button" class="btn-clear" id="clearButton">
+                    清除
+                </button>
+
+                <div id="message"></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>訂位列表</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>訂位 ID</th>
+                        <th>會員帳號 ID</th>
+                        <th>訂位人姓名</th>
+                        <th>訂位人電話</th>
+                        <th>餐廳</th>
+                        <th>訂位日期</th>
+                        <th>時段</th>
+                        <th>人數</th>
+                        <th>狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+
+                <tbody id="reservationTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const RESERVATION_API_URL = "/reservations";
+        const RESTAURANT_API_URL = "/restaurant";
+        const TIME_API_URL = "/restaurant_times";
+
+        let restaurants = [];
+        let allTimes = [];
+
+        const form = document.getElementById("reservationForm");
+        const formTitle = document.getElementById("formTitle");
+        const message = document.getElementById("message");
+
+        const reservationId =
+            document.getElementById("reservationId");
+        const memberId = document.getElementById("memberId");
+        const contactName =
+            document.getElementById("contactName");
+        const contactPhone =
+            document.getElementById("contactPhone");
+        const restaurantId =
+            document.getElementById("restaurantId");
+        const reservationDate =
+            document.getElementById("reservationDate");
+        const timeId = document.getElementById("timeId");
+        const peopleCount =
+            document.getElementById("peopleCount");
+        const status = document.getElementById("status");
+
+        function showMessage(text, type) {
+            message.textContent = text;
+            message.className = type;
+        }
+
+        function clearForm() {
+            form.reset();
+            reservationId.value = "";
+            timeId.innerHTML =
+                "<option value=''>請先選擇餐廳</option>";
+            formTitle.textContent = "新增訂位";
+            message.textContent = "";
+        }
+
+        async function loadRestaurants() {
+            const response = await fetch(RESTAURANT_API_URL);
+
+            if (!response.ok) {
+                showMessage("讀取餐廳資料失敗", "error");
+                return;
+            }
+
+            restaurants = await response.json();
+
+            restaurantId.innerHTML =
+                "<option value=''>請選擇餐廳</option>";
+
+            restaurants.forEach(function (restaurant) {
+                const option = document.createElement("option");
+
+                option.value = restaurant.restaurantId;
+                option.textContent =
+                    restaurant.restaurantName;
+
+                restaurantId.appendChild(option);
+            });
+        }
+
+        async function loadAllTimes() {
+            const response = await fetch(TIME_API_URL);
+
+            if (response.ok) {
+                allTimes = await response.json();
+            }
+        }
+
+        async function loadTimeOptions(selectedTimeId = "") {
+            const selectedRestaurantId = restaurantId.value;
+
+            if (selectedRestaurantId === "") {
+                timeId.innerHTML =
+                    "<option value=''>請先選擇餐廳</option>";
+                return;
+            }
+
+            const response = await fetch(
+                TIME_API_URL
+                + "/restaurant/"
+                + selectedRestaurantId
+            );
+
+            if (!response.ok) {
+                showMessage("讀取餐廳時段失敗", "error");
+                return;
+            }
+
+            const times = await response.json();
+
+            timeId.innerHTML =
+                "<option value=''>請選擇時段</option>";
+
+            times.forEach(function (time) {
+                const option = document.createElement("option");
+
+                option.value = time.timeId;
+                option.textContent =
+                    time.mealType
+                    + "（"
+                    + time.openTime.substring(0, 5)
+                    + " - "
+                    + time.closeTime.substring(0, 5)
+                    + "）";
+
+                timeId.appendChild(option);
+            });
+
+            timeId.value = selectedTimeId;
+        }
+
+        function getRestaurantName(id) {
+            const restaurant = restaurants.find(function (item) {
+                return item.restaurantId === id;
+            });
+
+            return restaurant
+                ? restaurant.restaurantName
+                : "餐廳 ID：" + id;
+        }
+
+        function getTimeName(id) {
+            const time = allTimes.find(function (item) {
+                return item.timeId === id;
+            });
+
+            if (!time) {
+                return "時段 ID：" + id;
+            }
+
+            return time.mealType
+                + "（"
+                + time.openTime.substring(0, 5)
+                + " - "
+                + time.closeTime.substring(0, 5)
+                + "）";
+        }
+
+        async function loadReservations() {
+            const response = await fetch(RESERVATION_API_URL);
+
+            if (!response.ok) {
+                showMessage("讀取訂位資料失敗", "error");
+                return;
+            }
+
+            const reservations = await response.json();
+            const tableBody =
+                document.getElementById("reservationTableBody");
+
+            tableBody.innerHTML = "";
+
+            reservations.forEach(function (reservation) {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${reservation.reservationId}</td>
+                    <td>${reservation.memberId ?? ""}</td>
+                    <td>${reservation.contactName ?? ""}</td>
+                    <td>${reservation.contactPhone ?? ""}</td>
+                    <td>${getRestaurantName(
+                    reservation.restaurantId
+                )}</td>
+                    <td>${reservation.reservationDate}</td>
+                    <td>${getTimeName(reservation.timeId)}</td>
+                    <td>${reservation.peopleCount}</td>
+                    <td>${reservation.status}</td>
+                    <td></td>
+                `;
+
+                const actionCell = row.lastElementChild;
+
+                const editButton = document.createElement("button");
+                editButton.textContent = "修改";
+                editButton.className = "btn-edit";
+                editButton.addEventListener("click", async function () {
+                    await editReservation(reservation);
+                });
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "刪除";
+                deleteButton.className = "btn-delete";
+                deleteButton.addEventListener("click", function () {
+                    deleteReservation(reservation.reservationId);
+                });
+
+                actionCell.appendChild(editButton);
+                actionCell.appendChild(deleteButton);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function editReservation(reservation) {
+            reservationId.value = reservation.reservationId;
+            memberId.value = reservation.memberId ?? "";
+            contactName.value = reservation.contactName ?? "";
+            contactPhone.value = reservation.contactPhone ?? "";
+            restaurantId.value = reservation.restaurantId;
+            reservationDate.value = reservation.reservationDate;
+            peopleCount.value = reservation.peopleCount;
+            status.value = reservation.status;
+
+            await loadTimeOptions(reservation.timeId);
+
+            formTitle.textContent =
+                "修改訂位 ID：" + reservation.reservationId;
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        }
+
+        async function deleteReservation(id) {
+            if (!confirm("確定要刪除這筆訂位嗎？")) {
+                return;
+            }
+
+            const response = await fetch(
+                RESERVATION_API_URL + "/" + id,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            if (response.ok) {
+                showMessage("訂位已刪除", "success");
+                clearForm();
+                loadReservations();
+            } else {
+                showMessage("刪除失敗", "error");
+            }
+        }
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const hasMember = memberId.value !== "";
+            const hasContact =
+                contactName.value.trim() !== ""
+                && contactPhone.value.trim() !== "";
+
+            if (!hasMember && !hasContact) {
+                showMessage(
+                    "非會員訂位必須填寫姓名與電話",
+                    "error"
+                );
+                return;
+            }
+
+            const id = reservationId.value;
+
+            const reservation = {
+                memberId: hasMember
+                    ? Number(memberId.value)
+                    : null,
+                contactName: contactName.value.trim(),
+                contactPhone: contactPhone.value.trim(),
+                restaurantId: Number(restaurantId.value),
+                reservationDate: reservationDate.value,
+                timeId: Number(timeId.value),
+                peopleCount: Number(peopleCount.value),
+                status: status.value
+            };
+
+            const response = await fetch(
+                id === ""
+                    ? RESERVATION_API_URL
+                    : RESERVATION_API_URL + "/" + id,
+                {
+                    method: id === "" ? "POST" : "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(reservation)
+                }
+            );
+
+            if (response.ok) {
+                showMessage(
+                    id === "" ? "新增成功" : "修改成功",
+                    "success"
+                );
+
+                clearForm();
+                loadReservations();
+            } else {
+                showMessage("儲存失敗", "error");
+            }
+        });
+
+        restaurantId.addEventListener("change", function () {
+            loadTimeOptions();
+        });
+
+        document.getElementById("clearButton")
+            .addEventListener("click", clearForm);
+
+        async function initializePage() {
+            await loadRestaurants();
+            await loadAllTimes();
+            await loadReservations();
+        }
+
+        initializePage();
+    </script>
+</body>
+
+</html>
