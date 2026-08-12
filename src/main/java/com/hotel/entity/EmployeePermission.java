@@ -1,10 +1,8 @@
 package com.hotel.entity;
 
-import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
@@ -15,19 +13,13 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "employee_permission")
-@IdClass(EmployeePermissionId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 public class EmployeePermission {
 
-    @Id
-    @Column(name = "permission_id")
-    private Integer permissionId;
-
-    @Id
-    @Column(name = "employee_id")
-    private Integer employeeId;
+    @EmbeddedId
+    private EmployeePermissionId id = new EmployeePermissionId();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("permissionId")
@@ -39,8 +31,14 @@ public class EmployeePermission {
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
-    public EmployeePermission(Integer permissionId, Integer employeeId) {
-        this.permissionId = permissionId;
-        this.employeeId = employeeId;
+    public EmployeePermission(Permission permission, Employee employee) {
+        this.permission = permission;
+        this.employee = employee;
+        if (permission != null) {
+            this.id.setPermissionId(permission.getId());
+        }
+        if (employee != null) {
+            this.id.setEmployeeId(employee.getId());
+        }
     }
 }
