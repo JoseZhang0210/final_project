@@ -58,9 +58,7 @@ public class HomeController {
 
     @GetMapping("/roomtype")
     public String roomtype() {
-
-        return "roombooking/roomtype";
-
+        return "forward:/roomtype.html"; // 轉發到 static/roomtype.html
     }
 //    ********************************************
 

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-TW">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>房型管理系統 - Room Type Management</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,7 +19,7 @@
             <h2><i class="fa-solid fa-bed me-2"></i>房型資料管理系統</h2>
             <div>
                 <!-- 返回首頁按鈕 -->
-                <a th:href="@{/}" class="btn btn-outline-secondary me-2">
+                <a href="/" class="btn btn-outline-secondary me-2">
                     <i class="fa-solid fa-home me-1"></i> 返回首頁
                 </a>
                 <!-- 新增房型按鈕 -->
@@ -28,16 +29,17 @@
                 </button>
             </div>
         </div>
-        <!-- 訊息提示區 -->
-        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+
+        <!-- 訊息提示區 (預設隱藏) -->
+        <div id="alertError" class="alert alert-danger alert-dismissible fade show shadow-sm d-none" role="alert">
             <i class="fa-solid fa-triangle-exclamation me-2"></i>
-            <strong th:text="${errorMsg}">操作失敗！</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <span id="alertErrorMsg">操作失敗！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertError')"></button>
         </div>
-        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <div id="alertSuccess" class="alert alert-success alert-dismissible fade show shadow-sm d-none" role="alert">
             <i class="fa-solid fa-circle-check me-2"></i>
-            <span th:text="${successMsg}">操作成功！</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <span id="alertSuccessMsg">操作成功！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertSuccess')"></button>
         </div>
 
         <!-- 房型列表表格 -->
@@ -57,33 +59,9 @@
                                 <th scope="col" class="text-center">操作</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr th:each="type : ${roomTypes}">
-                                <td class="ps-3 fw-bold" th:text="${type.roomTypeId}">1</td>
-                                <td class="fw-bold text-primary" th:text="${type.typeName}">豪華雙人房</td>
-                                <td th:text="${type.bedType}">一大床</td>
-                                <td class="text-success fw-bold" th:text="'$' + ${type.pricePerNight}">$2800</td>
-                                <td th:text="${type.capacity} + ' 人'">2 人</td>
-                                <td th:text="${type.imageId != null ? type.imageId : '無'}">101</td>
-                                <td class="text-muted text-truncate" style="max-width: 200px;"
-                                    th:text="${type.description}">舒適採光良好...</td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-1"
-                                        th:data-id="${type.roomTypeId}" th:data-name="${type.typeName}"
-                                        th:data-bed="${type.bedType}" th:data-price="${type.pricePerNight}"
-                                        th:data-capacity="${type.capacity}" th:data-image="${type.imageId}"
-                                        th:data-description="${type.description}" onclick="editRoomTypeFromBtn(this)">
-                                        <i class="fa-solid fa-pen"></i> 編輯
-                                    </button>
-
-                                    <a th:href="@{/roomtype/delete/{id}(id=${type.roomTypeId})}"
-                                        class="btn btn-sm btn-outline-danger" onclick="return confirm('確定要刪除此房型嗎？')">
-                                        <i class="fa-solid fa-trash"></i> 刪除
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr th:if="${#lists.isEmpty(roomTypes)}">
-                                <td colspan="8" class="text-center py-4 text-muted">目前暫無房型資料</td>
+                        <tbody id="roomTypeTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">載入資料中...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -96,15 +74,13 @@
     <div class="modal fade" id="roomTypeModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <!-- 提交路徑完全對應 @PostMapping("/save") -->
-                <form th:action="@{/roomtype/save}" method="post">
+                <form id="roomTypeForm" onsubmit="saveRoomType(event)">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title" id="modalTitle">新增房型</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <!-- 隱藏的主鍵 ID，對應 roomType.roomTypeId -->
                         <input type="hidden" id="roomTypeId" name="roomTypeId">
 
                         <div class="fw-bold border-bottom pb-2 mb-3 text-primary">
@@ -161,39 +137,160 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // 清空 Modal (開啟新增視窗)
-        function clearForm() {
-            document.getElementById('modalTitle').innerText = '新增房型';
-            document.getElementById('roomTypeId').value = '';
-            document.getElementById('typeName').value = '';
-            document.getElementById('bedType').value = '';
-            document.getElementById('pricePerNight').value = '';
-            document.getElementById('capacity').value = '2';
-            document.getElementById('imageId').value = '';
-            document.getElementById('description').value = '';
+        const API_BASE_URL = '/api/roomtypes';
+        let modalInstance = null;
+        let roomTypeList = []; // 快取資料陣列，避免把整個物件直接塞進 HTML 事件中
+
+        document.addEventListener('DOMContentLoaded', () => {
+            modalInstance = new bootstrap.Modal(document.getElementById('roomTypeModal'));
+            loadRoomTypes();
+        });
+
+        // 1. 取得所有房型資料 (GET)
+        async function loadRoomTypes() {
+            try {
+                hideAlert('alertError');
+                const response = await fetch(API_BASE_URL);
+                if (!response.ok) throw new Error('無法取得房型列表');
+                roomTypeList = await response.json();
+                renderTable(roomTypeList);
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
         }
 
-        // 代入資料至 Modal 進行編輯
-        function editRoomTypeFromBtn(btn) {
-            const id = btn.getAttribute('data-id');
-            const name = btn.getAttribute('data-name');
-            const bed = btn.getAttribute('data-bed');
-            const price = btn.getAttribute('data-price');
-            const capacity = btn.getAttribute('data-capacity');
-            const image = btn.getAttribute('data-image');
-            const description = btn.getAttribute('data-description');
+        // 渲染表格資料 (優化：傳遞 id，解決字串引號破壞問題)
+        function renderTable(list) {
+            const tbody = document.getElementById('roomTypeTableBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">目前暫無房型資料</td></tr>`;
+                return;
+            }
 
+            tbody.innerHTML = list.map(item => `
+                <tr>
+                    <td class="ps-3 fw-bold">${item.roomTypeId}</td>
+                    <td class="fw-bold text-primary">${escapeHtml(item.typeName)}</td>
+                    <td>${escapeHtml(item.bedType)}</td>
+                    <td class="text-success fw-bold">$${item.pricePerNight}</td>
+                    <td>${item.capacity} 人</td>
+                    <td>${item.imageId ? item.imageId : '無'}</td>
+                    <td class="text-muted text-truncate" style="max-width: 200px;">${escapeHtml(item.description || '')}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="onEditBtnClick(${item.roomTypeId})">
+                            <i class="fa-solid fa-pen"></i> 編輯
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteRoomType(${item.roomTypeId})">
+                            <i class="fa-solid fa-trash"></i> 刪除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 2. 新增 / 編輯房型 (POST / PUT)
+        async function saveRoomType(e) {
+            e.preventDefault();
+            const id = document.getElementById('roomTypeId').value;
+            const payload = {
+                roomTypeId: id ? parseInt(id) : null,
+                typeName: document.getElementById('typeName').value,
+                bedType: document.getElementById('bedType').value,
+                pricePerNight: parseFloat(document.getElementById('pricePerNight').value),
+                capacity: parseInt(document.getElementById('capacity').value),
+                imageId: document.getElementById('imageId').value ? parseInt(document.getElementById('imageId').value) : null,
+                description: document.getElementById('description').value
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/${id}` : API_BASE_URL;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                // 優化：正確讀取後端拋出的專屬錯誤訊息 (例如 FK 錯誤)
+                if (!response.ok) {
+                    throw new Error(result.message || '儲存失敗');
+                }
+
+                modalInstance.hide();
+                showAlert('alertSuccess', id ? '房型更新成功！' : '新增房型成功！');
+                loadRoomTypes();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 3. 刪除房型 (DELETE)
+        async function deleteRoomType(id) {
+            if (!confirm('確定要刪除此房型嗎？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || '刪除失敗');
+                }
+
+                showAlert('alertSuccess', '房型已成功刪除！');
+                loadRoomTypes();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 清空表單
+        function clearForm() {
+            document.getElementById('modalTitle').innerText = '新增房型';
+            document.getElementById('roomTypeForm').reset();
+            document.getElementById('roomTypeId').value = '';
+            document.getElementById('capacity').value = '2';
+        }
+
+        // 按下編輯時，從全域陣列比對 ID
+        function onEditBtnClick(id) {
+            const item = roomTypeList.find(r => r.roomTypeId === id);
+            if (item) editRoomType(item);
+        }
+
+        // 填入資料進行編輯
+        function editRoomType(item) {
             document.getElementById('modalTitle').innerText = '編輯房型資料';
-            document.getElementById('roomTypeId').value = id;
-            document.getElementById('typeName').value = name;
-            document.getElementById('bedType').value = bed;
-            document.getElementById('pricePerNight').value = price;
-            document.getElementById('capacity').value = capacity;
-            document.getElementById('imageId').value = (image && image !== 'null') ? image : '';
-            document.getElementById('description').value = (description && description !== 'null') ? description : '';
+            document.getElementById('roomTypeId').value = item.roomTypeId;
+            document.getElementById('typeName').value = item.typeName || '';
+            document.getElementById('bedType').value = item.bedType || '';
+            document.getElementById('pricePerNight').value = item.pricePerNight || 0;
+            document.getElementById('capacity').value = item.capacity || 1;
+            document.getElementById('imageId').value = item.imageId || '';
+            document.getElementById('description').value = item.description || '';
 
-            var modal = new bootstrap.Modal(document.getElementById('roomTypeModal'));
-            modal.show();
+            modalInstance.show();
+        }
+
+        // 提示訊息控制
+        function showAlert(id, msg) {
+            const alertElem = document.getElementById(id);
+            const msgElem = document.getElementById(id + 'Msg');
+            if (msgElem) msgElem.innerText = msg;
+            alertElem.classList.remove('d-none');
+        }
+
+        function hideAlert(id) {
+            document.getElementById(id).classList.add('d-none');
+        }
+
+        // XSS 防護
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
         }
     </script>
 </body>

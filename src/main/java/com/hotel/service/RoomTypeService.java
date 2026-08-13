@@ -19,28 +19,33 @@ public class RoomTypeService {
         this.roomTypeRepository = roomTypeRepository;
     }
 
-    // Create
+    // 1. Create - 新增房型
     public RoomType insert(RoomType roomType) {
-        // 若 imageId 為 0，強制轉為 null，避免外鍵約束失敗
-        if (roomType.getImageId() != null && roomType.getImageId() == 0) {
-            roomType.setImageId(null);
-        }
+        // 處理外鍵約束：若 imageId 為 0 強制轉為 null
+        normalizeImageId(roomType);
         return roomTypeRepository.save(roomType);
     }
 
-    // Read All
+    // 2. Read All - 取得所有房型
     @Transactional(readOnly = true)
     public List<RoomType> findAll() {
         return roomTypeRepository.findAll();
     }
 
-    // Read by ID
+    // 3-1. Read Optional by ID (保留原本的方法以利其他彈性用途)
     @Transactional(readOnly = true)
-    public Optional<RoomType> findById(Integer id) {
+    public Optional<RoomType> findOptionalById(Integer id) {
         return roomTypeRepository.findById(id);
     }
 
-    // Update
+    // 3-2. Read by ID (可以直接回傳 Entity 物件，完美對接 REST Controller)
+    @Transactional(readOnly = true)
+    public RoomType findById(Integer id) {
+        return roomTypeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("找不到 ID 為 " + id + " 的房型資料"));
+    }
+
+    // 4. Update - 更新房型資料
     public RoomType update(Integer id, RoomType updatedRoomType) {
         return roomTypeRepository.findById(id)
                 .map(roomType -> {
@@ -60,8 +65,8 @@ public class RoomTypeService {
                         roomType.setCapacity(updatedRoomType.getCapacity());
                     }
 
-                    // 修正 imageId 邏輯：若是 0 則設為 null，否則更新為新傳入的值
-                    if (updatedRoomType.getImageId() != null && updatedRoomType.getImageId() == 0) {
+                    // 處理圖片 ID：若傳入 0 或 null 則清空外鍵，否則更新為新 ID
+                    if (updatedRoomType.getImageId() == null || updatedRoomType.getImageId() == 0) {
                         roomType.setImageId(null);
                     } else {
                         roomType.setImageId(updatedRoomType.getImageId());
@@ -69,15 +74,24 @@ public class RoomTypeService {
 
                     return roomTypeRepository.save(roomType);
                 })
-                .orElseThrow(() -> new RuntimeException("RoomType not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(" RoomType not found with id: " + id));
     }
 
-    // Delete By Id
+    // 5. Delete By Id - 刪除房型
     public boolean deleteById(Integer id) {
         if (roomTypeRepository.existsById(id)) {
             roomTypeRepository.deleteById(id);
             return true;
         }
         return false;
+    }
+
+    /**
+     * 輔助方法：清洗與校正 imageId 資料
+     */
+    private void normalizeImageId(RoomType roomType) {
+        if (roomType.getImageId() != null && roomType.getImageId() == 0) {
+            roomType.setImageId(null);
+        }
     }
 }
