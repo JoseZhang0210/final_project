@@ -15,21 +15,65 @@
     <div class="container py-4">
         <h1 class="mb-4">飯店商城首頁</h1>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
             <!-- 一般會員 / 系統按鈕 -->
             <a href="/login" class="btn btn-primary">Login</a>
             <a href="/logout" class="btn btn-outline-danger">Logout</a>
             <a href="/register" class="btn btn-secondary">Register</a>
 
-            <!-- 房型資料管理系統 -->
-            <a href="/roomtype.html" class="btn btn-success">
-                <i class="fa-solid fa-bed"></i> 房型資料管理系統
-            </a>
+            <!-- 第一層：房間管理系統（下拉選單展開 6 個子功能） -->
+            <div class="dropdown">
+                <button class="btn btn-success dropdown-toggle" type="button" id="roomSystemDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-hotel me-1"></i> 房間管理系統
+                </button>
+                <ul class="dropdown-menu shadow" aria-labelledby="roomSystemDropdown">
+                    <!-- 1. 房型管理 (room_type) -->
+                    <li>
+                        <a class="dropdown-item" href="/roomtype.html">
+                            <i class="fa-solid fa-bed me-2 text-success"></i>房型設定管理 (room_type)
+                        </a>
+                    </li>
+                    <!-- 2. 實體房間管理 (room) -->
+                    <li>
+                        <a class="dropdown-item" href="/room.html">
+                            <i class="fa-solid fa-door-closed me-2 text-primary"></i>房間狀態管理 (room)
+                        </a>
+                    </li>
+                    <!-- 3. 訂房訂單管理 (booking_order) -->
+                    <li>
+                        <a class="dropdown-item" href="/booking-order.html">
+                            <i class="fa-solid fa-file-invoice-dollar me-2 text-warning"></i>訂房訂單管理 (booking_order)
+                        </a>
+                    </li>
+                    <!-- 4. 入住紀錄與明細 (booking) -->
+                    <li>
+                        <a class="dropdown-item" href="/booking-detail.html">
+                            <i class="fa-solid fa-calendar-check me-2 text-info"></i>入住明細管理 (booking)
+                        </a>
+                    </li>
+                    <!-- 5. 房務任務管理 (room_task) -->
+                    <li>
+                        <a class="dropdown-item" href="/room-task.html">
+                            <i class="fa-solid fa-broom me-2 text-danger"></i>房務維護任務 (room_task)
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <!-- 6. 圖片庫管理 (image) -->
+                    <li>
+                        <a class="dropdown-item" href="/image-manage.html">
+                            <i class="fa-solid fa-image me-2 text-secondary"></i>房間圖片管理 (image)
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
             <!-- 餐廳選單 -->
             <a href="/restaurant-menu" class="btn btn-warning">Restaurant</a>
         </div>
     </div>
+
+    <!-- Bootstrap 5.3.3 JS (下拉選單功能需要 JS 才可正常展開) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

@@ -31,7 +31,7 @@ public class BookingOrder {
     private Integer bookingOrderId;
 
     @Column(name = "member_id")
-    private Integer memberid;
+    private Integer memberId;
 
     @Column(name = "booking_total_price")
     private Integer bookingTotalPrice;
