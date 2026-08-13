@@ -15,21 +15,25 @@
         <h1>餐廳管理功能</h1>
 
         <div>
-            <a th:href="@{/restaurants}" class="btn btn-success">
+            <button type="button" class="btn btn-success"
+                onclick="window.location.href='/restaurants'">
                 餐廳資料管理
-            </a>
+            </button>
 
-            <a th:href="@{/restaurant-times}" class="btn btn-success">
+            <button type="button" class="btn btn-success"
+                onclick="window.location.href='/restaurant-times'">
                 餐廳時段管理
-            </a>
+            </button>
 
-            <a th:href="@{/reservation-manage}" class="btn btn-success">
+            <button type="button" class="btn btn-success"
+                onclick="window.location.href='/reservation-manage'">
                 餐廳訂位管理
-            </a>
+            </button>
 
-            <a th:href="@{/}" class="btn btn-secondary">
+            <button type="button" class="btn btn-secondary"
+                onclick="window.location.href='/'">
                 回首頁
-            </a>
+            </button>
         </div>
     </div>
 </body>
