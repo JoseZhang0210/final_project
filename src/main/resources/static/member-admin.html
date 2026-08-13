@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會員後台管理</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 32px;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            width: 240px;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            opacity: 0.95;
+        }
+
+        .primary-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .warning-btn {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .danger-btn {
+            background: #dc2626;
+            color: white;
+        }
+
+        .success-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .message {
+            display: none;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .message.error {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .summary {
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f3f4f6;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-active {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .status-inactive {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+            align-items: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(480px, 90vw);
+            background: white;
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .close-btn {
+            background: transparent;
+            font-size: 22px;
+            padding: 0 8px;
+            color: #374151;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+
+            .topbar,
+            .toolbar {
+                align-items: stretch;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="topbar">
+            <h1>會員後台管理</h1>
+            <div class="toolbar">
+                <input id="searchInput" class="search-box" type="text" placeholder="搜尋會員帳號..." />
+                <button class="primary-btn" onclick="openCreateModal()">新增會員</button>
+                <button class="secondary-btn" onclick="loadMembers()">重新整理</button>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+        <div class="summary">共 <span id="memberCount">0</span> 位會員</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>帳號</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="memberTableBody"></tbody>
+        </table>
+
+        <div class="pagination">
+            <button class="secondary-btn" id="prevPageBtn" onclick="changePage(-1)">上一頁</button>
+            <span id="pageInfo">1 / 1</span>
+            <button class="secondary-btn" id="nextPageBtn" onclick="changePage(1)">下一頁</button>
+        </div>
+    </div>
+
+    <div id="memberModal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="modalTitle">新增會員</h2>
+                <button class="close-btn" type="button" onclick="closeModal()">×</button>
+            </div>
+
+            <form id="memberForm">
+                <div class="form-grid">
+                    <label>
+                        帳號
+                        <input id="usernameInput" type="text" required />
+                    </label>
+
+                    <label>
+                        密碼
+                        <input id="passwordInput" type="password" placeholder="若不填則預設 123456" />
+                    </label>
+
+                    <label>
+                        狀態
+                        <select id="statusInput">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button class="secondary-btn" type="button" onclick="closeModal()">取消</button>
+                    <button class="primary-btn" type="submit">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const apiBase = '/admin';
+        let allMembers = [];
+        let currentPage = 1;
+        const pageSize = 10;
+        let editingMemberId = null;
+
+        function showMessage(text, type) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = 'message show ' + type;
+            setTimeout(() => {
+                el.className = 'message';
+            }, 2500);
+        }
+
+        function getStatusLabel(status) {
+            return (status || 'UNKNOWN').toUpperCase();
+        }
+
+        function isActiveStatus(status) {
+            const normalized = (status || '').toUpperCase();
+            return ['ACTIVE', '1', 'ENABLE', 'ENABLED'].includes(normalized);
+        }
+
+        function getFilteredMembers() {
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!keyword) {
+                return allMembers;
+            }
+            return allMembers.filter(member => (member.username || '').toLowerCase().includes(keyword));
+        }
+
+        function renderMembers() {
+            const filtered = getFilteredMembers();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * pageSize;
+            const pagedMembers = filtered.slice(start, start + pageSize);
+
+            const tbody = document.getElementById('memberTableBody');
+            document.getElementById('memberCount').textContent = filtered.length;
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = currentPage >= totalPages;
+
+            if (!pagedMembers.length) {
+                tbody.innerHTML = '<tr><td colspan="4">目前沒有符合條件的會員資料</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = pagedMembers.map(member => {
+                const active = isActiveStatus(member.status);
+                return `
+                    <tr>
+                        <td>${member.id}</td>
+                        <td>${member.username ?? 'N/A'}</td>
+                        <td>
+                            <span class="status-badge ${active ? 'status-active' : 'status-inactive'}">
+                                ${getStatusLabel(member.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button class="warning-btn" data-id="${member.id}" onclick="openEditModal(${member.id})">編輯</button>
+                                <button class="success-btn" data-id="${member.id}" data-status="${member.status || ''}" onclick="toggleStatus(${member.id}, this.dataset.status)"> ${active ? '停用' : '啟用'} </button>
+                                <button class="danger-btn" data-id="${member.id}" onclick="deleteMember(${member.id})">刪除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function loadMembers() {
+            try {
+                const response = await fetch(`${apiBase}/members`, { method: 'GET' });
+                if (!response.ok) throw new Error('取得會員資料失敗');
+                allMembers = await response.json();
+                currentPage = 1;
+                renderMembers();
+            } catch (error) {
+                showMessage(error.message || '讀取失敗', 'error');
+            }
+        }
+
+        function openCreateModal() {
+            editingMemberId = null;
+            document.getElementById('modalTitle').textContent = '新增會員';
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').placeholder = '若不填則預設 123456';
+            document.getElementById('statusInput').value = 'ACTIVE';
+            document.getElementById('memberModal').classList.add('show');
+        }
+
+        function openEditModal(memberId) {
+            const member = allMembers.find(item => item.id === memberId);
+            if (!member) return;
+
+            editingMemberId = memberId;
+            document.getElementById('modalTitle').textContent = '編輯會員';
+            document.getElementById('usernameInput').value = member.username || '';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').placeholder = '請輸入新密碼（可留空不修改）';
+            document.getElementById('statusInput').value = member.status || 'ACTIVE';
+            document.getElementById('memberModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('memberModal').classList.remove('show');
+            document.getElementById('memberForm').reset();
+            editingMemberId = null;
+        }
+
+        async function saveMember(event) {
+            event.preventDefault();
+            const username = document.getElementById('usernameInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            const status = document.getElementById('statusInput').value;
+
+            if (!username) {
+                showMessage('帳號不能為空', 'error');
+                return;
+            }
+
+            const payload = {
+                username,
+                password: password || undefined,
+                status
+            };
+
+            try {
+                const url = editingMemberId ? `${apiBase}/members/${editingMemberId}` : `${apiBase}/members`;
+                const method = editingMemberId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const message = response.status === 409 ? '帳號已存在' : '儲存會員失敗';
+                    throw new Error(message);
+                }
+
+                closeModal();
+                showMessage(editingMemberId ? '會員更新成功' : '會員新增成功', 'success');
+                await loadMembers();
+            } catch (error) {
+                showMessage(error.message || '儲存失敗', 'error');
+            }
+        }
+
+        async function toggleStatus(memberId, currentStatus) {
+            const nextStatus = isActiveStatus(currentStatus) ? 'INACTIVE' : 'ACTIVE';
+            try {
+                const response = await fetch(`${apiBase}/members/${memberId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: nextStatus })
+                });
+                if (!response.ok) throw new Error('更新狀態失敗');
+                showMessage('會員狀態已更新', 'success');
+                await loadMembers();
+            } catch (error) {
+                showMessage(error.message || '更新失敗', 'error');
+            }
+        }
+
+        async function deleteMember(memberId) {
+            if (!confirm('確定要刪除此會員嗎？')) return;
+            try {
+                const response = await fetch(`${apiBase}/members/${memberId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('刪除會員失敗');
+                showMessage('會員已刪除', 'success');
+                await loadMembers();
+            } catch (error) {
+                showMessage(error.message || '刪除失敗', 'error');
+            }
+        }
+
+        function changePage(step) {
+            const filtered = getFilteredMembers();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+            currentPage = Math.min(Math.max(1, currentPage + step), totalPages);
+            renderMembers();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', () => {
+            currentPage = 1;
+            renderMembers();
+        });
+        document.getElementById('memberForm').addEventListener('submit', saveMember);
+
+        window.onload = loadMembers;
+    </script>
+</body>
+
+</html>
