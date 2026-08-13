@@ -10,14 +10,19 @@ public class RestaurantPageController {
     public String showRestaurantPage() {
         return "restaurants/list";
     }
-    
+
     @GetMapping("/restaurant-times")
     public String showRestaurantTimePage() {
         return "restaurant-times/list";
     }
-    
+
     @GetMapping("/reservation-manage")
     public String showReservationPage() {
         return "reservations/list";
+    }
+
+    @GetMapping("/restaurant-menu")
+    public String showRestaurantMenu() {
+        return "restaurants/menu";
     }
 }
