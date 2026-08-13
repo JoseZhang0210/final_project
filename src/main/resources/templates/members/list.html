@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>後台會員管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 32px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #1976d2;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #f9a825;
+            color: white;
+        }
+        .status-active {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .status-inactive {
+            color: #c62828;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>後台會員管理</h1>
+
+    <div th:if="${successMessage}" class="alert success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert error" th:text="${errorMessage}"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>會員ID</th>
+                <th>帳號</th>
+                <th>狀態</th>
+                <th>建立時間</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="member : ${members}">
+                <td th:text="${member.id}"></td>
+                <td th:text="${member.account != null ? member.account.username : 'N/A'}"></td>
+                <td>
+                    <span th:if="${member.account != null and member.account.status != null and member.account.status == 'ACTIVE'}"
+                          class="status-active">ACTIVE</span>
+                    <span th:unless="${member.account != null and member.account.status != null and member.account.status == 'ACTIVE'}"
+                          class="status-inactive">INACTIVE</span>
+                </td>
+                <td th:text="${member.account != null ? member.account.id : 'N/A'}"></td>
+                <td>
+                    <form th:action="@{/admin/members/{id}/toggle-status(id=${member.id})}" method="post">
+                        <button type="submit"
+                                class="btn"
+                                th:classappend="${member.account != null and member.account.status == 'ACTIVE'} ? ' btn-warning' : ' btn-primary'"
+                                th:text="${member.account != null and member.account.status == 'ACTIVE'} ? '停用' : '啟用'">
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
