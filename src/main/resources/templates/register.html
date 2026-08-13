@@ -10,22 +10,54 @@
 </head>
 
 <body>
-    <form class="row gap-2 px-3 py-3" action="">
+    <form id="registerForm" class="row gap-2 px-3 py-3">
         <span class="fs-4">註冊頁面</span>
 
         <div class="mb-3">
-            <label for="formGroupExampleInput" class="form-label">username</label>
-            <input type="text" class="form-control" id="formGroupExampleInput" placeholder="username">
+            <label for="username" class="form-label">username</label>
+            <input type="text" class="form-control" id="username" name="username" placeholder="username" required>
         </div>
         <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">password</label>
-            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="password">
+            <label for="password" class="form-label">password</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="password" required>
         </div>
         <div class="col-12">
-            <button type="submit" class="btn btn-primary">Sign in</button>
+            <button type="submit" class="btn btn-primary">Sign up</button>
         </div>
-
+        <div id="message" class="mt-2"></div>
     </form>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+
+            try {
+                const response = await fetch('/accounts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('註冊失敗');
+                }
+
+                const data = await response.json();
+                message.textContent = '註冊成功';
+                message.className = 'text-success';
+                console.log(data);
+            } catch (error) {
+                message.textContent = error.message;
+                message.className = 'text-danger';
+            }
+        });
+    </script>
 </body>
 
 </html>

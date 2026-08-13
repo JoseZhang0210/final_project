@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene Stay - Retreat Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "surface-bright": "#f8f9ff",
+                  "surface-variant": "#d3e4fe",
+                  "on-background": "#0b1c30",
+                  "secondary": "#ae2f34",
+                  "tertiary-fixed-dim": "#c4c7c9",
+                  "surface": "#f8f9ff",
+                  "on-error-container": "#93000a",
+                  "error": "#ba1a1a",
+                  "on-surface-variant": "#43474e",
+                  "secondary-container": "#ff6b6b",
+                  "on-surface": "#0b1c30",
+                  "on-tertiary-fixed-variant": "#444749",
+                  "tertiary-container": "#333638",
+                  "outline-variant": "#c4c6cf",
+                  "on-primary-fixed-variant": "#2d476f",
+                  "on-primary-fixed": "#001b3c",
+                  "tertiary-fixed": "#e0e3e5",
+                  "on-tertiary-fixed": "#191c1e",
+                  "secondary-fixed-dim": "#ffb3b0",
+                  "primary-fixed-dim": "#adc7f7",
+                  "on-secondary-container": "#6d0010",
+                  "surface-container-high": "#dce9ff",
+                  "background": "#f8f9ff",
+                  "on-error": "#ffffff",
+                  "on-primary-container": "#86a0cd",
+                  "surface-container-highest": "#d3e4fe",
+                  "primary": "#002045",
+                  "on-tertiary-container": "#9c9fa1",
+                  "on-secondary-fixed-variant": "#8c1520",
+                  "error-container": "#ffdad6",
+                  "on-secondary": "#ffffff",
+                  "tertiary": "#1d2123",
+                  "surface-container-lowest": "#ffffff",
+                  "surface-dim": "#cbdbf5",
+                  "outline": "#74777f",
+                  "inverse-on-surface": "#eaf1ff",
+                  "on-tertiary": "#ffffff",
+                  "surface-container": "#e5eeff",
+                  "primary-fixed": "#d6e3ff",
+                  "surface-tint": "#455f88",
+                  "on-secondary-fixed": "#410006",
+                  "secondary-fixed": "#ffdad8",
+                  "inverse-surface": "#213145",
+                  "surface-container-low": "#eff4ff",
+                  "inverse-primary": "#adc7f7",
+                  "primary-container": "#1a365d",
+                  "on-primary": "#ffffff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "stack-lg": "24px",
+                  "stack-md": "12px",
+                  "container-margin": "20px",
+                  "stack-sm": "4px",
+                  "gutter": "16px",
+                  "base": "8px"
+          },
+          "fontFamily": {
+                  "display-lg": [
+                          "Inter"
+                  ],
+                  "display-lg-mobile": [
+                          "Inter"
+                  ],
+                  "body-lg": [
+                          "Inter"
+                  ],
+                  "label-md": [
+                          "Inter"
+                  ],
+                  "headline-sm": [
+                          "Inter"
+                  ],
+                  "body-md": [
+                          "Inter"
+                  ],
+                  "headline-md": [
+                          "Inter"
+                  ]
+          },
+          "fontSize": {
+                  "display-lg": [
+                          "32px",
+                          {
+                                  "lineHeight": "40px",
+                                  "letterSpacing": "-0.02em",
+                                  "fontWeight": "700"
+                          }
+                  ],
+                  "display-lg-mobile": [
+                          "28px",
+                          {
+                                  "lineHeight": "36px",
+                                  "fontWeight": "700"
+                          }
+                  ],
+                  "body-lg": [
+                          "16px",
+                          {
+                                  "lineHeight": "24px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "label-md": [
+                          "12px",
+                          {
+                                  "lineHeight": "16px",
+                                  "letterSpacing": "0.05em",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "headline-sm": [
+                          "20px",
+                          {
+                                  "lineHeight": "28px",
+                                  "fontWeight": "600"
+                          }
+                  ],
+                  "body-md": [
+                          "14px",
+                          {
+                                  "lineHeight": "20px",
+                                  "fontWeight": "400"
+                          }
+                  ],
+                  "headline-md": [
+                          "24px",
+                          {
+                                  "lineHeight": "32px",
+                                  "letterSpacing": "-0.01em",
+                                  "fontWeight": "600"
+                          }
+                  ]
+          }
+  },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #f8f9ff; /* surface color */
+      color: #0b1c30; /* on-background */
+    }
+    .shadow-level-1 {
+      box-shadow: 0px 4px 20px rgba(26, 54, 93, 0.05);
+    }
+    .shadow-level-2 {
+      box-shadow: 0px 8px 30px rgba(26, 54, 93, 0.1);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+<!-- TopNavBar -->
+<nav class="bg-surface dark:bg-on-background shadow-sm sticky w-full max-w-full mx-auto px-container-margin py-stack-md z-50 flex flex-col md:flex-row items-center justify-between">
+<div class="flex items-center justify-between w-full md:w-auto">
+<a class="font-display-lg text-display-lg font-bold text-primary dark:text-primary-fixed tracking-tighter" href="#">Serene Stay</a>
+<div class="md:hidden flex gap-4">
+<button class="text-primary hover:bg-surface-container-low transition-colors duration-300 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+<button class="text-primary hover:bg-surface-container-low transition-colors duration-300 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-6 flex-1 justify-center">
+<a class="text-secondary dark:text-secondary-fixed-dim font-semibold border-b-2 border-secondary hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Hotels &amp; Resorts</a>
+<a class="text-on-surface-variant dark:text-tertiary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Offers</a>
+<a class="text-on-surface-variant dark:text-tertiary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Dining</a>
+<a class="text-on-surface-variant dark:text-tertiary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Experiences</a>
+<a class="text-on-surface-variant dark:text-tertiary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Events</a>
+<a class="text-on-surface-variant dark:text-tertiary-fixed-dim hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-tertiary-container transition-colors duration-300 px-2 py-1" href="#">Loyalty</a>
+</div>
+<div class="hidden md:flex items-center gap-4">
+<div class="relative group cursor-pointer p-2 rounded-full hover:bg-surface-container-low transition-colors duration-300">
+<span class="material-symbols-outlined text-primary" data-icon="language">language</span>
+</div>
+<div class="relative group cursor-pointer p-2 rounded-full hover:bg-surface-container-low transition-colors duration-300">
+<span class="material-symbols-outlined text-primary" data-icon="person">person</span>
+</div>
+<button class="font-label-md text-label-md bg-transparent border border-primary text-primary px-4 py-2 rounded-full hover:bg-surface-container-low transition-colors duration-300">Sign In</button>
+<button class="font-label-md text-label-md bg-secondary text-on-secondary font-semibold px-4 py-2 rounded-full shadow-level-1 hover:opacity-90 transition-opacity">Book Now</button>
+</div>
+</nav>
+<!-- Hero Section -->
+<header class="relative w-full h-[60vh] md:h-[75vh] overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A luxurious hotel suite with floor-to-ceiling windows overlooking a serene, turquoise ocean at golden hour. The room features a minimalist design with high-end, light wood furniture, a pristine white king-sized bed, and subtle ambient lighting. The atmosphere is calming, exclusive, and breathtakingly beautiful, capturing the essence of a premium tropical retreat." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC3XPRql5XlTxE1D9osARrQVVA55Zjl7gA2WrvnF0rR7VGPqi_sG3sNHXoPfmFhY9LRAOY0FwSawdxHUW8etPFeJw_GQaxUO7gR0Ceul-9MQs89kl2sAWkZqFlL9CltF60GoDJPRagvvJ66-CgyXFvuCKuITF3Wx3LeoUCP52er6HvaHYXYWb_b01WHkU5sFA07alcPD9pUYgKPxB_fIAniJSjFzsqMPHvtyxns6Vh6wEKZbeQ5m6NKiA')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent"></div>
+<div class="absolute bottom-0 left-0 w-full px-container-margin py-stack-lg flex flex-col md:flex-row justify-between items-end pb-12">
+<div class="text-white">
+<h1 class="font-display-lg text-display-lg md:text-5xl text-on-primary mb-2">Ocean View Grand Suite</h1>
+<p class="font-body-lg text-body-lg text-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="location_on">location_on</span>
+          Fairmont Breakers Long Beach, California
+        </p>
+</div>
+<div class="mt-4 md:mt-0 flex gap-4">
+<button class="bg-surface/20 hover:bg-surface/30 backdrop-blur-md text-white p-3 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+<button class="bg-surface/20 hover:bg-surface/30 backdrop-blur-md text-white p-3 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="favorite_border">favorite_border</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="max-w-7xl mx-auto px-container-margin py-12 relative flex flex-col lg:flex-row gap-12">
+<!-- Left Column: Content -->
+<div class="w-full lg:w-2/3 flex flex-col gap-16">
+<!-- About Section -->
+<section>
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-md border-b border-surface-variant pb-2">About this retreat</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+          Inspired by a philosophy of complete relaxation, this Ocean View Grand Suite is thoughtfully designed to meet you where you are. Unwind in a space that honors your need for tranquility, featuring panoramic views of the Pacific, a private terrace, and bespoke restorative rituals. Whether you're seeking a slow morning watching the waves or an evening of elegant comfort, this suite delivers a signature moment rooted in the coastal charm of Long Beach.
+        </p>
+</section>
+<!-- Amenities Section (Bento Grid) -->
+<section>
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-md border-b border-surface-variant pb-2">Amenities</h2>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="king_bed">king_bed</span>
+<span class="font-label-md text-label-md text-on-surface">King Size Bed</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="wifi">wifi</span>
+<span class="font-label-md text-label-md text-on-surface">High-Speed WiFi</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="balcony">balcony</span>
+<span class="font-label-md text-label-md text-on-surface">Private Balcony</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="room_service">room_service</span>
+<span class="font-label-md text-label-md text-on-surface">24/7 Room Service</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="local_bar">local_bar</span>
+<span class="font-label-md text-label-md text-on-surface">Mini Bar</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="bathtub">bathtub</span>
+<span class="font-label-md text-label-md text-on-surface">Soaking Tub</span>
+</div>
+<div class="bg-white rounded-xl p-4 shadow-level-1 flex flex-col items-center justify-center text-center gap-2 border border-surface-variant/50 col-span-2 md:col-span-2 bg-surface-container-low border-primary/10">
+<button class="font-label-md text-label-md text-primary font-semibold flex items-center gap-2 w-full h-full justify-center">
+               View All 24 Amenities
+               <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Location Section -->
+<section>
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-md border-b border-surface-variant pb-2">Location</h2>
+<div class="rounded-xl overflow-hidden shadow-level-1 h-64 relative border border-surface-variant">
+<img class="w-full h-full object-cover" data-alt="A stylized, clean digital map view showing the coastline of Long Beach, California. The map has a modern, minimalist color palette with soft blues for the water and light warm grays for the landmass, highlighting the location of a premium beachfront property with a subtle red marker pin." data-location="Long Beach, CA" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF9Y6uR4T6sCv-SWWRV_2ZLHLBgV3iLqJTaO9xnJHFRDYSHQrSe5XylN38F-v-fsFNPadnAielo924G-jhm4IjdXZKzS641B5tQpvNr7sZWvNxR4amPYiRQDsIu9TDnVZIHvmFK0NWtgRmRM-oO_HwFHTxNCM4gfGIp3ODgW9EortLi4C15z3RbIblMBjOEcFoDkBpB3GV2Lpag-hhFzpK5Lh18qBHsIAJgJsRNihWDWq636ze4PajFw"/>
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+<p class="font-label-md text-label-md font-semibold text-primary">Fairmont Breakers Long Beach</p>
+<p class="font-body-md text-body-md text-on-surface-variant">210 East Ocean Boulevard, Long Beach, CA</p>
+</div>
+</div>
+</section>
+<!-- Guest Reviews (Editorial Style) -->
+<section>
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-md border-b border-surface-variant pb-2 flex justify-between items-end">
+            Guest Reviews
+            <span class="font-label-md text-label-md text-secondary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-base" data-icon="star" data-weight="fill">star</span>
+               4.9 (128 reviews)
+            </span>
+</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold">M</div>
+<div>
+<p class="font-label-md text-label-md font-semibold">Michael T.</p>
+<p class="text-xs text-on-surface-variant">Stayed August 2024</p>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant italic">"An absolutely breathtaking experience. The views from the balcony at sunset are unmatched, and the attention to detail in the room design made us feel completely at peace."</p>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold">S</div>
+<div>
+<p class="font-label-md text-label-md font-semibold">Sarah L.</p>
+<p class="text-xs text-on-surface-variant">Stayed July 2024</p>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant italic">"The perfect escape. Genuine hospitality from the moment we arrived. The soaking tub and the luxurious bedding provided the ultimate restorative weekend."</p>
+</div>
+</div>
+<button class="mt-6 font-label-md text-label-md text-primary border border-primary px-6 py-2 rounded-full hover:bg-surface-container-low transition-colors">Read All Reviews</button>
+</section>
+</div>
+<!-- Right Column: Sticky Booking Widget -->
+<div class="w-full lg:w-1/3">
+<div class="bg-white rounded-2xl shadow-level-2 border border-surface-variant/50 p-6 sticky top-24">
+<div class="flex justify-between items-start mb-6">
+<div>
+<p class="text-3xl font-bold text-primary">$549 <span class="font-body-md text-body-md text-on-surface-variant font-normal">/ night</span></p>
+<p class="font-label-md text-label-md text-secondary mt-1">Endless Summer Memories rate applied</p>
+</div>
+</div>
+<!-- Date Selection -->
+<div class="border border-outline-variant rounded-xl overflow-hidden mb-4">
+<div class="flex border-b border-outline-variant">
+<div class="flex-1 p-3 border-r border-outline-variant cursor-pointer hover:bg-surface-bright transition-colors">
+<label class="block text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Check-in</label>
+<div class="font-body-md text-body-md text-on-surface">Oct 12, 2024</div>
+</div>
+<div class="flex-1 p-3 cursor-pointer hover:bg-surface-bright transition-colors">
+<label class="block text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Check-out</label>
+<div class="font-body-md text-body-md text-on-surface">Oct 15, 2024</div>
+</div>
+</div>
+<div class="p-3 cursor-pointer hover:bg-surface-bright transition-colors">
+<label class="block text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Guests</label>
+<div class="font-body-md text-body-md text-on-surface flex justify-between items-center">
+              2 Guests, 1 Room
+              <span class="material-symbols-outlined text-outline" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Price Breakdown -->
+<div class="flex flex-col gap-2 mb-6 font-body-md text-body-md text-on-surface-variant">
+<div class="flex justify-between">
+<span class="underline decoration-dotted cursor-help">$549 x 3 nights</span>
+<span>$1,647</span>
+</div>
+<div class="flex justify-between">
+<span class="underline decoration-dotted cursor-help">Taxes &amp; Fees</span>
+<span>$198</span>
+</div>
+<div class="flex justify-between border-t border-surface-variant pt-2 font-bold text-primary text-lg">
+<span>Total</span>
+<span>$1,845</span>
+</div>
+</div>
+<button class="w-full bg-secondary text-on-secondary font-headline-sm text-headline-sm py-4 rounded-xl shadow-level-1 hover:opacity-90 transition-opacity mb-4">Reserve Now</button>
+<p class="text-center font-label-md text-label-md text-on-surface-variant">You won't be charged yet</p>
+<div class="mt-6 pt-6 border-t border-surface-variant flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="loyalty">loyalty</span>
+<span class="font-label-md text-label-md text-primary">Join ALL Accor to earn points</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-primary dark:bg-surface-container-highest text-on-primary dark:text-on-surface w-full px-container-margin py-stack-lg flex flex-col md:flex-row justify-between items-center gap-gutter flat no shadows">
+<div class="font-display-lg text-display-lg font-bold">Serene Stay</div>
+<div class="flex flex-wrap justify-center gap-4">
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Terms of Use</a>
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Accessibility</a>
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Contact Us</a>
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Sitemap</a>
+<a class="font-label-md text-label-md text-surface-variant dark:text-on-surface-variant opacity-80 hover:opacity-100 hover:text-on-primary dark:hover:text-primary transition-all duration-200" href="#">Cookies</a>
+</div>
+<div class="font-body-md text-body-md mt-4 md:mt-0 opacity-80">
+      © 2024 Serene Stay Hotels &amp; Resorts. All rights reserved.
+    </div>
+</footer>
+</body></html>
