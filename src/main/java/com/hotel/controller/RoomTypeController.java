@@ -33,7 +33,7 @@ public class RoomTypeController {
     @GetMapping("/crud")
     public String showCrudPage(Model model) {
         model.addAttribute("roomTypes", roomTypeService.findAll());
-        return "roombooking/roomtypeCRUD";
+        return "roombooking/roomtype";
     }
 
     @PostMapping("/save")

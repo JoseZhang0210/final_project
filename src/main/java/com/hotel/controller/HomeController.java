@@ -20,36 +20,48 @@ public class HomeController {
 
     }
 //    ********************************
+
     @GetMapping("/hotelhome")
     public String hotelhome() {
-    	
-    	return "roombooking/hotelhome"; 
-    	
+
+        return "roombooking/hotelhome";
+
     }
+
     @GetMapping("/booking")
     public String booking() {
-       
-        return "roombooking/serenestay"; 
-     
+
+        return "roombooking/serenestay";
+
     }
+
     @GetMapping("/roomlist")
     public String roomlist() {
-       
-        return "roombooking/roomlist"; 
-     
+
+        return "roombooking/roomlist";
+
     }
+
     @GetMapping("/bookingcheck")
     public String bookingcheck() {
-       
-        return "roombooking/bookingcheck"; 
-     
+
+        return "roombooking/bookingcheck";
+
     }
-    @GetMapping("/roomtypeCRUD")
-    public String roomtypeCRUD() {
-       
-        return "roombooking/roomtypeCRUD"; 
-     
+
+    @GetMapping("/bookingorder")
+    public String bookingorder() {
+
+        return "roombooking/bookingorder";
+
+    }
+
+    @GetMapping("/roomtype")
+    public String roomtype() {
+
+        return "roombooking/roomtype";
+
     }
 //    ********************************************
-    
+
 }

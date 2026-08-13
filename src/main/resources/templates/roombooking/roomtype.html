@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>房型管理系統 - Room Type Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 圖示 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <div class="container py-4">
+        <!-- 頁面標題與按鈕區 -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <h2><i class="fa-solid fa-bed me-2"></i>房型資料管理系統</h2>
+            <div>
+                <!-- 返回首頁按鈕 -->
+                <a th:href="@{/}" class="btn btn-outline-secondary me-2">
+                    <i class="fa-solid fa-home me-1"></i> 返回首頁
+                </a>
+                <!-- 新增房型按鈕 -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#roomTypeModal"
+                    onclick="clearForm()">
+                    <i class="fa-solid fa-plus me-1"></i> 新增房型
+                </button>
+            </div>
+        </div>
+        <!-- 訊息提示區 -->
+        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong th:text="${errorMsg}">操作失敗！</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span th:text="${successMsg}">操作成功！</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- 房型列表表格 -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="ps-3">房型 ID</th>
+                                <th scope="col">房型名稱</th>
+                                <th scope="col">床型</th>
+                                <th scope="col">每晚價格</th>
+                                <th scope="col">容納人數</th>
+                                <th scope="col">圖片 ID</th>
+                                <th scope="col">描述</th>
+                                <th scope="col" class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="type : ${roomTypes}">
+                                <td class="ps-3 fw-bold" th:text="${type.roomTypeId}">1</td>
+                                <td class="fw-bold text-primary" th:text="${type.typeName}">豪華雙人房</td>
+                                <td th:text="${type.bedType}">一大床</td>
+                                <td class="text-success fw-bold" th:text="'$' + ${type.pricePerNight}">$2800</td>
+                                <td th:text="${type.capacity} + ' 人'">2 人</td>
+                                <td th:text="${type.imageId != null ? type.imageId : '無'}">101</td>
+                                <td class="text-muted text-truncate" style="max-width: 200px;"
+                                    th:text="${type.description}">舒適採光良好...</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                        th:data-id="${type.roomTypeId}" th:data-name="${type.typeName}"
+                                        th:data-bed="${type.bedType}" th:data-price="${type.pricePerNight}"
+                                        th:data-capacity="${type.capacity}" th:data-image="${type.imageId}"
+                                        th:data-description="${type.description}" onclick="editRoomTypeFromBtn(this)">
+                                        <i class="fa-solid fa-pen"></i> 編輯
+                                    </button>
+
+                                    <a th:href="@{/roomtype/delete/{id}(id=${type.roomTypeId})}"
+                                        class="btn btn-sm btn-outline-danger" onclick="return confirm('確定要刪除此房型嗎？')">
+                                        <i class="fa-solid fa-trash"></i> 刪除
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(roomTypes)}">
+                                <td colspan="8" class="text-center py-4 text-muted">目前暫無房型資料</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增 / 編輯 房型 Modal -->
+    <div class="modal fade" id="roomTypeModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <!-- 提交路徑完全對應 @PostMapping("/save") -->
+                <form th:action="@{/roomtype/save}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalTitle">新增房型</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 隱藏的主鍵 ID，對應 roomType.roomTypeId -->
+                        <input type="hidden" id="roomTypeId" name="roomTypeId">
+
+                        <div class="fw-bold border-bottom pb-2 mb-3 text-primary">
+                            <i class="fa-solid fa-door-open me-1"></i> 房型詳細資訊
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="typeName" class="form-label">房型名稱 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="typeName" name="typeName" required
+                                    placeholder="例如：豪華套房">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="bedType" class="form-label">床型 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="bedType" name="bedType" required
+                                    placeholder="例如：一大床 / 兩單床">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="pricePerNight" class="form-label">每晚價格 <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="pricePerNight" name="pricePerNight"
+                                    min="0" required placeholder="例如：3200">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="capacity" class="form-label">容納人數 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="capacity" name="capacity" min="1" required
+                                    placeholder="例如：2">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="imageId" class="form-label">圖片 ID (無則留空)</label>
+                                <input type="number" class="form-control" id="imageId" name="imageId" placeholder="可留空">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">房型描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                placeholder="請輸入關於此房型的簡短描述..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">儲存資料</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 清空 Modal (開啟新增視窗)
+        function clearForm() {
+            document.getElementById('modalTitle').innerText = '新增房型';
+            document.getElementById('roomTypeId').value = '';
+            document.getElementById('typeName').value = '';
+            document.getElementById('bedType').value = '';
+            document.getElementById('pricePerNight').value = '';
+            document.getElementById('capacity').value = '2';
+            document.getElementById('imageId').value = '';
+            document.getElementById('description').value = '';
+        }
+
+        // 代入資料至 Modal 進行編輯
+        function editRoomTypeFromBtn(btn) {
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name');
+            const bed = btn.getAttribute('data-bed');
+            const price = btn.getAttribute('data-price');
+            const capacity = btn.getAttribute('data-capacity');
+            const image = btn.getAttribute('data-image');
+            const description = btn.getAttribute('data-description');
+
+            document.getElementById('modalTitle').innerText = '編輯房型資料';
+            document.getElementById('roomTypeId').value = id;
+            document.getElementById('typeName').value = name;
+            document.getElementById('bedType').value = bed;
+            document.getElementById('pricePerNight').value = price;
+            document.getElementById('capacity').value = capacity;
+            document.getElementById('imageId').value = (image && image !== 'null') ? image : '';
+            document.getElementById('description').value = (description && description !== 'null') ? description : '';
+
+            var modal = new bootstrap.Modal(document.getElementById('roomTypeModal'));
+            modal.show();
+        }
+    </script>
+</body>
+
+</html>

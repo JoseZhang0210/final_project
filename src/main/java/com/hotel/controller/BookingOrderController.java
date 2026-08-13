@@ -2,6 +2,8 @@ package com.hotel.controller;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.beans.propertyeditors.CustomNumberEditor;
@@ -43,31 +45,40 @@ public class BookingOrderController {
     @GetMapping("/crud")
     public String showCrudPage(Model model) {
         model.addAttribute("orders", bookingOrderService.findAll());
-        return "roombooking/roomtypeCRUD";
+        return "roombooking/bookingorder";
     }
 
     // 2. 處理新增 / 更新
     @PostMapping("/save")
     public String saveBookingOrder(@ModelAttribute BookingOrder bookingOrder, RedirectAttributes redirectAttributes) {
         try {
-            // 建立雙向關聯
-            if (bookingOrder.getBookings() != null) {
-                for (Booking booking : bookingOrder.getBookings()) {
-                    booking.setBookingOrder(bookingOrder);
-                }
+            // 1. 若為新增訂單，設定建立時間
+            if (bookingOrder.getCreatedAt() == null) {
+                bookingOrder.setCreatedAt(new Date());
             }
 
-            if (bookingOrder.getBookingOrderId() != null && bookingOrder.getBookingOrderId() > 0) {
-                bookingOrderService.update(bookingOrder.getBookingOrderId(), bookingOrder);
-                redirectAttributes.addFlashAttribute("successMsg", "訂單更新成功！");
-            } else {
-                if (bookingOrder.getCreatedAt() == null) {
-                    bookingOrder.setCreatedAt(new Date());
-                }
-                bookingOrderService.insert(bookingOrder);
-                redirectAttributes.addFlashAttribute("successMsg", "訂單新增成功！");
+            // 2. 關鍵：手動維護 JPA 雙向關聯外鍵 (booking_order_id)
+            if (bookingOrder.getBookings() != null) {
+                // 過濾掉全空的明細，並將 parent 指向主表
+                List<Booking> validBookings = bookingOrder.getBookings().stream()
+                        .filter(b -> b.getCheckInDate() != null && b.getCheckOutDate() != null)
+                        .peek(b -> b.setBookingOrder(bookingOrder))
+                        .collect(Collectors.toList());
+
+                bookingOrder.getBookings().clear();
+                bookingOrder.getBookings().addAll(validBookings);
             }
+
+            // 3. 根據有無 ID 判斷呼叫 insert 或 update
+            if (bookingOrder.getBookingOrderId() == null) {
+                bookingOrderService.insert(bookingOrder);
+            } else {
+                bookingOrderService.update(bookingOrder.getBookingOrderId(), bookingOrder);
+            }
+
+            redirectAttributes.addFlashAttribute("successMsg", "訂單儲存成功！");
         } catch (Exception e) {
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("errorMsg", "儲存失敗：" + e.getMessage());
         }
         return "redirect:/bookingorder/crud";

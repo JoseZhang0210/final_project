@@ -59,14 +59,14 @@ public class RoomTypeService {
                     if (updatedRoomType.getCapacity() != null) {
                         roomType.setCapacity(updatedRoomType.getCapacity());
                     }
-                    
+
                     // 修正 imageId 邏輯：若是 0 則設為 null，否則更新為新傳入的值
                     if (updatedRoomType.getImageId() != null && updatedRoomType.getImageId() == 0) {
                         roomType.setImageId(null);
                     } else {
                         roomType.setImageId(updatedRoomType.getImageId());
                     }
-                    
+
                     return roomTypeRepository.save(roomType);
                 })
                 .orElseThrow(() -> new RuntimeException("RoomType not found with id: " + id));

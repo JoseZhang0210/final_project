@@ -31,7 +31,6 @@ public class Booking {
     @Column(name = "booking_id")
     private Integer bookingId;
 
-    // 多對一物件關聯（替代原本純數值的 bookingOrderId）
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_order_id")
     @ToString.Exclude
