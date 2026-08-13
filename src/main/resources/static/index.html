@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SereneStay 飯店 - 首頁</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo"><a href="/" style="color: white; text-decoration: none;">SereneStay 飯店管理系統</a></h1>
+            <ul class="nav-menu">
+                <li><a href="/index.html">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <h2>歡迎使用飯店管理系統</h2>
+            <p>統一的 REST API + 靜態前端架構</p>
+        </section>
+
+        <section class="dashboard">
+            <h2>系統資訊</h2>
+            <div id="dashboard-data" class="info-grid">
+                <div class="info-card">
+                    <h3>系統狀態</h3>
+                    <p id="system-status">載入中...</p>
+                </div>
+                <div class="info-card">
+                    <h3>API 版本</h3>
+                    <p>/api/v1</p>
+                </div>
+                <div class="info-card">
+                    <h3>前端類型</h3>
+                    <p>Vanilla JavaScript (Vue 相容)</p>
+                </div>
+                <div class="info-card">
+                    <h3>資料格式</h3>
+                    <p>JSON</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <h2>功能模組</h2>
+            <ul class="feature-list">
+                <li><a href="/products.html">產品管理</a> - 新增/編輯/刪除產品</li>
+                <li><a href="/venues.html">場地管理</a> - 管理飯店場地</li>
+                <li><a href="/rentals.html">租賃管理</a> - 管理場地租借</li>
+                <li><a href="/room-types.html">房型管理</a> - 管理房間類型</li>
+                <li><a href="/bookings.html">訂單管理</a> - 管理預訂訂單</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getHomeDashboard, isSuccess, getData } from '/js/api.js';
+
+        // 載入首頁資料
+        async function loadDashboard() {
+            try {
+                const response = await getHomeDashboard();
+                if (isSuccess(response)) {
+                    const data = getData(response);
+                    document.getElementById('system-status').textContent = '線上';
+                    console.log('首頁資料:', data);
+                } else {
+                    document.getElementById('system-status').textContent = '連接失敗';
+                }
+            } catch (error) {
+                console.error('載入首頁資料失敗:', error);
+                document.getElementById('system-status').textContent = '載入失敗';
+            }
+        }
+
+        // 頁面載入完成後執行
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+
+</html>

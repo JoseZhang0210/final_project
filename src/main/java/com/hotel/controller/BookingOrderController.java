@@ -1,27 +1,28 @@
 package com.hotel.controller;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
-import org.springframework.beans.propertyeditors.CustomDateEditor;
-import org.springframework.beans.propertyeditors.CustomNumberEditor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.hotel.dto.ApiResponse;
 import com.hotel.entity.Booking;
 import com.hotel.entity.BookingOrder;
 import com.hotel.service.BookingOrderService;
 
-@Controller
-@RequestMapping("/bookingorder")
+/**
+ * 預訂訂單 API 控制器
+ * 所有方法返回 JSON 格式的 ApiResponse 資料
+ */
+@RestController
+@RequestMapping("/api/booking-orders")
 public class BookingOrderController {
 
     private final BookingOrderService bookingOrderService;
@@ -30,25 +31,68 @@ public class BookingOrderController {
         this.bookingOrderService = bookingOrderService;
     }
 
-    // 自動處理空白數字轉 null 以及日期格式解析
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(Integer.class, new CustomNumberEditor(Integer.class, true));
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        dateFormat.setLenient(false);
-        binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, true));
+    /**
+     * 獲取所有預訂訂單列表
+     * 
+     * @return 預訂訂單列表的 JSON 回應
+     */
+    @GetMapping
+    public ApiResponse<List<BookingOrder>> getAllBookingOrders() {
+        List<BookingOrder> orders = bookingOrderService.findAll();
+        return ApiResponse.success(orders, "預訂訂單列表載入成功");
     }
 
-    // 1. 顯示管理頁面
-    @GetMapping("/crud")
-    public String showCrudPage(Model model) {
-        model.addAttribute("orders", bookingOrderService.findAll());
-        return "roombooking/roomtypeCRUD";
+    /**
+     * 獲取單個預訂訂單詳情
+     * 
+     * @param id 訂單 ID
+     * @return 訂單詳情的 JSON 回應
+     */
+    @GetMapping("/{id}")
+    public ApiResponse<BookingOrder> getBookingOrderById(@PathVariable Integer id) {
+        BookingOrder order = bookingOrderService.findById(id).orElse(null);
+        if (order == null) {
+            return ApiResponse.error(404, "訂單不存在");
+        }
+        return ApiResponse.success(order, "訂單詳情載入成功");
     }
 
-    // 2. 處理新增 / 更新
-    @PostMapping("/save")
-    public String saveBookingOrder(@ModelAttribute BookingOrder bookingOrder, RedirectAttributes redirectAttributes) {
+    /**
+     * 建立新預訂訂單
+     * 
+     * @param bookingOrder 訂單資訊 (JSON 請求體)
+     * @return 建立結果的 JSON 回應
+     */
+    @PostMapping
+    public ApiResponse<BookingOrder> createBookingOrder(@RequestBody BookingOrder bookingOrder) {
+        try {
+            if (bookingOrder.getCreatedAt() == null) {
+                bookingOrder.setCreatedAt(new Date());
+            }
+            // 建立雙向關聯
+            if (bookingOrder.getBookings() != null) {
+                for (Booking booking : bookingOrder.getBookings()) {
+                    booking.setBookingOrder(bookingOrder);
+                }
+            }
+            BookingOrder savedOrder = bookingOrderService.insert(bookingOrder);
+            return ApiResponse.success(savedOrder, "預訂訂單建立成功");
+        } catch (Exception e) {
+            return ApiResponse.error(400, "訂單建立失敗: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 更新預訂訂單
+     * 
+     * @param id           訂單 ID
+     * @param bookingOrder 更新的訂單資訊 (JSON 請求體)
+     * @return 更新結果的 JSON 回應
+     */
+    @PutMapping("/{id}")
+    public ApiResponse<BookingOrder> updateBookingOrder(
+            @PathVariable Integer id,
+            @RequestBody BookingOrder bookingOrder) {
         try {
             // 建立雙向關聯
             if (bookingOrder.getBookings() != null) {
@@ -56,32 +100,30 @@ public class BookingOrderController {
                     booking.setBookingOrder(bookingOrder);
                 }
             }
-
-            if (bookingOrder.getBookingOrderId() != null && bookingOrder.getBookingOrderId() > 0) {
-                bookingOrderService.update(bookingOrder.getBookingOrderId(), bookingOrder);
-                redirectAttributes.addFlashAttribute("successMsg", "訂單更新成功！");
-            } else {
-                if (bookingOrder.getCreatedAt() == null) {
-                    bookingOrder.setCreatedAt(new Date());
-                }
-                bookingOrderService.insert(bookingOrder);
-                redirectAttributes.addFlashAttribute("successMsg", "訂單新增成功！");
-            }
+            BookingOrder updatedOrder = bookingOrderService.update(id, bookingOrder);
+            return ApiResponse.success(updatedOrder, "預訂訂單更新成功");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMsg", "儲存失敗：" + e.getMessage());
+            return ApiResponse.error(400, "訂單更新失敗: " + e.getMessage());
         }
-        return "redirect:/bookingorder/crud";
     }
 
-    // 3. 刪除訂單
-    @GetMapping("/delete/{id}")
-    public String deleteBookingOrder(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    /**
+     * 刪除預訂訂單
+     * 
+     * @param id 訂單 ID
+     * @return 刪除結果的 JSON 回應
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<String> deleteBookingOrder(@PathVariable Integer id) {
         try {
+            BookingOrder order = bookingOrderService.findById(id).orElse(null);
+            if (order == null) {
+                return ApiResponse.error(404, "訂單不存在");
+            }
             bookingOrderService.deleteById(id);
-            redirectAttributes.addFlashAttribute("successMsg", "訂單刪除成功！");
+            return ApiResponse.success("訂單已刪除", "預訂訂單刪除成功");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMsg", "刪除失敗：" + e.getMessage());
+            return ApiResponse.error(400, "訂單刪除失敗: " + e.getMessage());
         }
-        return "redirect:/bookingorder/crud";
     }
 }

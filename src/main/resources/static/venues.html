@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>場地管理 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .action-bar {
+            margin-bottom: 20px;
+        }
+
+        .action-bar button,
+        .action-bar a {
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>場地管理</h1>
+
+        <div class="action-bar">
+            <button class="btn btn-success" onclick="goToAddVenue()">新增場地</button>
+            <button class="btn btn-primary" onclick="goToRentals()">場地租借管理</button>
+            <a href="/" class="btn btn-primary">返回首頁</a>
+        </div>
+
+        <div id="loading" class="loading">載入中...</div>
+        <table id="venueTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>場地 ID</th>
+                    <th>場地名稱</th>
+                    <th>容納人數</th>
+                    <th>每日價格</th>
+                    <th>場地狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="venueList">
+            </tbody>
+        </table>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getVenues, deleteVenue, isSuccess, getData } from '/js/api.js';
+
+        async function loadVenues() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('venueTable');
+            const tbody = document.getElementById('venueList');
+
+            try {
+                const response = await getVenues();
+                if (isSuccess(response)) {
+                    const venues = getData(response);
+                    tbody.innerHTML = '';
+
+                    if (venues && venues.length > 0) {
+                        venues.forEach(venue => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${venue.venueId}</td>
+                                <td>${venue.venueName || 'N/A'}</td>
+                                <td>${venue.capacity || 0}</td>
+                                <td>$${venue.pricePerDay || 0}</td>
+                                <td>${venue.venueStatus || 'N/A'}</td>
+                                <td>
+                                    <button class="btn" onclick="editVenue(${venue.venueId})">編輯</button>
+                                    <button class="btn btn-danger" onclick="deleteVenueConfirm(${venue.venueId})">刪除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                } else {
+                    loading.textContent = '載入失敗';
+                }
+            } catch (error) {
+                console.error('載入場地失敗:', error);
+                loading.textContent = '載入出錯';
+            }
+        }
+
+        window.goToAddVenue = function () {
+            window.location.href = '/venues-add.html';
+        };
+
+        window.goToRentals = function () {
+            window.location.href = '/rentals.html';
+        };
+
+        window.editVenue = function (id) {
+            window.location.href = `/venues-edit.html?id=${id}`;
+        };
+
+        window.deleteVenueConfirm = async function (id) {
+            if (confirm('確定要刪除此場地嗎？若已有租借紀錄，資料庫可能會阻止刪除。')) {
+                try {
+                    const response = await deleteVenue(id);
+                    if (isSuccess(response)) {
+                        alert('場地已刪除');
+                        loadVenues();
+                    } else {
+                        alert('刪除失敗: ' + response.message);
+                    }
+                } catch (error) {
+                    alert('刪除出錯: ' + error.message);
+                }
+            }
+        };
+
+        // 頁面載入時執行
+        loadVenues();
+    </script>
+</body>
+
+</html>

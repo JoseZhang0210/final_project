@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增產品 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>新增產品</h1>
+
+        <div id="loading" class="loading" style="display: none;">載入分類中...</div>
+        <form id="productForm">
+            <div class="form-group">
+                <label for="productName">產品名稱 *</label>
+                <input type="text" id="productName" name="productName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="categoryId">分類 *</label>
+                <select id="categoryId" name="categoryId" required>
+                    <option value="">請選擇分類</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="description">產品描述</label>
+                <textarea id="description" name="description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="price">價格 *</label>
+                <input type="number" id="price" name="price" min="0" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="stock">庫存 *</label>
+                <input type="number" id="stock" name="stock" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="imageUrl">圖片網址</label>
+                <input type="text" id="imageUrl" name="imageUrl">
+            </div>
+
+            <div class="form-group">
+                <label for="status">產品狀態</label>
+                <select id="status" name="status">
+                    <option value="ACTIVE">上架</option>
+                    <option value="INACTIVE">下架</option>
+                    <option value="OUT_OF_STOCK">缺貨</option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <a href="/products.html" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { createProduct, getProductCategories, isSuccess, getData } from '/js/api.js';
+
+        async function loadCategories() {
+            try {
+                const response = await getProductCategories();
+                if (isSuccess(response)) {
+                    const categories = getData(response);
+                    const select = document.getElementById('categoryId');
+
+                    if (categories && categories.length > 0) {
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.categoryId;
+                            option.textContent = category.categoryName;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('載入分類失敗:', error);
+            }
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = {
+                productName: document.getElementById('productName').value,
+                categoryId: parseInt(document.getElementById('categoryId').value),
+                description: document.getElementById('description').value || null,
+                price: parseFloat(document.getElementById('price').value),
+                stock: parseInt(document.getElementById('stock').value),
+                imageUrl: document.getElementById('imageUrl').value || null,
+                status: document.getElementById('status').value
+            };
+
+            try {
+                const response = await createProduct(formData);
+                if (isSuccess(response)) {
+                    alert('產品已新增');
+                    window.location.href = '/products.html';
+                } else {
+                    alert('新增失敗: ' + response.message);
+                }
+            } catch (error) {
+                alert('新增出錯: ' + error.message);
+            }
+        });
+
+        // 頁面載入時執行
+        loadCategories();
+    </script>
+</body>
+
+</html>

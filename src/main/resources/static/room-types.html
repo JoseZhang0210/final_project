@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房型管理 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .action-bar {
+            margin-bottom: 20px;
+        }
+
+        .action-bar button,
+        .action-bar a {
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>房型管理</h1>
+
+        <div class="action-bar">
+            <button class="btn btn-success" onclick="goToAddRoomType()">新增房型</button>
+            <a href="/" class="btn btn-primary">返回首頁</a>
+        </div>
+
+        <div id="loading" class="loading">載入中...</div>
+        <table id="roomTypeTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>房型 ID</th>
+                    <th>房型名稱</th>
+                    <th>床型</th>
+                    <th>容納人數</th>
+                    <th>每晚價格</th>
+                    <th>描述</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="roomTypeList">
+            </tbody>
+        </table>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getRoomTypes, deleteRoomType, isSuccess, getData } from '/js/api.js';
+
+        async function loadRoomTypes() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('roomTypeTable');
+            const tbody = document.getElementById('roomTypeList');
+
+            try {
+                const response = await getRoomTypes();
+                if (isSuccess(response)) {
+                    const roomTypes = getData(response);
+                    tbody.innerHTML = '';
+
+                    if (roomTypes && roomTypes.length > 0) {
+                        roomTypes.forEach(roomType => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${roomType.roomTypeId}</td>
+                                <td>${roomType.roomTypeName || roomType.typeName || 'N/A'}</td>
+                                <td>${roomType.bedType || 'N/A'}</td>
+                                <td>${roomType.capacity || 0}</td>
+                                <td>$${roomType.price || roomType.pricePerNight || 0}</td>
+                                <td>${roomType.description || 'N/A'}</td>
+                                <td>
+                                    <button class="btn" onclick="editRoomType(${roomType.roomTypeId})">編輯</button>
+                                    <button class="btn btn-danger" onclick="deleteRoomTypeConfirm(${roomType.roomTypeId})">刪除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                } else {
+                    loading.textContent = '載入失敗';
+                }
+            } catch (error) {
+                console.error('載入房型失敗:', error);
+                loading.textContent = '載入出錯';
+            }
+        }
+
+        window.goToAddRoomType = function () {
+            window.location.href = '/room-types-add.html';
+        };
+
+        window.editRoomType = function (id) {
+            window.location.href = `/room-types-edit.html?id=${id}`;
+        };
+
+        window.deleteRoomTypeConfirm = async function (id) {
+            if (confirm('確定要刪除此房型嗎？')) {
+                try {
+                    const response = await deleteRoomType(id);
+                    if (isSuccess(response)) {
+                        alert('房型已刪除');
+                        loadRoomTypes();
+                    } else {
+                        alert('刪除失敗: ' + response.message);
+                    }
+                } catch (error) {
+                    alert('刪除出錯: ' + error.message);
+                }
+            }
+        };
+
+        // 頁面載入時執行
+        loadRoomTypes();
+    </script>
+</body>
+
+</html>

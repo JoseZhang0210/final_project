@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>租賃管理 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .action-bar {
+            margin-bottom: 20px;
+        }
+
+        .action-bar button,
+        .action-bar a {
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            margin: 2px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>場地租借管理</h1>
+
+        <div class="action-bar">
+            <button class="btn btn-success" onclick="goToAddRental()">新增租借</button>
+            <button class="btn btn-primary" onclick="goToVenues()">場地管理</button>
+            <a href="/" class="btn btn-primary">返回首頁</a>
+        </div>
+
+        <div id="loading" class="loading">載入中...</div>
+        <table id="rentalTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>租借 ID</th>
+                    <th>場地 ID</th>
+                    <th>會員 ID</th>
+                    <th>活動名稱</th>
+                    <th>租借日期</th>
+                    <th>參加人數</th>
+                    <th>付款 ID</th>
+                    <th>租借狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="rentalList">
+            </tbody>
+        </table>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getRentals, deleteRental, isSuccess, getData } from '/js/api.js';
+
+        async function loadRentals() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('rentalTable');
+            const tbody = document.getElementById('rentalList');
+
+            try {
+                const response = await getRentals();
+                if (isSuccess(response)) {
+                    const rentals = getData(response);
+                    tbody.innerHTML = '';
+
+                    if (rentals && rentals.length > 0) {
+                        rentals.forEach(rental => {
+                            const row = document.createElement('tr');
+                            const rentalDate = new Date(rental.rentalDate).toLocaleString('zh-TW');
+                            row.innerHTML = `
+                                <td>${rental.rentalId}</td>
+                                <td>${rental.venueId}</td>
+                                <td>${rental.memberId}</td>
+                                <td>${rental.eventName || 'N/A'}</td>
+                                <td>${rentalDate}</td>
+                                <td>${rental.guestCount || 0}</td>
+                                <td>${rental.paymentId}</td>
+                                <td>${rental.rentalStatus || 'N/A'}</td>
+                                <td>
+                                    <button class="btn" onclick="editRental(${rental.rentalId})">編輯</button>
+                                    <button class="btn btn-danger" onclick="deleteRentalConfirm(${rental.rentalId})">刪除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                } else {
+                    loading.textContent = '載入失敗';
+                }
+            } catch (error) {
+                console.error('載入租借失敗:', error);
+                loading.textContent = '載入出錯';
+            }
+        }
+
+        window.goToAddRental = function () {
+            window.location.href = '/rentals-add.html';
+        };
+
+        window.goToVenues = function () {
+            window.location.href = '/venues.html';
+        };
+
+        window.editRental = function (id) {
+            window.location.href = `/rentals-edit.html?id=${id}`;
+        };
+
+        window.deleteRentalConfirm = async function (id) {
+            if (confirm('確定要刪除這筆租借紀錄嗎？')) {
+                try {
+                    const response = await deleteRental(id);
+                    if (isSuccess(response)) {
+                        alert('租借記錄已刪除');
+                        loadRentals();
+                    } else {
+                        alert('刪除失敗: ' + response.message);
+                    }
+                } catch (error) {
+                    alert('刪除出錯: ' + error.message);
+                }
+            }
+        };
+
+        // 頁面載入時執行
+        loadRentals();
+    </script>
+</body>
+
+</html>

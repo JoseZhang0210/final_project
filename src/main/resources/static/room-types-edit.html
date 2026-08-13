@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編輯房型 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>編輯房型</h1>
+
+        <div id="loading" class="loading">載入中...</div>
+        <form id="roomTypeForm" style="display: none;">
+            <div class="form-group">
+                <label for="roomTypeId">房型 ID</label>
+                <input type="number" id="roomTypeId" name="roomTypeId" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="typeName">房型名稱 *</label>
+                <input type="text" id="typeName" name="typeName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bedType">床型</label>
+                <input type="text" id="bedType" name="bedType">
+            </div>
+
+            <div class="form-group">
+                <label for="description">描述</label>
+                <textarea id="description" name="description"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="pricePerNight">每晚價格 *</label>
+                <input type="number" id="pricePerNight" name="pricePerNight" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="capacity">容納人數 *</label>
+                <input type="number" id="capacity" name="capacity" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="imageId">圖片 ID</label>
+                <input type="number" id="imageId" name="imageId">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">更新</button>
+                <a href="/room-types.html" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getRoomTypeById, updateRoomType, isSuccess, getData } from '/js/api.js';
+
+        const params = new URLSearchParams(window.location.search);
+        const roomTypeId = params.get('id');
+
+        if (!roomTypeId) {
+            document.getElementById('loading').textContent = '缺少房型 ID';
+            window.location.href = '/room-types.html';
+        }
+
+        async function loadRoomType() {
+            const loading = document.getElementById('loading');
+            const form = document.getElementById('roomTypeForm');
+
+            try {
+                const response = await getRoomTypeById(roomTypeId);
+                if (isSuccess(response)) {
+                    const roomType = getData(response);
+                    document.getElementById('roomTypeId').value = roomType.roomTypeId;
+                    document.getElementById('typeName').value = roomType.typeName || '';
+                    document.getElementById('bedType').value = roomType.bedType || '';
+                    document.getElementById('description').value = roomType.description || '';
+                    document.getElementById('pricePerNight').value = roomType.pricePerNight || '';
+                    document.getElementById('capacity').value = roomType.capacity || '';
+                    document.getElementById('imageId').value = roomType.imageId || '';
+
+                    loading.style.display = 'none';
+                    form.style.display = 'block';
+                } else {
+                    loading.textContent = '載入失敗';
+                }
+            } catch (error) {
+                console.error('載入房型失敗:', error);
+                loading.textContent = '載入出錯';
+            }
+        }
+
+        document.getElementById('roomTypeForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = {
+                roomTypeId: parseInt(document.getElementById('roomTypeId').value),
+                typeName: document.getElementById('typeName').value,
+                bedType: document.getElementById('bedType').value || null,
+                description: document.getElementById('description').value || null,
+                pricePerNight: parseInt(document.getElementById('pricePerNight').value),
+                capacity: parseInt(document.getElementById('capacity').value),
+                imageId: document.getElementById('imageId').value ? parseInt(document.getElementById('imageId').value) : null
+            };
+
+            try {
+                const response = await updateRoomType(roomTypeId, formData);
+                if (isSuccess(response)) {
+                    alert('房型已更新');
+                    window.location.href = '/room-types.html';
+                } else {
+                    alert('更新失敗: ' + response.message);
+                }
+            } catch (error) {
+                alert('更新出錯: ' + error.message);
+            }
+        });
+
+        // 頁面載入時執行
+        loadRoomType();
+    </script>
+</body>
+
+</html>

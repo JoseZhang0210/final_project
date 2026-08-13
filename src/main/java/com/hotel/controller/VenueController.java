@@ -1,27 +1,21 @@
 package com.hotel.controller;
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
+import com.hotel.dto.ApiResponse;
+import com.hotel.dto.VenueDTO;
 import com.hotel.entity.Venue;
 import com.hotel.service.VenueService;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
- * 場地管理 Controller。
- *
- * 網址：
- * GET  /venues              顯示全部
- * GET  /venues/add          新增畫面
- * POST /venues/save         儲存新增
- * GET  /venues/edit/{id}    修改畫面
- * POST /venues/update       儲存修改
- * GET  /venues/delete/{id}  刪除
+ * 場地管理 API 控制器
+ * 所有方法返回 JSON 格式的 ApiResponse 資料
  */
-@Controller
+@RestController
+@RequestMapping("/api/venues")
 public class VenueController {
 
     private final VenueService venueService;
@@ -31,71 +25,118 @@ public class VenueController {
     }
 
     /**
-     * 顯示全部場地。
+     * 獲取所有場地列表
+     * 
+     * @return 場地列表的 JSON 回應
      */
-    @GetMapping("/venues")
-    public String list(Model model) {
-        model.addAttribute("venues", venueService.findAll());
-        return "venues/list";
+    @GetMapping
+    public ApiResponse<List<VenueDTO>> getAllVenues() {
+        List<Venue> venues = venueService.findAll();
+        List<VenueDTO> dtos = venues.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ApiResponse.success(dtos, "場地列表載入成功");
     }
 
     /**
-     * 顯示新增場地表單。
+     * 獲取單個場地詳情
+     * 
+     * @param id 場地 ID
+     * @return 場地詳情的 JSON 回應
      */
-    @GetMapping("/venues/add")
-    public String addForm(Model model) {
-
-        Venue venue = new Venue();
-
-        // 預設場地狀態為 AVAILABLE。
-        venue.setVenueStatus("AVAILABLE");
-
-        model.addAttribute("venue", venue);
-        return "venues/add";
-    }
-
-    /**
-     * 儲存新增場地。
-     */
-    @PostMapping("/venues/save")
-    public String save(@ModelAttribute Venue venue) {
-        venueService.save(venue);
-        return "redirect:/venues";
-    }
-
-    /**
-     * 顯示修改場地表單。
-     */
-    @GetMapping("/venues/edit/{id}")
-    public String editForm(
-            @PathVariable Integer id,
-            Model model) {
-
+    @GetMapping("/{id}")
+    public ApiResponse<VenueDTO> getVenueById(@PathVariable Integer id) {
         Venue venue = venueService.findById(id).orElse(null);
-
         if (venue == null) {
-            return "redirect:/venues";
+            return ApiResponse.error(404, "場地不存在");
         }
-
-        model.addAttribute("venue", venue);
-        return "venues/edit";
+        return ApiResponse.success(convertToDTO(venue), "場地詳情載入成功");
     }
 
     /**
-     * 儲存修改後的場地。
+     * 建立新場地
+     * 
+     * @param venue 場地資訊 (JSON 請求體)
+     * @return 建立結果的 JSON 回應
      */
-    @PostMapping("/venues/update")
-    public String update(@ModelAttribute Venue venue) {
-        venueService.save(venue);
-        return "redirect:/venues";
+    @PostMapping
+    public ApiResponse<VenueDTO> createVenue(@RequestBody Venue venue) {
+        try {
+            if (venue.getVenueStatus() == null || venue.getVenueStatus().isEmpty()) {
+                venue.setVenueStatus("AVAILABLE");
+            }
+            Venue savedVenue = venueService.save(venue);
+            return ApiResponse.success(convertToDTO(savedVenue), "場地建立成功");
+        } catch (Exception e) {
+            return ApiResponse.error(400, "場地建立失敗: " + e.getMessage());
+        }
     }
 
     /**
-     * 刪除場地。
+     * 更新場地
+     * 
+     * @param id    場地 ID
+     * @param venue 更新的場地資訊 (JSON 請求體)
+     * @return 更新結果的 JSON 回應
      */
-    @GetMapping("/venues/delete/{id}")
-    public String delete(@PathVariable Integer id) {
-        venueService.deleteById(id);
-        return "redirect:/venues";
+    @PutMapping("/{id}")
+    public ApiResponse<VenueDTO> updateVenue(
+            @PathVariable Integer id,
+            @RequestBody Venue venue) {
+        try {
+            Venue existingVenue = venueService.findById(id).orElse(null);
+            if (existingVenue == null) {
+                return ApiResponse.error(404, "場地不存在");
+            }
+
+            existingVenue.setVenueName(venue.getVenueName());
+            existingVenue.setCapacity(venue.getCapacity());
+            existingVenue.setPricePerDay(venue.getPricePerDay());
+            existingVenue.setVenueStatus(venue.getVenueStatus());
+
+            Venue updatedVenue = venueService.save(existingVenue);
+            return ApiResponse.success(convertToDTO(updatedVenue), "場地更新成功");
+        } catch (Exception e) {
+            return ApiResponse.error(400, "場地更新失敗: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 刪除場地
+     * 
+     * @param id 場地 ID
+     * @return 刪除結果的 JSON 回應
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<String> deleteVenue(@PathVariable Integer id) {
+        try {
+            Venue venue = venueService.findById(id).orElse(null);
+            if (venue == null) {
+                return ApiResponse.error(404, "場地不存在");
+            }
+            venueService.deleteById(id);
+            return ApiResponse.success("場地已刪除", "場地刪除成功");
+        } catch (Exception e) {
+            return ApiResponse.error(400, "場地刪除失敗: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 將 Venue entity 轉換為 VenueDTO
+     * 
+     * @param venue Venue entity
+     * @return VenueDTO
+     */
+    private VenueDTO convertToDTO(Venue venue) {
+        if (venue == null) {
+            return null;
+        }
+        return new VenueDTO(
+                venue.getVenueId(),
+                venue.getVenueName(),
+                null,
+                null,
+                venue.getCapacity(),
+                venue.getVenueStatus());
     }
 }

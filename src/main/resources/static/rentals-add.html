@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新增租借 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="datetime-local"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-actions {
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>新增租借</h1>
+
+        <form id="rentalForm">
+            <div class="form-group">
+                <label for="venueId">場地 ID *</label>
+                <input type="number" id="venueId" name="venueId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="memberId">會員 ID *</label>
+                <input type="number" id="memberId" name="memberId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="eventName">活動名稱 *</label>
+                <input type="text" id="eventName" name="eventName" maxlength="50" required>
+            </div>
+
+            <div class="form-group">
+                <label for="rentalDate">租借日期與時間 *</label>
+                <input type="datetime-local" id="rentalDate" name="rentalDate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="guestCount">參加人數 *</label>
+                <input type="number" id="guestCount" name="guestCount" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="paymentId">付款 ID *</label>
+                <input type="number" id="paymentId" name="paymentId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="rentalStatus">租借狀態</label>
+                <select id="rentalStatus" name="rentalStatus">
+                    <option value="PENDING">PENDING - 待確認</option>
+                    <option value="CONFIRMED">CONFIRMED - 已確認</option>
+                    <option value="CANCELLED">CANCELLED - 已取消</option>
+                    <option value="COMPLETED">COMPLETED - 已完成</option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <a href="/rentals.html" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { createRental, isSuccess } from '/js/api.js';
+
+        document.getElementById('rentalForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = {
+                venueId: parseInt(document.getElementById('venueId').value),
+                memberId: parseInt(document.getElementById('memberId').value),
+                eventName: document.getElementById('eventName').value,
+                rentalDate: document.getElementById('rentalDate').value,
+                guestCount: parseInt(document.getElementById('guestCount').value),
+                paymentId: parseInt(document.getElementById('paymentId').value),
+                rentalStatus: document.getElementById('rentalStatus').value
+            };
+
+            try {
+                const response = await createRental(formData);
+                if (isSuccess(response)) {
+                    alert('租借已新增');
+                    window.location.href = '/rentals.html';
+                } else {
+                    alert('新增失敗: ' + response.message);
+                }
+            } catch (error) {
+                alert('新增出錯: ' + error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

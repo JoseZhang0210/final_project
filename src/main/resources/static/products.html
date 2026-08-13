@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>產品管理 - SereneStay 飯店</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .action-bar {
+            margin-bottom: 20px;
+        }
+
+        .action-bar a {
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">SereneStay 飯店管理系統</h1>
+            <ul class="nav-menu">
+                <li><a href="/">首頁</a></li>
+                <li><a href="/products.html">產品管理</a></li>
+                <li><a href="/venues.html">場地管理</a></li>
+                <li><a href="/rentals.html">租賃管理</a></li>
+                <li><a href="/room-types.html">房型管理</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <h1>產品管理</h1>
+
+        <div class="action-bar">
+            <button class="btn btn-success" onclick="goToAddProduct()">新增產品</button>
+            <a href="/" class="btn btn-primary">返回首頁</a>
+        </div>
+
+        <div id="loading" class="loading">載入中...</div>
+        <table id="productTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>產品 ID</th>
+                    <th>產品名稱</th>
+                    <th>分類</th>
+                    <th>價格</th>
+                    <th>庫存</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="productList">
+            </tbody>
+        </table>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 SereneStay 飯店. 所有權利保留。</p>
+    </footer>
+
+    <script type="module">
+        import { getProducts, deleteProduct, isSuccess, getData } from '/js/api.js';
+
+        async function loadProducts() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('productTable');
+            const tbody = document.getElementById('productList');
+
+            try {
+                const response = await getProducts();
+                if (isSuccess(response)) {
+                    const products = getData(response);
+                    tbody.innerHTML = '';
+
+                    if (products && products.length > 0) {
+                        products.forEach(product => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${product.productId}</td>
+                                <td>${product.productName || 'N/A'}</td>
+                                <td>${product.category ? product.category.categoryName : 'N/A'}</td>
+                                <td>$${product.price || 0}</td>
+                                <td>${product.stock || 0}</td>
+                                <td>${product.status || 'N/A'}</td>
+                                <td>
+                                    <button class="btn" onclick="editProduct(${product.productId})">編輯</button>
+                                    <button class="btn btn-danger" onclick="deleteProductConfirm(${product.productId})">刪除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                    loading.style.display = 'none';
+                    table.style.display = 'table';
+                } else {
+                    loading.textContent = '載入失敗';
+                }
+            } catch (error) {
+                console.error('載入產品失敗:', error);
+                loading.textContent = '載入出錯';
+            }
+        }
+
+        window.goToAddProduct = function () {
+            window.location.href = '/products-add.html';
+        };
+
+        window.editProduct = function (id) {
+            window.location.href = `/products-edit.html?id=${id}`;
+        };
+
+        window.deleteProductConfirm = async function (id) {
+            if (confirm('確定要刪除此產品嗎？')) {
+                try {
+                    const response = await deleteProduct(id);
+                    if (isSuccess(response)) {
+                        alert('產品已刪除');
+                        loadProducts();
+                    } else {
+                        alert('刪除失敗: ' + response.message);
+                    }
+                } catch (error) {
+                    alert('刪除出錯: ' + error.message);
+                }
+            }
+        };
+
+        // 頁面載入時執行
+        loadProducts();
+    </script>
+</body>
+
+</html>
