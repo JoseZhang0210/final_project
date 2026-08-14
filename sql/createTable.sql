@@ -301,35 +301,38 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[restaurant](
-	[restaurant_id] [int] IDENTITY(1,1) NOT NULL,
-	[restaurant_name] [nvarchar](100) NOT NULL,
-	[address] [nvarchar](200) NULL,
-	[phone] [varchar](20) NULL,
-	[capacity] [int] NULL,
-	[description] [nvarchar](max) NULL,
- CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED 
-(
-	[restaurant_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+CREATE TABLE [dbo].[restaurant] (
+    [restaurant_id]   INT IDENTITY(1,1) NOT NULL,
+    [restaurant_name] NVARCHAR(100) NOT NULL,
+    [address]         NVARCHAR(200) NULL,
+    [phone]           VARCHAR(20) NULL,
+    [capacity]        INT NULL,
+    [description]     NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_restaurant]
+        PRIMARY KEY CLUSTERED ([restaurant_id] ASC)
+);
 GO
 /****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[restaurant_time](
-	[time_id] [int] IDENTITY(1,1) NOT NULL,
-	[restaurant_id] [int] NOT NULL,
-	[meal_type] [nvarchar](20) NOT NULL,
-	[open_time] [time](7) NOT NULL,
-	[close_time] [time](7) NOT NULL,
- CONSTRAINT [PK_restaurant_time] PRIMARY KEY CLUSTERED 
-(
-	[time_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+CREATE TABLE [dbo].[restaurant_time] (
+    [time_id]       INT IDENTITY(1,1) NOT NULL,
+    [restaurant_id] INT NOT NULL,
+    [meal_type]     NVARCHAR(20) NOT NULL,
+    [open_time]     TIME(7) NOT NULL,
+    [close_time]    TIME(7) NOT NULL,
+
+    CONSTRAINT [PK_restaurant_time]
+        PRIMARY KEY CLUSTERED ([time_id] ASC),
+
+    CONSTRAINT [FK_restaurant_time_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id])
+);
 GO
 	
 /****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
@@ -349,6 +352,10 @@ CREATE TABLE [dbo].[reservation] (
 
     CONSTRAINT [PK_reservation]
         PRIMARY KEY CLUSTERED ([reservation_id] ASC),
+
+    CONSTRAINT [FK_reservation_member]
+        FOREIGN KEY ([member_id])
+        REFERENCES [dbo].[member]([member_id]),
 
     CONSTRAINT [FK_reservation_restaurant]
         FOREIGN KEY ([restaurant_id])
@@ -455,10 +462,6 @@ GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__creat__5FB337D6]  DEFAULT (getdate()) FOR [created_at]
 GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__updat__60A75C0F]  DEFAULT (getdate()) FOR [updated_at]
-GO
-ALTER TABLE [dbo].[reservation] ADD  CONSTRAINT [DF_reservation_status]  DEFAULT (N'已訂位') FOR [status]
-GO
-ALTER TABLE [dbo].[reservation] ADD  CONSTRAINT [DF_reservation_create_time]  DEFAULT (getdate()) FOR [create_time]
 GO
 ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_booking_order] FOREIGN KEY([booking_order_id])
 REFERENCES [dbo].[booking_order] ([booking_order_id])
@@ -569,26 +572,6 @@ ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_venue] FOREIGN
 REFERENCES [dbo].[venue] ([venue_id])
 GO
 ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_venue]
-GO
-ALTER TABLE [dbo].[reservation]  WITH CHECK ADD  CONSTRAINT [FK_reservation_member] FOREIGN KEY([member_id])
-REFERENCES [dbo].[member] ([account_id])
-GO
-ALTER TABLE [dbo].[reservation] CHECK CONSTRAINT [FK_reservation_member]
-GO
-ALTER TABLE [dbo].[reservation]  WITH CHECK ADD  CONSTRAINT [FK_reservation_restaurant] FOREIGN KEY([restaurant_id])
-REFERENCES [dbo].[restaurant] ([restaurant_id])
-GO
-ALTER TABLE [dbo].[reservation] CHECK CONSTRAINT [FK_reservation_restaurant]
-GO
-ALTER TABLE [dbo].[reservation]  WITH CHECK ADD  CONSTRAINT [FK_reservation_restaurant_time] FOREIGN KEY([time_id])
-REFERENCES [dbo].[restaurant_time] ([time_id])
-GO
-ALTER TABLE [dbo].[reservation] CHECK CONSTRAINT [FK_reservation_restaurant_time]
-GO
-ALTER TABLE [dbo].[restaurant_time]  WITH CHECK ADD  CONSTRAINT [FK_restaurant_time_restaurant] FOREIGN KEY([restaurant_id])
-REFERENCES [dbo].[restaurant] ([restaurant_id])
-GO
-ALTER TABLE [dbo].[restaurant_time] CHECK CONSTRAINT [FK_restaurant_time_restaurant]
 GO
 ALTER TABLE [dbo].[room]  WITH CHECK ADD  CONSTRAINT [FK_room_room_type] FOREIGN KEY([room_type_id])
 REFERENCES [dbo].[room_type] ([room_type_id])
