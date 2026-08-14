@@ -6,6 +6,11 @@
 
 const API_BASE = '/api';
 
+function csrfToken() {
+    const cookie = document.cookie.split('; ').find(value => value.startsWith('XSRF-TOKEN='));
+    return cookie ? decodeURIComponent(cookie.substring('XSRF-TOKEN='.length)) : null;
+}
+
 /**
  * 通用的 API 呼叫函數
  * @param {string} method HTTP 方法 (GET, POST, PUT, DELETE)
@@ -16,8 +21,16 @@ const API_BASE = '/api';
 export async function apiCall(method, endpoint, data = null) {
     const options = {
         method,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
     };
+
+    if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method.toUpperCase())) {
+        const token = csrfToken();
+        if (token) {
+            options.headers['X-XSRF-TOKEN'] = token;
+        }
+    }
 
     if (data) {
         options.body = JSON.stringify(data);
