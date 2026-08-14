@@ -134,17 +134,17 @@
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="memberId">會員帳號 ID（選填）</label>
+                        <label for="memberId">會員 ID（選填）</label>
                         <input type="number" id="memberId" min="1">
                     </div>
 
                     <div class="form-group">
-                        <label for="contactName">訂位人姓名</label>
+                        <label for="contactName">訂位人姓名（非會員必填）</label>
                         <input type="text" id="contactName">
                     </div>
 
                     <div class="form-group">
-                        <label for="contactPhone">訂位人電話</label>
+                        <label for="contactPhone">訂位人電話（非會員必填）</label>
                         <input type="text" id="contactPhone">
                     </div>
 
@@ -196,7 +196,7 @@
                 <thead>
                     <tr>
                         <th>訂位 ID</th>
-                        <th>會員帳號 ID</th>
+                        <th>會員 ID</th>
                         <th>訂位人姓名</th>
                         <th>訂位人電話</th>
                         <th>餐廳</th>
@@ -246,8 +246,23 @@
             message.className = type;
         }
 
+        function updateContactFields() {
+            const hasMember = memberId.value.trim() !== "";
+
+            contactName.disabled = hasMember;
+            contactPhone.disabled = hasMember;
+
+            if (hasMember) {
+                contactName.value = "";
+                contactPhone.value = "";
+            }
+        }
+
+        memberId.addEventListener("input", updateContactFields);
+
         function clearForm() {
             form.reset();
+            updateContactFields();
             reservationId.value = "";
             timeId.innerHTML =
                 "<option value=''>請先選擇餐廳</option>";
@@ -417,6 +432,7 @@
             memberId.value = reservation.memberId ?? "";
             contactName.value = reservation.contactName ?? "";
             contactPhone.value = reservation.contactPhone ?? "";
+            updateContactFields();
             restaurantId.value = reservation.restaurantId;
             reservationDate.value = reservation.reservationDate;
             peopleCount.value = reservation.peopleCount;
@@ -476,8 +492,13 @@
                 memberId: hasMember
                     ? Number(memberId.value)
                     : null,
-                contactName: contactName.value.trim(),
-                contactPhone: contactPhone.value.trim(),
+                contactName: hasMember
+                    ? null
+                    : contactName.value.trim(),
+
+                contactPhone: hasMember
+                    ? null
+                    : contactPhone.value.trim(),
                 restaurantId: Number(restaurantId.value),
                 reservationDate: reservationDate.value,
                 timeId: Number(timeId.value),

@@ -225,8 +225,7 @@
 
                 option.value = restaurant.restaurantId;
                 option.textContent =
-                    restaurant.restaurantName
-                    + "（ID：" + restaurant.restaurantId + "）";
+                    restaurant.restaurantName;
 
                 restaurantId.appendChild(option);
             });
@@ -239,7 +238,7 @@
 
             return restaurant
                 ? restaurant.restaurantName
-                : "餐廳 ID：" + id;
+                : "餐廳 ID：";
         }
 
         async function loadTimes() {
