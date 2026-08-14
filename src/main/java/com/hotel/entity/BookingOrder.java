@@ -42,7 +42,7 @@ public class BookingOrder {
     @Column(name = "created_at")
     private Date createdAt;
 
-    @Column(name = "payment_id")
+    @Column(name = "payment_id", nullable = true)
     private Integer paymentId;
 
     @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL, orphanRemoval = true)

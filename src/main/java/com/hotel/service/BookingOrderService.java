@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -49,7 +50,7 @@ public class BookingOrderService {
                     if (updatedOrder.getOrderStatus() != null) {
                         existingOrder.setOrderStatus(updatedOrder.getOrderStatus());
                     }
-                    
+
                     // paymentId 允許覆蓋為 null（前端清空時）
                     existingOrder.setPaymentId(updatedOrder.getPaymentId());
 
@@ -78,5 +79,15 @@ public class BookingOrderService {
             throw new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單，無法刪除");
         }
         bookingOrderRepository.deleteById(id);
+    }
+
+    public BookingOrder createBookingOrder(BookingOrder order) {
+        // 預設建立時間
+        if (order.getCreatedAt() == null) {
+            order.setCreatedAt(new Date());
+        }
+
+        // 不需要寫 order.setBookingOrderId(...)，JPA 與 SQL Server 會自動生成 ID
+        return bookingOrderRepository.save(order);
     }
 }
