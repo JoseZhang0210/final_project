@@ -31,7 +31,7 @@ public class BookingOrder {
     private Integer bookingOrderId;
 
     @Column(name = "member_id")
-    private Integer memberid;
+    private Integer memberId;
 
     @Column(name = "booking_total_price")
     private Integer bookingTotalPrice;
@@ -42,13 +42,22 @@ public class BookingOrder {
     @Column(name = "created_at")
     private Date createdAt;
 
-    @Column(name = "payment_id")
+    @Column(name = "payment_id", nullable = true)
     private Integer paymentId;
 
-    // 一對多雙向關聯：指向 Booking 中的 bookingOrder 屬性
     @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<Booking> bookings = new ArrayList<>();
 
+    // 在 BookingOrder.java 類別內新增這兩個 helper 方法
+    public void addBooking(Booking booking) {
+        bookings.add(booking);
+        booking.setBookingOrder(this);
+    }
+
+    public void removeBooking(Booking booking) {
+        bookings.remove(booking);
+        booking.setBookingOrder(null);
+    }
 }

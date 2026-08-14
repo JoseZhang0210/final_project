@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訂單管理系統 - Booking Order Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 圖示 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <div class="container py-4">
+        <!-- 頁面標題與按鈕區 -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <h2><i class="fa-solid fa-receipt me-2"></i>預訂訂單管理系統</h2>
+            <div>
+                <!-- 返回首頁按鈕 -->
+                <a href="/" class="btn btn-outline-secondary me-2">
+                    <i class="fa-solid fa-home me-1"></i> 返回首頁
+                </a>
+                <!-- 新增訂單按鈕 -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bookingOrderModal"
+                    onclick="clearForm()">
+                    <i class="fa-solid fa-plus me-1"></i> 新增訂單
+                </button>
+            </div>
+        </div>
+
+        <!-- 訊息提示區 (預設隱藏) -->
+        <div id="alertError" class="alert alert-danger alert-dismissible fade show shadow-sm d-none" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <span id="alertErrorMsg">操作失敗！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertError')"></button>
+        </div>
+        <div id="alertSuccess" class="alert alert-success alert-dismissible fade show shadow-sm d-none" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span id="alertSuccessMsg">操作成功！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertSuccess')"></button>
+        </div>
+
+        <!-- 訂單列表表格 -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="ps-3">訂單 ID</th>
+                                <th scope="col">會員 ID</th>
+                                <th scope="col">總金額</th>
+                                <th scope="col">訂單狀態</th>
+                                <th scope="col">付款 ID</th>
+                                <th scope="col">建立時間</th>
+                                <th scope="col" class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingOrderTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">載入資料中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增 / 編輯 訂單 Modal -->
+    <div class="modal fade" id="bookingOrderModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form id="bookingOrderForm" onsubmit="saveBookingOrder(event)">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalTitle">新增訂單</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="bookingOrderId" name="bookingOrderId">
+
+                        <div class="fw-bold border-bottom pb-2 mb-3 text-primary">
+                            <i class="fa-solid fa-file-invoice-dollar me-1"></i> 訂單詳細資訊
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="memberId" class="form-label">會員 ID <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="memberId" name="memberId" required
+                                    placeholder="例如：1001">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="bookingTotalPrice" class="form-label">總金額 <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="bookingTotalPrice"
+                                    name="bookingTotalPrice" min="0" step="1" required placeholder="例如：6800">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="orderStatus" class="form-label">訂單狀態 <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" id="orderStatus" name="orderStatus" required>
+                                    <option value="PENDING">PENDING (待付款)</option>
+                                    <option value="PAID">PAID (已付款)</option>
+                                    <option value="COMPLETED">COMPLETED (已完成)</option>
+                                    <option value="CANCELLED">CANCELLED (已取消)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="paymentId" class="form-label">付款 ID (無則留空)</label>
+                                <input type="number" class="form-control" id="paymentId" name="paymentId"
+                                    placeholder="可留空">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="createdAt" class="form-label">建立時間</label>
+                                <input type="datetime-local" class="form-control" id="createdAt" name="createdAt"
+                                    placeholder="自動帶入或手動選擇">
+                                <div class="form-text">新增時若留空，將預設為目前時間。</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">儲存資料</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_BASE_URL = '/api/booking-orders';
+        let modalInstance = null;
+        let bookingOrderList = []; // 快取資料陣列
+
+        document.addEventListener('DOMContentLoaded', () => {
+            modalInstance = new bootstrap.Modal(document.getElementById('bookingOrderModal'));
+            loadBookingOrders();
+        });
+
+        // 1. 取得所有預訂訂單 (GET)
+        async function loadBookingOrders() {
+            try {
+                hideAlert('alertError');
+                const response = await fetch(API_BASE_URL);
+                if (!response.ok) throw new Error('無法取得訂單列表');
+                bookingOrderList = await response.json();
+                renderTable(bookingOrderList);
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 渲染表格資料
+        function renderTable(list) {
+            const tbody = document.getElementById('bookingOrderTableBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">目前暫無訂單資料</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(item => `
+                <tr>
+                    <td class="ps-3 fw-bold">${item.bookingOrderId}</td>
+                    <td>${item.memberId}</td>
+                    <td class="text-success fw-bold">$${item.bookingTotalPrice}</td>
+                    <td>${getStatusBadge(item.orderStatus)}</td>
+                    <td>${item.paymentId ? item.paymentId : '無'}</td>
+                    <td class="text-muted">${formatDateTime(item.createdAt)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="onEditBtnClick(${item.bookingOrderId})">
+                            <i class="fa-solid fa-pen"></i> 編輯
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBookingOrder(${item.bookingOrderId})">
+                            <i class="fa-solid fa-trash"></i> 刪除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 2. 新增 / 編輯訂單 (POST / PUT)
+        async function saveBookingOrder(e) {
+            e.preventDefault();
+            const id = document.getElementById('bookingOrderId').value;
+            const createdAtVal = document.getElementById('createdAt').value;
+
+            const payload = {
+                bookingOrderId: id ? parseInt(id) : null,
+                memberId: parseInt(document.getElementById('memberId').value),
+                bookingTotalPrice: parseInt(document.getElementById('bookingTotalPrice').value),
+                orderStatus: document.getElementById('orderStatus').value,
+                paymentId: document.getElementById('paymentId').value ? parseInt(document.getElementById('paymentId').value) : null,
+                createdAt: createdAtVal ? new Date(createdAtVal).toISOString() : null
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/${id}` : API_BASE_URL;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || '儲存失敗');
+                }
+
+                modalInstance.hide();
+                showAlert('alertSuccess', id ? '訂單更新成功！' : '新增訂單成功！');
+                loadBookingOrders();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 3. 刪除訂單 (DELETE)
+        async function deleteBookingOrder(id) {
+            if (!confirm('確定要刪除此筆訂單嗎？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || '刪除失敗');
+                }
+
+                showAlert('alertSuccess', '訂單已成功刪除！');
+                loadBookingOrders();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 清空表單
+        function clearForm() {
+            document.getElementById('modalTitle').innerText = '新增訂單';
+            document.getElementById('bookingOrderForm').reset();
+            document.getElementById('bookingOrderId').value = '';
+            document.getElementById('orderStatus').value = 'PENDING';
+
+            // 預設將建立時間帶入目前時間 (格式: YYYY-MM-DDTHH:mm)
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('createdAt').value = now.toISOString().slice(0, 16);
+        }
+
+        // 按下編輯時，從全域陣列比對 ID
+        function onEditBtnClick(id) {
+            const item = bookingOrderList.find(b => b.bookingOrderId === id);
+            if (item) editBookingOrder(item);
+        }
+
+        // 填入資料進行編輯
+        function editBookingOrder(item) {
+            document.getElementById('modalTitle').innerText = '編輯訂單資料';
+            document.getElementById('bookingOrderId').value = item.bookingOrderId;
+            document.getElementById('memberId').value = item.memberId || '';
+            document.getElementById('bookingTotalPrice').value = item.bookingTotalPrice || 0;
+            document.getElementById('orderStatus').value = item.orderStatus || 'PENDING';
+            document.getElementById('paymentId').value = item.paymentId || '';
+
+            if (item.createdAt) {
+                const date = new Date(item.createdAt);
+                date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+                document.getElementById('createdAt').value = date.toISOString().slice(0, 16);
+            } else {
+                document.getElementById('createdAt').value = '';
+            }
+
+            modalInstance.show();
+        }
+
+        // 訂單狀態 Badge 樣式轉換
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'PAID':
+                    return `<span class="badge bg-success">PAID (已付款)</span>`;
+                case 'PENDING':
+                    return `<span class="badge bg-warning text-dark">PENDING (待付款)</span>`;
+                case 'COMPLETED':
+                    return `<span class="badge bg-info text-dark">COMPLETED (已完成)</span>`;
+                case 'CANCELLED':
+                    return `<span class="badge bg-secondary">CANCELLED (已取消)</span>`;
+                default:
+                    return `<span class="badge bg-light text-dark">${escapeHtml(status)}</span>`;
+            }
+        }
+
+        // 時間格式化 (YYYY-MM-DD HH:mm:ss)
+        function formatDateTime(datetimeStr) {
+            if (!datetimeStr) return '無記錄';
+            const date = new Date(datetimeStr);
+            return isNaN(date.getTime()) ? datetimeStr : date.toLocaleString('zh-TW', { hour12: false });
+        }
+
+        // 提示訊息控制
+        function showAlert(id, msg) {
+            const alertElem = document.getElementById(id);
+            const msgElem = document.getElementById(id + 'Msg');
+            if (msgElem) msgElem.innerText = msg;
+            alertElem.classList.remove('d-none');
+        }
+
+        function hideAlert(id) {
+            document.getElementById(id).classList.add('d-none');
+        }
+
+        // XSS 防護
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+    </script>
+</body>
+
+</html>
