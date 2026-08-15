@@ -1,14 +1,520 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>booking</title>
+    <title>訂單管理系統 - Booking Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 圖示 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="bg-light">
 
+    <div class="container py-4">
+        <!-- 頁面標題與按鈕區 -->
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <h2><i class="fa-solid fa-calendar-check me-2"></i>單間訂單管理系統</h2>
+            <div>
+                <!-- 返回首頁按鈕 -->
+                <a href="/" class="btn btn-outline-secondary me-2">
+                    <i class="fa-solid fa-home me-1"></i> 返回首頁
+                </a>
+                <!-- 新增訂單按鈕 -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bookingModal"
+                    onclick="clearForm()">
+                    <i class="fa-solid fa-plus me-1"></i> 新增訂單
+                </button>
+            </div>
+        </div>
+
+        <!-- 訊息提示區 (預設隱藏) -->
+        <div id="alertError" class="alert alert-danger alert-dismissible fade show shadow-sm d-none" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <span id="alertErrorMsg">操作失敗！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertError')"></button>
+        </div>
+        <div id="alertSuccess" class="alert alert-success alert-dismissible fade show shadow-sm d-none" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span id="alertSuccessMsg">操作成功！</span>
+            <button type="button" class="btn-close" onclick="hideAlert('alertSuccess')"></button>
+        </div>
+
+        <!-- 🔍 搜尋與篩選區塊 -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form id="searchForm" onsubmit="handleSearch(event)" class="row g-3 align-items-center">
+                    <!-- 關鍵字搜尋 (訂單 ID / 預定單號 / 房間 ID) -->
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" class="form-control" id="searchInput"
+                                placeholder="搜尋訂單 ID / 預定單號 / 房間 ID...">
+                        </div>
+                    </div>
+                    <!-- 訂單狀態篩選 -->
+                    <div class="col-md-3">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">所有訂單狀態</option>
+                            <option value="處理中">處理中</option>
+                            <option value="訂單完成">訂單完成</option>
+                            <option value="訂單取消">訂單取消</option>
+                        </select>
+                    </div>
+                    <!-- 按鈕組 -->
+                    <div class="col-md-5 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="fa-solid fa-search me-1"></i> 搜尋
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetSearch()">
+                            <i class="fa-solid fa-rotate-left me-1"></i> 重設
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 訂單列表表格 -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col" class="ps-3">訂單編號</th>
+                                <th scope="col">預定訂單編號</th>
+                                <th scope="col">房間編號</th>
+                                <th scope="col">房型編號</th>
+                                <th scope="col">入住日期</th>
+                                <th scope="col">退房日期</th>
+                                <th scope="col">入住人數</th>
+                                <th scope="col">訂單狀態</th>
+                                <th scope="col" class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">載入資料中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增 / 編輯 訂單 Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form id="bookingForm" onsubmit="saveBooking(event)">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalTitle">新增訂單</h5>
+
+                        <!-- 🔒 鎖頭切換按鈕 -->
+                        <div class="ms-auto me-2">
+                            <button type="button" id="lockToggleBtn" class="btn btn-warning btn-sm fw-bold"
+                                onclick="toggleLock()">
+                                <i class="fa-solid fa-lock me-1" id="lockIcon"></i>
+                                <span id="lockText">點擊解鎖</span>
+                            </button>
+                        </div>
+
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="bookingId" name="bookingId">
+
+                        <div
+                            class="fw-bold border-bottom pb-2 mb-3 text-primary d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-receipt me-1"></i> 訂單詳細資訊</span>
+                            <small id="readonlyHint" class="text-muted fw-normal d-none">
+                                <i class="fa-solid fa-circle-info me-1"></i>目前為唯讀狀態，點擊右上角鎖頭即可編輯
+                            </small>
+                        </div>
+
+                        <!-- 第一列：外來鍵連結 -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="bookingOrderId" class="form-label">預定訂單編號 <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control editable-field" id="bookingOrderId"
+                                    name="bookingOrderId" required placeholder="例如：1001">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="roomId" class="form-label">房間編號 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control editable-field" id="roomId" name="roomId"
+                                    required placeholder="例如：5">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="roomTypeId" class="form-label">房型編號 <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" class="form-control editable-field" id="roomTypeId"
+                                    name="roomTypeId" required placeholder="例如：1">
+                            </div>
+                        </div>
+
+                        <!-- 第二列：日期設定 (僅選日期) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="checkInDate" class="form-label">入住日期 <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control editable-field" id="checkInDate"
+                                    name="checkInDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="checkOutDate" class="form-label">退房日期 <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control editable-field" id="checkOutDate"
+                                    name="checkOutDate" required>
+                            </div>
+                        </div>
+
+                        <!-- 第三列：人數與狀態 -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="guestNum" class="form-label">入住人數 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control editable-field" id="guestNum" name="guestNum"
+                                    min="1" max="20" required placeholder="例如：2">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="bookingStatus" class="form-label">訂單狀態 <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select editable-field" id="bookingStatus" name="bookingStatus"
+                                    required>
+                                    <option value="處理中">1. 處理中</option>
+                                    <option value="訂單完成">2. 訂單完成</option>
+                                    <option value="訂單取消">3. 訂單取消</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" id="btnSubmit" class="btn btn-primary">儲存資料</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🚨 二次確認刪除 Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalTitle">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>確認刪除訂單
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <p class="fs-5 mb-2">確定要刪除此筆訂單嗎？</p>
+                    <div class="alert alert-warning d-inline-block text-start px-4 py-2 mb-3">
+                        <strong id="deleteTargetInfo">訂單資料載入中...</strong>
+                    </div>
+                    <p class="text-danger small mb-0"><i class="fa-solid fa-circle-info me-1"></i>此操作無法復原，請謹慎確認！</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger px-4" onclick="executeDelete()">
+                        <i class="fa-solid fa-trash me-1"></i>確認刪除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_BASE_URL = '/api/bookings';
+        let modalInstance = null;
+        let deleteModalInstance = null;
+        let bookingList = [];   // 快取完整訂單資料陣列
+        let isLocked = true;     // 狀態控制：true = 唯讀, false = 可編輯
+        let pendingDeleteId = null; // 當前準備刪除的 Booking ID
+
+        document.addEventListener('DOMContentLoaded', () => {
+            modalInstance = new bootstrap.Modal(document.getElementById('bookingModal'));
+            deleteModalInstance = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            loadBookings();
+        });
+
+        // 1. 取得所有訂單資料 (GET)
+        async function loadBookings() {
+            try {
+                hideAlert('alertError');
+                const response = await fetch(API_BASE_URL);
+                if (!response.ok) throw new Error('無法取得訂單列表');
+                bookingList = await response.json();
+
+                applyFilters();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 2. 搜尋與篩選邏輯
+        function applyFilters() {
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            const selectedStatus = document.getElementById('statusFilter').value;
+
+            const filteredList = bookingList.filter(item => {
+                const matchKeyword = !keyword ||
+                    String(item.bookingId).includes(keyword) ||
+                    String(item.bookingOrderId).includes(keyword) ||
+                    String(item.roomId).includes(keyword);
+
+                const matchStatus = !selectedStatus || item.bookingStatus === selectedStatus;
+
+                return matchKeyword && matchStatus;
+            });
+
+            renderTable(filteredList);
+        }
+
+        function handleSearch(e) {
+            if (e) e.preventDefault();
+            applyFilters();
+        }
+
+        function resetSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            renderTable(bookingList);
+        }
+
+        // 渲染表格資料
+        function renderTable(list) {
+            const tbody = document.getElementById('bookingTableBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">沒有符合條件的訂單資料</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = list.map(item => `
+                <tr>
+                    <td class="ps-3 fw-bold">${item.bookingId}</td>
+                    <td class="text-primary fw-bold">#${item.bookingOrderId}</td>
+                    <td><span class="badge bg-light text-dark border">房間編號: ${item.roomId}</span></td>
+                    <td><span class="badge bg-secondary">房型編號: ${item.roomTypeId}</span></td>
+                    <td>${formatDisplayDate(item.checkInDate)}</td>
+                    <td>${formatDisplayDate(item.checkOutDate)}</td>
+                    <td><i class="fa-solid fa-user me-1 text-muted"></i>${item.guestNum} 人</td>
+                    <td>${getStatusBadge(item.bookingStatus)}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="onEditBtnClick(${item.bookingId})">
+                            <i class="fa-solid fa-pen"></i> 編輯
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="openDeleteConfirm(${item.bookingId})">
+                            <i class="fa-solid fa-trash"></i> 刪除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 訂單狀態 Badge 顏色轉換
+        function getStatusBadge(status) {
+            switch (status) {
+                case '處理中': return `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>處理中</span>`;
+                case '訂單完成': return `<span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i>訂單完成</span>`;
+                case '訂單取消': return `<span class="badge bg-danger"><i class="fa-solid fa-times-circle me-1"></i>訂單取消</span>`;
+                default: return `<span class="badge bg-secondary">${escapeHtml(status || '未知')}</span>`;
+            }
+        }
+
+        // 🔒 控制唯讀 / 可編輯狀態
+        function setLockState(locked) {
+            isLocked = locked;
+            const fields = document.querySelectorAll('.editable-field');
+            const lockIcon = document.getElementById('lockIcon');
+            const lockText = document.getElementById('lockText');
+            const lockBtn = document.getElementById('lockToggleBtn');
+            const submitBtn = document.getElementById('btnSubmit');
+            const hint = document.getElementById('readonlyHint');
+
+            if (isLocked) {
+                fields.forEach(field => {
+                    if (field.tagName === 'SELECT') {
+                        field.setAttribute('disabled', 'disabled');
+                    } else {
+                        field.setAttribute('readonly', 'readonly');
+                    }
+                });
+                lockIcon.className = 'fa-solid fa-lock me-1';
+                lockText.innerText = '點擊解鎖';
+                lockBtn.className = 'btn btn-warning btn-sm fw-bold';
+                submitBtn.classList.add('d-none');
+                hint.classList.remove('d-none');
+            } else {
+                fields.forEach(field => {
+                    if (field.tagName === 'SELECT') {
+                        field.removeAttribute('disabled');
+                    } else {
+                        field.removeAttribute('readonly');
+                    }
+                });
+                lockIcon.className = 'fa-solid fa-lock-open me-1';
+                lockText.innerText = '編輯中';
+                lockBtn.className = 'btn btn-success btn-sm fw-bold';
+                submitBtn.classList.remove('d-none');
+                hint.classList.add('d-none');
+            }
+        }
+
+        function toggleLock() {
+            setLockState(!isLocked);
+        }
+
+        // 3. 新增 / 編輯訂單 (POST / PUT)
+        async function saveBooking(e) {
+            e.preventDefault();
+            if (isLocked) return;
+
+            const id = document.getElementById('bookingId').value;
+            const payload = {
+                bookingId: id ? parseInt(id) : null,
+                bookingOrderId: parseInt(document.getElementById('bookingOrderId').value),
+                roomId: parseInt(document.getElementById('roomId').value),
+                roomTypeId: parseInt(document.getElementById('roomTypeId').value),
+                checkInDate: document.getElementById('checkInDate').value,
+                checkOutDate: document.getElementById('checkOutDate').value,
+                guestNum: parseInt(document.getElementById('guestNum').value),
+                bookingStatus: document.getElementById('bookingStatus').value
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/${id}` : API_BASE_URL;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || '儲存失敗');
+                }
+
+                modalInstance.hide();
+                showAlert('alertSuccess', id ? '訂單更新成功！' : '新增訂單成功！');
+                loadBookings();
+            } catch (err) {
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 4. 開啟刪除二次確認 Modal
+        function openDeleteConfirm(id) {
+            const item = bookingList.find(b => b.bookingId === id);
+            if (!item) return;
+
+            pendingDeleteId = id;
+            document.getElementById('deleteTargetInfo').innerText = `[訂單編號: ${item.bookingId}] 預定單號 #${item.bookingOrderId} (房間編號: ${item.roomId})`;
+            deleteModalInstance.show();
+        }
+
+        // 5. 執行刪除訂單 (DELETE)
+        async function executeDelete() {
+            if (!pendingDeleteId) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${pendingDeleteId}`, { method: 'DELETE' });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || '刪除失敗');
+                }
+
+                deleteModalInstance.hide();
+                showAlert('alertSuccess', '訂單已成功刪除！');
+                pendingDeleteId = null;
+                loadBookings();
+            } catch (err) {
+                deleteModalInstance.hide();
+                showAlert('alertError', err.message);
+            }
+        }
+
+        // 清空表單
+        function clearForm() {
+            document.getElementById('modalTitle').innerText = '新增訂單';
+            document.getElementById('bookingForm').reset();
+            document.getElementById('bookingId').value = '';
+            document.getElementById('bookingStatus').value = '處理中';
+
+            document.getElementById('lockToggleBtn').classList.add('d-none');
+            setLockState(false);
+        }
+
+        // 按下編輯按鈕觸發
+        function onEditBtnClick(id) {
+            const item = bookingList.find(b => b.bookingId === id);
+            if (item) editBooking(item);
+        }
+
+        // 填入資料並開啟 Modal
+        function editBooking(item) {
+            document.getElementById('modalTitle').innerText = '查看 / 編輯訂單資料';
+            document.getElementById('bookingId').value = item.bookingId;
+            document.getElementById('bookingOrderId').value = item.bookingOrderId || '';
+            document.getElementById('roomId').value = item.roomId || '';
+            document.getElementById('roomTypeId').value = item.roomTypeId || '';
+            document.getElementById('checkInDate').value = formatDateOnly(item.checkInDate);
+            document.getElementById('checkOutDate').value = formatDateOnly(item.checkOutDate);
+            document.getElementById('guestNum').value = item.guestNum || 1;
+            document.getElementById('bookingStatus').value = item.bookingStatus || '處理中';
+
+            document.getElementById('lockToggleBtn').classList.remove('d-none');
+            setLockState(true);
+
+            modalInstance.show();
+        }
+
+        // 轉化為 date 輸入框格式 (YYYY-MM-DD)
+        function formatDateOnly(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr.split('T')[0] || dateStr;
+            const pad = num => String(num).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
+        // 顯示表格用的日期格式化
+        function formatDisplayDate(dateStr) {
+            if (!dateStr) return '—';
+            return formatDateOnly(dateStr);
+        }
+
+        // 提示訊息控制
+        function showAlert(id, msg) {
+            const alertElem = document.getElementById(id);
+            const msgElem = document.getElementById(id + 'Msg');
+            if (msgElem) msgElem.innerText = msg;
+            alertElem.classList.remove('d-none');
+        }
+
+        function hideAlert(id) {
+            document.getElementById(id).classList.add('d-none');
+        }
+
+        // XSS 防護
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+    </script>
 </body>
 
 </html>
