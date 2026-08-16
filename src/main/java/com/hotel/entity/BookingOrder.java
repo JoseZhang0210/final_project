@@ -53,11 +53,11 @@ public class BookingOrder {
     // 在 BookingOrder.java 類別內新增這兩個 helper 方法
     public void addBooking(Booking booking) {
         bookings.add(booking);
-        booking.setBookingOrder(this);
+        booking.setBookingId(this.getBookingOrderId());
     }
 
     public void removeBooking(Booking booking) {
         bookings.remove(booking);
-        booking.setBookingOrder(null);
+        booking.setBookingId(null);
     }
 }
