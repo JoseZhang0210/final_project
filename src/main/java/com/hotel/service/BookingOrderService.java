@@ -21,6 +21,9 @@ public class BookingOrderService {
 
     // 1. Create - 新增訂單
     public BookingOrder insert(BookingOrder bookingOrder) {
+        if (bookingOrder.getCreatedAt() == null) {
+            bookingOrder.setCreatedAt(new Date());
+        }
         return bookingOrderRepository.save(bookingOrder);
     }
 
@@ -51,7 +54,7 @@ public class BookingOrderService {
                         existingOrder.setOrderStatus(updatedOrder.getOrderStatus());
                     }
 
-                    // paymentId 允許覆蓋為 null（前端清空時）
+                    // paymentId 允許更新（包含清空為 null）
                     existingOrder.setPaymentId(updatedOrder.getPaymentId());
 
                     // 若前端有帶入建立時間則更新，否則保留原建立時間
@@ -63,6 +66,7 @@ public class BookingOrderService {
                     if (updatedOrder.getBookings() != null) {
                         existingOrder.getBookings().clear();
                         updatedOrder.getBookings().forEach(booking -> {
+                            // 修復重點：應設定關聯的 BookingOrder 物件，而非 setBookingId
                             booking.setBookingOrder(existingOrder);
                             existingOrder.getBookings().add(booking);
                         });
@@ -81,13 +85,8 @@ public class BookingOrderService {
         bookingOrderRepository.deleteById(id);
     }
 
+    // 6. 備用新增方法（內部統一呼叫 insert 避免冗餘）
     public BookingOrder createBookingOrder(BookingOrder order) {
-        // 預設建立時間
-        if (order.getCreatedAt() == null) {
-            order.setCreatedAt(new Date());
-        }
-
-        // 不需要寫 order.setBookingOrderId(...)，JPA 與 SQL Server 會自動生成 ID
-        return bookingOrderRepository.save(order);
+        return insert(order);
     }
 }

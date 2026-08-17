@@ -22,8 +22,8 @@ import com.hotel.entity.BookingOrder;
 import com.hotel.service.BookingOrderService;
 
 @RestController
-@RequestMapping("/api/booking-orders") // 統一 API 基礎路徑，對齊前端 JS 變數
-@CrossOrigin(origins = "*")           // 允許跨域請求
+@RequestMapping("/api/booking-orders")
+@CrossOrigin(origins = "*")
 public class BookingOrderController {
 
     private final BookingOrderService bookingOrderService;
@@ -32,7 +32,7 @@ public class BookingOrderController {
         this.bookingOrderService = bookingOrderService;
     }
 
-    // 1. 取得所有預訂訂單 (GET /api/booking-orders)
+    // 1. 取得所有預訂主訂單 (GET /api/booking-orders)
     @GetMapping
     public ResponseEntity<?> getAllBookingOrders() {
         try {
@@ -44,11 +44,11 @@ public class BookingOrderController {
         }
     }
 
-    // 2. 取得單筆預訂訂單 (GET /api/booking-orders/{id})
+    // 2. 取得單筆預訂主訂單 (GET /api/booking-orders/{id})
     @GetMapping("/{id}")
     public ResponseEntity<?> getBookingOrderById(@PathVariable Integer id) {
         try {
-            BookingOrder bookingOrder = bookingOrderService.findById(id); // 需確保 Service 提供 findById
+            BookingOrder bookingOrder = bookingOrderService.findById(id);
             if (bookingOrder == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "找不到該訂單資料"));
@@ -64,11 +64,9 @@ public class BookingOrderController {
     @PostMapping
     public ResponseEntity<?> createBookingOrder(@RequestBody BookingOrder bookingOrder) {
         try {
-            // 處理雙向關聯與建立時間
             prepareBookingOrder(bookingOrder);
-
             BookingOrder savedOrder = bookingOrderService.insert(bookingOrder);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+            return ResponseEntity.ok(savedOrder);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "新增訂單失敗：" + e.getMessage()));
@@ -79,7 +77,6 @@ public class BookingOrderController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBookingOrder(@PathVariable Integer id, @RequestBody BookingOrder bookingOrder) {
         try {
-            // 設定 ID 確保更新標的正確
             bookingOrder.setBookingOrderId(id);
             prepareBookingOrder(bookingOrder);
 
@@ -104,19 +101,17 @@ public class BookingOrderController {
     }
 
     /**
-     * 輔助方法：統一處理時間設定與手動維護 JPA 雙向關聯外鍵
+     * 輔助方法：處理時間設定與 JPA 雙向關聯外鍵
      */
     private void prepareBookingOrder(BookingOrder bookingOrder) {
-        // 1. 若建立時間為空，設為當前時間
         if (bookingOrder.getCreatedAt() == null) {
             bookingOrder.setCreatedAt(new Date());
         }
 
-        // 2. 手動維護 JPA 雙向關聯外鍵 (booking_order_id)
         if (bookingOrder.getBookings() != null) {
             List<Booking> validBookings = bookingOrder.getBookings().stream()
                     .filter(b -> b.getCheckInDate() != null && b.getCheckOutDate() != null)
-                    .peek(b -> b.setBookingOrder(bookingOrder))
+                    .peek(b -> b.setBookingOrder(bookingOrder)) // 確保每一個子 Booking 都綁定父層物件
                     .collect(Collectors.toList());
 
             bookingOrder.getBookings().clear();
