@@ -1,0 +1,23 @@
+/* 讓外層 wrapper 支援動畫 transition */
+#wrapper {
+  display: flex;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  transition: margin-left 0.3s ease-in-out;
+}
+
+/* 當套用 toggled 時，將 sidebar 向左拉出螢幕範圍 */
+#wrapper.toggled #sidebar {
+  margin-left: -260px;
+}
+/* 描述欄位：禁用手動拉伸、固定高度、內容多時自動捲動 */
+.fixed-textarea {
+  height: 120px !important;
+  resize: none !important;
+  overflow-y: auto;
+}

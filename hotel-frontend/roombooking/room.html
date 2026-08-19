@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>房間管理系統 - Room Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome 圖示 -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-light">
+    <div class="container py-4">
+      <!-- 頁面標題與按鈕區 -->
+      <div
+        class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom"
+      >
+        <h2><i class="fa-solid fa-door-closed me-2"></i>房間資料管理系統</h2>
+        <div>
+          <!-- 返回首頁按鈕 -->
+          <a href="/" class="btn btn-outline-secondary me-2">
+            <i class="fa-solid fa-home me-1"></i> 返回首頁
+          </a>
+          <!-- 新增房間按鈕 -->
+          <button
+            type="button"
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#roomModal"
+            onclick="clearForm()"
+          >
+            <i class="fa-solid fa-plus me-1"></i> 新增房間
+          </button>
+        </div>
+      </div>
+
+      <!-- 訊息提示區 (預設隱藏) -->
+      <div
+        id="alertError"
+        class="alert alert-danger alert-dismissible fade show shadow-sm d-none"
+        role="alert"
+      >
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        <span id="alertErrorMsg">操作失敗！</span>
+        <button
+          type="button"
+          class="btn-close"
+          onclick="hideAlert('alertError')"
+        ></button>
+      </div>
+      <div
+        id="alertSuccess"
+        class="alert alert-success alert-dismissible fade show shadow-sm d-none"
+        role="alert"
+      >
+        <i class="fa-solid fa-circle-check me-2"></i>
+        <span id="alertSuccessMsg">操作成功！</span>
+        <button
+          type="button"
+          class="btn-close"
+          onclick="hideAlert('alertSuccess')"
+        ></button>
+      </div>
+
+      <!-- 🔍 搜尋與篩選區塊 -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <form
+            id="searchForm"
+            onsubmit="handleSearch(event)"
+            class="row g-3 align-items-center"
+          >
+            <!-- 關鍵字搜尋 (房號 / ID) -->
+            <div class="col-md-5">
+              <div class="input-group">
+                <span class="input-group-text bg-light"
+                  ><i class="fa-solid fa-magnifying-glass"></i
+                ></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="searchInput"
+                  placeholder="搜尋房號或房間 ID..."
+                />
+              </div>
+            </div>
+            <!-- 樓層篩選 -->
+            <div class="col-md-2">
+              <select class="form-select" id="floorFilter">
+                <option value="">所有樓層</option>
+                <option value="5">5 樓</option>
+                <option value="6">6 樓</option>
+                <option value="7">7 樓</option>
+                <option value="8">8 樓</option>
+                <option value="9">9 樓</option>
+                <option value="10">10 樓</option>
+              </select>
+            </div>
+            <!-- 房間狀態篩選 -->
+            <div class="col-md-2">
+              <select class="form-select" id="roomStatusFilter">
+                <option value="">所有房間狀態</option>
+                <option value="可預訂">可預訂</option>
+                <option value="已預訂">已預訂</option>
+                <option value="已入住">已入住</option>
+                <option value="退房待清潔">退房待清潔</option>
+                <option value="清潔中">清潔中</option>
+              </select>
+            </div>
+            <!-- 按鈕組 -->
+            <div class="col-md-3 d-flex gap-2">
+              <button type="submit" class="btn btn-primary flex-fill">
+                <i class="fa-solid fa-search me-1"></i> 搜尋
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                onclick="resetSearch()"
+              >
+                <i class="fa-solid fa-rotate-left me-1"></i> 重設
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 房間列表表格 -->
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th scope="col" class="ps-3">房間 ID</th>
+                  <th scope="col">房號</th>
+                  <th scope="col">房型 ID</th>
+                  <th scope="col">樓層</th>
+                  <th scope="col">房間狀態 (Room Status)</th>
+                  <th scope="col" class="text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody id="roomTableBody">
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    載入資料中...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增 / 編輯 房間 Modal -->
+    <div
+      class="modal fade"
+      id="roomModal"
+      tabindex="-1"
+      aria-labelledby="modalTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form id="roomForm" onsubmit="saveRoom(event)">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="modalTitle">新增房間</h5>
+
+              <!-- 🔒 鎖頭切換按鈕 -->
+              <div class="ms-auto me-2">
+                <button
+                  type="button"
+                  id="lockToggleBtn"
+                  class="btn btn-warning btn-sm fw-bold"
+                  onclick="toggleLock()"
+                >
+                  <i class="fa-solid fa-lock me-1" id="lockIcon"></i>
+                  <span id="lockText">點擊解鎖</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="roomId" name="roomId" />
+
+              <div
+                class="fw-bold border-bottom pb-2 mb-3 text-primary d-flex justify-content-between align-items-center"
+              >
+                <span
+                  ><i class="fa-solid fa-door-open me-1"></i> 房間詳細資訊</span
+                >
+                <small id="readonlyHint" class="text-muted fw-normal d-none">
+                  <i class="fa-solid fa-circle-info me-1"></i>
+                  >目前為唯讀狀態，點擊右上角鎖頭即可編輯
+                </small>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="roomNumber" class="form-label"
+                    >房號 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control editable-field"
+                    id="roomNumber"
+                    name="roomNumber"
+                    required
+                    placeholder="例如：10501"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="roomTypeId" class="form-label"
+                    >房型 ID <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="roomTypeId"
+                    name="roomTypeId"
+                    required
+                    placeholder="例如：1"
+                  />
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="floor" class="form-label"
+                    >樓層 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="floor"
+                    name="floor"
+                    min="1"
+                    max="100"
+                    required
+                    placeholder="例如：5"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="roomStatus" class="form-label"
+                    >房間狀態 (Room Status)
+                    <span class="text-danger">*</span></label
+                  >
+                  <select
+                    class="form-select editable-field"
+                    id="roomStatus"
+                    name="roomStatus"
+                    required
+                  >
+                    <option value="可預訂">1. 可預訂</option>
+                    <option value="已預訂">2. 已預訂</option>
+                    <option value="已入住">3. 已入住</option>
+                    <option value="退房待清潔">4. 退房待清潔</option>
+                    <option value="清潔中">5. 清潔中</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                取消
+              </button>
+              <button type="submit" id="btnSubmit" class="btn btn-primary">
+                儲存資料
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🚨 二次確認刪除 Modal -->
+    <div
+      class="modal fade"
+      id="deleteConfirmModal"
+      tabindex="-1"
+      aria-labelledby="deleteModalTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteModalTitle">
+              <i class="fa-solid fa-triangle-exclamation me-2"></i>確認刪除房間
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <p class="fs-5 mb-2">確定要刪除以下房間嗎？</p>
+            <div
+              class="alert alert-warning d-inline-block text-start px-4 py-2 mb-3"
+            >
+              <strong id="deleteTargetInfo">房間資料載入中...</strong>
+            </div>
+            <p class="text-danger small mb-0">
+              <i class="fa-solid fa-circle-info me-1"></i
+              >此操作無法復原，請謹慎確認！
+            </p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary px-4"
+              data-bs-dismiss="modal"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger px-4"
+              onclick="executeDelete()"
+            >
+              <i class="fa-solid fa-trash me-1"></i>確認刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="../js/roombooking/room.js"></script>
+  </body>
+</html>

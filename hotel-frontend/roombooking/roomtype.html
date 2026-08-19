@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>飯店管理系統 - Room Type Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome 圖示 -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- 專案共用與頁面專屬 CSS -->
+    <link rel="stylesheet" href="/css/roombooking/style.css" />
+  </head>
+
+  <body class="bg-light">
+    <!-- Dashboard 主結構 -->
+    <div class="admin-wrapper d-flex" id="wrapper">
+      <!-- ⬅️ 左側固定導覽列 Sidebar -->
+      <aside
+        class="sidebar bg-dark text-white p-3 d-flex flex-column"
+        id="sidebar"
+      >
+        <!-- 品牌名稱區 -->
+        <div
+          class="brand fs-4 fw-bold mb-3 pb-2 border-bottom text-center d-flex align-items-center justify-content-center gap-2"
+        >
+          <i class="fa-solid fa-hotel"></i>
+          <span class="sidebar-text">飯店管理系統</span>
+        </div>
+
+        <ul class="nav nav-pills flex-column mb-auto">
+          <!-- 📂 可折疊主目錄：房間設計管理 -->
+          <li class="nav-item">
+            <a
+              href="#roomSubmenu"
+              data-bs-toggle="collapse"
+              aria-expanded="true"
+              class="nav-link text-white d-flex align-items-center justify-content-between"
+            >
+              <div>
+                <i class="fa-solid fa-bed me-2"></i>
+                <span class="sidebar-text fw-bold">房間設計管理</span>
+              </div>
+              <i class="fa-solid fa-chevron-down small sidebar-text"></i>
+            </a>
+
+            <!-- 6 個子項目列表 -->
+            <div class="collapse show ps-3 mt-1" id="roomSubmenu">
+              <ul class="nav nav-pills flex-column">
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/bookingorder.html"
+                    class="nav-link text-white-50 py-2 my-1"
+                  >
+                    <i class="fa-solid fa-file-invoice-dollar me-2"></i>
+                    <span class="sidebar-text">訂房訂單管理</span>
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/booking.html"
+                    class="nav-link text-white-50 py-2 my-1"
+                  >
+                    <i class="fa-solid fa-calendar-check me-2"></i>
+                    <span class="sidebar-text">入住明細管理</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/room.html"
+                    class="nav-link text-white-50 py-2 my-1"
+                  >
+                    <i class="fa-solid fa-door-closed me-2"></i>
+                    <span class="sidebar-text">房間狀態管理</span>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/roomtask.html"
+                    class="nav-link text-white-50 py-2 my-1"
+                  >
+                    <i class="fa-solid fa-broom me-2"></i>
+                    <span class="sidebar-text">房務維護任務</span>
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/roomtype.html"
+                    class="nav-link active py-2 my-1"
+                  >
+                    <i class="fa-solid fa-sliders me-2"></i>
+                    <span class="sidebar-text">房型設定管理</span>
+                  </a>
+                </li>
+
+                <li class="nav-item">
+                  <a
+                    href="/roombooking/imageroom.html"
+                    class="nav-link text-white-50 py-2 my-1"
+                  >
+                    <i class="fa-solid fa-image me-2"></i>
+                    <span class="sidebar-text">房間圖片管理</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </aside>
+
+      <!-- ➡️ 右側主要工作區域 Main Content -->
+      <main class="main-content flex-fill overflow-auto vh-100">
+        <!-- 頂部列：包含三條線切換按鈕與麵包屑 -->
+        <header
+          class="bg-white border-bottom p-3 d-flex align-items-center shadow-sm"
+        >
+          <button
+            class="btn btn-light border-0 me-3"
+            id="sidebarToggle"
+            type="button"
+          >
+            <i class="fa-solid fa-bars fs-5"></i>
+          </button>
+          <span class="fw-bold text-secondary"
+            >房間設計管理 / 房型設定管理</span
+          >
+        </header>
+
+        <div class="p-4">
+          <!-- 錯誤提示訊息區塊 -->
+          <div
+            id="alertError"
+            class="alert alert-danger d-none"
+            role="alert"
+          ></div>
+
+          <!-- 頁面標題區塊 -->
+          <div
+            class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom"
+          >
+            <h2><i class="fa-solid fa-bed me-2"></i>房型資料管理系統</h2>
+            <button
+              type="button"
+              class="btn btn-success shadow-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#roomTypeModal"
+              id="openAddModalBtn"
+            >
+              <i class="fa-solid fa-plus me-1"></i> 新增房型
+            </button>
+          </div>
+
+          <!-- 🔍 搜尋與篩選列 -->
+          <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+              <form id="searchForm" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                    </span>
+                    <input
+                      type="text"
+                      class="form-control border-start-0"
+                      id="searchInput"
+                      placeholder="搜尋房型名稱、床型或描述..."
+                    />
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <select class="form-select" id="capacityFilter">
+                    <option value="">所有人數上限</option>
+                    <option value="1">1 人</option>
+                    <option value="2">2 人</option>
+                    <option value="4">4 人</option>
+                  </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary flex-fill">
+                    <i class="fa-solid fa-search me-1"></i> 搜尋
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="resetSearchBtn"
+                  >
+                    <i class="fa-solid fa-rotate-left me-1"></i> 重設
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Data Table 表格 -->
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-dark">
+                    <tr>
+                      <th scope="col" class="ps-3">房型 ID</th>
+                      <th scope="col">房型名稱</th>
+                      <th scope="col">床型</th>
+                      <th scope="col">每晚價格</th>
+                      <th scope="col">容納人數</th>
+                      <th scope="col">圖片 ID</th>
+                      <th scope="col">描述</th>
+                      <th scope="col" class="text-center">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="roomTypeTableBody">
+                    <tr>
+                      <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-spinner fa-spin me-2"></i
+                        >載入資料中...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 1. 新增 / 編輯房型 Modal (包含鎖頭狀態控制與欄位校驗) -->
+    <div
+      class="modal fade"
+      id="roomTypeModal"
+      tabindex="-1"
+      aria-labelledby="roomTypeModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <!-- Modal Header -->
+          <div
+            class="modal-header d-flex justify-content-between align-items-center"
+          >
+            <div class="d-flex align-items-center gap-3">
+              <h5 class="modal-title mb-0" id="roomTypeModalLabel">房型資訊</h5>
+              <!-- 🔒/🔓 鎖頭開關按鈕 -->
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                id="lockToggleBtn"
+                title="切換編輯/唯讀狀態"
+              >
+                <i class="fa-solid fa-lock-open" id="lockIcon"></i>
+                <span id="lockStatusText">編輯中</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="btn-close ms-0"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <!-- Modal Body 表單 -->
+          <form id="modalForm">
+            <div class="modal-body">
+              <input type="hidden" id="roomTypeId" />
+              <div class="row g-3">
+                <!-- 房型名稱 (必填) -->
+                <div class="col-md-6">
+                  <label for="roomTypeName" class="form-label fw-bold">
+                    房型名稱 <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="roomTypeName"
+                    placeholder="例如：雙人海景房"
+                    required
+                  />
+                </div>
+
+                <!-- 床型 (必填) -->
+                <div class="col-md-6">
+                  <label for="bedType" class="form-label fw-bold">
+                    床型 <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="bedType"
+                    placeholder="例如：2張單人床 or 1張雙人床"
+                    required
+                  />
+                </div>
+
+                <!-- 每晚價格 (必填，最小金額 2000) -->
+                <div class="col-md-4">
+                  <label for="price" class="form-label fw-bold">
+                    每晚價格 ($) <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="price"
+                    min="0"
+                    step="100"
+                    placeholder="最低 $2000 起"
+                    required
+                  />
+                </div>
+
+                <!-- 容納人數 (必填) -->
+                <div class="col-md-4">
+                  <label for="capacity" class="form-label fw-bold">
+                    容納人數 <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="capacity"
+                    min="1"
+                    placeholder="可容納人數"
+                    required
+                  />
+                </div>
+
+                <!-- 房間圖片 ID (外來鍵，必填) -->
+                <div class="col-md-4">
+                  <label for="imageId" class="form-label fw-bold">
+                    房間圖片 ID
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="imageId"
+                    min="1"
+                    placeholder="圖片代號 (選填)"
+                  />
+                </div>
+
+                <!-- 描述 (純文字，大小固定，選填) -->
+                <div class="col-md-12">
+                  <label for="description" class="form-label fw-bold"
+                    >描述</label
+                  >
+                  <textarea
+                    class="form-control fixed-textarea"
+                    id="description"
+                    placeholder="簡短描敘房型特色、是否含早餐..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Footer 動作按鈕區 -->
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                取消
+              </button>
+              <button type="submit" class="btn btn-primary" id="saveSubmitBtn">
+                儲存
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 刪除確認 Modal -->
+    <div
+      class="modal fade"
+      id="deleteConfirmModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">確認刪除</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">確定要刪除此房型資料嗎？此操作無法撤銷。</div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              取消
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              確定刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 外部 JavaScript 邏輯庫引入 -->
+    <script src="/js/api.js"></script>
+    <script src="/js/roombooking/room-type.js"></script>
+  </body>
+</html>

@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>訂單管理系統 - Booking Management</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- FontAwesome 圖示 -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-light">
+    <div class="container py-4">
+      <!-- 頁面標題與按鈕區 -->
+      <div
+        class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom"
+      >
+        <h2><i class="fa-solid fa-calendar-check me-2"></i>單間訂單管理系統</h2>
+        <div>
+          <!-- 返回首頁按鈕 -->
+          <a href="/" class="btn btn-outline-secondary me-2">
+            <i class="fa-solid fa-home me-1"></i> 返回首頁
+          </a>
+          <!-- 新增訂單按鈕 -->
+          <button
+            type="button"
+            class="btn btn-success"
+            data-bs-toggle="modal"
+            data-bs-target="#bookingModal"
+            onclick="clearForm()"
+          >
+            <i class="fa-solid fa-plus me-1"></i> 新增訂單
+          </button>
+        </div>
+      </div>
+
+      <!-- 訊息提示區 (預設隱藏) -->
+      <div
+        id="alertError"
+        class="alert alert-danger alert-dismissible fade show shadow-sm d-none"
+        role="alert"
+      >
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        <span id="alertErrorMsg">操作失敗！</span>
+        <button
+          type="button"
+          class="btn-close"
+          onclick="hideAlert('alertError')"
+        ></button>
+      </div>
+      <div
+        id="alertSuccess"
+        class="alert alert-success alert-dismissible fade show shadow-sm d-none"
+        role="alert"
+      >
+        <i class="fa-solid fa-circle-check me-2"></i>
+        <span id="alertSuccessMsg">操作成功！</span>
+        <button
+          type="button"
+          class="btn-close"
+          onclick="hideAlert('alertSuccess')"
+        ></button>
+      </div>
+
+      <!-- 🔍 搜尋與篩選區塊 -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <form
+            id="searchForm"
+            onsubmit="handleSearch(event)"
+            class="row g-3 align-items-center"
+          >
+            <!-- 關鍵字搜尋 (訂單 ID / 預定單號 / 房間 ID) -->
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text bg-light"
+                  ><i class="fa-solid fa-magnifying-glass"></i
+                ></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="searchInput"
+                  placeholder="搜尋訂單 ID / 預定單號 / 房間 ID..."
+                />
+              </div>
+            </div>
+            <!-- 訂單狀態篩選 -->
+            <div class="col-md-3">
+              <select class="form-select" id="statusFilter">
+                <option value="">所有訂單狀態</option>
+                <option value="處理中">處理中</option>
+                <option value="訂單完成">訂單完成</option>
+                <option value="訂單取消">訂單取消</option>
+              </select>
+            </div>
+            <!-- 按鈕組 -->
+            <div class="col-md-5 d-flex gap-2">
+              <button type="submit" class="btn btn-primary flex-fill">
+                <i class="fa-solid fa-search me-1"></i> 搜尋
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                onclick="resetSearch()"
+              >
+                <i class="fa-solid fa-rotate-left me-1"></i> 重設
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 訂單列表表格 -->
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th scope="col" class="ps-3">訂單編號</th>
+                  <th scope="col">預定訂單編號</th>
+                  <th scope="col">房間編號</th>
+                  <th scope="col">房型編號</th>
+                  <th scope="col">入住日期</th>
+                  <th scope="col">退房日期</th>
+                  <th scope="col">入住人數</th>
+                  <th scope="col">訂單狀態</th>
+                  <th scope="col" class="text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody id="bookingTableBody">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">
+                    載入資料中...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增 / 編輯 訂單 Modal -->
+    <div
+      class="modal fade"
+      id="bookingModal"
+      tabindex="-1"
+      aria-labelledby="modalTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form id="bookingForm" onsubmit="saveBooking(event)">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="modalTitle">新增訂單</h5>
+
+              <!-- 🔒 鎖頭切換按鈕 -->
+              <div class="ms-auto me-2">
+                <button
+                  type="button"
+                  id="lockToggleBtn"
+                  class="btn btn-warning btn-sm fw-bold"
+                  onclick="toggleLock()"
+                >
+                  <i class="fa-solid fa-lock me-1" id="lockIcon"></i>
+                  <span id="lockText">點擊解鎖</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="bookingId" name="bookingId" />
+
+              <div
+                class="fw-bold border-bottom pb-2 mb-3 text-primary d-flex justify-content-between align-items-center"
+              >
+                <span
+                  ><i class="fa-solid fa-receipt me-1"></i> 訂單詳細資訊</span
+                >
+                <small id="readonlyHint" class="text-muted fw-normal d-none">
+                  <i class="fa-solid fa-circle-info me-1"></i
+                  >目前為唯讀狀態，點擊右上角鎖頭即可編輯
+                </small>
+              </div>
+
+              <!-- 第一列：外來鍵連結 -->
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="bookingOrderId" class="form-label"
+                    >預定訂單編號 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="bookingOrderId"
+                    name="bookingOrderId"
+                    required
+                    placeholder="例如：1001"
+                  />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="roomId" class="form-label"
+                    >房間編號 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="roomId"
+                    name="roomId"
+                    required
+                    placeholder="例如：5"
+                  />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="roomTypeId" class="form-label"
+                    >房型編號 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="roomTypeId"
+                    name="roomTypeId"
+                    required
+                    placeholder="例如：1"
+                  />
+                </div>
+              </div>
+
+              <!-- 第二列：日期設定 (僅選日期) -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="checkInDate" class="form-label"
+                    >入住日期 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="date"
+                    class="form-control editable-field"
+                    id="checkInDate"
+                    name="checkInDate"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="checkOutDate" class="form-label"
+                    >退房日期 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="date"
+                    class="form-control editable-field"
+                    id="checkOutDate"
+                    name="checkOutDate"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- 第三列：人數與狀態 -->
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="guestNum" class="form-label"
+                    >入住人數 <span class="text-danger">*</span></label
+                  >
+                  <input
+                    type="number"
+                    class="form-control editable-field"
+                    id="guestNum"
+                    name="guestNum"
+                    min="1"
+                    max="20"
+                    required
+                    placeholder="例如：2"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="bookingStatus" class="form-label"
+                    >訂單狀態 <span class="text-danger">*</span></label
+                  >
+                  <select
+                    class="form-select editable-field"
+                    id="bookingStatus"
+                    name="bookingStatus"
+                    required
+                  >
+                    <option value="處理中">1. 處理中</option>
+                    <option value="訂單完成">2. 訂單完成</option>
+                    <option value="訂單取消">3. 訂單取消</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                取消
+              </button>
+              <button type="submit" id="btnSubmit" class="btn btn-primary">
+                儲存資料
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🚨 二次確認刪除 Modal -->
+    <div
+      class="modal fade"
+      id="deleteConfirmModal"
+      tabindex="-1"
+      aria-labelledby="deleteModalTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteModalTitle">
+              <i class="fa-solid fa-triangle-exclamation me-2"></i>確認刪除訂單
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <p class="fs-5 mb-2">確定要刪除此筆訂單嗎？</p>
+            <div
+              class="alert alert-warning d-inline-block text-start px-4 py-2 mb-3"
+            >
+              <strong id="deleteTargetInfo">訂單資料載入中...</strong>
+            </div>
+            <p class="text-danger small mb-0">
+              <i class="fa-solid fa-circle-info me-1"></i
+              >此操作無法復原，請謹慎確認！
+            </p>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary px-4"
+              data-bs-dismiss="modal"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger px-4"
+              onclick="executeDelete()"
+            >
+              <i class="fa-solid fa-trash me-1"></i>確認刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/roombooking/booking.js"></script>
+  </body>
+</html>
