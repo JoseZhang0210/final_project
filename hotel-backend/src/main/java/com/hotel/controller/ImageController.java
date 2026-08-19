@@ -62,11 +62,11 @@ public class ImageController {
                 // Web 端讀取路徑
                 dbPath = "/images/room/" + fileName;
 
-            // 情境 B: 選擇系統內建的靜態圖片
+                // 情境 B: 選擇系統內建的靜態圖片
             } else if (staticPath != null && !staticPath.trim().isEmpty()) {
                 dbPath = staticPath.trim();
 
-            // 情境 C: 兩者皆未提供
+                // 情境 C: 兩者皆未提供
             } else {
                 return ResponseEntity.badRequest().body("請上傳圖片檔案或選擇預設圖片！");
             }
@@ -99,25 +99,42 @@ public class ImageController {
         return ResponseEntity.ok(imageService.findAll());
     }
 
-    // 4. 刪除圖片 (包含資料庫紀錄與實體檔案)
+    // 4. 依 ID 查詢單一圖片
+    @GetMapping("/{id}")
+    public ResponseEntity<Image> getImageById(@PathVariable Integer id) {
+        return imageService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // 5. 修改圖片資訊
+    @PutMapping("/{id}")
+    public ResponseEntity<Image> updateImage(@PathVariable Integer id, @RequestBody Image updatedImage) {
+        Image image = imageService.update(id, updatedImage);
+        if (image != null) {
+            return ResponseEntity.ok(image);
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    // 6. 刪除圖片 (包含資料庫紀錄與實體檔案)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Integer id) {
-        // 先查出圖片資訊以利後面刪除實體檔案
-        Image image = imageService.findById(id); 
+        // 先查出圖片資訊以利後面刪除實體檔案 (對接 Optional 回傳)
+        Image image = imageService.findById(id).orElse(null);
         if (image == null) {
             return ResponseEntity.notFound().build();
         }
 
         boolean deleted = imageService.deleteById(id);
         if (deleted) {
-            //同步刪除實體檔案 (僅針對動態上傳的圖片，避免誤刪內建預設圖片)
+            // 同步刪除實體檔案 (僅針對動態上傳的圖片，避免誤刪內建預設圖片)
             if (image.getPath() != null && image.getPath().startsWith("/images/room/")) {
                 String fileName = image.getPath().replace("/images/room/", "");
                 Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (IOException e) {
-                    // 實體檔刪除失敗僅記 log，不影響 API 回傳結果
                     System.err.println("刪除實體檔案失敗: " + e.getMessage());
                 }
             }
@@ -131,14 +148,13 @@ public class ImageController {
         if (StringUtils.hasText(customUploadDir)) {
             return customUploadDir;
         }
-        // 自動動態抓取當前專案根目錄，移除原本寫死的 "hotel-backend" 子資料夾硬編碼
-        return System.getProperty("user.dir") 
-                + File.separator + "src" 
-                + File.separator + "main" 
-                + File.separator + "resources" 
-                + File.separator + "static" 
-                + File.separator + "images" 
-                + File.separator + "room" 
+        return System.getProperty("user.dir")
+                + File.separator + "src"
+                + File.separator + "main"
+                + File.separator + "resources"
+                + File.separator + "static"
+                + File.separator + "images"
+                + File.separator + "room"
                 + File.separator;
     }
 }

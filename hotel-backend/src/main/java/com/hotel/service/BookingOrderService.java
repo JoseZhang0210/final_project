@@ -28,40 +28,42 @@ public class BookingOrderService {
     // ==========================================
     // 核心業務 1：按下 Confirm 鎖房（防搶房與扣庫存）
     // ==========================================
-    public BookingOrder confirmAndLockRoom(BookingOrder bookingOrder, Integer roomTypeId) {
-        if (bookingOrder.getBookings() == null || bookingOrder.getBookings().isEmpty()) {
-            throw new RuntimeException("預訂失敗：未選擇任何房間明細");
-        }
+    // public BookingOrder confirmAndLockRoom(BookingOrder bookingOrder, Integer
+    // roomTypeId) {
+    // if (bookingOrder.getBookings() == null ||
+    // bookingOrder.getBookings().isEmpty()) {
+    // throw new RuntimeException("預訂失敗：未選擇任何房間明細");
+    // }
 
-        // 取出預訂的入住與退房日期
-        Booking bookingItem = bookingOrder.getBookings().get(0);
-        LocalDateTime fifteenMinsAgo = LocalDateTime.now().minusMinutes(15);
+    // // 取出預訂的入住與退房日期
+    // Booking bookingItem = bookingOrder.getBookings().get(0);
+    // LocalDateTime fifteenMinsAgo = LocalDateTime.now().minusMinutes(15);
 
-        // 1. 動態查詢可用空房（SQL 自動扣除 PAID 與 15分鐘內 PENDING 的房間）
-        List<Room> availableRooms = roomRepository.findAvailableRooms(
-            roomTypeId,
-            bookingItem.getCheckInDate(),
-            bookingItem.getCheckOutDate(),
-            fifteenMinsAgo
-        );
+    // // 1. 動態查詢可用空房（SQL 自動扣除 PAID 與 15分鐘內 PENDING 的房間）
+    // List<Room> availableRooms = roomRepository.findAvailableRooms(
+    // roomTypeId,
+    // bookingItem.getCheckInDate(),
+    // bookingItem.getCheckOutDate(),
+    // fifteenMinsAgo
+    // );
 
-        // 2. 庫存檢查：若無可用空房則阻擋
-        if (availableRooms.isEmpty()) {
-            throw new RuntimeException("手腳太慢了！該房型在此時段已無空房可供預訂");
-        }
+    // // 2. 庫存檢查：若無可用空房則阻擋
+    // if (availableRooms.isEmpty()) {
+    // throw new RuntimeException("手腳太慢了！該房型在此時段已無空房可供預訂");
+    // }
 
-        // 3. 綁定分配到的實體房間，並設定鎖房起算時間與 PENDING 狀態
-        bookingOrder.setCreatedAt(LocalDateTime.now());
-        bookingOrder.setOrderStatus("PENDING");
+    // // 3. 綁定分配到的實體房間，並設定鎖房起算時間與 PENDING 狀態
+    // bookingOrder.setCreatedAt(LocalDateTime.now());
+    // bookingOrder.setOrderStatus("PENDING");
 
-        bookingOrder.getBookings().forEach(b -> {
-            b.setRoom(availableRooms.get(0)); // 綁定空房
-            b.setBookingStatus("PENDING");
-            b.setBookingOrder(bookingOrder);
-        });
+    // bookingOrder.getBookings().forEach(b -> {
+    // b.setRoom(availableRooms.get(0)); // 綁定空房
+    // b.setBookingStatus("PENDING");
+    // b.setBookingOrder(bookingOrder);
+    // });
 
-        return bookingOrderRepository.save(bookingOrder);
-    }
+    // return bookingOrderRepository.save(bookingOrder);
+    // }
 
     // ==========================================
     // 核心業務 2：確認刷卡付款（15 分鐘校驗）
@@ -82,7 +84,7 @@ public class BookingOrderService {
         // 付款成功：狀態轉為 PAID，正式鎖定該房間庫存
         order.setOrderStatus("PAID");
         order.setPaymentId(paymentId);
-        
+
         if (order.getBookings() != null) {
             order.getBookings().forEach(booking -> booking.setBookingStatus("CONFIRMED"));
         }

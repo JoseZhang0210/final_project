@@ -20,7 +20,6 @@ import com.hotel.service.RoomTypeService;
 
 @RestController
 @RequestMapping("/api/roomtypes") // 統一 API 基礎路徑
-@CrossOrigin(origins = "*")        // 允許跨域，方便前後端分離/Vue 串接
 public class RoomTypeController {
 
     private final RoomTypeService roomTypeService;

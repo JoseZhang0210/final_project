@@ -9,6 +9,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -16,43 +21,42 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        return httpSecurity.csrf(csrf -> csrf.disable())
-                .formLogin(Customizer.withDefaults())
+        return httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults()) // 會自動尋找底下的 corsConfigurationSource Bean
                 .authorizeHttpRequests(requests -> requests
-                // GET 白名單
-                .requestMatchers(HttpMethod.GET,
-                        "/",
-                        "/register",
-                        "/error",
-                        "/*.html",
-                        "/bookingorders/**",
-                        "/static/**",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**"
-                ).permitAll()
-                // POST 白名單
-                .requestMatchers(HttpMethod.POST, "/accounts", "/bookingorders/**").permitAll()
-                // 其餘需要驗證
-                .anyRequest().authenticated()
-                )
+                        .requestMatchers(HttpMethod.GET,
+                                "/",
+                                "/register",
+                                "/error",
+                                "/*.html",
+                                "/static/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/accounts", "/bookingorders/**").permitAll()
+                        .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();
     }
 
-    // @Bean
-    // SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-    //     return httpSecurity.csrf(csrf -> csrf.disable())
-    //             .formLogin(Customizer.withDefaults())
-    //             .authorizeHttpRequests(requests -> requests
-    //             // Get 白名單
-    //             .requestMatchers(HttpMethod.GET, "/", "/register", "/error").permitAll()
-    //             // POST 白名單
-    //             .requestMatchers(HttpMethod.POST, "/accounts", "/bookingorders/**").permitAll()
-    //             .anyRequest().authenticated())
-    //             .httpBasic(Customizer.withDefaults())
-    //             .build();
-    // }
+    // 💡 唯一的 CORS 權威設定來源
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // 使用 allowedOriginPatterns 放行通配符，解決與 allowCredentials 的衝突
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

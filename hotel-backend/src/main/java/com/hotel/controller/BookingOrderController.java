@@ -24,7 +24,6 @@ import com.hotel.service.BookingOrderService;
 
 @RestController
 @RequestMapping("/api/booking-orders")
-@CrossOrigin(origins = "*")
 public class BookingOrderController {
 
     private final BookingOrderService bookingOrderService;

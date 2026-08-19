@@ -19,39 +19,41 @@ public class ImageService {
         this.imageRepository = imageRepository;
     }
 
-    //Create
+    // 1. Create - 新增圖片
     public Image insert(Image image) {
         return imageRepository.save(image);
     }
 
-    //Read All
+    // 2. Read All - 查詢所有圖片
     @Transactional(readOnly = true)
     public List<Image> findAll() {
         return imageRepository.findAll();
     }
 
-    //Read by ID
+    // 3. Read by ID - 依 ID 查詢圖片
     @Transactional(readOnly = true)
-    public Image findById(Integer id) {
-    return imageRepository.findById(id).orElse(null);
+    public Optional<Image> findById(Integer id) {
+        return imageRepository.findById(id);
     }
 
-    //Update
+    // 4. Update - 修改圖片資訊
     public Image update(Integer id, Image updatedImage) {
-        return imageRepository.findById(id)
-                .map(image -> {
-                    if (updatedImage.getPath() != null) {
-                        image.setPath(updatedImage.getPath());
-                    }
-                    if (updatedImage.getImageDesc() != null) {
-                        image.setImageDesc(updatedImage.getImageDesc());
-                    }
-                    return imageRepository.save(image);
-                })
-                .orElseThrow(() -> new RuntimeException("Image not found with id: " + id));
+        Image existingImage = imageRepository.findById(id).orElse(null);
+        if (existingImage == null) {
+            return null;
+        }
+
+        if (updatedImage.getPath() != null) {
+            existingImage.setPath(updatedImage.getPath());
+        }
+        if (updatedImage.getImageDesc() != null) {
+            existingImage.setImageDesc(updatedImage.getImageDesc());
+        }
+
+        return imageRepository.save(existingImage);
     }
 
-    //Delete
+    // 5. Delete - 刪除圖片
     public boolean deleteById(Integer id) {
         if (imageRepository.existsById(id)) {
             imageRepository.deleteById(id);
@@ -59,5 +61,4 @@ public class ImageService {
         }
         return false;
     }
-
 }

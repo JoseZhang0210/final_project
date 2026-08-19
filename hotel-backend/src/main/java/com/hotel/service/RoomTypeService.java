@@ -74,7 +74,8 @@ public class RoomTypeService {
 
                     return roomTypeRepository.save(roomType);
                 })
-                .orElseThrow(() -> new RuntimeException(" RoomType not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException(" RoomType not found with id: " +
+                        id));
     }
 
     // 5. Delete By Id - 刪除房型

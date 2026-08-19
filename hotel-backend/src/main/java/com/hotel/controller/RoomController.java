@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.entity.Room;
@@ -33,10 +34,22 @@ public class RoomController {
         return new ResponseEntity<>(savedRoom, HttpStatus.CREATED);
     }
 
-    // Read All
+    // Read All an floor or roomTypeId
     @GetMapping
-    public ResponseEntity<List<Room>> getAllRooms() {
-        List<Room> rooms = roomService.findAll();
+    public ResponseEntity<List<Room>> getAllRooms(
+            @RequestParam(required = false) Integer floor,
+            @RequestParam(required = false) Integer roomTypeId) {
+
+        List<Room> rooms;
+
+        if (floor != null) {
+            rooms = roomService.findByFloor(floor);
+        } else if (roomTypeId != null) {
+            rooms = roomService.findByRoomTypeId(roomTypeId);
+        } else {
+            rooms = roomService.findAll();
+        }
+
         return ResponseEntity.ok(rooms);
     }
 

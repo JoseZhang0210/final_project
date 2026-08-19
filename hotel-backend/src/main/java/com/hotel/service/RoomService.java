@@ -19,24 +19,35 @@ public class RoomService {
         this.roomRepository = roomRepository;
     }
 
-    //Create
+    // Create
     public Room insert(Room room) {
         return roomRepository.save(room);
     }
 
-    //Read All
+    // Read All
     @Transactional(readOnly = true)
     public List<Room> findAll() {
         return roomRepository.findAll();
     }
 
-    //Read by ID
+    @Transactional(readOnly = true)
+    public List<Room> findByFloor(Integer floor) {
+        return roomRepository.findByFloor(floor);
+    }
+
+    // Read by RoomTypeId
+    @Transactional(readOnly = true)
+    public List<Room> findByRoomTypeId(Integer roomTypeId) {
+        return roomRepository.findByRoomTypeId(roomTypeId);
+    }
+
+    // Read by ID
     @Transactional(readOnly = true)
     public Optional<Room> findById(Integer id) {
         return roomRepository.findById(id);
     }
 
-    //Update
+    // Update
     public Room update(Integer id, Room updatedRoom) {
         return roomRepository.findById(id)
                 .map(room -> {
@@ -57,7 +68,7 @@ public class RoomService {
                 .orElseThrow(() -> new RuntimeException("Room not found with id: " + id));
     }
 
-    //Delete By Id
+    // Delete By Id
     public boolean deleteById(Integer id) {
         if (roomRepository.existsById(id)) {
             roomRepository.deleteById(id);
