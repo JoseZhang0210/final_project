@@ -1,8 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import HomeView from '../views/HomeView.vue'
+import RestaurantMenuView from '../views/RestaurantMenuView.vue'
+import RestaurantManageView from '../views/RestaurantManageView.vue'
+import RestaurantTimeManageView from '../views/RestaurantTimeManageView.vue'
+import ReservationManageView from '../views/ReservationManageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+
   routes: [
     {
       path: '/',
@@ -12,10 +18,27 @@ const router = createRouter({
     {
       path: '/about',
       name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
       component: () => import('../views/AboutView.vue'),
+    },
+    {
+      path: '/restaurant-menu',
+      name: 'restaurant-menu',
+      component: RestaurantMenuView,
+    },
+    {
+      path: '/restaurants',
+      name: 'restaurants',
+      component: RestaurantManageView,
+    },
+    {
+      path: '/restaurant-times',
+      name: 'restaurant-times',
+      component: RestaurantTimeManageView,
+    },
+    {
+      path: '/reservation-manage',
+      name: 'reservation-manage',
+      component: ReservationManageView,
     },
   ],
 })

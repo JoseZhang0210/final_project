@@ -15,14 +15,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  server:{
-    proxy:{
-      "/api":{
-        target:"http://localhost:8081",
-        changeOrigin:true
-      }
-    }
+  server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8081',
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api/, ''),
+    },
   },
+},
   // 修改打包輸出路徑hotel-backend\src\main\resources\static
   build: {
     outDir: '../hotel-backend/src/main/resources/static', // 指向 Spring Boot 靜態資料夾
