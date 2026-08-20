@@ -1,45 +1,3 @@
-// package com.hotel.controller;
-
-// import org.springframework.http.ResponseEntity;
-// import org.springframework.security.authentication.BadCredentialsException;
-// import org.springframework.security.core.userdetails.UserDetails;
-// import org.springframework.security.core.userdetails.UserDetailsService;
-// import org.springframework.security.crypto.password.PasswordEncoder;
-// import org.springframework.web.bind.annotation.PostMapping;
-// import org.springframework.web.bind.annotation.RequestBody;
-// import org.springframework.web.bind.annotation.RequestMapping;
-// import org.springframework.web.bind.annotation.RestController;
-
-// import com.hotel.model.entity.Account;
-// import com.hotel.repository.AccountRepository;
-
-// import lombok.AllArgsConstructor;
-
-// @RestController
-// @AllArgsConstructor
-// @RequestMapping("/api/auth")
-// public class AuthController {
-//     private final PasswordEncoder passwordEncoder;
-//     private final AccountRepository accountRepository;
-
-//     @PostMapping("/register")
-//     public ResponseEntity<Account> createAccount(@RequestBody Account account) {
-//         account.setPassword(passwordEncoder.encode(account.getPassword()));
-//         account.setStatus("1");
-//         Account savedAccount = accountRepository.save(account);
-//         return ResponseEntity.ok(savedAccount);
-//     }
-
-//      @PostMapping("/login")
-//     public String login(@RequestBody Account account) {
-//         UserDetails user = UserDetailsService.loadUserByUsername(request.getUsername());
-//         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-//             throw new BadCredentialsException("Authentication fails because of incorrect password.");
-//         }
-
-//         return "帳密正確，回傳 JWT";
-//     }
-// }
 package com.hotel.controller;
 
 import java.util.HashMap;
@@ -77,8 +35,9 @@ public class AuthController {
         try {
             account.setPassword(passwordEncoder.encode(account.getPassword()));
             account.setStatus("1");
-            Account savedAccount = accountRepository.save(account);
-            return ResponseEntity.ok(savedAccount);
+            accountRepository.save(account);
+            account.setPassword(null);
+            return ResponseEntity.ok(account);
         } catch (DataIntegrityViolationException e) {
             // Check if it's a duplicate username constraint violation
             if (e.getMessage() != null && e.getMessage().contains("username")) {
