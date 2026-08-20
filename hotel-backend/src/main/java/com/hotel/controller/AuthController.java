@@ -45,6 +45,8 @@ package com.hotel.controller;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -72,20 +74,34 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Account> createAccount(@RequestBody Account account) {
-        account.setPassword(passwordEncoder.encode(account.getPassword()));
-        account.setStatus("1");
-        Account savedAccount = accountRepository.save(account);
-        return ResponseEntity.ok(savedAccount);
+        try {
+            account.setPassword(passwordEncoder.encode(account.getPassword()));
+            account.setStatus("1");
+            Account savedAccount = accountRepository.save(account);
+            return ResponseEntity.ok(savedAccount);
+        } catch (DataIntegrityViolationException e) {
+            // Check if it's a duplicate username constraint violation
+            if (e.getMessage() != null && e.getMessage().contains("username")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            }
+            // Re-throw if it's a different constraint violation
+            throw e;
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody Account account) {
         // 3. 修正變數名稱：將 request 改為 account。透過注入的執行個體呼叫方法
-        UserDetails user = userDetailsService.loadUserByUsername(account.getUsername()); 
-        
+        UserDetails user = userDetailsService.loadUserByUsername(account.getUsername());
+
         // 4. 比對密碼（前端帶來的明文 vs 資料庫的加密值）
         if (!passwordEncoder.matches(account.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Authentication fails because of incorrect password.");
+        }
+
+        // Check if account is enabled before issuing JWT
+        if (!user.isEnabled()) {
+            throw new BadCredentialsException("Account is disabled.");
         }
 
         // 5. 密碼正確，核發真實的 JWT Token
@@ -94,7 +110,7 @@ public class AuthController {
         // 6. 包裝成 JSON 格式回傳給前端（標準做法是回傳帶有 token 欄位的物件）
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
-        
+
         return ResponseEntity.ok(response);
     }
 }

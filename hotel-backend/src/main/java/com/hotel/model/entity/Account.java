@@ -1,5 +1,7 @@
 package com.hotel.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,6 +25,9 @@ public class Account {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Integer accountId;
     private String username;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
+
     private String status;
 }
