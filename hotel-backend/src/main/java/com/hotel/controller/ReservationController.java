@@ -17,7 +17,7 @@ import com.hotel.entity.Reservation;
 import com.hotel.service.ReservationService;
 
 @RestController
-@RequestMapping("/reservations")
+@RequestMapping("/api/reservations")
 public class ReservationController {
 
     private final ReservationService reservationService;

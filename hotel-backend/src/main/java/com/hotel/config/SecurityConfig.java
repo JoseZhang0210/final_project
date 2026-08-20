@@ -37,10 +37,8 @@ public class SecurityConfig {
                         // 1. 只有註冊與登入可以不用 Token (放行)
                         .requestMatchers("/api/auth/**").permitAll()
                         // .測試用
-                        // .requestMatchers("/restaurant", "/restaurant/**").permitAll()
-                        // .requestMatchers("/restaurant_times", "/restaurant_times/**").permitAll()
-                        // .requestMatchers("/reservations", "/reservations/**").permitAll()
-                        // .requestMatchers("/error").permitAll()
+                        // .requestMatchers("/api/**").permitAll()
+
                         // 2. 其他所有的 API (例如房間、訂單) 通通都要有 Token 才能進來
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
