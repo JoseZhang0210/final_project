@@ -37,3 +37,8 @@ Content-Type: application/json
 ### 5. DELETE 刪除房型 (刪除 ID = xx 的資料)
 DELETE http://localhost:8081/api/roomtypes/12
 Authorization: Basic vic1 111
+
+POST url HTTP/1.1
+header name: header value
+
+content

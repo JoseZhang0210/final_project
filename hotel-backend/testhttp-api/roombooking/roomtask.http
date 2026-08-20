@@ -1,0 +1,56 @@
+### 1. GET 查詢所有房務任務
+GET http://localhost:8081/api/roomtask
+Authorization: Basic vic1 111
+
+### 1. 依任務狀態查詢 (例如：待處理)
+GET http://localhost:8081/api/roomtask?status=待處理
+Authorization: Basic vic1 111
+
+### 2. 依任務類型查詢 (例如：退房清潔)
+GET http://localhost:8081/api/roomtask?type=退房清潔
+Authorization: Basic vic1 111
+
+### 3. GET 查詢單一房務任務 (例如 taskID = 30)
+GET http://localhost:8081/api/roomtask/30
+Authorization: Basic vic1 111
+
+### GET  By RoomId 
+GET http://localhost:8081/api/roomtask/roomId/66
+Authorization: Basic vic1 111
+
+
+### 4. POST 新增房務任務
+POST http://localhost:8081/api/roomtask
+Authorization: Basic vic1 111
+Content-Type: application/json
+
+{
+  "roomId": 111,
+  "employeeId": 2,
+  "remark": "馬桶堵塞",
+  "priority": "緊急",
+  "taskType": "設備維修",
+  "taskStatus": "待處理"
+}
+
+### 5. PUT 修改房務任務資訊 (修改 ID = 1 的資料)
+PUT http://localhost:8081/api/roomtask/1
+Authorization: Basic vic1 111
+Content-Type: application/json
+
+{
+  "roomId": 7,
+  "employeeId": 3,
+  "remark": "馬桶堵塞已檢修完成",
+  "priority": "普通",
+  "taskType": "設備維修",
+  "taskStatus": "已完成"
+}
+
+### 6. PATCH 快速更新任務狀態 (將 ID = 1 的狀態改為已完成)
+PATCH http://localhost:8081/api/roomtask/1/status?status=已完成
+Authorization: Basic vic1 111
+
+### 7. DELETE 刪除房務任務 (刪除 ID = 1 的資料)
+DELETE http://localhost:8081/api/roomtask/7
+Authorization: Basic vic1 111

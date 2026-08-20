@@ -35,7 +35,7 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/accounts", "/bookingorders/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/accounts", "/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();

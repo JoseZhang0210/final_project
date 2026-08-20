@@ -3,6 +3,7 @@ package com.hotel.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,24 +20,36 @@ public class RoomTaskService {
         this.roomTaskRepository = roomTaskRepository;
     }
 
-    //Create
+    // Create
     public RoomTask insert(RoomTask roomTask) {
         return roomTaskRepository.save(roomTask);
     }
 
-    //Read All
+    // Read All
     @Transactional(readOnly = true)
     public List<RoomTask> findAll() {
         return roomTaskRepository.findAll();
     }
 
-    //Read by ID
+    // Read by ID
     @Transactional(readOnly = true)
     public Optional<RoomTask> findById(Integer id) {
         return roomTaskRepository.findById(id);
     }
 
-    //Update
+    public List<RoomTask> findByTaskStatus(String taskStatus) {
+        return roomTaskRepository.findByTaskStatus(taskStatus);
+    }
+
+    public List<RoomTask> findByTaskType(String taskType) {
+        return roomTaskRepository.findByTaskType(taskType);
+    }
+
+    public List<RoomTask> findByPriority(String priority) {
+        return roomTaskRepository.findByPriority(priority);
+    }
+
+    // Update
     public RoomTask update(Integer id, RoomTask updatedTask) {
         return roomTaskRepository.findById(id)
                 .map(task -> {
@@ -69,7 +82,7 @@ public class RoomTaskService {
                 .orElseThrow(() -> new RuntimeException("RoomTask not found with id: " + id));
     }
 
-    //Delete
+    // Delete
     public boolean deleteById(Integer id) {
         if (roomTaskRepository.existsById(id)) {
             roomTaskRepository.deleteById(id);
@@ -77,4 +90,9 @@ public class RoomTaskService {
         }
         return false;
     }
+
+    public List<RoomTask> findByRoomId(Integer roomId) {
+        return roomTaskRepository.findByRoomId(roomId);
+    }
+
 }

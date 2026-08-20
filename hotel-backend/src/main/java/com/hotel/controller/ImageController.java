@@ -149,10 +149,7 @@ public class ImageController {
             return customUploadDir;
         }
         return System.getProperty("user.dir")
-                + File.separator + "src"
-                + File.separator + "main"
-                + File.separator + "resources"
-                + File.separator + "static"
+                + File.separator + "uploads"
                 + File.separator + "images"
                 + File.separator + "room"
                 + File.separator;

@@ -31,4 +31,12 @@ public class WebConfig implements WebMvcConfigurer {
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 將前端存取的 /images/room/** 映射到實體目錄 ./uploads/images/room/
+        String uploadPath = "file:" + System.getProperty("user.dir") + "/uploads/images/room/";
+        registry.addResourceHandler("/images/room/**")
+                .addResourceLocations(uploadPath);
+    }
 }
