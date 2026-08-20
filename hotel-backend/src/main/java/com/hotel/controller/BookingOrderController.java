@@ -49,7 +49,7 @@ public class BookingOrderController {
     @PostMapping
     public ResponseEntity<?> createBookingOrder(@RequestBody BookingOrder bookingOrder) {
         try {
-            prepareBookingOrder(bookingOrder);
+            // 純 FK 模式下，不需做複雜的 entity 補值 (prepareBookingOrder)，直接 insert
             BookingOrder savedOrder = bookingOrderService.insert(bookingOrder);
             return ResponseEntity.ok(savedOrder);
         } catch (Exception e) {
@@ -63,8 +63,6 @@ public class BookingOrderController {
     public ResponseEntity<?> updateBookingOrder(@PathVariable Integer id, @RequestBody BookingOrder bookingOrder) {
         try {
             bookingOrder.setBookingOrderId(id);
-            prepareBookingOrder(bookingOrder);
-
             BookingOrder updatedOrder = bookingOrderService.update(id, bookingOrder);
             return ResponseEntity.ok(updatedOrder);
         } catch (Exception e) {
@@ -87,20 +85,21 @@ public class BookingOrderController {
 
     /**
      * 輔助方法：處理時間設定與 JPA 雙向關聯外鍵
+     * //
      */
-    private void prepareBookingOrder(BookingOrder bookingOrder) {
-        if (bookingOrder.getCreatedAt() == null) {
-            bookingOrder.setCreatedAt(LocalDateTime.now());
-        }
+    // private void prepareBookingOrder(BookingOrder bookingOrder) {
+    // if (bookingOrder.getCreatedAt() == null) {
+    // bookingOrder.setCreatedAt(LocalDateTime.now());
+    // }
 
-        if (bookingOrder.getBookings() != null) {
-            List<Booking> validBookings = bookingOrder.getBookings().stream()
-                    .filter(b -> b.getCheckInDate() != null && b.getCheckOutDate() != null)
-                    .peek(b -> b.setBookingOrder(bookingOrder)) // 確保每一個子 Booking 都綁定父層物件
-                    .collect(Collectors.toList());
+    // if (bookingOrder.getBookings() != null) {
+    // List<Booking> validBookings = bookingOrder.getBookings().stream()
+    // .filter(b -> b.getCheckInDate() != null && b.getCheckOutDate() != null)
+    // .peek(b -> b.setBookingOrder(bookingOrder)) // 確保每一個子 Booking 都綁定父層物件
+    // .collect(Collectors.toList());
 
-            bookingOrder.getBookings().clear();
-            bookingOrder.getBookings().addAll(validBookings);
-        }
-    }
+    // bookingOrder.getBookings().clear();
+    // bookingOrder.getBookings().addAll(validBookings);
+    // }
+    // }
 }
