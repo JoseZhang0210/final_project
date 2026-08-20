@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hotel.entity.Reservation;
+import com.hotel.model.entity.Reservation;
 import com.hotel.service.ReservationService;
 
 @RestController

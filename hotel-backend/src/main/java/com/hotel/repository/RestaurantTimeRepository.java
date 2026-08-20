@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.hotel.entity.RestaurantTime;
+import com.hotel.model.entity.RestaurantTime;
 
 public interface RestaurantTimeRepository extends JpaRepository<RestaurantTime, Integer> {
 

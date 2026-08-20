@@ -2,7 +2,8 @@ package com.hotel.service;
 
 import org.springframework.stereotype.Service;
 import java.util.List;
-import com.hotel.entity.Restaurant;
+
+import com.hotel.model.entity.Restaurant;
 import com.hotel.repository.RestaurantRepository;
 
 @Service

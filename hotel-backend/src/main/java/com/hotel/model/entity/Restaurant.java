@@ -1,4 +1,4 @@
-package com.hotel.entity;
+package com.hotel.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
