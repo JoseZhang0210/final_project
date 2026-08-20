@@ -34,50 +34,34 @@ public class RoomTaskController {
         return new ResponseEntity<>(savedTask, HttpStatus.CREATED);
     }
 
-    // Read All
-    @GetMapping
-    public ResponseEntity<List<RoomTask>> getAllRoomTasks() {
-        List<RoomTask> tasks = roomTaskService.findAll();
-        return ResponseEntity.ok(tasks);
-    }
-
-    // Read by TaskID
-    @GetMapping("/{id}")
-    public ResponseEntity<RoomTask> getRoomTaskById(@PathVariable Integer id) {
-        return roomTaskService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
     // Read with Filter Options (roomId, status, type, priority)
     @GetMapping
     public ResponseEntity<List<RoomTask>> getTasks(
+            @RequestParam(required = false) Integer taskId,
             @RequestParam(required = false) Integer roomId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String taskStatus,
+            @RequestParam(required = false) String taskType,
+            @RequestParam(required = false) Integer employeeId,
             @RequestParam(required = false) String priority) {
 
-        // 2. 僅查詢特定房號
-        if (roomId != null) {
+        // 單一條件依序過濾
+        if (taskId != null) {
+            return roomTaskService.findById(taskId)
+                    .map(List::of)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        }
+        if (roomId != null)
             return ResponseEntity.ok(roomTaskService.findByRoomId(roomId));
-        }
-
-        // 3. 僅查詢特定任務狀態 (例如：待處理)
-        if (status != null) {
-            return ResponseEntity.ok(roomTaskService.findByTaskStatus(status));
-        }
-
-        // 4. 僅查詢特定任務類型 (例如：退房清潔)
-        if (type != null) {
-            return ResponseEntity.ok(roomTaskService.findByTaskType(type));
-        }
-
-        // 5. 僅查詢特定優先度 (例如：緊急、普通、低)
-        if (priority != null) {
+        if (taskStatus != null)
+            return ResponseEntity.ok(roomTaskService.findByTaskStatus(taskStatus));
+        if (taskType != null)
+            return ResponseEntity.ok(roomTaskService.findByTaskType(taskType));
+        if (employeeId != null)
+            return ResponseEntity.ok(roomTaskService.findByEmployeeId(employeeId));
+        if (priority != null)
             return ResponseEntity.ok(roomTaskService.findByPriority(priority));
-        }
 
-        // 6. 完全沒帶條件時，查詢全部任務
         return ResponseEntity.ok(roomTaskService.findAll());
     }
 

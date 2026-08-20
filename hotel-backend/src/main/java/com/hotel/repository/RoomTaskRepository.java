@@ -8,12 +8,14 @@ import com.hotel.entity.RoomTask;
 
 public interface RoomTaskRepository extends JpaRepository<RoomTask, Integer> {
 
-    List<RoomTask> findByRoomId(Integer roomId);
+    List<RoomTask> findByRoomIdOrderByTaskIdDesc(Integer roomId);
 
     List<RoomTask> findByTaskStatus(String taskStatus);
 
     List<RoomTask> findByTaskType(String taskType);
 
     List<RoomTask> findByPriority(String priority);
+
+    List<RoomTask> findByEmployeeId(Integer employeeId);
 
 }

@@ -1,14 +1,12 @@
 package com.hotel.controller;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.entity.Booking;
@@ -32,28 +31,14 @@ public class BookingOrderController {
         this.bookingOrderService = bookingOrderService;
     }
 
-    // 1. 取得所有預訂主訂單 (GET /api/booking-orders)
     @GetMapping
-    public ResponseEntity<?> getAllBookingOrders() {
+    public ResponseEntity<?> getBookingOrders(
+            @RequestParam(required = false) Integer bookingOrderId,
+            @RequestParam(required = false) Integer memberId,
+            @RequestParam(required = false) String orderStatus) {
         try {
-            List<BookingOrder> list = bookingOrderService.findAll();
+            List<BookingOrder> list = bookingOrderService.search(bookingOrderId, memberId, orderStatus);
             return ResponseEntity.ok(list);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "無法取得訂單列表：" + e.getMessage()));
-        }
-    }
-
-    // 2. 取得單筆預訂主訂單 (GET /api/booking-orders/{id})
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getBookingOrderById(@PathVariable Integer id) {
-        try {
-            BookingOrder bookingOrder = bookingOrderService.findById(id);
-            if (bookingOrder == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "找不到該訂單資料"));
-            }
-            return ResponseEntity.ok(bookingOrder);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "查詢失敗：" + e.getMessage()));

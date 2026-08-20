@@ -68,29 +68,31 @@ public class BookingOrderService {
     // ==========================================
     // 核心業務 2：確認刷卡付款（15 分鐘校驗）
     // ==========================================
-    public BookingOrder processPayment(Integer id, Integer paymentId) {
-        BookingOrder order = bookingOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單"));
+    // public BookingOrder processPayment(Integer id, Integer paymentId) {
+    // BookingOrder order = bookingOrderRepository.findById(id)
+    // .orElseThrow(() -> new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單"));
 
-        // 以「秒」精確計算是否超時（15 分鐘 = 900 秒）
-        long secondsPassed = Duration.between(order.getCreatedAt(), LocalDateTime.now()).getSeconds();
+    // // 以「秒」精確計算是否超時（15 分鐘 = 900 秒）
+    // long secondsPassed = Duration.between(order.getCreatedAt(),
+    // LocalDateTime.now()).getSeconds();
 
-        if (secondsPassed >= 900 || "EXPIRED".equals(order.getOrderStatus())) {
-            order.setOrderStatus("EXPIRED");
-            bookingOrderRepository.save(order);
-            throw new RuntimeException("訂單已超過 15 分鐘付款期限，房間已被自動釋放");
-        }
+    // if (secondsPassed >= 900 || "EXPIRED".equals(order.getOrderStatus())) {
+    // order.setOrderStatus("EXPIRED");
+    // bookingOrderRepository.save(order);
+    // throw new RuntimeException("訂單已超過 15 分鐘付款期限，房間已被自動釋放");
+    // }
 
-        // 付款成功：狀態轉為 PAID，正式鎖定該房間庫存
-        order.setOrderStatus("PAID");
-        order.setPaymentId(paymentId);
+    // // 付款成功：狀態轉為 PAID，正式鎖定該房間庫存
+    // order.setOrderStatus("PAID");
+    // order.setPaymentId(paymentId);
 
-        if (order.getBookings() != null) {
-            order.getBookings().forEach(booking -> booking.setBookingStatus("CONFIRMED"));
-        }
+    // if (order.getBookings() != null) {
+    // order.getBookings().forEach(booking ->
+    // booking.setBookingStatus("CONFIRMED"));
+    // }
 
-        return bookingOrderRepository.save(order);
-    }
+    // return bookingOrderRepository.save(order);
+    // }
 
     // ==========================================
     // 基礎 CRUD 方法
@@ -102,7 +104,7 @@ public class BookingOrderService {
             bookingOrder.setCreatedAt(LocalDateTime.now());
         }
         if (bookingOrder.getOrderStatus() == null) {
-            bookingOrder.setOrderStatus("PENDING");
+            bookingOrder.setOrderStatus("付款完成");
         }
         if (bookingOrder.getBookings() != null && !bookingOrder.getBookings().isEmpty()) {
             bookingOrder.getBookings().forEach(booking -> booking.setBookingOrder(bookingOrder));
@@ -120,6 +122,10 @@ public class BookingOrderService {
     @Transactional(readOnly = true)
     public BookingOrder findById(Integer id) {
         return bookingOrderRepository.findById(id).orElse(null);
+    }
+
+    public List<BookingOrder> search(Integer bookingOrderId, Integer memberId, String orderStatus) {
+        return bookingOrderRepository.searchOrders(bookingOrderId, memberId, orderStatus);
     }
 
     // 4. Update - 更新訂單內容
