@@ -1,5 +1,5 @@
 <template>
-  <router-view></router-view>
+    <h1>商品管理</h1>
 </template>
 
 <script setup>
