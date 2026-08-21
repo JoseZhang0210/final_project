@@ -504,7 +504,7 @@ GO
 ALTER TABLE [dbo].[employee] CHECK CONSTRAINT [FK_employee_department]
 GO
 ALTER TABLE [dbo].[employee_permission]  WITH CHECK ADD  CONSTRAINT [FK_employee_permission_employee] FOREIGN KEY([employee_id])
-REFERENCES [dbo].[employee] ([account_id])
+REFERENCES [dbo].[employee] ([employee_id])
 GO
 ALTER TABLE [dbo].[employee_permission] CHECK CONSTRAINT [FK_employee_permission_employee]
 GO
