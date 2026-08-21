@@ -11,12 +11,16 @@ import RestaurantManageView from "../views/RestaurantManageView.vue";
 import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
 import LoginView from "../views/LoginView.vue";
+import RentalView from "../views/RentalView.vue";
+import VenueView from "../views/VenueView.vue";
+
 //---------------------- 商品後台管理-----------------
 import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
 import ProductAddView from "../views/ProductAddView.vue";
 import ProductShopView from "../views/ProductShopView.vue";
 //---------------------------------------------------
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
 
@@ -60,14 +64,19 @@ const router = createRouter({
           name: "admin-restaurant-times",
           component: RestaurantTimeManageView,
         },
-
         {
           path: "reservations",
           name: "admin-reservations",
           component: ReservationManageView,
         },
+        {
+          path: "venues",
+          name: "admin-venues",
+          component: VenueView,
+        },
       ],
     },
+
     {
       path: "/",
       component: MainLayout,
@@ -92,29 +101,31 @@ const router = createRouter({
           name: "restaurant-menu",
           component: RestaurantMenuView,
         },
-
         {
           path: "restaurants",
           name: "restaurants",
           component: RestaurantManageView,
         },
-
         {
           path: "restaurant-times",
           name: "restaurant-times",
           component: RestaurantTimeManageView,
         },
-
         {
           path: "reservation-manage",
           name: "reservation-manage",
           component: ReservationManageView,
         },
-
+        {
+          path: "rentals",
+          name: "rentals",
+          component: RentalView,
+        },
         {
           path: "about",
           name: "about",
-          component: () => import("../views/AboutView.vue"),
+          component: () =>
+            import("../views/AboutView.vue"),
         },
       ],
     },
