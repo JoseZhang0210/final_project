@@ -1,0 +1,48 @@
+### 1. GET 查詢所有圖片 (包含 static/images/room/ 下的 11 筆資料)
+GET http://localhost:8081/api/images
+Authorization: Basic vic1 111
+
+### 2. GET 查詢單一圖片 (查詢 ID = 1 的圖片)
+GET http://localhost:8081/api/images/1
+Authorization: Basic vic1 111
+
+### 3. GET 查詢上傳的貓咪圖片 (查詢 ID = 39 的圖片)
+GET http://localhost:8081/api/images/39
+Authorization: Basic vic1 111
+
+### 4. POST 上傳新圖片檔案 (Form-Data 格式)
+POST http://localhost:8081/api/images
+Authorization: Basic vic1 111
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test_room.jpg"
+Content-Type: image/jpeg
+
+< ./test_room.jpg
+--WebAppBoundary
+Content-Disposition: form-data; name="imageDesc"
+
+測試上傳新房型圖片
+--WebAppBoundary--
+
+### 5. POST 使用靜態預設路徑新增圖片
+POST http://localhost:8081/api/images
+Authorization: Basic vic1 111
+Content-Type: application/x-www-form-urlencoded
+
+staticPath=/images/room/roomtype.1.jpg&imageDesc=海景標準雙人房(備用)
+
+### 6. PUT 修改圖片描述 (修改 ID = 39 的資料)
+PUT http://localhost:8081/api/images/39
+Authorization: Basic vic1 111
+Content-Type: application/json
+
+{
+  "path": "/images/room/835bd85a-1bbf-4f9f-85e5-27f9642e5648_Cat_November_2010-1a.jpg",
+  "imageDesc": "可愛貓咪房型封面照(已修改)"
+}
+
+### 7. DELETE 刪除圖片 (刪除 ID = 39 的資料並同步刪除實體檔)
+DELETE http://localhost:8081/api/images/39
+Authorization: Basic vic1 111
