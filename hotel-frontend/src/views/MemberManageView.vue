@@ -6,7 +6,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 // 跟商品、餐廳一樣使用相對路徑
 // =====================================================
 
-const API_URL = "/api/admin/members";
+const API_URL = "/api/members";
 
 // =====================================================
 // 會員資料
@@ -47,7 +47,7 @@ const editingMemberId = ref(null);
 const form = reactive({
   username: "",
   password: "",
-  status: "ACTIVE",
+  status: "1",
 });
 
 // =====================================================
@@ -90,11 +90,11 @@ function showMessage(text, type) {
 function getStatusLabel(status) {
   const value = (status || "UNKNOWN").toUpperCase();
 
-  if (value === "ACTIVE") {
+  if (value === "1") {
     return "啟用";
   }
 
-  if (value === "INACTIVE") {
+  if (value === "0") {
     return "停用";
   }
 
@@ -225,7 +225,7 @@ function openCreateModal() {
 
   form.password = "";
 
-  form.status = "ACTIVE";
+  form.status = "1";
 
   modalOpen.value = true;
 }
@@ -235,13 +235,13 @@ function openCreateModal() {
 // =====================================================
 
 function openEditModal(member) {
-  editingMemberId.value = member.id;
+  editingMemberId.value = member.memberId ?? member.id;
 
   form.username = member.username || "";
 
   form.password = "";
 
-  form.status = member.status || "ACTIVE";
+  form.status = member.status || "1";
 
   modalOpen.value = true;
 }
@@ -259,7 +259,7 @@ function closeModal() {
 
   form.password = "";
 
-  form.status = "ACTIVE";
+  form.status = "1";
 }
 
 // =====================================================
@@ -348,17 +348,23 @@ async function saveMember() {
 // =====================================================
 
 async function toggleStatus(member) {
-  const nextStatus = isActiveStatus(member.status) ? "INACTIVE" : "ACTIVE";
+  if (!member) return;
+
+  const memberId = member.memberId ?? member.id;
+  if (!memberId) {
+    console.error("無法取得會員 ID：", member);
+    showMessage("無法取得會員 ID", "error");
+    return;
+  }
+
+  const nextStatus = isActiveStatus(member.status) ? "0" : "1";
 
   try {
-    const response = await fetch(`${API_URL}/${member.id}/status`, {
+    const response = await fetch(`${API_URL}/${memberId}/status?status=${nextStatus}`, {
       method: "PATCH",
 
       headers: getAuthHeaders(),
 
-      body: JSON.stringify({
-        status: nextStatus,
-      }),
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -389,7 +395,17 @@ async function toggleStatus(member) {
 // DELETE /admin/members/{id}
 // =====================================================
 
-async function deleteMember(memberId) {
+async function deleteMember(memberOrId) {
+  const memberId =
+    typeof memberOrId === "object" && memberOrId !== null
+      ? memberOrId.memberId ?? memberOrId.id
+      : memberOrId;
+
+  if (!memberId) {
+    showMessage("無法取得會員 ID", "error");
+    return;
+  }
+
   if (!window.confirm("確定要刪除此會員嗎？")) {
     return;
   }
@@ -469,27 +485,14 @@ onMounted(() => {
         </div>
 
         <div class="member-toolbar">
-          <input
-            v-model="keyword"
-            type="text"
-            class="admin-input member-search"
-            placeholder="搜尋會員帳號..."
-            @input="resetPage"
-          />
+          <input v-model="keyword" type="text" class="admin-input member-search" placeholder="搜尋會員帳號..."
+            @input="resetPage" />
 
-          <button
-            type="button"
-            class="admin-btn admin-btn-primary"
-            @click="openCreateModal"
-          >
+          <button type="button" class="admin-btn admin-btn-primary" @click="openCreateModal">
             ＋ 新增會員
           </button>
 
-          <button
-            type="button"
-            class="admin-btn admin-btn-secondary"
-            @click="loadMembers"
-          >
+          <button type="button" class="admin-btn admin-btn-secondary" @click="loadMembers">
             重新整理
           </button>
         </div>
@@ -534,9 +537,9 @@ onMounted(() => {
               <td colspan="4" class="empty-row">目前沒有符合條件的會員資料</td>
             </tr>
 
-            <tr v-for="member in pagedMembers" :key="member.id">
+            <tr v-for="member in pagedMembers" :key="member.memberId ?? member.id">
               <td>
-                {{ member.id }}
+                {{ member.memberId ?? member.id }}
               </td>
 
               <td class="member-name">
@@ -544,46 +547,29 @@ onMounted(() => {
               </td>
 
               <td>
-                <span
-                  class="status-badge"
-                  :class="
-                    isActiveStatus(member.status)
-                      ? 'status-active'
-                      : 'status-inactive'
-                  "
-                >
+                <span class="status-badge" :class="isActiveStatus(member.status)
+                  ? 'status-active'
+                  : 'status-inactive'
+                  ">
                   {{ getStatusLabel(member.status) }}
                 </span>
               </td>
 
               <td>
                 <div class="member-actions">
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-edit"
-                    @click="openEditModal(member)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-edit" @click="openEditModal(member)">
                     修改
                   </button>
 
-                  <button
-                    type="button"
-                    class="admin-btn"
-                    :class="
-                      isActiveStatus(member.status)
-                        ? 'status-disable-btn'
-                        : 'status-enable-btn'
-                    "
-                    @click="toggleStatus(member)"
-                  >
+                  <button type="button" class="admin-btn" :class="isActiveStatus(member.status)
+                    ? 'status-disable-btn'
+                    : 'status-enable-btn'
+                    " @click="toggleStatus(member)">
                     {{ isActiveStatus(member.status) ? "停用" : "啟用" }}
                   </button>
 
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-delete"
-                    @click="deleteMember(member.id)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-delete"
+                    @click="deleteMember(member.memberId ?? member.id)">
                     刪除
                   </button>
                 </div>
@@ -595,12 +581,8 @@ onMounted(() => {
 
       <!-- 分頁 -->
       <div class="member-pagination">
-        <button
-          type="button"
-          class="admin-btn admin-btn-secondary"
-          :disabled="currentPage <= 1"
-          @click="changePage(-1)"
-        >
+        <button type="button" class="admin-btn admin-btn-secondary" :disabled="currentPage <= 1"
+          @click="changePage(-1)">
           上一頁
         </button>
 
@@ -612,12 +594,8 @@ onMounted(() => {
           {{ totalPages }}
         </span>
 
-        <button
-          type="button"
-          class="admin-btn admin-btn-secondary"
-          :disabled="currentPage >= totalPages"
-          @click="changePage(1)"
-        >
+        <button type="button" class="admin-btn admin-btn-secondary" :disabled="currentPage >= totalPages"
+          @click="changePage(1)">
           下一頁
         </button>
       </div>
@@ -644,54 +622,35 @@ onMounted(() => {
             <div class="admin-form-group full-width">
               <label> 帳號 </label>
 
-              <input
-                v-model="form.username"
-                type="text"
-                placeholder="請輸入會員帳號"
-                required
-              />
+              <input v-model="form.username" type="text" placeholder="請輸入會員帳號" required />
             </div>
 
             <div class="admin-form-group full-width">
               <label> 密碼 </label>
 
-              <input
-                v-model="form.password"
-                type="password"
-                autocomplete="new-password"
-                :placeholder="
-                  editingMemberId === null
-                    ? '若不填則預設 123456'
-                    : '留空表示不修改密碼'
-                "
-              />
+              <input v-model="form.password" type="password" autocomplete="new-password" :placeholder="editingMemberId === null
+                ? '若不填則預設 123456'
+                : '留空表示不修改密碼'
+                " />
             </div>
 
             <div class="admin-form-group full-width">
               <label> 狀態 </label>
 
               <select v-model="form.status">
-                <option value="ACTIVE">啟用</option>
+                <option value="1">啟用</option>
 
-                <option value="INACTIVE">停用</option>
+                <option value="0">停用</option>
               </select>
             </div>
           </div>
 
           <div class="admin-form-actions">
-            <button
-              type="button"
-              class="admin-btn admin-btn-secondary"
-              @click="closeModal"
-            >
+            <button type="button" class="admin-btn admin-btn-secondary" @click="closeModal">
               取消
             </button>
 
-            <button
-              type="submit"
-              class="admin-btn admin-btn-primary"
-              :disabled="saving"
-            >
+            <button type="submit" class="admin-btn admin-btn-primary" :disabled="saving">
               {{ saving ? "儲存中..." : "儲存" }}
             </button>
           </div>
