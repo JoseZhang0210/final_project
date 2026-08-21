@@ -18,4 +18,6 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
                         @Param("bookingOrderId") Integer bookingOrderId,
                         @Param("bookingStatus") String bookingStatus);
 
+        void deleteByBookingOrderId(Integer id);
+
 }
