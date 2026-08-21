@@ -1,0 +1,43 @@
+### 1. GET 查詢所有房間
+GET http://localhost:8081/api/rooms
+Authorization: Basic vic1 111
+
+### 2. GET 查詢單一房間 (1~120)
+GET http://localhost:8081/api/rooms/56
+Authorization: Basic vic1 111
+
+### 3. GET 依據樓層查詢房間 (5~10)
+GET http://localhost:8081/api/rooms?floor=7
+Authorization: Basic vic1 111
+
+### 4. GET 依據房型查詢房間 (1~10)
+GET http://localhost:8081/api/rooms?roomTypeId=1
+Authorization: Basic vic1 111
+
+### 5. POST 新增單一房間 (例如 3 區 10 樓的頂級總統套房)
+POST http://localhost:8081/api/rooms
+Authorization: Basic vic1 111
+Content-Type: application/json
+
+{
+  "roomNumber": "31013",
+  "roomTypeId": 10,
+  "floor": 10,
+  "roomStatus": "可預訂"
+}
+
+### 6. PUT 修改房間資訊 (修改 ID = 1 的房間狀態或房型)
+PUT http://localhost:8081/api/rooms/1
+Authorization: Basic vic1 111
+Content-Type: application/json
+
+{
+  "roomNumber": "10501",
+  "roomTypeId": 1,
+  "floor": 5,
+  "roomStatus": "維護中"
+}
+
+### 7. DELETE 刪除房間 (刪除 ID = 1 的資料)
+DELETE http://localhost:8081/api/rooms/121
+Authorization: Basic vic1 111
