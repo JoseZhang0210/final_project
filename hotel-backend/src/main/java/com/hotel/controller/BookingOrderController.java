@@ -75,8 +75,12 @@ public class BookingOrderController {
             bookingOrderService.deleteById(id);
             return ResponseEntity.ok(Map.of("message", "訂單已成功刪除！"));
         } catch (Exception e) {
+            // 在後端 Console 印出完整的 Exception 堆疊追蹤，方便除錯
+            e.printStackTrace();
+
+            // 將具體的錯誤訊息回傳給前端，不再寫死提示字串
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "刪除失敗：該訂單可能已被其他資料關聯或不存在！"));
+                    .body(Map.of("message", "刪除失敗：" + e.getMessage()));
         }
     }
 

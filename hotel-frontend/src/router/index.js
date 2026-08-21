@@ -9,6 +9,7 @@ import RestaurantManageView from "../views/RestaurantManageView.vue";
 import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
 import LoginView from "../views/LoginView.vue";
+import RoomBookingOrderView from "@/views/RoomBookingOrderView.vue";
 //---------------------- 商品後台管理-----------------
 import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
@@ -59,6 +60,12 @@ const router = createRouter({
           path: "reservations",
           name: "admin-reservations",
           component: ReservationManageView,
+        },
+        // ==========訂房==========
+        {
+          path: "room-booking-order",
+          name: "admin-roombookingorder",
+          component: RoomBookingOrderView,
         },
       ],
     },
