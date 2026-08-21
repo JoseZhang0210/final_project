@@ -4,6 +4,8 @@ import MainLayout from "../layouts/MainLayout.vue";
 import AdminLayout from "../layouts/AdminLayout.vue";
 import DashboardView from "../views/DashboardView.vue";
 import HomeView from "../views/HomeView.vue";
+import MemberManageView from "../views/MemberManageView.vue";
+//--------------------餐廳後台管理-----------------------------------
 import RestaurantMenuView from "../views/RestaurantMenuView.vue";
 import RestaurantManageView from "../views/RestaurantManageView.vue";
 import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
@@ -28,7 +30,11 @@ const router = createRouter({
           name: "dashboard",
           component: DashboardView,
         },
-
+        {
+          path: "members",
+          name: "admin-members",
+          component: MemberManageView,
+        },
         {
           path: "restaurants",
           name: "admin-restaurants",
