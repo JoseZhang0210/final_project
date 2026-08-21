@@ -4,22 +4,22 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 async function logout() {
-    try {
+  try {
     const response = await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
+      method: "POST",
+      credentials: "include",
     });
 
     if (response.ok) {
-        router.push("/login");
+      router.push("/login");
     } else {
-        alert("登出失敗");
+      alert("登出失敗");
     }
-    } catch (error) {
+  } catch (error) {
     console.error(error);
 
     alert("登出失敗");
-    }
+  }
 }
 </script>
 <template>
@@ -42,9 +42,7 @@ async function logout() {
 
         <RouterLink to="/login"> 登入 </RouterLink>
 
-        <button type="button" class="logout-button" @click="logout">
-          登出
-        </button>
+        <RouterLink to="/logout"> 登出 </RouterLink>
       </nav>
     </header>
 
@@ -57,4 +55,3 @@ async function logout() {
     </footer>
   </div>
 </template>
-

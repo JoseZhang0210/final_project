@@ -21,13 +21,13 @@ GO
    ========================================================= */
 INSERT INTO account (username, password, status)
 VALUES
-('admin',    '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('reception', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('housekeeping', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('restaurant', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('member01', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('member02', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1'),
-('member03', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhiGJ8KfKQ7jXz7jJY5Yw7x6VYQ5V7uK', '1');
+('admin',    '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('reception', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('housekeeping', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('restaurant', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('member01', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('member02', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+('member03', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1');
 GO
 
 

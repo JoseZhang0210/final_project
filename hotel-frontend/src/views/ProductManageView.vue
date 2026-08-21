@@ -139,7 +139,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-
+import { getAuthHeaders } from "@/utils/auth";
 const router = useRouter();
 
 // ==============================
@@ -155,24 +155,6 @@ const loading = ref(false);
 const message = ref("");
 
 const messageType = ref("");
-
-// ==============================
-// JWT Header
-// ==============================
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
-
-  return headers;
-}
 
 // ==============================
 // 查詢全部商品
