@@ -437,14 +437,17 @@ function getProductImage(product) {
     return product.imageUrl;
   }
 
-  return "/images/default-product.jpg";
+  return "/images/products/default-product.jpg";
 }
-// ==============================
-// 圖片載入失敗
-// ==============================
 
 function handleImageError(event) {
-  event.target.src = "/images/default-product.jpg";
+  const defaultImage = "/images/products/default-product.jpg";
+
+  if (event.target.src.endsWith(defaultImage)) {
+    return;
+  }
+
+  event.target.src = defaultImage;
 }
 
 // =====================================================
