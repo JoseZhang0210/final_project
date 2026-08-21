@@ -22,48 +22,109 @@ import lombok.AllArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
-// @EnableMethodSecurity 啟用Authorize驗證(使用@PreAuthorize)
 public class SecurityConfig {
 
-    private final JwtProperties jwtProperties;
+        private final JwtProperties jwtProperties;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        return httpSecurity
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(requests -> requests
-                // 1. 只有註冊與登入可以不用 Token (放行)
-                .requestMatchers("/api/auth/**").permitAll()
-                // 2. 其他所有的 API (例如房間、訂單) 通通都要有 Token 才能進來
-                .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }
+        // =====================================================
+        // Spring Security
+        // =====================================================
+        @Bean
+        public SecurityFilterChain securityFilterChain(
+                        HttpSecurity httpSecurity,
+                        JwtAuthenticationFilter jwtAuthenticationFilter)
+                        throws Exception {
+                return httpSecurity
+                                // =========================
+                                // JWT 不使用 CSRF
+                                // =========================
+                                .csrf(csrf -> csrf.disable())
+                                // =========================
+                                // JWT 不使用 Session
+                                // =========================
+                                .sessionManagement(
+                                                session -> session
+                                                                .sessionCreationPolicy(
+                                                                                SessionCreationPolicy.STATELESS))
+                                // =========================
+                                // 權限設定
+                                // =========================
+                                .authorizeHttpRequests(
+                                                requests -> requests
+                                                                // -------------------------
+                                                                // CORS 預檢請求
+                                                                // -------------------------
+                                                                // .requestMatchers(HttpMethod.OPTIONS,
+                                                                // "/**").permitAll()
+                                                                // -------------------------
+                                                                // 登入 / 註冊
+                                                                // 不需要 JWT
+                                                                // -------------------------
+                                                                .requestMatchers("/api/auth/**").permitAll()
+                                                                // -------------------------
+                                                                // Spring Boot error
+                                                                // -------------------------
+                                                                .requestMatchers("/error").permitAll()
+                                                                // -------------------------
+                                                                // 其他 API
+                                                                // 需要 JWT
+                                                                // -------------------------
+                                                                .anyRequest()
+                                                                .authenticated())
+                                // =========================
+                                // JWT Filter
+                                // =========================
+                                .addFilterBefore(
+                                                jwtAuthenticationFilter,
+                                                UsernamePasswordAuthenticationFilter.class)
+                                .build();
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
-        authenticationProvider.setPasswordEncoder(passwordEncoder);
+        @Bean
+        public AuthenticationManager authenticationManager(
+                        UserDetailsService userDetailsService,
+                        PasswordEncoder passwordEncoder) {
 
-        return new ProviderManager(authenticationProvider);
-    }
+                DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(
+                                userDetailsService);
 
-    @Bean
-    public JwtUtils jwtUtils() {
-        return new JwtUtils(jwtProperties.getSecretKey(), jwtProperties.getValidSeconds());
-    }
+                authenticationProvider.setPasswordEncoder(
+                                passwordEncoder);
 
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
-        return new JwtAuthenticationFilter(jwtUtils, userDetailsService);
-    }
+                return new ProviderManager(
+                                authenticationProvider);
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        // =====================================================
+        // JWT Utils
+        // =====================================================
+        @Bean
+        public JwtUtils jwtUtils() {
+
+                return new JwtUtils(
+                                jwtProperties.getSecretKey(),
+                                jwtProperties.getValidSeconds());
+        }
+
+        // =====================================================
+        // JWT Filter
+        // =====================================================
+        @Bean
+        public JwtAuthenticationFilter jwtAuthenticationFilter(
+                        JwtUtils jwtUtils,
+                        UserDetailsService userDetailsService) {
+
+                return new JwtAuthenticationFilter(
+                                jwtUtils,
+                                userDetailsService);
+        }
+
+        // =====================================================
+        // Password Encoder
+        // =====================================================
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+
+                return new BCryptPasswordEncoder();
+        }
 }
