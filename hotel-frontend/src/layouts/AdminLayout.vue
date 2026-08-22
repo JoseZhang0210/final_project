@@ -44,6 +44,9 @@
 
         <!-- 會員管理 -->
         <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
+
+        <!-- 員工管理 -->
+        <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
       </nav>
 
       <!-- =========================
