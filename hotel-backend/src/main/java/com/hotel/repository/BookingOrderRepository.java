@@ -3,7 +3,6 @@ package com.hotel.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,8 +22,4 @@ public interface BookingOrderRepository extends JpaRepository<BookingOrder, Inte
                         @Param("bookingOrderId") Integer bookingOrderId,
                         @Param("memberId") Integer memberId,
                         @Param("orderStatus") String orderStatus);
-
-        @Modifying
-        @Query("DELETE FROM Booking b WHERE b.bookingOrder.bookingOrderId = :bookingOrderId")
-        void deleteByBookingOrderId(@Param("bookingOrderId") Integer bookingOrderId);
 }
