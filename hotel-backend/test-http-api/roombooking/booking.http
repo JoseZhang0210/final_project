@@ -1,33 +1,19 @@
 ### 變數設定
 @baseUrl = http://localhost:8081/api/bookings
-@authUrl = http://localhost:8081/api/auth
+@auth = Basic vic1 111
 @bookingId = 99
-
-### 0. 登入以獲取 JWT Token (新增此步驟)
-# @name login
-POST {{authUrl}}/login
-Content-Type: application/json
-
-{
-  "username": "vic1",
-  "password": "111"
-}
-
-### 動態讀取登入成功後的 Token 變數 (假設回傳的 JSON 欄位叫做 token)
-@jwtToken = {{login.response.body.token}}
-
 
 ### 1-1. 查詢所有預訂 (無條件)
 GET {{baseUrl}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}
 
-### 1-2. 條件查詢 (帶入條件參數)
-GET {{baseUrl}}?bookingStatus=訂單取消
-Authorization: Bearer {{jwtToken}}
+### 1-2. 條件查詢 (帶入條件參數). ?bookingId=1&bookingOrderId=33&bookingStatus=訂單完成
+GET {{baseUrl}}?bookingStatus=訂單完成
+Authorization: {{auth}}
 
 ### 2. 新增預訂
 POST {{baseUrl}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
@@ -42,7 +28,7 @@ Content-Type: application/json
 
 ### 3. 更新預訂
 PUT {{baseUrl}}/{{bookingId}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
@@ -57,4 +43,4 @@ Content-Type: application/json
 
 ### 4. 刪除預訂
 DELETE {{baseUrl}}/{{bookingId}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}
