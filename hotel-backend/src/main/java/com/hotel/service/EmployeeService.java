@@ -151,15 +151,19 @@ public class EmployeeService {
         account.setStatus((dto.getStatus() != null && !dto.getStatus().isBlank()) ? dto.getStatus() : "1");
         Account savedAccount = accountRepository.save(account);
 
-        // 2. 建立 Employee
+        // 2. 處理部門（若指定的 departmentId 不存在或傳入 departmentName，自動建立）
+        Department department = resolveOrCreateDepartment(dto.getDepartmentId(), dto.getDepartmentName());
+        Integer resolvedDeptId = department != null ? department.getDepartmentId() : dto.getDepartmentId();
+
+        // 3. 建立 Employee
         Employee employee = new Employee();
         employee.setAccountId(savedAccount.getAccountId());
-        employee.setDepartmentId(dto.getDepartmentId());
+        employee.setDepartmentId(resolvedDeptId);
         employee.setPosition(dto.getPosition());
         employee.setAdmin(dto.getIsAdmin() != null && dto.getIsAdmin());
         Employee savedEmployee = employeeRepository.save(employee);
 
-        // 3. 建立 Profile
+        // 4. 建立 Profile
         Profile profile = new Profile();
         profile.setAccountId(savedAccount.getAccountId());
         profile.setName(dto.getName() != null && !dto.getName().isBlank() ? dto.getName() : dto.getUsername());
@@ -175,8 +179,7 @@ public class EmployeeService {
         profile.setUpdatedAt(LocalDateTime.now());
         Profile savedProfile = profileRepository.save(profile);
 
-        Department department = null;
-        if (savedEmployee.getDepartmentId() != null) {
+        if (department == null && savedEmployee.getDepartmentId() != null) {
             department = departmentRepository.findById(savedEmployee.getDepartmentId()).orElse(null);
         }
 
@@ -192,9 +195,14 @@ public class EmployeeService {
             return null;
         }
 
-        // 更新 Employee 欄位
-        if (dto.getDepartmentId() != null) {
-            employee.setDepartmentId(dto.getDepartmentId());
+        // 更新 Employee 欄位（含部門自動解析與建立）
+        if (dto.getDepartmentId() != null || (dto.getDepartmentName() != null && !dto.getDepartmentName().isBlank())) {
+            Department resolvedDept = resolveOrCreateDepartment(dto.getDepartmentId(), dto.getDepartmentName());
+            if (resolvedDept != null) {
+                employee.setDepartmentId(resolvedDept.getDepartmentId());
+            } else if (dto.getDepartmentId() != null) {
+                employee.setDepartmentId(dto.getDepartmentId());
+            }
         }
         if (dto.getPosition() != null) {
             employee.setPosition(dto.getPosition());
@@ -320,6 +328,30 @@ public class EmployeeService {
         }
 
         return true;
+    }
+
+    // =========================================
+    // 輔助方法：獲取或自動建立部門
+    // =========================================
+    private Department resolveOrCreateDepartment(Integer departmentId, String departmentName) {
+        if (departmentId != null) {
+            Department dept = departmentRepository.findById(departmentId).orElse(null);
+            if (dept != null) {
+                return dept;
+            }
+        }
+
+        if (departmentName != null && !departmentName.isBlank()) {
+            String cleanName = departmentName.trim();
+            return departmentRepository.findByDepartmentName(cleanName)
+                    .orElseGet(() -> {
+                        Department newDept = new Department();
+                        newDept.setDepartmentName(cleanName);
+                        return departmentRepository.save(newDept);
+                    });
+        }
+
+        return null;
     }
 
     // =========================================
