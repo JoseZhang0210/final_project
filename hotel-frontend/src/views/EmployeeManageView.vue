@@ -60,7 +60,6 @@ const form = reactive({
   departmentId: "",
   customDepartmentName: "",
   position: "",
-  isAdmin: false,
   name: "",
   email: "",
   phone: "",
@@ -363,7 +362,6 @@ function openCreateModal() {
   form.departmentId = departments.value.length > 0 ? departments.value[0].id : "__NEW__";
   form.customDepartmentName = "";
   form.position = "";
-  form.isAdmin = false;
   form.name = "";
   form.email = "";
   form.phone = "";
@@ -405,7 +403,6 @@ function openEditModal(employee) {
   }
 
   form.position = employee.position || "";
-  form.isAdmin = employee.isAdmin === true || employee.admin === true;
   form.name = employee.name || "";
   form.email = employee.email || "";
   form.phone = employee.phone || "";
@@ -471,7 +468,6 @@ async function saveEmployee() {
     departmentId: finalDepartmentId,
     departmentName: finalDepartmentName,
     position: form.position.trim(),
-    isAdmin: form.isAdmin,
     name: form.name.trim(),
     email: form.email.trim(),
     phone: form.phone.trim(),
@@ -750,7 +746,6 @@ onMounted(async () => {
               <th>員工姓名 / 帳號</th>
               <th>部門</th>
               <th>職稱</th>
-              <th>角色權限</th>
               <th>聯絡電話 / 信箱</th>
               <th>狀態</th>
               <th>操作</th>
@@ -785,14 +780,6 @@ onMounted(async () => {
                 <span class="position-text">{{ employee.position || "—" }}</span>
               </td>
 
-              <td>
-                <span
-                  class="role-badge"
-                  :class="employee.isAdmin ? 'role-admin' : 'role-staff'"
-                >
-                  {{ employee.isAdmin ? "👑 管理員" : "一般員工" }}
-                </span>
-              </td>
 
               <td>
                 <div class="contact-info">
@@ -921,13 +908,6 @@ onMounted(async () => {
               </select>
             </div>
 
-            <div class="admin-form-group">
-              <label> 權限類型 </label>
-              <select v-model="form.isAdmin">
-                <option :value="false">一般員工</option>
-                <option :value="true">管理員 (Admin)</option>
-              </select>
-            </div>
           </div>
 
           <!-- 區塊 2: 職務與部門 -->

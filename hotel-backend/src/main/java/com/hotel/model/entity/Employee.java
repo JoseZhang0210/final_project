@@ -25,6 +25,5 @@ public class Employee {
     private Integer departmentId;
     private Integer accountId;
     private String position;
-    private boolean isAdmin;
 
 }

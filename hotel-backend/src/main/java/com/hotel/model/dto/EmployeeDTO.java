@@ -3,8 +3,6 @@ package com.hotel.model.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,8 +20,6 @@ public class EmployeeDTO {
     private String departmentName;
     private String position;
 
-    @JsonProperty("isAdmin")
-    private Boolean isAdmin;
 
     // Account 表
     private Integer accountId;

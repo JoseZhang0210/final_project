@@ -160,7 +160,6 @@ public class EmployeeService {
         employee.setAccountId(savedAccount.getAccountId());
         employee.setDepartmentId(resolvedDeptId);
         employee.setPosition(dto.getPosition());
-        employee.setAdmin(dto.getIsAdmin() != null && dto.getIsAdmin());
         Employee savedEmployee = employeeRepository.save(employee);
 
         // 4. 建立 Profile
@@ -206,9 +205,6 @@ public class EmployeeService {
         }
         if (dto.getPosition() != null) {
             employee.setPosition(dto.getPosition());
-        }
-        if (dto.getIsAdmin() != null) {
-            employee.setAdmin(dto.getIsAdmin());
         }
         employee = employeeRepository.save(employee);
 
@@ -363,7 +359,6 @@ public class EmployeeService {
             dto.setEmployeeId(employee.getEmployeeId());
             dto.setDepartmentId(employee.getDepartmentId());
             dto.setPosition(employee.getPosition());
-            dto.setIsAdmin(employee.isAdmin());
             dto.setAccountId(employee.getAccountId());
         }
         if (department != null) {
