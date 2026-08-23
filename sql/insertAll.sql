@@ -21,39 +21,195 @@ GO
    ========================================================= */
 INSERT INTO account (username, password, status)
 VALUES
-('admin',    '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('reception', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('housekeeping', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('restaurant', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('member01', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('member02', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
-('member03', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1');
+    -- 1 ~ 2: 行政管理部 (Admin)
+    ('admin01',       '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('admin02',       '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+
+    -- 3 ~ 10: 櫃檯/前台部 (Front Desk)
+    ('frontdesk01',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk02',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk03',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk04',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk05',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk06',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk07',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('frontdesk08',   '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+
+    -- 11 ~ 28: 客房/房務與維修部 (Housekeeping)
+    ('housekeeping01', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping02', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping03', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping04', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping05', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping06', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping07', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping08', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping09', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping10', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping11', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping12', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping13', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping14', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping15', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping16', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping17', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('housekeeping18', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+
+    -- 29 ~ 45: 餐飲部 (F&B)
+    ('fnb01',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb02',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb03',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb04',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb05',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb06',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb07',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb08',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb09',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb10',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb11',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb12',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb13',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb14',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb15',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb16',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('fnb17',          '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+
+ -- 46 ~ 105: 顧客會員 (Customer / Guest)
+    ('customer01', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer02', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer03', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer04', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer05', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer06', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer07', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer08', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer09', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer10', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer11', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer12', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer13', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer14', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer15', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer16', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer17', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer18', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer19', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer20', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer21', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer22', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer23', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer24', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer25', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer26', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer27', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer28', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer29', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer30', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer31', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer32', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer33', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer34', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer35', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer36', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer37', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer38', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer39', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer40', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer41', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer42', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer43', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer44', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer45', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer46', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer47', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer48', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer49', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer50', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer51', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer52', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer53', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer54', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer55', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer56', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer57', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer58', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer59', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1'),
+    ('customer60', '$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C', '1');
+
+
 GO
 
 
 /* =========================================================
    3. permission
    ========================================================= */
-INSERT INTO permission (permission_id, permission_code, permission_name)
+INSERT INTO permission ( permission_code, permission_name)
 VALUES
-(1, N'ROOM_MANAGE', N'房間管理'),
-(2, N'BOOKING_MANAGE', N'訂房管理'),
-(3, N'RESTAURANT_MANAGE', N'餐廳管理'),
-(4, N'MEMBER_MANAGE', N'會員管理'),
-(5, N'ORDER_MANAGE', N'訂單管理');
+( N'ROOM_MANAGE', N'房間管理'),
+( N'BOOKING_MANAGE', N'訂房管理'),
+( N'RESTAURANT_MANAGE', N'餐廳管理'),
+( N'MEMBER_MANAGE', N'會員管理'),
+( N'ORDER_MANAGE', N'訂單管理');
 GO
 
 
 /* =========================================================
    4. employee
    ========================================================= */
-INSERT INTO employee
-    (department_id, account_id, position, is_admin)
+INSERT INTO employee (department_id, account_id, position, is_admin)
 VALUES
-(1, 1, '經理', 1),
-(1, 2, '櫃檯人員', 0),
-(2, 3, '房務人員', 0),
-(3, 4, '餐飲人員', 0);
+    -- 行政管理部 (department_id = 4, account_id 1~2)
+    (4, 1, N'總經理', 1),         -- Emp 1
+    (4, 2, N'行政人資主管', 0),   -- Emp 2
+
+    -- 櫃檯/前台部 (department_id = 1, account_id 3~10)
+    (1, 3, N'櫃檯主管', 0),       -- Emp 3
+    (1, 4, N'櫃檯專員(早班)', 0), -- Emp 4
+    (1, 5, N'櫃檯專員(早班)', 0), -- Emp 5
+    (1, 6, N'櫃檯專員(晚班)', 0), -- Emp 6
+    (1, 7, N'櫃檯專員(晚班)', 0), -- Emp 7
+    (1, 8, N'櫃檯專員(大夜)', 0), -- Emp 8
+    (1, 9, N'禮賓接待員', 0),     -- Emp 9
+    (1, 10, N'車隊接送員', 0),    -- Emp 10
+
+    -- 客房/房務與維修部 (department_id = 2, account_id 11~28)
+    (2, 11, N'房務主管', 0),      -- Emp 11
+    (2, 12, N'房務領班', 0),      -- Emp 12
+    (2, 13, N'房務專員', 0),      -- Emp 13
+    (2, 14, N'房務專員', 0),      -- Emp 14
+    (2, 15, N'房務專員', 0),      -- Emp 15
+    (2, 16, N'房務專員', 0),      -- Emp 16
+    (2, 17, N'房務專員', 0),      -- Emp 17
+    (2, 18, N'房務專員', 0),      -- Emp 18
+    (2, 19, N'房務專員', 0),      -- Emp 19
+    (2, 20, N'房務專員', 0),      -- Emp 20
+    (2, 21, N'房務專員', 0),      -- Emp 21
+    (2, 22, N'房務專員', 0),      -- Emp 22
+    (2, 23, N'房務專員', 0),      -- Emp 23
+    (2, 24, N'房務專員', 0),      -- Emp 24
+    (2, 25, N'公設清潔員', 0),    -- Emp 25
+    (2, 26, N'布巾洗滌員', 0),    -- Emp 26
+    (2, 27, N'機電維修員', 0),    -- Emp 27
+    (2, 28, N'水電維修員', 0),    -- Emp 28
+
+    -- 餐飲部 (department_id = 3, account_id 29~45)
+    (3, 29, N'餐飲主管', 0),      -- Emp 29
+    (3, 30, N'主廚', 0),          -- Emp 30
+    (3, 31, N'副廚', 0),          -- Emp 31
+    (3, 32, N'砧板/冷盤廚師', 0),-- Emp 32
+    (3, 33, N'熱炒/西餐廚師', 0),-- Emp 33
+    (3, 34, N'點心/烘焙師', 0),  -- Emp 34
+    (3, 35, N'餐飲組長', 0),      -- Emp 35
+    (3, 36, N'餐飲服務員', 0),    -- Emp 36
+    (3, 37, N'餐飲服務員', 0),    -- Emp 37
+    (3, 38, N'餐飲服務員', 0),    -- Emp 38
+    (3, 39, N'餐飲服務員', 0),    -- Emp 39
+    (3, 40, N'餐飲服務員', 0),    -- Emp 40
+    (3, 41, N'餐飲服務員', 0),    -- Emp 41
+    (3, 42, N'吧檯調酒師', 0),    -- Emp 42
+    (3, 43, N'吧檯助理', 0),      -- Emp 43
+    (3, 44, N'洗碗員', 0),        -- Emp 44
+    (3, 45, N'備料清潔員', 0);    -- Emp 45
 GO
 
 
@@ -63,22 +219,34 @@ GO
    目前你的 FK 是 employee.account_id
    所以下面的 employee_id 使用 1、2、3、4
    ========================================================= */
-INSERT INTO employee_permission (permission_id, employee_id)
+INSERT INTO employee_permission (employee_id)
 VALUES
-(1, 1),
-(2, 1),
-(3, 1),
-(4, 1),
-(5, 1),
+    -- Emp 1: 總經理 / 管理員 (擁有全部 5 項權限)
+    (1, 1), -- 房間管理
+    (2, 1), -- 訂房管理
+    (3, 1), -- 餐廳管理
+    (4, 1), -- 會員管理
+    (5, 1), -- 訂單管理
 
-(1, 2),
-(2, 2),
-(4, 2),
+    -- Emp 2: 櫃檯主管 (房間、訂房、會員、訂單)
+    (1, 2),
+    (2, 2),
+    (4, 2),
+    (5, 2),
 
-(1, 3),
+    -- Emp 3: 櫃檯專員 (房間、訂房)
+    (1, 3),
+    (2, 3),
 
-(3, 4),
-(5, 4);
+    -- Emp 4: 房務人員 / 維修員 (僅房間管理)
+    (1, 4),
+
+    -- Emp 5: 餐飲部主管 (餐廳、訂單)
+    (3, 5),
+    (5, 5),
+
+    -- Emp 6: 餐飲部服務員 (僅餐廳管理)
+    (3, 6);
 GO
 
 
@@ -120,13 +288,19 @@ GO
 /* =========================================================
    8. image
    ========================================================= */
-INSERT INTO image (image_id, path, image_desc)
+INSERT INTO [dbo].[image] 
+    ([path], [image_description], [room_type_id]) 
 VALUES
-(1, N'/images/room/deluxe.jpg', N'豪華房'),
-(2, N'/images/room/double.jpg', N'雙人房'),
-(3, N'/images/room/family.jpg', N'家庭房'),
-(4, N'/images/product/breakfast.jpg', N'早餐'),
-(5, N'/images/product/dinner.jpg', N'晚餐');
+    (N'/uploads/images/room/roomtype.1.jpg', N'海景標準雙人房', 1),
+    (N'/uploads/images/room/roomtype.2.jpg', N'山景標準雙人房', 2),
+    (N'/uploads/images/room/roomtype.3.jpg', N'海景雅緻雙床房', 3),
+    (N'/uploads/images/room/roomtype.4.jpg', N'山景雅緻雙床房', 4),
+    (N'/uploads/images/room/roomtype.5.jpg', N'海景溫馨家庭房', 5),
+    (N'/uploads/images/room/roomtype.6.jpg', N'山景溫馨家庭房', 6),
+    (N'/uploads/images/room/roomtype.7.jpg', N'海景行政尊榮套房', 7),
+    (N'/uploads/images/room/roomtype.8.jpg', N'山景行政尊榮套房', 8),
+    (N'/uploads/images/room/roomtype.9.jpg', N'海景豪華全景四人套房', 9),
+    (N'/uploads/images/room/roomtype.10.jpg', N'海景頂級皇家總統套房', 10);
 GO
 
 
@@ -134,11 +308,18 @@ GO
    9. room_type
    ========================================================= */
 INSERT INTO room_type
-    (type_name, bed_type, description, price_per_night, capacity, image_id)
+    (type_name, bed_type, capacity, room_description, price_per_night)
 VALUES
-(N'豪華雙人房', N'一大床', N'舒適雙人房型', 3800, 2, 1),
-(N'精緻雙人房', N'兩小床', N'適合雙人入住', 3200, 2, 2),
-(N'家庭房', N'兩大床', N'適合家庭入住', 5200, 4, 3);
+    (N'標準海景雙人房', N'1張雙人床', 2, N'含雙人早餐，擁有獨立海景陽台', 3500),
+    (N'標準山景雙人房', N'1張雙人床', 2, N'含雙人早餐，享受靜謐山景', 3000),
+    (N'雅緻海景雙床房', N'2張單人床', 2, N'含雙人早餐，海景客房，適合商務或好友', 3800),
+    (N'雅緻山景雙床房', N'2張單人床', 2, N'含雙人早餐，山景客房，適合商務或好友', 3300),
+    (N'溫馨海景家庭房', N'2張雙人床', 4, N'含四人早餐，家庭出遊首選海景房', 5800),
+    (N'溫馨山景家庭房', N'2張雙人床', 4, N'含四人早餐，空間寬敞，綠意山景', 5200),
+    (N'行政海景尊榮套房', N'1張加大雙人床', 2, N'含雙人早餐與行政酒廊權益，高樓層無敵海景', 8800),
+    (N'行政山景尊榮套房', N'1張加大雙人床', 2, N'含雙人早餐與行政酒廊權益，高樓層環景山景', 8000),
+    (N'豪華全景海景四人套房', N'2張加大雙人床', 4, N'含四人早餐，獨立會客廳，高樓層雙面海景', 13800),
+    (N'頂級海景皇家總統套房', N'1張特大雙人床', 2, N'含專屬管家與豪華早餐，獨立露台與私人酒廊', 32000);
 GO
 
 
@@ -146,14 +327,150 @@ GO
    10. room
    ========================================================= */
 INSERT INTO room
-    (room_number, room_type_id, floor, status)
+    (room_number, room_type_id, floor, room_status)
 VALUES
-(301, 1, 3, N'可入住'),
-(302, 1, 3, N'已入住'),
-(303, 2, 3, N'可入住'),
-(401, 2, 4, N'清潔中'),
-(402, 3, 4, N'可入住'),
-(403, 3, 4, N'維修中');
+    -- ==================== 5 樓 (24間：標準與雅緻房型) ====================
+    -- 1 區 (房型 1, 3)
+    (10501, 1, 5, N'可預訂'),
+    (10502, 1, 5, N'可預訂'),
+    (10503, 1, 5, N'可預訂'),
+    (10504, 1, 5, N'可預訂'),
+    (10505, 3, 5, N'可預訂'),
+    (10506, 3, 5, N'可預訂'),
+    (10507, 3, 5, N'可預訂'),
+    (10508, 3, 5, N'可預訂'),
+    (10509, 1, 5, N'可預訂'),
+    (10510, 1, 5, N'可預訂'),
+    (10511, 3, 5, N'可預訂'),
+    (10512, 3, 5, N'可預訂'),
+    -- 2 區 (房型 2, 4)
+    (20501, 2, 5, N'可預訂'),
+    (20502, 2, 5, N'可預訂'),
+    (20503, 2, 5, N'可預訂'),
+    (20504, 2, 5, N'可預訂'),
+    (20505, 4, 5, N'可預訂'),
+    (20506, 4, 5, N'可預訂'),
+    (20507, 4, 5, N'可預訂'),
+    (20508, 4, 5, N'可預訂'),
+    (20509, 2, 5, N'可預訂'),
+    (20510, 2, 5, N'可預訂'),
+    (20511, 4, 5, N'可預訂'),
+    (20512, 4, 5, N'可預訂'),
+
+    -- ==================== 6 樓 (24間：標準與雅緻房型) ====================
+    -- 1 區 (房型 1, 3)
+    (10601, 1, 6, N'可預訂'),
+    (10602, 1, 6, N'可預訂'),
+    (10603, 1, 6, N'可預訂'),
+    (10604, 1, 6, N'可預訂'),
+    (10605, 3, 6, N'可預訂'),
+    (10606, 3, 6, N'可預訂'),
+    (10607, 3, 6, N'可預訂'),
+    (10608, 3, 6, N'可預訂'),
+    (10609, 1, 6, N'可預訂'),
+    (10610, 1, 6, N'可預訂'),
+    (10611, 3, 6, N'可預訂'),
+    (10612, 3, 6, N'可預訂'),
+    -- 2 區 (房型 2, 4)
+    (20601, 2, 6, N'可預訂'),
+    (20602, 2, 6, N'可預訂'),
+    (20603, 2, 6, N'可預訂'),
+    (20604, 2, 6, N'可預訂'),
+    (20605, 4, 6, N'可預訂'),
+    (20606, 4, 6, N'可預訂'),
+    (20607, 4, 6, N'可預訂'),
+    (20608, 4, 6, N'可預訂'),
+    (20609, 2, 6, N'可預訂'),
+    (20610, 2, 6, N'可預訂'),
+    (20611, 4, 6, N'可預訂'),
+    (20612, 4, 6, N'可預訂'),
+
+    -- ==================== 7 樓 (24間：溫馨家庭房型) ====================
+    -- 1 區 (房型 5)
+    (10701, 5, 7, N'可預訂'),
+    (10702, 5, 7, N'可預訂'),
+    (10703, 5, 7, N'可預訂'),
+    (10704, 5, 7, N'可預訂'),
+    (10705, 5, 7, N'可預訂'),
+    (10706, 5, 7, N'可預訂'),
+    (10707, 5, 7, N'可預訂'),
+    (10708, 5, 7, N'可預訂'),
+    (10709, 5, 7, N'可預訂'),
+    (10710, 5, 7, N'可預訂'),
+    (10711, 5, 7, N'可預訂'),
+    (10712, 5, 7, N'可預訂'),
+    -- 2 區 (房型 6)
+    (20701, 6, 7, N'可預訂'),
+    (20702, 6, 7, N'可預訂'),
+    (20703, 6, 7, N'可預訂'),
+    (20704, 6, 7, N'可預訂'),
+    (20705, 6, 7, N'可預訂'),
+    (20706, 6, 7, N'可預訂'),
+    (20707, 6, 7, N'可預訂'),
+    (20708, 6, 7, N'可預訂'),
+    (20709, 6, 7, N'可預訂'),
+    (20710, 6, 7, N'可預訂'),
+    (20711, 6, 7, N'可預訂'),
+    (20712, 6, 7, N'可預訂'),
+
+    -- ==================== 8 樓 (24間：一般套房綜合區) ====================
+    -- 1 區 (房型 1, 3, 5)
+    (10801, 1, 8, N'可預訂'),
+    (10802, 1, 8, N'可預訂'),
+    (10803, 1, 8, N'可預訂'),
+    (10804, 1, 8, N'可預訂'),
+    (10805, 3, 8, N'可預訂'),
+    (10806, 3, 8, N'可預訂'),
+    (10807, 3, 8, N'可預訂'),
+    (10808, 3, 8, N'可預訂'),
+    (10809, 5, 8, N'可預訂'),
+    (10810, 5, 8, N'可預訂'),
+    (10811, 5, 8, N'可預訂'),
+    (10812, 5, 8, N'可預訂'),
+    -- 2 區 (房型 2, 4, 6)
+    (20801, 2, 8, N'可預訂'),
+    (20802, 2, 8, N'可預訂'),
+    (20803, 2, 8, N'可預訂'),
+    (20804, 2, 8, N'可預訂'),
+    (20805, 4, 8, N'可預訂'),
+    (20806, 4, 8, N'可預訂'),
+    (20807, 4, 8, N'可預訂'),
+    (20808, 4, 8, N'可預訂'),
+    (20809, 6, 8, N'可預訂'),
+    (20810, 6, 8, N'可預訂'),
+    (20811, 6, 8, N'可預訂'),
+    (20812, 6, 8, N'可預訂'),
+
+    -- ==================== 9 樓 (12間：行政尊榮套房) ====================
+    -- 1 區 (房型 7)
+    (10901, 7, 9, N'可預訂'),
+    (10902, 7, 9, N'可預訂'),
+    (10903, 7, 9, N'可預訂'),
+    (10904, 7, 9, N'可預訂'),
+    (10905, 7, 9, N'可預訂'),
+    (10906, 7, 9, N'可預訂'),
+    -- 2 區 (房型 8)
+    (20901, 8, 9, N'可預訂'),
+    (20902, 8, 9, N'可預訂'),
+    (20903, 8, 9, N'可預訂'),
+    (20904, 8, 9, N'可預訂'),
+    (20905, 8, 9, N'可預訂'),
+    (20906, 8, 9, N'可預訂'),
+
+    -- ==================== 10 樓 (12間：頂級與豪華套房) ====================
+    -- 3 區 (房型 9, 10)
+    (31001, 9, 10, N'可預訂'),
+    (31002, 9, 10, N'可預訂'),
+    (31003, 9, 10, N'可預訂'),
+    (31004, 9, 10, N'可預訂'),
+    (31005, 9, 10, N'可預訂'),
+    (31006, 9, 10, N'可預訂'),
+    (31007, 9, 10, N'可預訂'),
+    (31008, 9, 10, N'可預訂'),
+    (31009, 9, 10, N'可預訂'),
+    (31010, 9, 10, N'可預訂'),
+    (31011, 10, 10, N'可預訂'),
+    (31012, 10, 10, N'可預訂');
 GO
 
 
@@ -331,20 +648,104 @@ GO
 
 
 /* =========================================================
-   23. room_task
+   23. room_task 依照房務員工id （11~28） 給予隨機任務 對應人員
    ========================================================= */
-INSERT INTO room_task
-    (room_id, employee_id, remark, priority,
-     created_at, completed_at, task_type, task_status)
-VALUES
-(2, 3, N'退房後清潔房間', N'高',
- '2026-08-20 11:30:00', NULL, N'房間清潔', N'待處理'),
+-- INSERT INTO room_task (
+--     room_id, 
+--     employee_id, 
+--     priority,       
+--     task_type,      
+--     task_status,
+--     remark, 
+--     created_at, 
+--     completed_at
+-- )
+-- SELECT 
+--     room_id,
+--     employee_id,
+--     priority,       
+--     task_type,      
+--     task_status,
+    
+--     -- 依據任務類型給予對應的備註說明
+--     CASE 
+--         WHEN rand_remark_flag < 30 THEN NULL
+--         WHEN task_type = N'設備維修' THEN 
+--             CASE rand_remark_idx
+--                 WHEN 0 THEN N'馬桶堵塞'
+--                 WHEN 1 THEN N'冷氣不冷'
+--                 WHEN 2 THEN N'電視無法開機'
+--                 ELSE N'蓮蓬頭漏水'
+--             END
+--         WHEN task_type = N'退房清潔' THEN 
+--             CASE (rand_remark_idx % 2)
+--                 WHEN 0 THEN N'退房深度清潔'
+--                 ELSE N'窗簾脫軌'
+--             END
+--         WHEN task_type = N'補充備品' THEN 
+--             CASE (rand_remark_idx % 2)
+--                 WHEN 0 THEN N'補充沐浴乳'
+--                 ELSE N'換洗毛巾備品'
+--             END
+--         ELSE N'續住日常整理'
+--     END AS remark,
+    
+--     created_at,
+    
+--     -- 完成時間邏輯
+--     CASE 
+--         WHEN task_status = N'已完成' THEN DATEADD(MINUTE, rand_complete_min, created_at)
+--         ELSE NULL 
+--     END AS completed_at
 
-(4, 3, N'完成客房清潔', N'中',
- '2026-08-20 10:00:00', '2026-08-20 11:00:00',
- N'房間清潔', N'已完成'),
+-- FROM (
+--     SELECT TOP (60)
+--         -- 120 間房間隨機挑選
+--         (ABS(CHECKSUM(NEWID())) % 120) + 1 AS room_id,
+        
+--         -- 1. 任務類型判定 (15% 維修單，85% 清潔備品單)
+--         -- 2. 員工ID精準鎖定：
+--         --    - 維修單 -> 機電/水電維修員 (Emp 27, 28)
+--         --    - 清潔單 -> 12 位房務專員 (Emp 13 ~ 24)
+--         CASE 
+--             WHEN rand_type_flag < 15 THEN (ABS(CHECKSUM(NEWID())) % 2) + 27
+--             ELSE (ABS(CHECKSUM(NEWID())) % 12) + 13
+--         END AS employee_id,
 
-(6, 3, N'檢查浴室設備', N'高',
- '2026-08-20 09:00:00', NULL,
- N'設備檢查', N'處理中');
-GO
+--         CASE 
+--             WHEN rand_type_flag < 15 THEN N'設備維修'
+--             ELSE 
+--                 CASE (ABS(CHECKSUM(NEWID())) % 3)
+--                     WHEN 0 THEN N'退房清潔'
+--                     WHEN 1 THEN N'續住清潔'
+--                     ELSE N'補充備品'
+--                 END
+--         END AS task_type,
+
+--         -- 優先權 (一般、重要、緊急)
+--         CASE (ABS(CHECKSUM(NEWID())) % 3)
+--             WHEN 0 THEN N'一般'
+--             WHEN 1 THEN N'重要'
+--             ELSE N'緊急'
+--         END AS priority,
+        
+--         -- 任務狀態 (待處理、進行中、已完成、已取消)
+--         CASE (ABS(CHECKSUM(NEWID())) % 4)
+--             WHEN 0 THEN N'待處理'
+--             WHEN 1 THEN N'進行中'
+--             WHEN 2 THEN N'已完成'
+--             ELSE N'已取消'
+--         END AS task_status,
+        
+--         -- 創建時間 (近 7 天內)
+--         DATEADD(MINUTE, - (ABS(CHECKSUM(NEWID())) % 10080), GETDATE()) AS created_at,
+        
+--         -- 亂數輔助欄位
+--         ABS(CHECKSUM(NEWID())) % 100 AS rand_type_flag,
+--         ABS(CHECKSUM(NEWID())) % 100 AS rand_remark_flag,
+--         ABS(CHECKSUM(NEWID())) % 4 AS rand_remark_idx,
+--         (ABS(CHECKSUM(NEWID())) % 120) + 30 AS rand_complete_min
+
+--     FROM sys.all_objects a
+--     CROSS JOIN sys.all_objects b
+-- ) AS RawTasks;

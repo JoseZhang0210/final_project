@@ -17,7 +17,8 @@ public class Booking {
     @Column(name = "booking_id")
     private Integer bookingId;
 
-    @Column(name = "booking_order_id")
+    @ManyToOne
+    @JoinColumn(name = "booking_order_id") // 根據資料庫外鍵欄位名稱設定
     private Integer bookingOrderId;
 
     @Column(name = "room_type_id")

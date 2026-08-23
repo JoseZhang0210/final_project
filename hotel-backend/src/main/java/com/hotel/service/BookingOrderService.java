@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.entity.BookingOrder;
 import com.hotel.repository.BookingOrderRepository;
+import com.hotel.repository.BookingRepository;
 
 @Service
 @Transactional
@@ -15,8 +16,11 @@ public class BookingOrderService {
 
     private final BookingOrderRepository bookingOrderRepository;
 
+    private final BookingRepository bookingRepository;
+
     public BookingOrderService(BookingOrderRepository bookingOrderRepository) {
         this.bookingOrderRepository = bookingOrderRepository;
+        this.bookingRepository = null;
     }
 
     // 1. Create - 新增訂單
@@ -77,9 +81,15 @@ public class BookingOrderService {
     // 5. Delete - 刪除訂單
     @Transactional
     public void deleteById(Integer id) {
+        // 1. 檢查主訂單是否存在
         if (!bookingOrderRepository.existsById(id)) {
             throw new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單，無法刪除");
         }
+
+        // 2. 先刪除關聯的子資料（如 Booking 明細），避免外鍵約束 (Foreign Key Constraint) 報錯
+        bookingRepository.deleteByBookingOrderId(id);
+
+        // 3. 再刪除主訂單
         bookingOrderRepository.deleteById(id);
     }
 }

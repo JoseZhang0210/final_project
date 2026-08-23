@@ -22,6 +22,8 @@ import ProductShopView from "../views/ProductShopView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
+//---------------------------------------------------
+import RoomBookingOrderView from "@/views/RoomBookingOrderView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -71,7 +73,14 @@ const router = createRouter({
           name: "admin-reservations",
           component: ReservationManageView,
         },
+        // ==========訂房==========
         {
+          path: "room-booking-order",
+          name: "admin-roombookingorder",
+          component: RoomBookingOrderView,
+        },
+        //===============================
+         {
           path: "venues",
           name: "admin-venues",
           component: VenueView,
