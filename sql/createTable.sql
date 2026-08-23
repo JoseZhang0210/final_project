@@ -101,7 +101,6 @@ CREATE TABLE [dbo].[employee](
 	[department_id] [int] NOT NULL,
 	[account_id] [int] NOT NULL,
 	[position] [varchar](50) NOT NULL,
-	[is_admin] [bit] NOT NULL,
  CONSTRAINT [PK__employee__C52E0BA8B3F6391D] PRIMARY KEY CLUSTERED 
 (
 	[employee_id] ASC
@@ -456,8 +455,6 @@ CREATE TABLE [dbo].[venue](
 ) ON [PRIMARY]
 GO
 ALTER TABLE [dbo].[account] ADD  CONSTRAINT [DF__account__status__4F7CD00D]  DEFAULT ('ACTIVE') FOR [status]
-GO
-ALTER TABLE [dbo].[employee] ADD  CONSTRAINT [DF__employee__is_adm__5629CD9C]  DEFAULT ((0)) FOR [is_admin]
 GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__creat__5FB337D6]  DEFAULT (getdate()) FOR [created_at]
 GO

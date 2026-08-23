@@ -26,21 +26,10 @@
 
 <script setup>
 import { onMounted } from "vue";
+import { useAuthStore } from "@/stores/auth";
 
 onMounted(() => {
-  // ==============================
-  // 清除 JWT
-  // ==============================
-
-  localStorage.removeItem("token");
-
-  // ==============================
-  // 清除角色 / 權限
-  // ==============================
-
-  localStorage.removeItem("authorities");
-
-  console.log("已登出，JWT 已清除");
+  useAuthStore().logout()
 });
 </script>
 
@@ -52,8 +41,7 @@ onMounted(() => {
 
   background:
     linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
-    url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center /
-      cover no-repeat;
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center / cover no-repeat;
 
   display: flex;
 

@@ -57,6 +57,7 @@
 </template>
 
 <script setup>
+import { useAuthStore } from "@/stores/auth";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -69,6 +70,8 @@ const loading = ref(false);
 
 const message = ref("");
 const messageType = ref("");
+
+const authStore = useAuthStore()
 
 async function login() {
   message.value = "";
@@ -106,11 +109,8 @@ async function login() {
 
     console.log("登入結果：", data);
 
-    // 儲存 JWT
-    localStorage.setItem("token", data.token);
 
-    // 儲存權限
-    localStorage.setItem("authorities", JSON.stringify(data.authorities));
+    authStore.login(data.token,data.authorities)
 
     message.value = "登入成功";
     messageType.value = "success";

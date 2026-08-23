@@ -48,12 +48,12 @@ GO
    4. employee
    ========================================================= */
 INSERT INTO employee
-    (department_id, account_id, position, is_admin)
+    (department_id, account_id, position)
 VALUES
-(1, 1, '經理', 1),
-(1, 2, '櫃檯人員', 0),
-(2, 3, '房務人員', 0),
-(3, 4, '餐飲人員', 0);
+(1, 1, '經理'),
+(1, 2, '櫃檯人員'),
+(2, 3, '房務人員'),
+(3, 4, '餐飲人員');
 GO
 
 
