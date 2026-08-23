@@ -52,7 +52,7 @@ CREATE TABLE [dbo].[booking_order](
 	[total_price] [int] NOT NULL,
 	[order_status] [nvarchar](20) NOT NULL,
 	[created_at] [datetime] NOT NULL,
-	[payment_id] [int] NOT NULL,
+	[payment_id] [int] NULL,
  CONSTRAINT [PK_booking_order] PRIMARY KEY CLUSTERED 
 (
 	[booking_order_id] ASC
@@ -133,10 +133,10 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[image](
+CREATE TABLE [dbo].[room_image](
 	[image_id] [int]IDENTITY(1,1) NOT NULL,
 	[path] [nvarchar](255) NOT NULL,
-	[image_description] [nvarchar](255) NULL,
+	[image_description] [nvarchar](MAX) NULL,
 	[room_type_id] [int] NOT NULL
  CONSTRAINT [PK_image] PRIMARY KEY CLUSTERED 
 (
@@ -386,7 +386,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[room](
 	[room_id] [int] IDENTITY(1,1) NOT NULL,
-	[room_number] [int] NOT NULL,
+	[room_number] [NVARCHAR](20) NOT NULL,
 	[room_type_id] [int] NOT NULL,
 	[floor] [int] NOT NULL,
 	[room_status] [nvarchar](20) NOT NULL,
@@ -590,11 +590,11 @@ GO
 ALTER TABLE [dbo].[room_task] CHECK CONSTRAINT [FK_room_task_room]
 GO
 
-ALTER TABLE [dbo].[image] WITH CHECK ADD CONSTRAINT [FK_image_room_type] FOREIGN KEY([room_type_id])
+ALTER TABLE [dbo].[room_image] WITH CHECK ADD CONSTRAINT [FK_room_image_room_type] FOREIGN KEY([room_type_id])
 REFERENCES [dbo].[room_type] ([room_type_id])
 GO
 
-ALTER TABLE [dbo].[image] CHECK CONSTRAINT [FK_image_room_type]
+ALTER TABLE [dbo].[room_image] CHECK CONSTRAINT [FK_room_image_room_type]
 GO
 
 
