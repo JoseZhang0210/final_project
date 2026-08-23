@@ -203,10 +203,7 @@ GO
 CREATE TABLE [dbo].[payment](
 	[payment_id] [int] IDENTITY(1,1) NOT NULL,
 	[payment_method] [nvarchar](50) NULL,
-	[payment_time] [datetime] NULL,
-	[total_price] [int] NOT NULL,
-	[payment_status] [nvarchar](50) NOT NULL,
-	[member_id] [int] NULL,
+	
  CONSTRAINT [PK_payment] PRIMARY KEY CLUSTERED 
 (
 	[payment_id] ASC
@@ -538,11 +535,6 @@ ALTER TABLE [dbo].[order_item]  WITH CHECK ADD  CONSTRAINT [FK_order_item_produc
 REFERENCES [dbo].[product] ([product_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_product]
-GO
-ALTER TABLE [dbo].[payment]  WITH CHECK ADD  CONSTRAINT [FK_payment_member] FOREIGN KEY([member_id])
-REFERENCES [dbo].[member] ([member_id])
-GO
-ALTER TABLE [dbo].[payment] CHECK CONSTRAINT [FK_payment_member]
 GO
 ALTER TABLE [dbo].[product]  WITH CHECK ADD  CONSTRAINT [FK_product_category] FOREIGN KEY([category_id])
 REFERENCES [dbo].[category] ([category_id])
