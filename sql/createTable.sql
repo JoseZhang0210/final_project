@@ -64,12 +64,11 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[category](
-	[category_id] [int] NOT NULL,
-	[category_name] [nvarchar](50) NULL,
-	[parent_category] [int] NULL,
+    [category_id] [int] NOT NULL,
+    [category_name] [nvarchar](50) NULL,
  CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED 
 (
-	[category_id] ASC
+    [category_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
@@ -231,17 +230,17 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[product](
-	[product_id] [int] NOT NULL,
-	[product_name] [nvarchar](50) NOT NULL,
-	[category_id] [int] NOT NULL,
-	[description] [nvarchar](50) NOT NULL,
-	[price] [int] NOT NULL,
-	[stock] [int] NOT NULL,
-	[image_id] [int] NULL,
-	[status] [nvarchar](50) NULL,
- CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED 
+    product_id INT IDENTITY(1,1) NOT NULL,
+    [product_name] [nvarchar](50) NOT NULL,
+    [category_id] [int] NOT NULL,
+    [description] NVARCHAR(255) NULL
+    [price] [int] NOT NULL,
+    [stock] [int] NOT NULL,
+    [ImageURL] NVARCHAR(255),
+    [status] [nvarchar](50) NULL,
+CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED 
 (
-	[product_id] ASC
+    [product_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
