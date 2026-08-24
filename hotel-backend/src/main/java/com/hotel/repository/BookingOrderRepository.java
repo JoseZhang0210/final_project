@@ -17,7 +17,7 @@ public interface BookingOrderRepository extends JpaRepository<BookingOrder, Inte
 
         @Query("SELECT b FROM BookingOrder b WHERE " +
                         "(:bookingOrderId IS NULL OR b.bookingOrderId = :bookingOrderId) AND " +
-                        "(:memberId IS NULL OR b.memberId = :memberId) AND " +
+                        "(:memberId IS NULL OR b.member.memberId = :memberId) AND " + // 改為 b.member.memberId
                         "(:orderStatus IS NULL OR b.orderStatus = :orderStatus)")
         List<BookingOrder> searchOrders(
                         @Param("bookingOrderId") Integer bookingOrderId,

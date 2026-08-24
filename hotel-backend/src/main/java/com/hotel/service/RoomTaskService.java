@@ -53,7 +53,7 @@ public class RoomTaskService {
     // 3-3. 依房間 ID 查詢任務 (按任務 ID 降序排列)
     @Transactional(readOnly = true)
     public List<RoomTask> findByRoomId(Integer roomId) {
-        return roomTaskRepository.findByRoom_RoomIdOrderByTaskIdDesc(roomId);
+        return roomTaskRepository.findByRoomIdOrderByTaskIdDesc(roomId);
     }
 
     // 3-4. 依任務狀態查詢
@@ -77,7 +77,7 @@ public class RoomTaskService {
     // 3-7. 依員工 ID 查詢
     @Transactional(readOnly = true)
     public List<RoomTask> findByEmployeeId(Integer employeeId) {
-        return roomTaskRepository.findByEmployee_EmployeeId(employeeId);
+        return roomTaskRepository.findByEmployeeId(employeeId);
     }
 
     // 4. Update - 更新任務狀態與欄位 (利用 Dirty Checking)
