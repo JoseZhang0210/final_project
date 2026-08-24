@@ -11,7 +11,7 @@ import com.hotel.model.entity.BookingOrder;
 
 public interface BookingOrderRepository extends JpaRepository<BookingOrder, Integer> {
 
-        List<BookingOrder> findByMemberId(Integer memberId);
+        // List<BookingOrder> findByMemberId(Integer memberId);
 
         List<BookingOrder> findByOrderStatus(String orderStatus);
 
@@ -29,4 +29,6 @@ public interface BookingOrderRepository extends JpaRepository<BookingOrder, Inte
         void deleteByBookingOrderId(@Param("bookingOrderId") Integer bookingOrderId);
 
         List<BookingOrder> findByMember_MemberIdOrderByCreatedAtDesc(Integer memberId);
+
+        List<BookingOrder> findByMemberMemberId(Integer memberId);
 }

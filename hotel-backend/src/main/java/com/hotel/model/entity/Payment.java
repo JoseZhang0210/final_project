@@ -17,27 +17,23 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table
+@Table(name = "payment")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payment_id")
     private Integer paymentId;
 
     @Column(name = "payment_method")
     private String paymentMethod;
 
-    public Object setBookingOrder(BookingOrder bookingOrder) {
-        throw new UnsupportedOperationException("Unimplemented method 'setBookingOrder'");
-    }
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", insertable = false, updatable = false) // 若 DB 的外鍵設計如圖所示
+    @JoinColumn(name = "booking_order_id") // 修正：指向 BookingOrder 在 DB 中的外鍵欄位（請確認資料庫實際欄位名）
     @JsonIgnoreProperties({ "payments", "hibernateLazyInitializer", "handler" })
     private BookingOrder bookingOrder;
 }
