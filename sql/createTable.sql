@@ -544,11 +544,6 @@ REFERENCES [dbo].[category] ([category_id])
 GO
 ALTER TABLE [dbo].[product] CHECK CONSTRAINT [FK_product_category]
 GO
-ALTER TABLE [dbo].[product]  WITH CHECK ADD  CONSTRAINT [FK_product_image] FOREIGN KEY([image_id])
-REFERENCES [dbo].[image] ([image_id])
-GO
-ALTER TABLE [dbo].[product] CHECK CONSTRAINT [FK_product_image]
-GO
 ALTER TABLE [dbo].[profile]  WITH CHECK ADD  CONSTRAINT [FK_user_profile_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
 GO
