@@ -18,4 +18,8 @@ public interface RoomTaskRepository extends JpaRepository<RoomTask, Integer> {
 
     List<RoomTask> findByEmployeeId(Integer employeeId);
 
+    List<RoomTask> findByRoom_RoomIdOrderByTaskIdDesc(Integer roomId);
+
+    List<RoomTask> findByEmployee_EmployeeId(Integer employeeId);
+
 }

@@ -27,4 +27,6 @@ public interface BookingOrderRepository extends JpaRepository<BookingOrder, Inte
         @Modifying
         @Query("DELETE FROM Booking b WHERE b.bookingOrder.bookingOrderId = :bookingOrderId")
         void deleteByBookingOrderId(@Param("bookingOrderId") Integer bookingOrderId);
+
+        List<BookingOrder> findByMember_MemberIdOrderByCreatedAtDesc(Integer memberId);
 }

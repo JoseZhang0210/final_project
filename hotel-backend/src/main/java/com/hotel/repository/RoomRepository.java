@@ -31,4 +31,6 @@ public interface RoomRepository extends JpaRepository<Room, Integer> {
     // @Param("checkOutDate") LocalDate checkOutDate,
     // @Param("fifteenMinsAgo") LocalDateTime fifteenMinsAgo
     // );
+
+    List<Room> findByRoomType_RoomTypeId(Integer roomTypeId);
 }

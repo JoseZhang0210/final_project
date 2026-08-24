@@ -2,7 +2,6 @@ package com.hotel.controller;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Booking;
 import com.hotel.service.BookingService;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -49,12 +50,11 @@ public class BookingController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getBookingById(@PathVariable Integer id) {
         try {
-            Optional<Booking> booking = bookingService.findById(id);
-            if (booking == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "找不到 ID 為 " + id + " 的預訂紀錄"));
-            }
+            Booking booking = bookingService.findById(id);
             return ResponseEntity.ok(booking);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "查詢失敗：" + e.getMessage()));
@@ -65,7 +65,10 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
         try {
-            // 依據 Entity 註解規範，未帶入狀態時預設為 PENDING
+            // 確保新增時 ID 為空，由資料庫自動遞增
+            booking.setBookingId(null);
+
+            // 依據 Entity 規範，未帶入狀態時預設為 PENDING
             if (booking.getBookingStatus() == null || booking.getBookingStatus().isBlank()) {
                 booking.setBookingStatus("PENDING");
             }
@@ -73,6 +76,11 @@ public class BookingController {
             Booking savedBooking = bookingService.insert(booking);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
         } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("FK_")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "外鍵約束錯誤：請確認關聯的訂單、房型或房間 ID 是否正確！"));
+            }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "新增預訂失敗：" + e.getMessage()));
         }
@@ -82,9 +90,11 @@ public class BookingController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBooking(@PathVariable Integer id, @RequestBody Booking booking) {
         try {
-            booking.setBookingId(id);
             Booking updatedBooking = bookingService.updateBooking(id, booking);
             return ResponseEntity.ok(updatedBooking);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "更新失敗：" + e.getMessage()));
@@ -95,16 +105,14 @@ public class BookingController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBooking(@PathVariable Integer id) {
         try {
-            boolean deleted = bookingService.deleteById(id);
-            if (deleted) {
-                return ResponseEntity.ok(Map.of("message", "預訂已成功刪除！"));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("message", "刪除失敗：該預訂不存在！"));
-            }
+            bookingService.deleteById(id);
+            return ResponseEntity.ok(Map.of("message", "預訂已成功刪除！"));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "刪除失敗：該預訂可能已被其他資料關聯或不存在！"));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "刪除失敗：該預訂可能已被其他資料關聯！"));
         }
     }
 }

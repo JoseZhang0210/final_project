@@ -20,4 +20,13 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
         void deleteByBookingOrderId(Integer id);
 
+        // 依主訂單 ID 查詢
+        List<Booking> findByBookingOrder_BookingOrderId(Integer bookingOrderId);
+
+        // 依狀態查詢
+        List<Booking> findByBookingStatus(String bookingStatus);
+
+        // 依主訂單 ID 與狀態雙重條件查詢
+        List<Booking> findByBookingOrder_BookingOrderIdAndBookingStatus(Integer bookingOrderId, String bookingStatus);
+
 }

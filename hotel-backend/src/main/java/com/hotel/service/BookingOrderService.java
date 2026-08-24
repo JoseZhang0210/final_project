@@ -2,13 +2,15 @@ package com.hotel.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.entity.BookingOrder;
 import com.hotel.repository.BookingOrderRepository;
-import com.hotel.repository.BookingRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @Service
 @Transactional
@@ -16,22 +18,26 @@ public class BookingOrderService {
 
     private final BookingOrderRepository bookingOrderRepository;
 
-    private final BookingRepository bookingRepository;
-
+    // 正確注入單一 Repository 即可，級聯刪除由 JPA Cascade 處理
     public BookingOrderService(BookingOrderRepository bookingOrderRepository) {
         this.bookingOrderRepository = bookingOrderRepository;
-        this.bookingRepository = null;
     }
 
-    // 1. Create - 新增訂單
-    @Transactional
+    // 1. Create - 新增主訂單
     public BookingOrder insert(BookingOrder bookingOrder) {
         if (bookingOrder.getCreatedAt() == null) {
             bookingOrder.setCreatedAt(LocalDateTime.now());
         }
-        // 依據 Entity 註解，預設狀態建議使用英文標籤 (例如 PAID 或 PENDING)
         if (bookingOrder.getOrderStatus() == null) {
             bookingOrder.setOrderStatus("已付款");
+        }
+
+        // 雙向關聯維護：若傳入的 bookings / payments 子列表不為空，需將父物件指向自己
+        if (bookingOrder.getBookings() != null) {
+            bookingOrder.getBookings().forEach(b -> b.setBookingOrder(bookingOrder));
+        }
+        if (bookingOrder.getPayments() != null) {
+            bookingOrder.getPayments().forEach(p -> p.setBookingOrder(bookingOrder));
         }
 
         return bookingOrderRepository.save(bookingOrder);
@@ -43,53 +49,56 @@ public class BookingOrderService {
         return bookingOrderRepository.findAll();
     }
 
-    // 3. Read by ID - 依 ID 查詢
+    // 3-1. Read Optional by ID
     @Transactional(readOnly = true)
-    public BookingOrder findById(Integer id) {
-        return bookingOrderRepository.findById(id).orElse(null);
+    public Optional<BookingOrder> findOptionalById(Integer id) {
+        return bookingOrderRepository.findById(id);
     }
 
-    // 搜尋訂單
+    // 3-2. Read by ID (找不到即拋出特定例外，避免回傳 null)
+    @Transactional(readOnly = true)
+    public BookingOrder findById(Integer id) {
+        return bookingOrderRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預訂訂單"));
+    }
+
+    // 3-3. 搜尋訂單 (由 Repository 提供自訂查詢能力)
     @Transactional(readOnly = true)
     public List<BookingOrder> search(Integer bookingOrderId, Integer memberId, String orderStatus) {
         return bookingOrderRepository.searchOrders(bookingOrderId, memberId, orderStatus);
     }
 
-    // 4. Update - 更新訂單
-    @Transactional
-    public BookingOrder update(Integer id, BookingOrder updatedOrder) {
-        return bookingOrderRepository.findById(id)
-                .map(existingOrder -> {
-                    if (updatedOrder.getMemberId() != null) {
-                        existingOrder.setMemberId(updatedOrder.getMemberId());
-                    }
-                    if (updatedOrder.getBookingTotalPrice() != null) {
-                        existingOrder.setBookingTotalPrice(updatedOrder.getBookingTotalPrice());
-                    }
-                    if (updatedOrder.getOrderStatus() != null) {
-                        existingOrder.setOrderStatus(updatedOrder.getOrderStatus());
-                    }
-                    if (updatedOrder.getPaymentId() != null) {
-                        existingOrder.setPaymentId(updatedOrder.getPaymentId());
-                    }
-
-                    return bookingOrderRepository.save(existingOrder);
-                })
-                .orElseThrow(() -> new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單"));
+    // 3-4. 依會員 ID 查詢該會員所有訂單
+    @Transactional(readOnly = true)
+    public List<BookingOrder> findByMemberId(Integer memberId) {
+        return bookingOrderRepository.findByMember_MemberIdOrderByCreatedAtDesc(memberId);
     }
 
-    // 5. Delete - 刪除訂單
-    @Transactional
-    public void deleteById(Integer id) {
-        // 1. 檢查主訂單是否存在
-        if (!bookingOrderRepository.existsById(id)) {
-            throw new RuntimeException("找不到 ID 為 " + id + " 的預訂訂單，無法刪除");
+    // 4. Update - 更新訂單 (利用 JPA Dirty Checking)
+    public BookingOrder update(Integer id, BookingOrder updatedOrder) {
+        BookingOrder existingOrder = bookingOrderRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預訂訂單"));
+
+        if (updatedOrder.getMember() != null) {
+            existingOrder.setMember(updatedOrder.getMember());
+        }
+        if (updatedOrder.getBookingTotalPrice() != null) {
+            existingOrder.setBookingTotalPrice(updatedOrder.getBookingTotalPrice());
+        }
+        if (updatedOrder.getOrderStatus() != null) {
+            existingOrder.setOrderStatus(updatedOrder.getOrderStatus());
         }
 
-        // 2. 先刪除關聯的子資料（如 Booking 明細），避免外鍵約束 (Foreign Key Constraint) 報錯
-        bookingRepository.deleteByBookingOrderId(id);
+        // 交易結束時 JPA 會自動進行比對並發送 Update SQL，無須 call save()
+        return existingOrder;
+    }
 
-        // 3. 再刪除主訂單
+    // 5. Delete - 刪除訂單 (依賴 CascadeType.ALL 自動連帶刪除子明細)
+    public void deleteById(Integer id) {
+        if (!bookingOrderRepository.existsById(id)) {
+            throw new EntityNotFoundException("欲刪除的訂單 ID: " + id + " 不存在");
+        }
+        // Entity 上有 cascade = CascadeType.ALL，刪除主訂單時 JPA 會自動清除 Booking 與 Payment
         bookingOrderRepository.deleteById(id);
     }
 }

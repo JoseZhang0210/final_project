@@ -2,6 +2,8 @@ package com.hotel.model.entity;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,9 +29,11 @@ public class Booking {
     @Column(name = "booking_price", nullable = false)
     private Integer bookingPrice;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "check_in_date", nullable = false)
     private LocalDate checkInDate;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "check_out_date", nullable = false)
     private LocalDate checkOutDate;
 

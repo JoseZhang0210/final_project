@@ -41,8 +41,8 @@ public class BookingOrder {
     @Column(name = "booking_total_price", nullable = false)
     private Integer bookingTotalPrice;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Column(name = "created_at")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private LocalDateTime createdAt;
 
     @Column(name = "order_status", nullable = false, length = 20)
