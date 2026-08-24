@@ -233,7 +233,7 @@ CREATE TABLE [dbo].[product](
     product_id INT IDENTITY(1,1) NOT NULL,
     [product_name] [nvarchar](50) NOT NULL,
     [category_id] [int] NOT NULL,
-    [description] NVARCHAR(255) NULL
+    [description] NVARCHAR(255) NULL,
     [price] [int] NOT NULL,
     [stock] [int] NOT NULL,
     [ImageURL] NVARCHAR(255),
