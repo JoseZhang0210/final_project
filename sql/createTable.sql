@@ -233,7 +233,7 @@ CREATE TABLE [dbo].[product](
     product_id INT IDENTITY(1,1) NOT NULL,
     [product_name] [nvarchar](50) NOT NULL,
     [category_id] [int] NOT NULL,
-    [description] NVARCHAR(255) NULL
+    [description] NVARCHAR(255) NULL,
     [price] [int] NOT NULL,
     [stock] [int] NOT NULL,
     [ImageURL] NVARCHAR(255),
@@ -543,11 +543,6 @@ ALTER TABLE [dbo].[product]  WITH CHECK ADD  CONSTRAINT [FK_product_category] FO
 REFERENCES [dbo].[category] ([category_id])
 GO
 ALTER TABLE [dbo].[product] CHECK CONSTRAINT [FK_product_category]
-GO
-ALTER TABLE [dbo].[product]  WITH CHECK ADD  CONSTRAINT [FK_product_image] FOREIGN KEY([image_id])
-REFERENCES [dbo].[image] ([image_id])
-GO
-ALTER TABLE [dbo].[product] CHECK CONSTRAINT [FK_product_image]
 GO
 ALTER TABLE [dbo].[profile]  WITH CHECK ADD  CONSTRAINT [FK_user_profile_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
