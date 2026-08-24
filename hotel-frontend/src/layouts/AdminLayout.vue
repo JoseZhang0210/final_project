@@ -48,8 +48,12 @@
         <!-- 員工管理 -->
         <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
         
+        <!-- 訂單管理 -->
+        <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
+
         <!-- 場地管理 -->
         <RouterLink to="/admin/venues"> 🧑‍💼 場地管理 </RouterLink>
+
       </nav>
 
       <!-- =========================

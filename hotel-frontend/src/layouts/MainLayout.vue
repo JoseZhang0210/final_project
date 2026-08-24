@@ -16,7 +16,9 @@ const { isLoggedIn } = storeToRefs(authStore);
 
         <RouterLink to="/products"> 商城商品 </RouterLink>
 
-        <RouterLink to="/orders"> 我的訂單 </RouterLink>
+        <RouterLink to="/my-orders"> 我的訂單 </RouterLink>
+
+        <RouterLink to="/cart">  購物車 <span v-if="cartCount > 0">  ({{ cartCount }})</span></RouterLink>
 
         <RouterLink to="/room-booking"> 訂房管理 </RouterLink>
 

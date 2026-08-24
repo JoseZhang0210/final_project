@@ -1,7 +1,5 @@
 package com.hotel.model.entity;
 
-import java.math.BigDecimal;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -31,7 +29,7 @@ public class Product {
     private String description;
 
     @Column(name = "Price")
-    private BigDecimal price;
+    private int price;
 
     @Column(name = "Stock")
     private Integer stock;
@@ -74,11 +72,11 @@ public class Product {
         this.description = description;
     }
 
-    public BigDecimal getPrice() {
+    public int getPrice() {
         return price;
     }
 
-    public void setPrice(BigDecimal price) {
+    public void setPrice(int price) {
         this.price = price;
     }
 

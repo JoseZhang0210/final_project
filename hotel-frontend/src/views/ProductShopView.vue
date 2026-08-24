@@ -149,30 +149,78 @@
             </p>
 
             <div class="product-bottom">
-              <!-- 價格 -->
-              <div class="price-area">
-                <span class="currency"> $ </span>
+            <!-- 價格 -->
+            <div class="price-area">
+              <span class="currency">$</span>
 
-                <strong>
-                  {{ formatPrice(product.price) }}
-                </strong>
-              </div>
-
-              <!-- 庫存 -->
-              <div class="stock-text">
-                庫存
-                {{ product.stock ?? 0 }}
-              </div>
+              <strong>
+                {{ formatPrice(product.price) }}
+              </strong>
             </div>
 
-            <button
-              type="button"
-              class="product-button"
-              :disabled="!canBuy(product)"
-              @click.stop="goProductDetail(product.productId)"
+            <!-- 庫存 -->
+            <div class="stock-text">
+              庫存 {{ product.stock ?? 0 }}
+            </div>
+            </div>
+
+
+              <!-- =========================
+              購買數量
+              ========================= -->
+            <div
+            v-if="canBuy(product)"
+            class="quantity-area"
+            @click.stop
             >
-              {{ canBuy(product) ? "查看商品" : "暫無法購買" }}
-            </button>
+            <span class="quantity-label">
+              數量
+            </span>
+
+            <div class="quantity-control">
+
+              <!-- 減少 -->
+              <button
+                type="button"
+                class="quantity-button"
+                :disabled="product.buyQuantity <= 1"
+                @click.stop="decreaseQuantity(product)"
+              >
+                −
+              </button>
+
+              <!-- 數量 -->
+              <span class="quantity-number">
+                {{ product.buyQuantity }}
+              </span>
+
+              <!-- 增加 -->
+              <button
+                type="button"
+                class="quantity-button"
+                :disabled="
+                  product.buyQuantity >= Number(product.stock)
+                "
+                @click.stop="increaseQuantity(product)"
+              >
+                ＋
+              </button>
+
+            </div>
+          </div>
+
+
+          <!-- =========================
+              購買
+              ========================= -->
+          <button
+            type="button"
+            class="product-button"
+            :disabled="!canBuy(product)"
+            @click.stop="buyProduct(product)"
+          >
+            {{ canBuy(product) ? "購買" : "暫無法購買" }}
+          </button>
           </div>
         </article>
       </div>
@@ -294,17 +342,24 @@ async function loadProducts() {
      * 這裡也支援「上架」「上架中」「缺貨」
      */
 
-    products.value = data.filter((product) => {
-      const status = product.status;
+    products.value = data
+  .filter((product) => {
+    const status = product.status;
 
-      return (
-        status === "ACTIVE" ||
-        status === "OUT_OF_STOCK" ||
-        status === "上架" ||
-        status === "上架中" ||
-        status === "缺貨"
-      );
-    });
+    return (
+      status === "ACTIVE" ||
+      status === "OUT_OF_STOCK" ||
+      status === "上架" ||
+      status === "上架中" ||
+      status === "缺貨"
+    );
+  })
+  .map((product) => ({
+    ...product,
+
+    // 每個商品預設購買數量 1
+    buyQuantity: 1,
+  }));
 
     console.log("前台實際顯示商品：", products.value);
   } catch (error) {
@@ -466,9 +521,145 @@ function canBuy(product) {
   const status = product.status;
 
   const active =
-    status === "ACTIVE" || status === "上架" || status === "上架中";
+    status === "ACTIVE" ||
+    status === "上架" ||
+    status === "上架中";
 
-  return active && Number(product.stock ?? 0) > 0;
+  return (
+    active &&
+    Number(product.stock ?? 0) > 0
+  );
+}
+
+// =====================================================
+// 增加數量
+// =====================================================
+
+function increaseQuantity(product) {
+  const stock =
+    Number(product.stock ?? 0);
+
+  const currentQuantity =
+    Number(product.buyQuantity ?? 1);
+
+  if (currentQuantity < stock) {
+    product.buyQuantity =
+      currentQuantity + 1;
+  }
+}
+
+// =====================================================
+// 減少數量
+// =====================================================
+
+function decreaseQuantity(product) {
+  const currentQuantity =
+    Number(product.buyQuantity ?? 1);
+
+  if (currentQuantity > 1) {
+    product.buyQuantity =
+      currentQuantity - 1;
+  }
+}
+
+// =====================================================
+// 加入購物車
+// =====================================================
+
+function buyProduct(product) {
+  if (!canBuy(product)) {
+    alert("此商品目前無法購買");
+    return;
+  }
+
+  const quantity =
+    Number(product.buyQuantity ?? 1);
+
+  const stock =
+    Number(product.stock ?? 0);
+
+  if (quantity < 1) {
+    alert("購買數量至少為 1");
+    return;
+  }
+
+  if (quantity > stock) {
+    alert("購買數量不能超過庫存");
+    return;
+  }
+
+  const savedCart =
+    localStorage.getItem("cart");
+
+  let cart = [];
+
+  if (savedCart) {
+    try {
+      cart = JSON.parse(savedCart);
+    } catch (error) {
+      console.error(
+        "購物車資料格式錯誤：",
+        error
+      );
+
+      cart = [];
+    }
+  }
+
+  const existingItem =
+    cart.find(
+      (item) =>
+        Number(item.productId) ===
+        Number(product.productId)
+    );
+
+  if (existingItem) {
+    const newQuantity =
+      Number(existingItem.quantity) +
+      quantity;
+
+    if (newQuantity > stock) {
+      alert(
+        `購物車中的總數量不能超過庫存 ${stock}`
+      );
+
+      return;
+    }
+
+    existingItem.quantity =
+      newQuantity;
+  } else {
+    cart.push({
+      productId:
+        product.productId,
+
+      productName:
+        product.productName,
+
+      price:
+        product.price,
+
+      quantity:
+        quantity,
+
+      stock:
+        product.stock,
+
+      imageUrl:
+        product.imageUrl ?? null,
+    });
+  }
+
+  localStorage.setItem(
+    "cart",
+    JSON.stringify(cart)
+  );
+
+  alert(
+    `${product.productName} × ${quantity} 已加入購物車`
+  );
+
+  product.buyQuantity = 1;
 }
 
 // =====================================================
@@ -476,7 +667,9 @@ function canBuy(product) {
 // =====================================================
 
 function goProductDetail(productId) {
-  router.push(`/products/${productId}`);
+  router.push(
+    `/products/${productId}`
+  );
 }
 
 // =====================================================
