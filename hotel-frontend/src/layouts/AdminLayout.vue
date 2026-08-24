@@ -58,11 +58,11 @@
 
           <div v-show="roombookingOpen" class="sidebar-submenu">
             <RouterLink to="/admin/room-booking-order"> 預定訂房 </RouterLink>
-            <RouterLink to="/admin/room-booking"> 訂房明細 </RouterLink>
+            <RouterLink to="/admin/room-booking">訂房明細</RouterLink>
             <RouterLink to="/admin/room-status"> 房間狀態 </RouterLink>
-            <RouterLink to="/admin/room-task"> 房務工單 </RouterLink>
-            <RouterLink to="/admin/room-type"> 房間類型 </RouterLink>
-            <RouterLink to="/admin/room-image"> 房型圖片 </RouterLink>
+            <RouterLink to="/admin/room-task">房務工單</RouterLink>
+            <RouterLink to="/admin/room-types">房間類型</RouterLink>
+            <RouterLink to="/admin/room-images">房型圖片</RouterLink>
           </div>
         </div>
         <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
