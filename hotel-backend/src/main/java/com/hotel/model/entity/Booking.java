@@ -6,10 +6,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "booking")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = { "bookingOrder", "room", "roomType" })
+@EqualsAndHashCode(exclude = { "bookingOrder", "room", "roomType" })
+@Table(name = "booking")
 public class Booking {
 
     @Id
@@ -17,26 +19,34 @@ public class Booking {
     @Column(name = "booking_id")
     private Integer bookingId;
 
-    @ManyToOne
-    @JoinColumn(name = "booking_order_id") // 根據資料庫外鍵欄位名稱設定
-    private Integer bookingOrderId;
+    // 外鍵指向 BookingOrder (N:1 關係)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_order_id", nullable = false)
+    private BookingOrder bookingOrder;
 
-    @Column(name = "room_type_id")
-    private String roomTypeId;
+    @Column(name = "booking_price", nullable = false)
+    private Integer bookingPrice;
 
-    @Column(name = "room_id")
-    private Integer roomId;
-
-    @Column(name = "check_in_date")
+    @Column(name = "check_in_date", nullable = false)
     private LocalDate checkInDate;
 
-    @Column(name = "check_out_date")
+    @Column(name = "check_out_date", nullable = false)
     private LocalDate checkOutDate;
 
-    @Column(name = "guest_num")
+    @Column(name = "guest_num", nullable = false)
     private Integer guestNum;
 
-    @Column(name = "booking_status")
+    @Column(name = "booking_status", nullable = false, length = 20)
     private String bookingStatus;
+
+    // 外鍵指向 Room (N:1 關係，可為空 null，代表尚未分配具體房間)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = true)
+    private Room room;
+
+    // 外鍵指向 RoomType (N:1 關係)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_type_id", nullable = false)
+    private RoomType roomType;
 
 }

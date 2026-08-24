@@ -20,9 +20,8 @@ public class RoomTypeService {
     }
 
     // 1. Create - 新增房型
+    @Transactional
     public RoomType insert(RoomType roomType) {
-        // 處理外鍵約束：若 imageId 為 0 強制轉為 null
-        normalizeImageId(roomType);
         return roomTypeRepository.save(roomType);
     }
 
@@ -55,21 +54,14 @@ public class RoomTypeService {
                     if (updatedRoomType.getBedType() != null) {
                         roomType.setBedType(updatedRoomType.getBedType());
                     }
-                    if (updatedRoomType.getDescription() != null) {
-                        roomType.setDescription(updatedRoomType.getDescription());
+                    if (updatedRoomType.getRoomDescription() != null) {
+                        roomType.setRoomDescription(updatedRoomType.getRoomDescription());
                     }
                     if (updatedRoomType.getPricePerNight() != null) {
                         roomType.setPricePerNight(updatedRoomType.getPricePerNight());
                     }
                     if (updatedRoomType.getCapacity() != null) {
                         roomType.setCapacity(updatedRoomType.getCapacity());
-                    }
-
-                    // 處理圖片 ID：若傳入 0 或 null 則清空外鍵，否則更新為新 ID
-                    if (updatedRoomType.getImageId() == null || updatedRoomType.getImageId() == 0) {
-                        roomType.setImageId(null);
-                    } else {
-                        roomType.setImageId(updatedRoomType.getImageId());
                     }
 
                     return roomTypeRepository.save(roomType);
@@ -87,12 +79,4 @@ public class RoomTypeService {
         return false;
     }
 
-    /**
-     * 輔助方法：清洗與校正 imageId 資料
-     */
-    private void normalizeImageId(RoomType roomType) {
-        if (roomType.getImageId() != null && roomType.getImageId() == 0) {
-            roomType.setImageId(null);
-        }
-    }
 }

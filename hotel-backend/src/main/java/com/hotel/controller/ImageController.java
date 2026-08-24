@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hotel.model.entity.Image;
+import com.hotel.model.entity.RoomImage;
 import com.hotel.service.ImageService;
 
 @RestController
@@ -80,11 +80,11 @@ public class ImageController {
             }
 
             // 寫入資料庫
-            Image image = new Image();
+            RoomImage image = new RoomImage();
             image.setPath(dbPath);
             image.setImageDesc(imageDesc != null ? imageDesc : "");
 
-            Image savedImage = imageService.insert(image);
+            RoomImage savedImage = imageService.insert(image);
             return new ResponseEntity<>(savedImage, HttpStatus.CREATED);
 
         } catch (IOException e) {
@@ -103,13 +103,13 @@ public class ImageController {
 
     // 3. 查詢所有圖片
     @GetMapping
-    public ResponseEntity<List<Image>> getAllImages() {
+    public ResponseEntity<List<RoomImage>> getAllImages() {
         return ResponseEntity.ok(imageService.findAll());
     }
 
     // 4. 依 ID 查詢單一圖片
     @GetMapping("/{id}")
-    public ResponseEntity<Image> getImageById(@PathVariable Integer id) {
+    public ResponseEntity<RoomImage> getImageById(@PathVariable Integer id) {
         return imageService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -117,8 +117,8 @@ public class ImageController {
 
     // 5. 修改圖片資訊
     @PutMapping("/{id}")
-    public ResponseEntity<Image> updateImage(@PathVariable Integer id, @RequestBody Image updatedImage) {
-        Image image = imageService.update(id, updatedImage);
+    public ResponseEntity<RoomImage> updateImage(@PathVariable Integer id, @RequestBody RoomImage updatedImage) {
+        RoomImage image = imageService.update(id, updatedImage);
         if (image != null) {
             return ResponseEntity.ok(image);
         }
@@ -129,7 +129,7 @@ public class ImageController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Integer id) {
         // 先查出圖片資訊以利後面刪除實體檔案 (對接 Optional 回傳)
-        Image image = imageService.findById(id).orElse(null);
+        RoomImage image = imageService.findById(id).orElse(null);
         if (image == null) {
             return ResponseEntity.notFound().build();
         }

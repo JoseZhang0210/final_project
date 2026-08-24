@@ -9,9 +9,12 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -30,23 +33,27 @@ public class BookingOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer bookingOrderId;
 
-    @Column(name = "member_id")
-    private Integer memberId;
+    // 外鍵指向 Member (N:1 關係)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
-    @Column(name = "booking_total_price")
+    @Column(name = "booking_total_price", nullable = false)
     private Integer bookingTotalPrice;
-
-    @Column(name = "order_status")
-    private String orderStatus; // PENDING, PAID, EXPIRED, CANCELLED
 
     @Column(name = "created_at")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     private LocalDateTime createdAt;
 
-    @Column(name = "payment_id")
-    private Integer paymentId;
+    @Column(name = "order_status", nullable = false, length = 20)
+    private String orderStatus;
 
-    @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    // ====================多關聯性Payment,Booking
+
+    @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL)
+    private List<Payment> payments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL)
     private List<Booking> bookings = new ArrayList<>();
 
 }
