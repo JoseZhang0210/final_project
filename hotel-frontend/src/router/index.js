@@ -90,9 +90,9 @@ const router = createRouter({
           component: RoomManageView,
         },
         {
-         path: "room-types",
-         name: "admin-room-types",
-         component: RoomTypeManageView,
+          path: "room-types",
+          name: "admin-room-types",
+          component: RoomTypeManageView,
         },
         {
           path: "room-images",
@@ -110,12 +110,11 @@ const router = createRouter({
           component: RoomBookingManageView,
         },
         //===============================
-         {
+        {
           path: "venues",
           name: "admin-venues",
           component: VenueView,
         },
-        
       ],
     },
 
@@ -176,8 +175,7 @@ const router = createRouter({
         {
           path: "about",
           name: "about",
-          component: () =>
-            import("../views/AboutView.vue"),
+          component: () => import("../views/AboutView.vue"),
         },
       ],
     },

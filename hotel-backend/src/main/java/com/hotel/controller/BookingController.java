@@ -31,6 +31,11 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        return ResponseEntity.ok(bookingService.findAll());
+    }
+
     // 1. 依 ID 查詢 (GET /api/bookings/10)
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Integer id) {
@@ -52,32 +57,6 @@ public class BookingController {
     public ResponseEntity<List<Booking>> getByStatus(@RequestParam String status) {
         return ResponseEntity.ok(bookingService.findByBookingStatus(status));
     }
-
-    // // 3. 新增預訂 (POST /api/bookings)
-    // @PostMapping
-    // public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
-    // try {
-    // // 確保新增時 ID 為空，由資料庫自動遞增
-    // booking.setBookingId(null);
-
-    // // 依據 Entity 規範，未帶入狀態時預設為 PENDING
-    // if (booking.getBookingStatus() == null ||
-    // booking.getBookingStatus().isBlank()) {
-    // booking.setBookingStatus("PENDING");
-    // }
-
-    // Booking savedBooking = bookingService.insert(booking);
-    // return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
-    // } catch (Exception e) {
-    // String errorMsg = e.getMessage();
-    // if (errorMsg != null && errorMsg.contains("FK_")) {
-    // return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    // .body(Map.of("message", "外鍵約束錯誤：請確認關聯的訂單、房型或房間 ID 是否正確！"));
-    // }
-    // return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-    // .body(Map.of("message", "新增預訂失敗：" + e.getMessage()));
-    // }
-    // }
 
     // 4. 更新預訂 (PUT /api/bookings/{id})
     @PutMapping("/{id}")

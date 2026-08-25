@@ -57,7 +57,7 @@ function getAuthHeaders() {
   return headers;
 }
 
-// 1. 查詢訂單列表
+// 1. 查詢訂單列表 (對應 BookingOrderController @GetMapping)
 async function loadBookingOrders() {
   try {
     const params = new URLSearchParams();
@@ -70,15 +70,12 @@ async function loadBookingOrders() {
     const memberId = String(searchCriteria.value.memberId ?? "").trim();
     if (memberId !== "") params.append("memberId", memberId);
 
-    const orderStatus = String(searchCriteria.value.orderStatus ?? "").trim();
-    if (orderStatus !== "") params.append("orderStatus", orderStatus);
-
+    // 後端只接收 bookingOrderId 與 memberId
     const queryString = params.toString();
     const url = queryString
       ? `${BOOKING_ORDER_API_URL}?${queryString}`
       : BOOKING_ORDER_API_URL;
 
-    // 加入 headers 與 credentials
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -96,7 +93,17 @@ async function loadBookingOrders() {
     }
 
     const data = await response.json();
-    bookingOrders.value = Array.isArray(data) ? data : data.content || [];
+    let result = Array.isArray(data) ? data : data.content || [];
+
+    // 後端 API 未支援 orderStatus 參數，由前端過濾狀態
+    const orderStatus = String(searchCriteria.value.orderStatus ?? "").trim();
+    if (orderStatus !== "") {
+      result = result.filter(
+        (order) => (order.orderStatus ?? order.order_status) === orderStatus,
+      );
+    }
+
+    bookingOrders.value = result;
   } catch (error) {
     console.error("loadBookingOrders Error:", error);
     showMessage("無法連線至訂單 API", "error");
@@ -118,7 +125,7 @@ function clearForm() {
   message.value = "";
 }
 
-// 2. 新增 / 修改 訂單
+// 2. 新增 / 修改 訂單 (對應 @PostMapping & @PutMapping)
 async function saveBookingOrder() {
   if (!hasMember.value) {
     showMessage("請輸入會員 ID", "error");
@@ -144,7 +151,6 @@ async function saveBookingOrder() {
     : BOOKING_ORDER_API_URL;
 
   try {
-    // 加入 headers 與 credentials
     const response = await fetch(url, {
       method: isEdit ? "PUT" : "POST",
       headers: getAuthHeaders(),
@@ -187,14 +193,13 @@ function editBookingOrder(order) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// 3. 刪除訂單
+// 3. 刪除訂單 (對應 @DeleteMapping)
 async function deleteBookingOrder(id) {
   if (!confirm("確定要刪除這筆訂購訂單嗎？")) {
     return;
   }
 
   try {
-    // 加入 headers 與 credentials
     const response = await fetch(`${BOOKING_ORDER_API_URL}/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
