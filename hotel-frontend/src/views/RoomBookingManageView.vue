@@ -12,7 +12,7 @@ const rooms = ref([]);
 const bookings = ref([]);
 const message = ref("");
 const messageType = ref("");
-const formTitle = ref("編輯訂房明細");
+const formTitle = ref("新增/編輯訂房明細");
 
 // 查詢條件
 const searchCriteria = ref({
@@ -20,7 +20,7 @@ const searchCriteria = ref({
   status: "",
 });
 
-const bookingStatuses = ["待確認", "已確認", "已入住", "已完成", "已取消"];
+const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
 
 const form = ref(createEmptyForm());
 
@@ -341,7 +341,7 @@ onMounted(async () => {
         <div class="form-grid">
           <div class="form-group">
             <label>訂房訂單 *</label>
-            <select v-model="form.bookingOrderId" required>
+            <select v-model="form.bookingOrderId">
               <option value="" disabled>請選擇訂單</option>
               <option
                 v-for="order in bookingOrders"
@@ -619,7 +619,9 @@ select {
   justify-content: space-between;
 }
 
-.table-wrapper {
+.table-wrapper table thead th {
+  background-color: #4a3b32 !important; /* 深棕色背景 */
+  color: #ffffff !important; /* 純白文字 */
   overflow-x: auto;
 }
 

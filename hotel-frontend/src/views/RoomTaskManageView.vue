@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 
 const API_BASE_URL = "/api/roomtask";
 
-// 下拉選單資料（已去除假資料，可由 API 動態載入或維持選單對照）
+// 下拉選單資料 (透過 API 動態載入)
 const rooms = ref([]);
 const employees = ref([]);
 
@@ -11,23 +11,21 @@ const employees = ref([]);
 const roomTasks = ref([]);
 
 // 下拉選單選項（與資料庫值對應）
-const priorities = ["低", "中", "一般", "重要", "高", "緊急"];
-const taskTypes = [
-  "清潔",
-  "退房清潔",
-  "日常清潔",
-  "補充備品",
-  "設備維修",
-  "維修",
-  "備品補充",
-  "房況檢查",
-  "其他",
-];
-const taskStatuses = ["待處理", "進行中", "處理中", "已完成", "已取消"];
+const priorities = ["一般", "重要", "緊急"];
+const taskTypes = ["退房清潔", "日常清潔", "設備維修", "補充備品", "其他"];
+const taskStatuses = ["待處理", "進行中", "已完成", "已取消", "無"];
+
+// 查詢條件狀態 (對應後端 Controller 的可查詢參數)
+const searchParams = ref({
+  taskId: "",
+  roomId: "",
+  employeeId: "",
+  priority: "",
+});
 
 const message = ref("");
 const messageType = ref("");
-const formTitle = ref("新增房務工單");
+const formTitle = ref("新增/編輯房務工單");
 const form = ref(createEmptyForm());
 
 function createEmptyForm() {
@@ -61,6 +59,51 @@ function getAuthHeaders() {
     headers.Authorization = "Bearer " + token;
   }
   return headers;
+}
+
+// 動態載入房間下拉選項 (GET /api/rooms)
+async function loadRooms() {
+  try {
+    const response = await fetch("/api/rooms", {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      rooms.value = data.map((item) => ({
+        roomId: item.roomId ?? item.room_id,
+        roomNumber:
+          item.roomNumber ?? item.room_number ?? item.roomId ?? item.room_id,
+      }));
+    }
+  } catch (error) {
+    console.error("loadRooms Error:", error);
+  }
+}
+
+// 動態載入員工下拉選項 (GET /api/employees)
+async function loadEmployees() {
+  try {
+    const response = await fetch("/api/employees", {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      employees.value = data.map((item) => ({
+        employeeId: item.employeeId ?? item.employee_id,
+        employeeName:
+          item.employeeName ??
+          item.employee_name ??
+          item.name ??
+          `員工 ${item.employeeId ?? item.employee_id}`,
+      }));
+    }
+  } catch (error) {
+    console.error("loadEmployees Error:", error);
+  }
 }
 
 // 取得房間號碼 (優先對照 rooms 選單，若無則顯示 ID)
@@ -102,10 +145,23 @@ function ensureSecondsFormat(dateTimeStr) {
   return str;
 }
 
-// 1. 載入房務工單列表 (GET /api/roomtask)
+// 1. 載入與條件查詢房務工單 (GET /api/roomtask?...)
 async function loadRoomTasks() {
   try {
-    const response = await fetch(API_BASE_URL, {
+    const params = new URLSearchParams();
+    if (searchParams.value.taskId)
+      params.append("taskId", searchParams.value.taskId);
+    if (searchParams.value.roomId)
+      params.append("roomId", searchParams.value.roomId);
+    if (searchParams.value.employeeId)
+      params.append("employeeId", searchParams.value.employeeId);
+    if (searchParams.value.priority)
+      params.append("priority", searchParams.value.priority);
+
+    const queryString = params.toString();
+    const url = queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
+
+    const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
       credentials: "include",
@@ -127,6 +183,17 @@ async function loadRoomTasks() {
     console.error("loadRoomTasks Error:", error);
     showMessage("無法連線至房務工單 API", "error");
   }
+}
+
+// 重設查詢條件
+function resetSearch() {
+  searchParams.value = {
+    taskId: "",
+    roomId: "",
+    employeeId: "",
+    priority: "",
+  };
+  loadRoomTasks();
 }
 
 // 2. 新增或修改房務工單 (POST / PUT /api/roomtask)
@@ -329,7 +396,7 @@ function getStatusClass(status) {
 }
 
 onMounted(async () => {
-  await loadRoomTasks();
+  await Promise.all([loadRoomTasks(), loadRooms(), loadEmployees()]);
 });
 </script>
 
@@ -344,6 +411,73 @@ onMounted(async () => {
       {{ message }}
     </div>
 
+    <!-- 條件查詢卡片區塊 -->
+    <section class="admin-card">
+      <h2>查詢工單</h2>
+      <form @submit.prevent="loadRoomTasks">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>工單 ID</label>
+            <input
+              v-model.number="searchParams.taskId"
+              type="number"
+              placeholder="輸入任務 ID"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>房間</label>
+            <select v-model="searchParams.roomId">
+              <option value="">全部房間</option>
+              <option
+                v-for="room in rooms"
+                :key="room.roomId"
+                :value="room.roomId"
+              >
+                房號 {{ room.roomNumber }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>負責員工</label>
+            <select v-model="searchParams.employeeId">
+              <option value="">全部員工</option>
+              <option
+                v-for="employee in employees"
+                :key="employee.employeeId"
+                :value="employee.employeeId"
+              >
+                {{ employee.employeeName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>優先程度</label>
+            <select v-model="searchParams.priority">
+              <option value="">全部</option>
+              <option
+                v-for="priority in priorities"
+                :key="priority"
+                :value="priority"
+              >
+                {{ priority }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary">搜尋工單</button>
+          <button type="button" class="btn secondary" @click="resetSearch">
+            重設條件
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 新增 / 編輯表單區塊 -->
     <section class="admin-card">
       <h2>{{ formTitle }}</h2>
 
@@ -468,6 +602,7 @@ onMounted(async () => {
       </form>
     </section>
 
+    <!-- 工單列表區塊 -->
     <section class="admin-card">
       <div class="table-header">
         <h2>房務工單列表</h2>
@@ -614,6 +749,11 @@ onMounted(async () => {
   grid-column: 1 / -1;
 }
 
+thead {
+  background: #4a3b2a;
+  color: white;
+}
+
 input,
 select,
 textarea {
@@ -668,7 +808,9 @@ textarea {
   justify-content: space-between;
 }
 
-.table-wrapper {
+.table-wrapper table thead th {
+  background-color: #4a3b32 !important; /* 深棕色背景 */
+  color: #ffffff !important; /* 純白文字 */
   overflow-x: auto;
 }
 

@@ -6,7 +6,7 @@ const BOOKING_ORDER_API_URL = "/api/booking-orders";
 const bookingOrders = ref([]);
 const message = ref("");
 const messageType = ref("");
-const formTitle = ref("新增訂房訂單");
+const formTitle = ref("編輯訂房訂單");
 
 // 搜尋條件
 const searchCriteria = ref({
