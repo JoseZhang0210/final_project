@@ -23,23 +23,8 @@ public class BookingOrderService {
         this.bookingOrderRepository = bookingOrderRepository;
     }
 
-    // 1. Create - 新增主訂單
+    // 1. Create - 新增訂單 (直接交給 JPA save 處理)
     public BookingOrder insert(BookingOrder bookingOrder) {
-        if (bookingOrder.getCreatedAt() == null) {
-            bookingOrder.setCreatedAt(LocalDateTime.now());
-        }
-        if (bookingOrder.getOrderStatus() == null) {
-            bookingOrder.setOrderStatus("已付款");
-        }
-
-        // 雙向關聯維護：若傳入的 bookings / payments 子列表不為空，需將父物件指向自己
-        if (bookingOrder.getBookings() != null) {
-            bookingOrder.getBookings().forEach(b -> b.setBookingOrder(bookingOrder));
-        }
-        if (bookingOrder.getPayments() != null) {
-            bookingOrder.getPayments().forEach(p -> p.setBookingOrder(bookingOrder));
-        }
-
         return bookingOrderRepository.save(bookingOrder);
     }
 
@@ -55,41 +40,28 @@ public class BookingOrderService {
         return bookingOrderRepository.findById(id);
     }
 
-    // 3-2. Read by ID (找不到即拋出特定例外，避免回傳 null)
-    @Transactional(readOnly = true)
-    public BookingOrder findById(Integer id) {
-        return bookingOrderRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預訂訂單"));
-    }
-
-    // 3-3. 搜尋訂單 (由 Repository 提供自訂查詢能力)
-    @Transactional(readOnly = true)
-    public List<BookingOrder> search(Integer bookingOrderId, Integer memberId, String orderStatus) {
-        return bookingOrderRepository.searchOrders(bookingOrderId, memberId, orderStatus);
-    }
-
     // 3-4. 依會員 ID 查詢該會員所有訂單
     @Transactional(readOnly = true)
     public List<BookingOrder> findByMemberId(Integer memberId) {
-        return bookingOrderRepository.findByMember_MemberIdOrderByCreatedAtDesc(memberId);
+        return bookingOrderRepository.findByMemberId(memberId);
     }
 
-    // 4. Update - 更新訂單 (利用 JPA Dirty Checking)
+    // 4. Update - 更新訂單狀態與支付單 (利用 JPA Dirty Checking)
     public BookingOrder update(Integer id, BookingOrder updatedOrder) {
         BookingOrder existingOrder = bookingOrderRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預訂訂單"));
 
-        if (updatedOrder.getMember() != null) {
-            existingOrder.setMember(updatedOrder.getMember());
-        }
-        if (updatedOrder.getBookingTotalPrice() != null) {
-            existingOrder.setBookingTotalPrice(updatedOrder.getBookingTotalPrice());
-        }
+        // 1. 更新訂單狀態
         if (updatedOrder.getOrderStatus() != null) {
             existingOrder.setOrderStatus(updatedOrder.getOrderStatus());
         }
 
-        // 交易結束時 JPA 會自動進行比對並發送 Update SQL，無須 call save()
+        // 2. 更新支付關聯 (對應 payment_id)
+        if (updatedOrder.getPayments() != null) {
+            existingOrder.setPayments(updatedOrder.getPayments());
+        }
+
+        // 交易結束時 JPA 會自動進行比對並發送 UPDATE SQL，無須呼叫 save()
         return existingOrder;
     }
 

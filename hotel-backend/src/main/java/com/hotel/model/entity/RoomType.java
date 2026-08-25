@@ -21,7 +21,7 @@ import lombok.ToString;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = { "room", "roomImage", "booking" }) // 避免 Lombok toString 雙向循環參照導致 StackOverflow
+@ToString(exclude = { "room", "roomImage", "booking" })
 @EqualsAndHashCode(exclude = { "room", "roomImage", "booking" })
 @Table(name = "room_type")
 public class RoomType {

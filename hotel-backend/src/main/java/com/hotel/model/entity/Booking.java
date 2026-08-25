@@ -3,6 +3,7 @@ package com.hotel.model.entity;
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,6 +25,7 @@ public class Booking {
     // 外鍵指向 BookingOrder (N:1 關係)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_order_id", nullable = false)
+    @JsonIgnoreProperties("bookings")
     private BookingOrder bookingOrder;
 
     @Column(name = "booking_price", nullable = false)

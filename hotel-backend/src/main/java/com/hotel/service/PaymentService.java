@@ -20,36 +20,35 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
     }
 
-    // 1. Read All - 查詢所有付款記錄
+    // 1. Read All - 查詢所有付款方式
     @Transactional(readOnly = true)
     public List<Payment> findAll() {
         return paymentRepository.findAll();
     }
 
-    // 2. Read by ID - 依 ID 查詢單筆付款
+    // 2. Read by ID
     @Transactional(readOnly = true)
     public Payment findById(Integer id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的付款記錄"));
     }
 
-    // 3. Create - 新增付款記錄 (可連帶維護與 BookingOrder 的關聯)
+    // 3. Create - 新增付款方式
     public Payment insert(Payment payment) {
         payment.setPaymentId(null);
         return paymentRepository.save(payment);
     }
 
-    // 4. Update - 修改付款記錄 (利用 Dirty Checking)
+    // 4. Update - 修改付款方式 (利用 Dirty Checking 自動更新)
     public Payment update(Integer id, Payment formPayment) {
         Payment existingPayment = findById(id);
 
+        // 僅允許修改付款方式
         if (formPayment.getPaymentMethod() != null) {
             existingPayment.setPaymentMethod(formPayment.getPaymentMethod());
         }
-        if (formPayment.getBookingOrder() != null) {
-            existingPayment.setBookingOrder(formPayment.getBookingOrder());
-        }
 
+        // 交易結束時 JPA 會自動比對並發送 UPDATE SQL，無須呼叫 save()
         return existingPayment;
     }
 

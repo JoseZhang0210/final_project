@@ -38,12 +38,12 @@ public class RoomImageService {
         return imageRepository.findById(id);
     }
 
-    // 3-2. Read by ID (找不到即拋出特定例外)
-    @Transactional(readOnly = true)
-    public RoomImage findById(Integer id) {
-        return imageRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的圖片資料"));
-    }
+    // // 3-2. Read by ID (找不到即拋出特定例外)
+    // @Transactional(readOnly = true)
+    // public RoomImage findById(Integer id) {
+    // return imageRepository.findById(id)
+    // .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的圖片資料"));
+    // }
 
     // 4. Update - 修改圖片資訊 (利用 Dirty Checking 自動更新)
     public RoomImage update(Integer id, RoomImage updatedImage) {
@@ -71,5 +71,10 @@ public class RoomImageService {
             throw new EntityNotFoundException("欲刪除的圖片 ID: " + id + " 不存在");
         }
         imageRepository.deleteById(id);
+    }
+
+    public RoomImage findById(Integer id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findById'");
     }
 }

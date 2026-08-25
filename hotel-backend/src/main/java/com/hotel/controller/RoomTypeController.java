@@ -2,6 +2,7 @@ package com.hotel.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +41,7 @@ public class RoomTypeController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getRoomTypeById(@PathVariable Integer id) {
         try {
-            RoomType roomType = roomTypeService.findById(id);
+            Optional<RoomType> roomType = roomTypeService.findOptionalById(id);
             return ResponseEntity.ok(roomType);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,10 +22,10 @@ public class BookingService {
         this.bookingRepository = bookingRepository;
     }
 
-    // 1. Create - 新增子預約
-    public Booking insert(Booking booking) {
-        return bookingRepository.save(booking);
-    }
+    // // 1. Create - 新增子預約
+    // public Booking insert(Booking booking) {
+    // return bookingRepository.save(booking);
+    // }
 
     // 2. Read All - 查詢所有預約
     @Transactional(readOnly = true)
@@ -38,33 +39,28 @@ public class BookingService {
         return bookingRepository.findById(id);
     }
 
-    // 3-2. Read by ID (找不到時拋出例外)
+    // // 3-2. Read by ID (找不到時拋出例外)
+    // @Transactional(readOnly = true)
+    // public Booking findById(Integer id) {
+    // return bookingRepository.findById(id)
+    // .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預約紀錄"));
+    // }
+    // 1. 依 Booking ID 查詢 (回傳 Optional)
     @Transactional(readOnly = true)
-    public Booking findById(Integer id) {
-        return bookingRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預約紀錄"));
+    public Optional<Booking> findById(Integer bookingId) {
+        return bookingRepository.findById(bookingId);
     }
 
-    // 3-3. 多條件動態查詢 (改用 JPA 衍生查詢或宣告在 Repository 的方法)
+    // 2. 依入住日期查詢
     @Transactional(readOnly = true)
-    public List<Booking> search(Integer bookingId, Integer bookingOrderId, String bookingStatus) {
-        // 若帶入主鍵，直接單筆精準查詢
-        if (bookingId != null) {
-            return bookingRepository.findById(bookingId)
-                    .map(List::of)
-                    .orElse(List.of());
-        }
+    public List<Booking> findByCheckInDate(LocalDate checkInDate) {
+        return bookingRepository.findByCheckInDate(checkInDate);
+    }
 
-        // 依據條件情境改呼叫 Repository 衍生方法
-        if (bookingOrderId != null && bookingStatus != null) {
-            return bookingRepository.findByBookingOrder_BookingOrderIdAndBookingStatus(bookingOrderId, bookingStatus);
-        } else if (bookingOrderId != null) {
-            return bookingRepository.findByBookingOrder_BookingOrderId(bookingOrderId);
-        } else if (bookingStatus != null && !bookingStatus.trim().isEmpty()) {
-            return bookingRepository.findByBookingStatus(bookingStatus);
-        }
-
-        return bookingRepository.findAll();
+    // 3. 依訂房狀態查詢
+    @Transactional(readOnly = true)
+    public List<Booking> findByBookingStatus(String bookingStatus) {
+        return bookingRepository.findByBookingStatus(bookingStatus);
     }
 
     // 4. Update - 修改預約資料 (利用 Dirty Checking 自動更新)
@@ -72,31 +68,27 @@ public class BookingService {
         Booking existingBooking = bookingRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("修改失敗：找不到 ID 為 " + id + " 的預訂資料"));
 
+        // 1. 入住時間
         if (newBookingData.getCheckInDate() != null) {
             existingBooking.setCheckInDate(newBookingData.getCheckInDate());
         }
+
+        // 2. 退房時間
         if (newBookingData.getCheckOutDate() != null) {
             existingBooking.setCheckOutDate(newBookingData.getCheckOutDate());
         }
-        if (newBookingData.getBookingStatus() != null) {
-            existingBooking.setBookingStatus(newBookingData.getBookingStatus());
-        }
-        if (newBookingData.getBookingPrice() != null) {
-            existingBooking.setBookingPrice(newBookingData.getBookingPrice());
-        }
+
+        // 3. 入住人數 (guest_number)
         if (newBookingData.getGuestNum() != null) {
             existingBooking.setGuestNum(newBookingData.getGuestNum());
         }
 
-        // 修正：依 Entity 定義更新關聯物件，而非不存在的 Id 屬性
-        if (newBookingData.getRoomType() != null) {
-            existingBooking.setRoomType(newBookingData.getRoomType());
-        }
-        if (newBookingData.getRoom() != null) {
-            existingBooking.setRoom(newBookingData.getRoom());
+        // 4. 預約狀態
+        if (newBookingData.getBookingStatus() != null) {
+            existingBooking.setBookingStatus(newBookingData.getBookingStatus());
         }
 
-        // 交易結束時 JPA 會自動進行比對並發送 Update SQL，無需呼叫 save()
+        // 交易結束時 JPA 會自動進行比對並發送 UPDATE SQL，無需呼叫 save()
         return existingBooking;
     }
 
@@ -107,4 +99,5 @@ public class BookingService {
         }
         bookingRepository.deleteById(id);
     }
+
 }

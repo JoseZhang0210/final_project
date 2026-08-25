@@ -30,35 +30,26 @@ public class BookingOrderController {
         this.bookingOrderService = bookingOrderService;
     }
 
-    // 1. 條件搜尋訂單列表 (GET
-    // /api/booking-orders?bookingOrderId=...&memberId=...&orderStatus=...)
     @GetMapping
-    public ResponseEntity<?> getBookingOrders(
+    public ResponseEntity<List<BookingOrder>> getBookingOrders(
             @RequestParam(required = false) Integer bookingOrderId,
-            @RequestParam(required = false) Integer memberId,
-            @RequestParam(required = false) String orderStatus) {
-        try {
-            List<BookingOrder> list = bookingOrderService.search(bookingOrderId, memberId, orderStatus);
-            return ResponseEntity.ok(list);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "查詢失敗：" + e.getMessage()));
-        }
-    }
+            @RequestParam(required = false) Integer memberId) {
 
-    // 2. 依 ID 查詢單筆訂單 (GET /api/booking-orders/{id})
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getBookingOrderById(@PathVariable Integer id) {
-        try {
-            BookingOrder bookingOrder = bookingOrderService.findById(id);
-            return ResponseEntity.ok(bookingOrder);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "系統錯誤：" + e.getMessage()));
+        // 1. 依 bookingOrderId 查詢 (回傳單筆封裝成 List)
+        if (bookingOrderId != null) {
+            List<BookingOrder> list = bookingOrderService.findOptionalById(bookingOrderId)
+                    .map(List::of)
+                    .orElse(List.of());
+            return ResponseEntity.ok(list);
         }
+
+        // 2. 依 memberId 查詢
+        if (memberId != null) {
+            return ResponseEntity.ok(bookingOrderService.findByMemberId(memberId));
+        }
+
+        // 3. 預設查全部
+        return ResponseEntity.ok(bookingOrderService.findAll());
     }
 
     // 3. 新增預訂訂單 (POST /api/booking-orders)

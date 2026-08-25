@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Room;
@@ -49,38 +48,25 @@ public class RoomController {
         }
     }
 
-    // 2. 查詢所有房間 / 依條件過濾 (GET /api/rooms)
+    // 1. 查詢所有房間 (GET /api/rooms)
     @GetMapping
-    public ResponseEntity<List<Room>> getAllRooms(
-            @RequestParam(required = false) Integer floor,
-            @RequestParam(required = false) Integer roomTypeId) {
-
-        List<Room> rooms;
-
-        if (floor != null) {
-            rooms = roomService.findByFloor(floor);
-        } else if (roomTypeId != null) {
-            rooms = roomService.findByRoomTypeId(roomTypeId);
-        } else {
-            rooms = roomService.findAll();
-        }
-
+    public ResponseEntity<List<Room>> getAllRooms() {
+        List<Room> rooms = roomService.findAll();
         return ResponseEntity.ok(rooms);
     }
 
-    // 3. 依 ID 查詢單一房間 (GET /api/rooms/{id})
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getRoomById(@PathVariable Integer id) {
-        try {
-            Room room = roomService.findById(id);
-            return ResponseEntity.ok(room);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "系統錯誤：" + e.getMessage()));
-        }
+    // List 查詢：直接回傳陣列，沒資料就是空陣列 []
+    @GetMapping("/floor/{floor}")
+    public ResponseEntity<List<Room>> getByFloor(@PathVariable Integer floor) {
+        return ResponseEntity.ok(roomService.findByFloor(floor));
+    }
+
+    // Optional 查詢：若有資料回傳 200 OK，無資料則回傳 404 Not Found
+    @GetMapping("/number/{roomNumber}")
+    public ResponseEntity<?> getByRoomNumber(@PathVariable String roomNumber) {
+        return roomService.findByRoomNumber(roomNumber)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // 4. 修改房間資訊 (PUT /api/rooms/{id})

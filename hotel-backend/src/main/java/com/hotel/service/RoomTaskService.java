@@ -43,29 +43,10 @@ public class RoomTaskService {
         return roomTaskRepository.findById(id);
     }
 
-    // 3-2. Read by ID (找不到時拋出例外)
-    @Transactional(readOnly = true)
-    public RoomTask findById(Integer id) {
-        return roomTaskRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的任務資料"));
-    }
-
-    // 3-3. 依房間 ID 查詢任務 (按任務 ID 降序排列)
+    // 3-3. 依房間 ID 查詢任務
     @Transactional(readOnly = true)
     public List<RoomTask> findByRoomId(Integer roomId) {
-        return roomTaskRepository.findByRoomIdOrderByTaskIdDesc(roomId);
-    }
-
-    // 3-4. 依任務狀態查詢
-    @Transactional(readOnly = true)
-    public List<RoomTask> findByTaskStatus(String taskStatus) {
-        return roomTaskRepository.findByTaskStatus(taskStatus);
-    }
-
-    // 3-5. 依任務類型查詢
-    @Transactional(readOnly = true)
-    public List<RoomTask> findByTaskType(String taskType) {
-        return roomTaskRepository.findByTaskType(taskType);
+        return roomTaskRepository.findByRoomId(roomId);
     }
 
     // 3-6. 依優先級查詢
@@ -80,46 +61,36 @@ public class RoomTaskService {
         return roomTaskRepository.findByEmployeeId(employeeId);
     }
 
-    // 4. Update - 更新任務狀態與欄位 (利用 Dirty Checking)
+    // 4. Update - 更新任務狀態與欄位 (限定欄位)
     public RoomTask update(Integer id, RoomTask updatedTask) {
         RoomTask existingTask = roomTaskRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的任務資料"));
 
-        // 修正：依照 Entity 關聯更新 Room 與 Employee 物件，而非不存在的 Id 欄位
-        if (updatedTask.getRoom() != null) {
-            existingTask.setRoom(updatedTask.getRoom());
-        }
-        if (updatedTask.getEmployee() != null) {
-            existingTask.setEmployee(updatedTask.getEmployee());
-        }
-        if (updatedTask.getRemark() != null) {
-            existingTask.setRemark(updatedTask.getRemark());
-        }
+        // 1. 只針對允許更新的欄位進行變更
         if (updatedTask.getPriority() != null) {
             existingTask.setPriority(updatedTask.getPriority());
         }
         if (updatedTask.getTaskType() != null) {
             existingTask.setTaskType(updatedTask.getTaskType());
         }
+        if (updatedTask.getRemark() != null) {
+            existingTask.setRemark(updatedTask.getRemark());
+        }
 
-        // 處理狀態與完成時間邏輯
+        // 2. 處理狀態變更與 completedAt 的邏輯
         if (updatedTask.getTaskStatus() != null) {
             existingTask.setTaskStatus(updatedTask.getTaskStatus());
 
-            // 當狀態更新為「已完成」，自動記錄當下時間（若前端有傳入時間則以前端為主）
             if ("已完成".equals(updatedTask.getTaskStatus())) {
                 existingTask.setCompletedAt(updatedTask.getCompletedAt() != null
                         ? updatedTask.getCompletedAt()
                         : LocalDateTime.now());
             } else {
-                // 若狀態改回非「已完成」（如改回處理中/待處理），清空完成時間
                 existingTask.setCompletedAt(null);
             }
-        } else if (updatedTask.getCompletedAt() != null) {
-            existingTask.setCompletedAt(updatedTask.getCompletedAt());
         }
 
-        // 交易結束時 JPA 會自動比對並發送 Update SQL，無需 call save()
+        // 交易結束時 JPA Dirty Checking 會自動更新異動欄位
         return existingTask;
     }
 

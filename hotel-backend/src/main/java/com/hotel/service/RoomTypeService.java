@@ -38,12 +38,12 @@ public class RoomTypeService {
         return roomTypeRepository.findById(id);
     }
 
-    // 3-2. Read by ID (找不到即拋出特定例外)
-    @Transactional(readOnly = true)
-    public RoomType findById(Integer id) {
-        return roomTypeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料"));
-    }
+    // // 3-2. Read by ID (找不到即拋出特定例外)
+    // @Transactional(readOnly = true)
+    // public RoomType findById(Integer id) {
+    // return roomTypeRepository.findById(id)
+    // .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料"));
+    // }
 
     // 4. Update - 更新房型資料 (依賴 JPA Dirty Checking)
     public RoomType update(Integer id, RoomType updatedRoomType) {
@@ -56,14 +56,14 @@ public class RoomTypeService {
         if (updatedRoomType.getBedType() != null) {
             existingRoomType.setBedType(updatedRoomType.getBedType());
         }
+        if (updatedRoomType.getCapacity() != null) {
+            existingRoomType.setCapacity(updatedRoomType.getCapacity());
+        }
         if (updatedRoomType.getRoomDescription() != null) {
             existingRoomType.setRoomDescription(updatedRoomType.getRoomDescription());
         }
         if (updatedRoomType.getPricePerNight() != null) {
             existingRoomType.setPricePerNight(updatedRoomType.getPricePerNight());
-        }
-        if (updatedRoomType.getCapacity() != null) {
-            existingRoomType.setCapacity(updatedRoomType.getCapacity());
         }
 
         // 交易結束時 JPA 會自動比對狀態並執行 Update SQL，無須 call save()

@@ -32,8 +32,9 @@ public class Payment {
     @Column(name = "payment_method")
     private String paymentMethod;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_order_id") // 修正：指向 BookingOrder 在 DB 中的外鍵欄位（請確認資料庫實際欄位名）
-    @JsonIgnoreProperties({ "payments", "hibernateLazyInitializer", "handler" })
-    private BookingOrder bookingOrder;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "booking_order_id") // 修正：指向 BookingOrder 在 DB
+    // 中的外鍵欄位（請確認資料庫實際欄位名）
+    // @JsonIgnoreProperties({ "payments", "hibernateLazyInitializer", "handler" })
+    // private BookingOrder bookingOrder;
 }

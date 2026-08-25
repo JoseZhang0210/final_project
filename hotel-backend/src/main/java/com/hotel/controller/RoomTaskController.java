@@ -54,25 +54,18 @@ public class RoomTaskController {
     public ResponseEntity<?> getTasks(
             @RequestParam(required = false) Integer taskId,
             @RequestParam(required = false) Integer roomId,
-            @RequestParam(required = false) String taskStatus,
-            @RequestParam(required = false) String taskType,
             @RequestParam(required = false) Integer employeeId,
             @RequestParam(required = false) String priority) {
 
         try {
-            // 帶入 taskId 時執行單筆精準查詢
+            // 帶入 taskId 時執行單筆查詢 (以 List 包裝回傳)
             if (taskId != null) {
-                RoomTask task = roomTaskService.findById(taskId);
-                return ResponseEntity.ok(List.of(task));
+                return roomTaskService.findOptionalById(taskId)
+                        .map(task -> ResponseEntity.ok(List.of(task)))
+                        .orElseGet(() -> ResponseEntity.ok(List.of()));
             }
             if (roomId != null) {
                 return ResponseEntity.ok(roomTaskService.findByRoomId(roomId));
-            }
-            if (taskStatus != null && !taskStatus.isBlank()) {
-                return ResponseEntity.ok(roomTaskService.findByTaskStatus(taskStatus));
-            }
-            if (taskType != null && !taskType.isBlank()) {
-                return ResponseEntity.ok(roomTaskService.findByTaskType(taskType));
             }
             if (employeeId != null) {
                 return ResponseEntity.ok(roomTaskService.findByEmployeeId(employeeId));
@@ -81,11 +74,9 @@ public class RoomTaskController {
                 return ResponseEntity.ok(roomTaskService.findByPriority(priority));
             }
 
+            // 預設取得全部任務
             return ResponseEntity.ok(roomTaskService.findAll());
 
-        } catch (EntityNotFoundException e) {
-            // 查無特定 taskId 時回傳空陣列或 404
-            return ResponseEntity.ok(List.of());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "查詢任務失敗：" + e.getMessage()));
@@ -96,11 +87,10 @@ public class RoomTaskController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getTaskById(@PathVariable Integer id) {
         try {
-            RoomTask task = roomTaskService.findById(id);
-            return ResponseEntity.ok(task);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
+            return roomTaskService.findOptionalById(id)
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("message", "找不到 ID 為 " + id + " 的任務資料")));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "系統錯誤：" + e.getMessage()));

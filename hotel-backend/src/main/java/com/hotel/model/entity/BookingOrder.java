@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -53,7 +54,8 @@ public class BookingOrder {
     @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL)
     private List<Payment> payments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("bookingOrder") // 防止 JSON 轉化時無限循環
     private List<Booking> bookings = new ArrayList<>();
 
 }

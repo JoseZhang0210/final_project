@@ -9,8 +9,8 @@ POST {{authUrl}}/login
 Content-Type: application/json
 
 {
-  "username": "vic1",
-  "password": "111"
+  "username": "admin01",
+  "password": "123456"
 }
 
 ### 動態讀取登入成功後的 Token 變數 (假設回傳的 JSON 欄位叫做 token)
