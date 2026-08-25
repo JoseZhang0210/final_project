@@ -3,10 +3,23 @@ package com.hotel.model.entity;
 import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Data
@@ -22,10 +35,13 @@ public class Booking {
     @Column(name = "booking_id")
     private Integer bookingId;
 
+    @Column(name = "booking_order_id", nullable = false)
+    private Integer bookingOrderId;
+
     // 外鍵指向 BookingOrder (N:1 關係)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_order_id", nullable = false)
-    @JsonIgnoreProperties("bookings")
+    @JoinColumn(name = "booking_order_id", insertable = false, updatable = false)
+    @JsonIgnore
     private BookingOrder bookingOrder;
 
     @Column(name = "booking_price", nullable = false)
@@ -44,15 +60,21 @@ public class Booking {
 
     @Column(name = "booking_status", nullable = false, length = 20)
     private String bookingStatus;
+    // ================多關聯
+    @Column(name = "room_id")
+    private Integer roomId;
 
-    // 外鍵指向 Room (N:1 關係，可為空 null，代表尚未分配具體房間)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = true)
+    @JoinColumn(name = "room_id", insertable = false, updatable = false)
+    @JsonIgnore
     private Room room;
 
-    // 外鍵指向 RoomType (N:1 關係)
+    @Column(name = "room_type_id", nullable = false)
+    private Integer roomTypeId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_type_id", nullable = false)
+    @JoinColumn(name = "room_type_id", insertable = false, updatable = false)
+    @JsonIgnore
     private RoomType roomType;
 
 }

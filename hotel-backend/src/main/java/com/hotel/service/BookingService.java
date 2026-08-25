@@ -39,12 +39,6 @@ public class BookingService {
         return bookingRepository.findById(id);
     }
 
-    // // 3-2. Read by ID (找不到時拋出例外)
-    // @Transactional(readOnly = true)
-    // public Booking findById(Integer id) {
-    // return bookingRepository.findById(id)
-    // .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的預約紀錄"));
-    // }
     // 1. 依 Booking ID 查詢 (回傳 Optional)
     @Transactional(readOnly = true)
     public Optional<Booking> findById(Integer bookingId) {

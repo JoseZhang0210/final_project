@@ -57,6 +57,7 @@ public class RoomType {
     private List<RoomImage> roomImage = new ArrayList<>();
 
     // 1:N 關聯至 Booking
+
     @OneToMany(mappedBy = "roomType")
     private List<Booking> booking = new ArrayList<>();
 

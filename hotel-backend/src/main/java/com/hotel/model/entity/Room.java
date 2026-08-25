@@ -55,6 +55,7 @@ public class Room {
     private List<RoomTask> roomTasks = new ArrayList<>();
 
     // 1:N 關聯至 Booking (一個房間可以有多筆預約紀錄)
+
     @OneToMany(mappedBy = "room")
     private List<Booking> bookings = new ArrayList<>();
 }

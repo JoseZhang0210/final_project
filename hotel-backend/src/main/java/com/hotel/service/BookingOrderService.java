@@ -43,7 +43,7 @@ public class BookingOrderService {
     // 3-4. 依會員 ID 查詢該會員所有訂單
     @Transactional(readOnly = true)
     public List<BookingOrder> findByMemberId(Integer memberId) {
-        return bookingOrderRepository.findByMemberId(memberId);
+        return bookingOrderRepository.findByMember_MemberId(memberId);
     }
 
     // 4. Update - 更新訂單狀態與支付單 (利用 JPA Dirty Checking)

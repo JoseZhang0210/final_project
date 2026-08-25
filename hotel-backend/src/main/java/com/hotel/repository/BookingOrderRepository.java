@@ -8,5 +8,5 @@ import com.hotel.model.entity.BookingOrder;
 
 public interface BookingOrderRepository extends JpaRepository<BookingOrder, Integer> {
 
-        List<BookingOrder> findByMemberId(Integer memberId);
+        List<BookingOrder> findByMember_MemberId(Integer memberId);
 }

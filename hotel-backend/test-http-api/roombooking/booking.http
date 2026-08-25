@@ -1,9 +1,11 @@
 ### 變數設定
 @baseUrl = http://localhost:8081/api/bookings
 @authUrl = http://localhost:8081/api/auth
-@bookingId = 99
+@bookingId = 2
+@checkInDate = 2026-08-23
+@status = 已入住
 
-### 0. 登入以獲取 JWT Token (新增此步驟)
+### 0. 登入獲取 JWT Token
 # @name login
 POST {{authUrl}}/login
 Content-Type: application/json
@@ -13,48 +15,43 @@ Content-Type: application/json
   "password": "123456"
 }
 
-### 動態讀取登入成功後的 Token 變數 (假設回傳的 JSON 欄位叫做 token)
+### 自動綁定 Token
 @jwtToken = {{login.response.body.token}}
 
 
-### 1-1. 查詢所有預訂 (無條件)
-GET {{baseUrl}}
+### 1. 依 ID 查詢單筆預訂 (GET /api/bookings/{id})
+GET {{baseUrl}}/{{bookingId}}
 Authorization: Bearer {{jwtToken}}
 
-### 1-2. 條件查詢 (帶入條件參數)
-GET {{baseUrl}}?bookingStatus=訂單取消
+### 2. 依入住日期查詢 (GET /api/bookings/check-in?date=yyyy-MM-dd)
+GET {{baseUrl}}/check-in?date={{checkInDate}}
 Authorization: Bearer {{jwtToken}}
 
-### 2. 新增預訂
-POST {{baseUrl}}
+### 3. 依訂單狀態查詢 (GET /api/bookings/status?status=...)
+GET {{baseUrl}}/status?status={{status}}
 Authorization: Bearer {{jwtToken}}
-Content-Type: application/json
 
-{
-  "bookingOrderId": 5,
-  "checkInDate": "2026-09-01T16:00:00",
-  "checkOutDate": "2026-09-03T12:00:00",
-  "guestNum": 2,
-  "bookingStatus": "訂單完成",
-  "roomId": 5,
-  "roomTypeId": 2
-}
-
-### 3. 更新預訂
+### 4. 更新預訂 (PUT /api/bookings/{id})
 PUT {{baseUrl}}/{{bookingId}}
 Authorization: Bearer {{jwtToken}}
 Content-Type: application/json
 
 {
-  "bookingOrderId": 5,
-  "checkInDate": "2026-09-02T16:00:00",
-  "checkOutDate": "2026-09-04T12:00:00",
-  "guestNum": 3,
-  "bookingStatus": "訂單取消",
-  "roomId": 5,
-  "roomTypeId": 2
+  "bookingId": {{bookingId}},
+  "bookingStatus": "CONFIRMED",
+  "checkInDate": "2026-08-25",
+  "checkOutDate": "2026-08-28",
+  "bookingOrder": {
+    "bookingOrderId": 1
+  },
+  "roomType": {
+    "roomTypeId": 2
+  },
+  "room": {
+    "roomId": 5
+  }
 }
 
-### 4. 刪除預訂
+### 5. 刪除預訂 (DELETE /api/bookings/{id})
 DELETE {{baseUrl}}/{{bookingId}}
 Authorization: Bearer {{jwtToken}}
