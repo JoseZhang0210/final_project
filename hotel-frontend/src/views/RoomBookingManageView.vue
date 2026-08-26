@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from "vue";
 
 const BOOKING_API_URL = "/api/bookings";
+const BOOKING_ORDER_API_URL = "/api/booking-orders";
+const ROOM_TYPE_API_URL = "/api/roomtypes";
+const ROOM_API_URL = "/api/rooms";
 
 // 選單資料（初始化為空陣列）
 const bookingOrders = ref([]);
@@ -20,7 +23,7 @@ const searchCriteria = ref({
   status: "",
 });
 
-const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
+const bookingStatuses = ["待確認", "已預訂", "待入住", "已入住", "已完成", "已取消",];
 
 const form = ref(createEmptyForm());
 
@@ -39,10 +42,20 @@ function createEmptyForm() {
 }
 
 const availableRooms = computed(() => {
-  if (!form.value.roomTypeId) return [];
-  return rooms.value.filter(
-    (room) => room.roomTypeId === Number(form.value.roomTypeId),
-  );
+  if (!form.value.roomTypeId) {
+    return [];
+  }
+
+  const selectedRoomTypeId = Number(form.value.roomTypeId);
+
+  return rooms.value.filter((room) => {
+    const roomTypeId =
+      room.roomTypeId ??
+      room.room_type_id ??
+      room.roomType?.roomTypeId;
+
+    return Number(roomTypeId) === selectedRoomTypeId;
+  });
 });
 
 const stayNights = computed(() => {
@@ -71,6 +84,49 @@ function getAuthHeaders() {
     headers.Authorization = "Bearer " + token;
   }
   return headers;
+}
+
+async function fetchList(url, errorMessage) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+    credentials: "include",
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("登入已過期或沒有權限");
+  }
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage}：${response.status}`);
+  }
+
+  const data = await response.json();
+
+  return Array.isArray(data)
+    ? data
+    : data?.content || [];
+}
+
+async function loadSelectOptions() {
+  try {
+    const [orderData, roomTypeData, roomData] = await Promise.all([
+      fetchList(BOOKING_ORDER_API_URL, "讀取訂單失敗"),
+      fetchList(ROOM_TYPE_API_URL, "讀取房型失敗"),
+      fetchList(ROOM_API_URL, "讀取房間失敗"),
+    ]);
+
+    bookingOrders.value = orderData;
+    roomTypes.value = roomTypeData;
+    rooms.value = roomData;
+
+    console.log("訂單選項：", bookingOrders.value);
+    console.log("房型選項：", roomTypes.value);
+    console.log("房間選項：", rooms.value);
+  } catch (error) {
+    console.error("載入下拉選單錯誤：", error);
+    showMessage(error.message || "無法載入下拉選單", "error");
+  }
 }
 
 // 1. 載入與條件查詢 (對應 @GetMapping)
@@ -115,13 +171,19 @@ function clearSearch() {
 }
 
 function getOrderLabel(orderId) {
-  if (!orderId) return "未指定訂單";
+  if (!orderId) {
+    return "未指定訂單";
+  }
+
   const order = bookingOrders.value.find(
-    (item) => item.bookingOrderId === Number(orderId),
+    (item) => Number(item.bookingOrderId) === Number(orderId),
   );
-  return order
-    ? `訂單 ${order.bookingOrderId}－${order.memberName}`
-    : `訂單 ${orderId}`;
+
+  if (!order) {
+    return `訂單 ${orderId}`;
+  }
+
+  return `訂單 ${order.bookingOrderId}`;
 }
 
 function getRoomTypeName(roomTypeId) {
@@ -239,7 +301,7 @@ function editBooking(booking) {
     bookingPrice: booking.bookingPrice ?? booking.booking_price ?? 0,
     bookingStatus: booking.bookingStatus ?? booking.booking_status ?? "待確認",
   };
-  formTitle.value = `修改訂房明細 ID：${booking.bookingId}`;
+  formTitle.value = `修改訂房明細`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -286,6 +348,7 @@ function formatPrice(price) {
 }
 
 onMounted(async () => {
+  await loadSelectOptions();
   await loadBookings();
 });
 </script>
@@ -313,11 +376,7 @@ onMounted(async () => {
           <label>預訂狀態</label>
           <select v-model="searchCriteria.status">
             <option value="">全部狀態</option>
-            <option
-              v-for="status in bookingStatuses"
-              :key="status"
-              :value="status"
-            >
+            <option v-for="status in bookingStatuses" :key="status" :value="status">
               {{ status }}
             </option>
           </select>
@@ -341,14 +400,10 @@ onMounted(async () => {
         <div class="form-grid">
           <div class="form-group">
             <label>訂房訂單 *</label>
-            <select v-model="form.bookingOrderId">
+            <select v-model="form.bookingOrderId" required>
               <option value="" disabled>請選擇訂單</option>
-              <option
-                v-for="order in bookingOrders"
-                :key="order.bookingOrderId"
-                :value="order.bookingOrderId"
-              >
-                訂單 {{ order.bookingOrderId }}－{{ order.memberName }}
+              <option v-for="order in bookingOrders" :key="order.bookingOrderId" :value="order.bookingOrderId">
+                訂單 {{ order.bookingOrderId }}
               </option>
             </select>
           </div>
@@ -357,11 +412,7 @@ onMounted(async () => {
             <label>房型 *</label>
             <select v-model="form.roomTypeId" required @change="changeRoomType">
               <option value="" disabled>請選擇房型</option>
-              <option
-                v-for="roomType in roomTypes"
-                :key="roomType.roomTypeId"
-                :value="roomType.roomTypeId"
-              >
+              <option v-for="roomType in roomTypes" :key="roomType.roomTypeId" :value="roomType.roomTypeId">
                 {{ roomType.typeName }}
               </option>
             </select>
@@ -369,13 +420,9 @@ onMounted(async () => {
 
           <div class="form-group">
             <label>分配房號</label>
-            <select v-model="form.roomId">
+            <select v-model.number="form.roomId">
               <option value="">尚未分配</option>
-              <option
-                v-for="room in availableRooms"
-                :key="room.roomId"
-                :value="room.roomId"
-              >
+              <option v-for="room in availableRooms" :key="room.roomId" :value="room.roomId">
                 房號 {{ room.roomNumber }}
               </option>
             </select>
@@ -383,32 +430,17 @@ onMounted(async () => {
 
           <div class="form-group">
             <label>入住人數 *</label>
-            <input
-              v-model.number="form.guestNum"
-              type="number"
-              min="1"
-              required
-            />
+            <input v-model.number="form.guestNum" type="number" min="1" required />
           </div>
 
           <div class="form-group">
             <label>入住日期 *</label>
-            <input
-              v-model="form.checkInDate"
-              type="date"
-              required
-              @change="calculatePrice"
-            />
+            <input v-model="form.checkInDate" type="date" required @change="calculatePrice" />
           </div>
 
           <div class="form-group">
             <label>退房日期 *</label>
-            <input
-              v-model="form.checkOutDate"
-              type="date"
-              required
-              @change="calculatePrice"
-            />
+            <input v-model="form.checkOutDate" type="date" required @change="calculatePrice" />
           </div>
 
           <div class="form-group">
@@ -424,11 +456,7 @@ onMounted(async () => {
           <div class="form-group">
             <label>訂房狀態</label>
             <select v-model="form.bookingStatus">
-              <option
-                v-for="status in bookingStatuses"
-                :key="status"
-                :value="status"
-              >
+              <option v-for="status in bookingStatuses" :key="status" :value="status">
                 {{ status }}
               </option>
             </select>
@@ -503,10 +531,7 @@ onMounted(async () => {
                 <button class="btn edit" @click="editBooking(booking)">
                   修改
                 </button>
-                <button
-                  class="btn delete"
-                  @click="deleteBooking(booking.bookingId)"
-                >
+                <button class="btn delete" @click="deleteBooking(booking.bookingId)">
                   刪除
                 </button>
               </td>
@@ -620,8 +645,10 @@ select {
 }
 
 .table-wrapper table thead th {
-  background-color: #4a3b32 !important; /* 深棕色背景 */
-  color: #ffffff !important; /* 純白文字 */
+  background-color: #4a3b32 !important;
+  /* 深棕色背景 */
+  color: #ffffff !important;
+  /* 純白文字 */
   overflow-x: auto;
 }
 
