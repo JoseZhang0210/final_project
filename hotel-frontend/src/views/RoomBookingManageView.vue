@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from "vue";
 
 const BOOKING_API_URL = "/api/bookings";
+const BOOKING_ORDER_API_URL = "/api/booking-orders";
+const ROOM_TYPE_API_URL = "/api/roomtypes";
+const ROOM_API_URL = "/api/rooms";
 
 // 選單資料（初始化為空陣列）
 const bookingOrders = ref([]);
@@ -40,12 +43,20 @@ function createEmptyForm() {
 
 // 支援駝峰與底線命名格式
 const availableRooms = computed(() => {
-  if (!form.value.roomTypeId) return [];
-  return rooms.value.filter(
-    (room) =>
-      Number(room.roomTypeId ?? room.room_type_id) ===
-      Number(form.value.roomTypeId),
-  );
+  if (!form.value.roomTypeId) {
+    return [];
+  }
+
+  const selectedRoomTypeId = Number(form.value.roomTypeId);
+
+  return rooms.value.filter((room) => {
+    const roomTypeId =
+      room.roomTypeId ??
+      room.room_type_id ??
+      room.roomType?.roomTypeId;
+
+    return Number(roomTypeId) === selectedRoomTypeId;
+  });
 });
 
 const stayNights = computed(() => {
@@ -70,38 +81,52 @@ function clearForm() {
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   const headers = { "Content-Type": "application/json" };
-
-  // 嚴格檢查 token 是否有效，避免傳入無效格式導致 Fetch 拋出 SyntaxError
-  if (
-    token &&
-    token !== "undefined" &&
-    token !== "null" &&
-    token.trim() !== ""
-  ) {
-    headers.Authorization = `Bearer ${token.trim()}`;
+  if (token) {
+    headers.Authorization = "Bearer " + token;
   }
-
   return headers;
 }
-async function loadRoomTypes() {
+
+async function fetchList(url, errorMessage) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+    credentials: "include",
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("登入已過期或沒有權限");
+  }
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage}：${response.status}`);
+  }
+
+  const data = await response.json();
+
+  return Array.isArray(data)
+    ? data
+    : data?.content || [];
+}
+
+async function loadSelectOptions() {
   try {
-    const headers = getAuthHeaders();
+    const [orderData, roomTypeData, roomData] = await Promise.all([
+      fetchList(BOOKING_ORDER_API_URL, "讀取訂單失敗"),
+      fetchList(ROOM_TYPE_API_URL, "讀取房型失敗"),
+      fetchList(ROOM_API_URL, "讀取房間失敗"),
+    ]);
 
-    const response = await fetch("/api/roomtypes", {
-      method: "GET",
-      headers: headers,
-      credentials: "include",
-    });
+    bookingOrders.value = orderData;
+    roomTypes.value = roomTypeData;
+    rooms.value = roomData;
 
-    if (!response.ok) {
-      console.warn(`[loadRoomTypes] HTTP 狀態碼異常: ${response.status}`);
-      return;
-    }
-
-    const data = await response.json();
-    roomTypes.value = Array.isArray(data) ? data : [];
+    console.log("訂單選項：", bookingOrders.value);
+    console.log("房型選項：", roomTypes.value);
+    console.log("房間選項：", rooms.value);
   } catch (error) {
-    console.error("載入房型資料失敗:", error);
+    console.error("載入下拉選單錯誤：", error);
+    showMessage(error.message || "無法載入下拉選單", "error");
   }
 }
 
@@ -110,6 +135,7 @@ async function loadBookings() {
   try {
     let url = BOOKING_API_URL;
 
+    // 依據條件切換 API Endpoint；若無條件則直接請求 /api/bookings (getAllBookings)
     if (searchCriteria.value.checkInDate) {
       url = `${BOOKING_API_URL}/check-in?date=${searchCriteria.value.checkInDate}`;
     } else if (searchCriteria.value.status) {
@@ -146,29 +172,35 @@ function clearSearch() {
 }
 
 function getOrderLabel(orderId) {
-  if (!orderId) return "未指定訂單";
+  if (!orderId) {
+    return "未指定訂單";
+  }
+
   const order = bookingOrders.value.find(
-    (item) =>
-      Number(item.bookingOrderId ?? item.booking_order_id) === Number(orderId),
+    (item) => Number(item.bookingOrderId) === Number(orderId),
   );
-  return order
-    ? `訂單 ${order.bookingOrderId ?? order.booking_order_id}－${order.memberName ?? order.member_name}`
-    : `訂單 ${orderId}`;
+
+  if (!order) {
+    return `訂單 ${orderId}`;
+  }
+
+  return `訂單 ${order.bookingOrderId}`;
 }
 
 function getRoomTypeName(roomTypeId) {
   if (!roomTypeId) return "未指定房型";
-  const found = roomTypes.value.find(
-    (item) =>
-      Number(item.roomTypeId ?? item.room_type_id) === Number(roomTypeId),
+  return (
+    roomTypes.value.find((item) => item.roomTypeId === Number(roomTypeId))
+      ?.typeName ?? `房型 ${roomTypeId}`
   );
   return found ? (found.typeName ?? found.type_name) : `編號 ${roomTypeId}`;
 }
 
 function getRoomNumber(roomId) {
   if (!roomId) return "尚未分配";
-  const found = rooms.value.find(
-    (item) => Number(item.roomId ?? item.room_id) === Number(roomId),
+  return (
+    rooms.value.find((item) => item.roomId === Number(roomId))?.roomNumber ??
+    `房號 ${roomId}`
   );
   return found ? (found.roomNumber ?? found.room_number) : `編號 ${roomId}`;
 }
@@ -176,28 +208,14 @@ function getRoomNumber(roomId) {
 function changeRoomType() {
   // 1. 清空已選擇的房號
   form.value.roomId = "";
-
-  // 2. 防呆：若未選擇房型（例如切回預設空白選項），重置金額並結束
-  if (!form.value.roomTypeId) {
-    form.value.bookingPrice = 0;
-    return;
-  }
-
-  // 3. 尋找對應的房型物件（同時相容 roomTypeId 與 room_type_id）
   const selectedRoomType = roomTypes.value.find(
     (item) =>
       Number(item.roomTypeId ?? item.room_type_id) ===
       Number(form.value.roomTypeId),
   );
-
-  // 4. 若找到房型且目前人數超過上限，自動調整人數為上限值
-  if (selectedRoomType && selectedRoomType.capacity) {
-    if (form.value.guestNum > selectedRoomType.capacity) {
-      form.value.guestNum = selectedRoomType.capacity;
-    }
+  if (selectedRoomType && form.value.guestNum > selectedRoomType.capacity) {
+    form.value.guestNum = selectedRoomType.capacity;
   }
-
-  // 5. 重新計算價格
   calculatePrice();
 }
 
@@ -214,23 +232,14 @@ function calculatePrice() {
       Number(item.roomTypeId ?? item.room_type_id) ===
       Number(form.value.roomTypeId),
   );
-
-  // 3. 若找不到房型，價格歸零
-  if (!selectedRoomType) {
+  if (!selectedRoomType || stayNights.value === 0) {
     form.value.bookingPrice = 0;
     return;
   }
-
-  // 4. 取出每晚價格（強制轉為 Number，確保型態正確）
-  const price = Number(
-    selectedRoomType.pricePerNight ?? selectedRoomType.price_per_night ?? 0,
-  );
-
-  // 5. 計算總價
-  form.value.bookingPrice = price * stayNights.value;
+  form.value.bookingPrice = selectedRoomType.pricePerNight * stayNights.value;
 }
 
-// 2. 儲存/更新預訂
+// 2. 儲存/更新預訂 (對應 PUT /api/bookings/{id})
 async function saveBooking() {
   if (form.value.bookingId === null) {
     showMessage("後端尚未開放新增預訂功能 (POST 已註解)", "error");
@@ -295,35 +304,22 @@ async function saveBooking() {
   }
 }
 function editBooking(booking) {
-  console.log("👉 傳入 editBooking 的原始資料：", booking);
-  console.log("👉 傳入的型態:", typeof booking.roomId, booking.roomId);
-
-  const rawRoomTypeId = booking.roomTypeId;
-  const rawOrderId = booking.bookingOrderId;
-  const rawRoomId = booking.roomId;
-
-  const parseDate = (dateStr) => {
-    if (!dateStr) return "";
-    return String(dateStr).split("T")[0];
-  };
-
   form.value = {
     bookingId: booking.bookingId,
-    bookingOrderId: Number(rawOrderId),
-    roomTypeId: Number(rawRoomTypeId),
-    roomId: Number(rawRoomId),
-    checkInDate: booking.checkInDate,
-    checkOutDate: booking.checkOutDate,
-    guestNum: booking.guestNum,
-    bookingPrice: booking.bookingPrice,
-    bookingStatus: booking.bookingStatus,
+    bookingOrderId: booking.bookingOrderId ?? booking.booking_order_id ?? "",
+    roomTypeId: booking.roomTypeId ?? booking.room_type_id ?? "",
+    roomId: booking.roomId ?? booking.room_id ?? "",
+    checkInDate: booking.checkInDate ?? booking.check_in_date ?? "",
+    checkOutDate: booking.checkOutDate ?? booking.check_out_date ?? "",
+    guestNum: booking.guestNum ?? booking.guest_num ?? 1,
+    bookingPrice: booking.bookingPrice ?? booking.booking_price ?? 0,
+    bookingStatus: booking.bookingStatus ?? booking.booking_status ?? "待確認",
   };
-
-  formTitle.value = `修改訂房明細 ID：${form.value.bookingId}`;
+  formTitle.value = `修改訂房明細`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// 3. 刪除預訂
+// 3. 刪除預訂 (對應 DELETE /api/bookings/{id})
 async function deleteBooking(id) {
   if (!window.confirm("確定刪除這筆訂房明細嗎？")) {
     return;
@@ -366,7 +362,8 @@ function formatPrice(price) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadBookings(), loadRoomTypes()]);
+  await loadSelectOptions();
+  await loadBookings();
 });
 </script>
 
@@ -393,11 +390,7 @@ onMounted(async () => {
           <label>預訂狀態</label>
           <select v-model="searchCriteria.status">
             <option value="">全部狀態</option>
-            <option
-              v-for="status in bookingStatuses"
-              :key="status"
-              :value="status"
-            >
+            <option v-for="status in bookingStatuses" :key="status" :value="status">
               {{ status }}
             </option>
           </select>
@@ -421,14 +414,10 @@ onMounted(async () => {
         <div class="form-grid">
           <div class="form-group">
             <label>訂房訂單 *</label>
-            <select v-model="form.bookingOrderId">
+            <select v-model="form.bookingOrderId" required>
               <option value="" disabled>請選擇訂單</option>
-              <option
-                v-for="order in bookingOrders"
-                :key="order.bookingOrderId"
-                :value="order.bookingOrderId"
-              >
-                訂單 {{ order.bookingOrderId }}－{{ order.memberName }}
+              <option v-for="order in bookingOrders" :key="order.bookingOrderId" :value="order.bookingOrderId">
+                訂單 {{ order.bookingOrderId }}
               </option>
             </select>
           </div>
@@ -437,25 +426,17 @@ onMounted(async () => {
             <label>房型 *</label>
             <select v-model="form.roomTypeId" required @change="changeRoomType">
               <option value="" disabled>請選擇房型</option>
-              <option
-                v-for="roomType in roomTypes"
-                :key="roomType.roomTypeId ?? roomType.room_type_id"
-                :value="roomType.roomTypeId ?? roomType.room_type_id"
-              >
-                {{ roomType.typeName ?? roomType.type_name }}
+              <option v-for="roomType in roomTypes" :key="roomType.roomTypeId" :value="roomType.roomTypeId">
+                {{ roomType.typeName }}
               </option>
             </select>
           </div>
 
           <div class="form-group">
             <label>分配房號</label>
-            <select v-model="form.roomId">
+            <select v-model.number="form.roomId">
               <option value="">尚未分配</option>
-              <option
-                v-for="room in availableRooms"
-                :key="room.roomId"
-                :value="room.roomId"
-              >
+              <option v-for="room in availableRooms" :key="room.roomId" :value="room.roomId">
                 房號 {{ room.roomNumber }}
               </option>
             </select>
@@ -463,32 +444,17 @@ onMounted(async () => {
 
           <div class="form-group">
             <label>入住人數 *</label>
-            <input
-              v-model.number="form.guestNum"
-              type="number"
-              min="1"
-              required
-            />
+            <input v-model.number="form.guestNum" type="number" min="1" required />
           </div>
 
           <div class="form-group">
             <label>入住日期 *</label>
-            <input
-              v-model="form.checkInDate"
-              type="date"
-              required
-              @change="calculatePrice"
-            />
+            <input v-model="form.checkInDate" type="date" required @change="calculatePrice" />
           </div>
 
           <div class="form-group">
             <label>退房日期 *</label>
-            <input
-              v-model="form.checkOutDate"
-              type="date"
-              required
-              @change="calculatePrice"
-            />
+            <input v-model="form.checkOutDate" type="date" required @change="calculatePrice" />
           </div>
 
           <div class="form-group">
@@ -504,11 +470,7 @@ onMounted(async () => {
           <div class="form-group">
             <label>訂房狀態</label>
             <select v-model="form.bookingStatus">
-              <option
-                v-for="status in bookingStatuses"
-                :key="status"
-                :value="status"
-              >
+              <option v-for="status in bookingStatuses" :key="status" :value="status">
                 {{ status }}
               </option>
             </select>
@@ -583,10 +545,7 @@ onMounted(async () => {
                 <button class="btn edit" @click="editBooking(booking)">
                   修改
                 </button>
-                <button
-                  class="btn delete"
-                  @click="deleteBooking(booking.bookingId)"
-                >
+                <button class="btn delete" @click="deleteBooking(booking.bookingId)">
                   刪除
                 </button>
               </td>
@@ -597,7 +556,6 @@ onMounted(async () => {
     </section>
   </main>
 </template>
-
 <style scoped>
 .booking-page {
   padding: 28px;
@@ -701,8 +659,10 @@ select {
 }
 
 .table-wrapper table thead th {
-  background-color: #4a3b32 !important; /* 深棕色背景 */
-  color: #ffffff !important; /* 純白文字 */
+  background-color: #4a3b32 !important;
+  /* 深棕色背景 */
+  color: #ffffff !important;
+  /* 純白文字 */
   overflow-x: auto;
 }
 

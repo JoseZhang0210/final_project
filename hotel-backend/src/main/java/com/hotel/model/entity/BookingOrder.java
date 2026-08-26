@@ -29,8 +29,8 @@ import lombok.ToString;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = { "member", "payment", "payments", "bookings" })
-@EqualsAndHashCode(exclude = { "member", "payment", "payments", "bookings" })
+@ToString(exclude = { "member", "payment", "bookings" })
+@EqualsAndHashCode(exclude = { "member", "payment", "bookings" })
 @Table(name = "booking_order")
 public class BookingOrder {
 
@@ -48,11 +48,12 @@ public class BookingOrder {
     @JsonIgnore
     private Member member;
 
-    @Column(name = "booking_total_price", nullable = false)
+    @Column(name = "total_price", nullable = false)
     private Integer bookingTotalPrice;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "order_status", nullable = false, length = 20)

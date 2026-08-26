@@ -3,6 +3,8 @@ package com.hotel.model.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,15 +51,18 @@ public class RoomType {
     // =================以下多關聯性至Room,RoomImage,Booking
 
     // 1:N 關聯至 Room
+    @JsonIgnore
     @OneToMany(mappedBy = "roomType", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Room> room = new ArrayList<>();
 
     // 1:N 關聯至 RoomImage
+    @JsonIgnore
     @OneToMany(mappedBy = "roomType")
     private List<RoomImage> roomImage = new ArrayList<>();
 
     // 1:N 關聯至 Booking
 
+    @JsonIgnore
     @OneToMany(mappedBy = "roomType")
     private List<Booking> booking = new ArrayList<>();
 
