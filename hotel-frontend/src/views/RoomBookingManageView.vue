@@ -1,57 +1,27 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
-const bookingOrders = ref([
-  { bookingOrderId: 1, memberName: "王小明" },
-  { bookingOrderId: 2, memberName: "陳小美" },
-]);
+const BOOKING_API_URL = "/api/bookings";
 
-const roomTypes = ref([
-  {
-    roomTypeId: 1,
-    typeName: "豪華雙人房",
-    capacity: 2,
-    pricePerNight: 5000,
-  },
-  {
-    roomTypeId: 2,
-    typeName: "家庭四人房",
-    capacity: 4,
-    pricePerNight: 8000,
-  },
-]);
+// 選單資料（初始化為空陣列）
+const bookingOrders = ref([]);
+const roomTypes = ref([]);
+const rooms = ref([]);
 
-const rooms = ref([
-  { roomId: 1, roomNumber: "301", roomTypeId: 1 },
-  { roomId: 2, roomNumber: "302", roomTypeId: 1 },
-  { roomId: 3, roomNumber: "501", roomTypeId: 2 },
-]);
-
-const bookings = ref([
-  {
-    bookingId: 1,
-    bookingOrderId: 1,
-    roomTypeId: 1,
-    roomId: 1,
-    checkInDate: "2026-09-01",
-    checkOutDate: "2026-09-03",
-    guestNum: 2,
-    bookingPrice: 10000,
-    bookingStatus: "已確認",
-  },
-]);
-
-const bookingStatuses = [
-  "待確認",
-  "已確認",
-  "已入住",
-  "已完成",
-  "已取消",
-];
-
+// 核心資料
+const bookings = ref([]);
 const message = ref("");
 const messageType = ref("");
-const formTitle = ref("新增訂房明細");
+const formTitle = ref("新增/編輯訂房明細");
+
+// 查詢條件
+const searchCriteria = ref({
+  checkInDate: "",
+  status: "",
+});
+
+const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
+
 const form = ref(createEmptyForm());
 
 function createEmptyForm() {
@@ -70,25 +40,17 @@ function createEmptyForm() {
 
 const availableRooms = computed(() => {
   if (!form.value.roomTypeId) return [];
-
   return rooms.value.filter(
     (room) => room.roomTypeId === Number(form.value.roomTypeId),
   );
 });
 
 const stayNights = computed(() => {
-  if (!form.value.checkInDate || !form.value.checkOutDate) {
-    return 0;
-  }
-
+  if (!form.value.checkInDate || !form.value.checkOutDate) return 0;
   const checkIn = new Date(form.value.checkInDate);
   const checkOut = new Date(form.value.checkOutDate);
   const difference = checkOut - checkIn;
-
-  return Math.max(
-    0,
-    Math.ceil(difference / (1000 * 60 * 60 * 24)),
-  );
+  return Math.max(0, Math.ceil(difference / (1000 * 60 * 60 * 24)));
 });
 
 function showMessage(text, type) {
@@ -99,47 +61,93 @@ function showMessage(text, type) {
 function clearForm() {
   form.value = createEmptyForm();
   formTitle.value = "新增訂房明細";
+  message.value = "";
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
+  return headers;
+}
+
+// 1. 載入與條件查詢 (對應 @GetMapping)
+async function loadBookings() {
+  try {
+    let url = BOOKING_API_URL;
+
+    // 依據條件切換 API Endpoint；若無條件則直接請求 /api/bookings (getAllBookings)
+    if (searchCriteria.value.checkInDate) {
+      url = `${BOOKING_API_URL}/check-in?date=${searchCriteria.value.checkInDate}`;
+    } else if (searchCriteria.value.status) {
+      url = `${BOOKING_API_URL}/status?status=${encodeURIComponent(searchCriteria.value.status)}`;
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        showMessage("權限不足或登入已過期 (403)", "error");
+        return;
+      }
+      const errorData = await response.json().catch(() => ({}));
+      showMessage(errorData.message || "讀取預訂資料失敗", "error");
+      return;
+    }
+
+    const data = await response.json();
+    bookings.value = Array.isArray(data) ? data : data ? [data] : [];
+  } catch (error) {
+    console.error("loadBookings Error:", error);
+    showMessage("無法連線至預訂 API", "error");
+  }
+}
+
+function clearSearch() {
+  searchCriteria.value = { checkInDate: "", status: "" };
+  loadBookings();
 }
 
 function getOrderLabel(orderId) {
+  if (!orderId) return "未指定訂單";
   const order = bookingOrders.value.find(
     (item) => item.bookingOrderId === Number(orderId),
   );
-
   return order
     ? `訂單 ${order.bookingOrderId}－${order.memberName}`
-    : "未知訂單";
+    : `訂單 ${orderId}`;
 }
 
 function getRoomTypeName(roomTypeId) {
+  if (!roomTypeId) return "未指定房型";
   return (
-    roomTypes.value.find(
-      (item) => item.roomTypeId === Number(roomTypeId),
-    )?.typeName ?? "未知房型"
+    roomTypes.value.find((item) => item.roomTypeId === Number(roomTypeId))
+      ?.typeName ?? `房型 ${roomTypeId}`
   );
 }
 
 function getRoomNumber(roomId) {
+  if (!roomId) return "尚未分配";
   return (
-    rooms.value.find((item) => item.roomId === Number(roomId))
-      ?.roomNumber ?? "尚未分配"
+    rooms.value.find((item) => item.roomId === Number(roomId))?.roomNumber ??
+    `房號 ${roomId}`
   );
 }
 
 function changeRoomType() {
   form.value.roomId = "";
-
   const selectedRoomType = roomTypes.value.find(
     (item) => item.roomTypeId === Number(form.value.roomTypeId),
   );
-
-  if (
-    selectedRoomType &&
-    form.value.guestNum > selectedRoomType.capacity
-  ) {
+  if (selectedRoomType && form.value.guestNum > selectedRoomType.capacity) {
     form.value.guestNum = selectedRoomType.capacity;
   }
-
   calculatePrice();
 }
 
@@ -147,17 +155,20 @@ function calculatePrice() {
   const selectedRoomType = roomTypes.value.find(
     (item) => item.roomTypeId === Number(form.value.roomTypeId),
   );
-
   if (!selectedRoomType || stayNights.value === 0) {
     form.value.bookingPrice = 0;
     return;
   }
-
-  form.value.bookingPrice =
-    selectedRoomType.pricePerNight * stayNights.value;
+  form.value.bookingPrice = selectedRoomType.pricePerNight * stayNights.value;
 }
 
-function saveBooking() {
+// 2. 儲存/更新預訂 (對應 PUT /api/bookings/{id})
+async function saveBooking() {
+  if (form.value.bookingId === null) {
+    showMessage("後端尚未開放新增預訂功能 (POST 已註解)", "error");
+    return;
+  }
+
   if (!form.value.bookingOrderId) {
     showMessage("請選擇訂房訂單", "error");
     return;
@@ -178,80 +189,92 @@ function saveBooking() {
     return;
   }
 
-  const selectedRoomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(form.value.roomTypeId),
-  );
-
-  if (Number(form.value.guestNum) > selectedRoomType.capacity) {
-    showMessage(
-      `此房型最多入住 ${selectedRoomType.capacity} 人`,
-      "error",
-    );
-    return;
-  }
-
-  const bookingData = {
-    ...form.value,
+  const payload = {
+    bookingId: form.value.bookingId,
     bookingOrderId: Number(form.value.bookingOrderId),
     roomTypeId: Number(form.value.roomTypeId),
-    roomId: form.value.roomId
-      ? Number(form.value.roomId)
-      : null,
+    roomId: form.value.roomId ? Number(form.value.roomId) : null,
+    checkInDate: form.value.checkInDate,
+    checkOutDate: form.value.checkOutDate,
     guestNum: Number(form.value.guestNum),
     bookingPrice: Number(form.value.bookingPrice),
+    bookingStatus: form.value.bookingStatus,
   };
 
-  if (form.value.bookingId === null) {
-    const nextId =
-      bookings.value.length === 0
-        ? 1
-        : Math.max(...bookings.value.map((item) => item.bookingId)) + 1;
-
-    bookings.value.push({
-      ...bookingData,
-      bookingId: nextId,
+  try {
+    const response = await fetch(`${BOOKING_API_URL}/${form.value.bookingId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      credentials: "include",
+      body: JSON.stringify(payload),
     });
 
-    showMessage("訂房明細新增成功", "success");
-  } else {
-    const index = bookings.value.findIndex(
-      (item) => item.bookingId === form.value.bookingId,
-    );
-
-    if (index !== -1) {
-      bookings.value[index] = bookingData;
+    if (!response.ok) {
+      if (response.status === 403) {
+        showMessage("權限不足或登入已過期 (403)", "error");
+        return;
+      }
+      const errorData = await response.json().catch(() => ({}));
+      showMessage(errorData.message || "更新失敗", "error");
+      return;
     }
 
     showMessage("訂房明細修改成功", "success");
+    clearForm();
+    await loadBookings();
+  } catch (error) {
+    showMessage("無法連線至預訂 API", "error");
   }
-
-  clearForm();
 }
 
 function editBooking(booking) {
-  form.value = { ...booking };
+  form.value = {
+    bookingId: booking.bookingId,
+    bookingOrderId: booking.bookingOrderId ?? booking.booking_order_id ?? "",
+    roomTypeId: booking.roomTypeId ?? booking.room_type_id ?? "",
+    roomId: booking.roomId ?? booking.room_id ?? "",
+    checkInDate: booking.checkInDate ?? booking.check_in_date ?? "",
+    checkOutDate: booking.checkOutDate ?? booking.check_out_date ?? "",
+    guestNum: booking.guestNum ?? booking.guest_num ?? 1,
+    bookingPrice: booking.bookingPrice ?? booking.booking_price ?? 0,
+    bookingStatus: booking.bookingStatus ?? booking.booking_status ?? "待確認",
+  };
   formTitle.value = `修改訂房明細 ID：${booking.bookingId}`;
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function deleteBooking(id) {
+// 3. 刪除預訂 (對應 DELETE /api/bookings/{id})
+async function deleteBooking(id) {
   if (!window.confirm("確定刪除這筆訂房明細嗎？")) {
     return;
   }
 
-  bookings.value = bookings.value.filter(
-    (item) => item.bookingId !== id,
-  );
+  try {
+    const response = await fetch(`${BOOKING_API_URL}/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
 
-  if (form.value.bookingId === id) {
-    clearForm();
+    const resData = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        showMessage("權限不足或登入已過期 (403)", "error");
+        return;
+      }
+      showMessage(resData.message || "刪除失敗", "error");
+      return;
+    }
+
+    showMessage(resData.message || "訂房明細已刪除", "success");
+    if (form.value.bookingId === id) {
+      clearForm();
+    }
+    await loadBookings();
+  } catch (error) {
+    showMessage("無法連線至預訂 API", "error");
   }
-
-  showMessage("訂房明細已刪除", "success");
 }
 
 function formatPrice(price) {
@@ -259,8 +282,12 @@ function formatPrice(price) {
     style: "currency",
     currency: "TWD",
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(price || 0);
 }
+
+onMounted(async () => {
+  await loadBookings();
+});
 </script>
 
 <template>
@@ -274,6 +301,39 @@ function formatPrice(price) {
       {{ message }}
     </div>
 
+    <!-- 條件查詢區塊 -->
+    <section class="admin-card">
+      <h2>條件查詢</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>入住日期</label>
+          <input v-model="searchCriteria.checkInDate" type="date" />
+        </div>
+        <div class="form-group">
+          <label>預訂狀態</label>
+          <select v-model="searchCriteria.status">
+            <option value="">全部狀態</option>
+            <option
+              v-for="status in bookingStatuses"
+              :key="status"
+              :value="status"
+            >
+              {{ status }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top: 15px">
+        <button type="button" class="btn primary" @click="loadBookings">
+          查詢
+        </button>
+        <button type="button" class="btn secondary" @click="clearSearch">
+          重設查詢
+        </button>
+      </div>
+    </section>
+
+    <!-- 表單區塊 -->
     <section class="admin-card">
       <h2>{{ formTitle }}</h2>
 
@@ -281,10 +341,8 @@ function formatPrice(price) {
         <div class="form-grid">
           <div class="form-group">
             <label>訂房訂單 *</label>
-
-            <select v-model="form.bookingOrderId" required>
+            <select v-model="form.bookingOrderId">
               <option value="" disabled>請選擇訂單</option>
-
               <option
                 v-for="order in bookingOrders"
                 :key="order.bookingOrderId"
@@ -297,14 +355,8 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>房型 *</label>
-
-            <select
-              v-model="form.roomTypeId"
-              required
-              @change="changeRoomType"
-            >
+            <select v-model="form.roomTypeId" required @change="changeRoomType">
               <option value="" disabled>請選擇房型</option>
-
               <option
                 v-for="roomType in roomTypes"
                 :key="roomType.roomTypeId"
@@ -317,10 +369,8 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>分配房號</label>
-
             <select v-model="form.roomId">
               <option value="">尚未分配</option>
-
               <option
                 v-for="room in availableRooms"
                 :key="room.roomId"
@@ -333,7 +383,6 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>入住人數 *</label>
-
             <input
               v-model.number="form.guestNum"
               type="number"
@@ -344,7 +393,6 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>入住日期 *</label>
-
             <input
               v-model="form.checkInDate"
               type="date"
@@ -355,7 +403,6 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>退房日期 *</label>
-
             <input
               v-model="form.checkOutDate"
               type="date"
@@ -371,17 +418,11 @@ function formatPrice(price) {
 
           <div class="form-group">
             <label>訂房價格</label>
-
-            <input
-              v-model.number="form.bookingPrice"
-              type="number"
-              min="0"
-            />
+            <input v-model.number="form.bookingPrice" type="number" min="0" />
           </div>
 
           <div class="form-group">
             <label>訂房狀態</label>
-
             <select v-model="form.bookingStatus">
               <option
                 v-for="status in bookingStatuses"
@@ -398,7 +439,6 @@ function formatPrice(price) {
           <button type="submit" class="btn primary">
             {{ form.bookingId === null ? "新增明細" : "儲存修改" }}
           </button>
-
           <button type="button" class="btn secondary" @click="clearForm">
             清除表單
           </button>
@@ -406,6 +446,7 @@ function formatPrice(price) {
       </form>
     </section>
 
+    <!-- 列表區塊 -->
     <section class="admin-card">
       <div class="table-header">
         <h2>訂房明細列表</h2>
@@ -430,22 +471,38 @@ function formatPrice(price) {
           </thead>
 
           <tbody>
+            <tr v-if="bookings.length === 0">
+              <td colspan="10" style="text-align: center">
+                目前沒有訂房明細資料
+              </td>
+            </tr>
             <tr v-for="booking in bookings" :key="booking.bookingId">
               <td>{{ booking.bookingId }}</td>
-              <td>{{ getOrderLabel(booking.bookingOrderId) }}</td>
-              <td>{{ getRoomTypeName(booking.roomTypeId) }}</td>
-              <td>{{ getRoomNumber(booking.roomId) }}</td>
-              <td>{{ booking.checkInDate }}</td>
-              <td>{{ booking.checkOutDate }}</td>
-              <td>{{ booking.guestNum }} 人</td>
-              <td>{{ formatPrice(booking.bookingPrice) }}</td>
-              <td>{{ booking.bookingStatus }}</td>
+              <td>
+                {{
+                  getOrderLabel(
+                    booking.bookingOrderId ?? booking.booking_order_id,
+                  )
+                }}
+              </td>
+              <td>
+                {{
+                  getRoomTypeName(booking.roomTypeId ?? booking.room_type_id)
+                }}
+              </td>
+              <td>{{ getRoomNumber(booking.roomId ?? booking.room_id) }}</td>
+              <td>{{ booking.checkInDate ?? booking.check_in_date }}</td>
+              <td>{{ booking.checkOutDate ?? booking.check_out_date }}</td>
+              <td>{{ booking.guestNum ?? booking.guest_num }} 人</td>
+              <td>
+                {{ formatPrice(booking.bookingPrice ?? booking.booking_price) }}
+              </td>
+              <td>{{ booking.bookingStatus ?? booking.booking_status }}</td>
 
               <td class="actions">
                 <button class="btn edit" @click="editBooking(booking)">
                   修改
                 </button>
-
                 <button
                   class="btn delete"
                   @click="deleteBooking(booking.bookingId)"
@@ -460,7 +517,6 @@ function formatPrice(price) {
     </section>
   </main>
 </template>
-
 <style scoped>
 .booking-page {
   padding: 28px;
@@ -563,7 +619,9 @@ select {
   justify-content: space-between;
 }
 
-.table-wrapper {
+.table-wrapper table thead th {
+  background-color: #4a3b32 !important; /* 深棕色背景 */
+  color: #ffffff !important; /* 純白文字 */
   overflow-x: auto;
 }
 

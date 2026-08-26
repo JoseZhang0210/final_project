@@ -1,24 +1,10 @@
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
-const roomTypes = ref([
-  {
-    roomTypeId: 1,
-    typeName: "豪華雙人房",
-    bedType: "一張雙人床",
-    capacity: 2,
-    pricePerNight: 5000,
-    roomDescription: "附景觀陽台、浴缸及免費早餐",
-  },
-  {
-    roomTypeId: 2,
-    typeName: "家庭四人房",
-    bedType: "兩張雙人床",
-    capacity: 4,
-    pricePerNight: 8000,
-    roomDescription: "適合家庭旅遊，提供寬敞客廳空間",
-  },
-]);
+const ROOM_TYPE_API_URL = "/api/roomtypes";
+
+const roomTypes = ref([]);
+const loading = ref(false);
 
 const formTitle = ref("新增房型");
 const message = ref("");
@@ -136,6 +122,64 @@ function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(price);
 }
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+async function loadRoomTypes() {
+  loading.value = true;
+  message.value = "";
+
+  try {
+    const response = await fetch(ROOM_TYPE_API_URL, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (response.status === 401) {
+      showMessage("請先登入後再查看房型資料", "error");
+      return;
+    }
+
+    if (response.status === 403) {
+      showMessage("目前帳號沒有查看房型資料的權限", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage(`讀取房型失敗：${response.status}`, "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    roomTypes.value = Array.isArray(data)
+      ? data
+      : data.content || [];
+
+    console.log("SQL room_type 資料：", roomTypes.value);
+  } catch (error) {
+    console.error("讀取房型錯誤：", error);
+    showMessage("無法連線至房型 API", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadRoomTypes();
+});
 </script>
 
 <template>
@@ -147,71 +191,40 @@ function formatPrice(price) {
       </div>
     </header>
 
-    <div
-      v-if="message"
-      class="message"
-      :class="messageType"
-    >
+    <div v-if="message" class="message" :class="messageType">
       {{ message }}
     </div>
 
-    <section class="admin-card">
+    <!--v-if="false" 隱藏-->
+    <section v-if="false" class="admin-card">
       <h2>{{ formTitle }}</h2>
 
       <form @submit.prevent="saveRoomType">
         <div class="form-grid">
           <div class="form-group">
             <label for="typeName">房型名稱 *</label>
-            <input
-              id="typeName"
-              v-model.trim="form.typeName"
-              type="text"
-              placeholder="例如：豪華雙人房"
-              required
-            />
+            <input id="typeName" v-model.trim="form.typeName" type="text" placeholder="例如：豪華雙人房" required />
           </div>
 
           <div class="form-group">
             <label for="bedType">床型 *</label>
-            <input
-              id="bedType"
-              v-model.trim="form.bedType"
-              type="text"
-              placeholder="例如：一張雙人床"
-              required
-            />
+            <input id="bedType" v-model.trim="form.bedType" type="text" placeholder="例如：一張雙人床" required />
           </div>
 
           <div class="form-group">
             <label for="capacity">容納人數 *</label>
-            <input
-              id="capacity"
-              v-model.number="form.capacity"
-              type="number"
-              min="1"
-              required
-            />
+            <input id="capacity" v-model.number="form.capacity" type="number" min="1" required />
           </div>
 
           <div class="form-group">
             <label for="pricePerNight">每晚價格 *</label>
-            <input
-              id="pricePerNight"
-              v-model.number="form.pricePerNight"
-              type="number"
-              min="0"
-              required
-            />
+            <input id="pricePerNight" v-model.number="form.pricePerNight" type="number" min="0" required />
           </div>
 
           <div class="form-group full-width">
             <label for="roomDescription">房型說明</label>
-            <textarea
-              id="roomDescription"
-              v-model.trim="form.roomDescription"
-              rows="4"
-              placeholder="請輸入房型特色及設備說明"
-            ></textarea>
+            <textarea id="roomDescription" v-model.trim="form.roomDescription" rows="4"
+              placeholder="請輸入房型特色及設備說明"></textarea>
           </div>
         </div>
 
@@ -243,39 +256,38 @@ function formatPrice(price) {
               <th>人數</th>
               <th>每晚價格</th>
               <th>房型說明</th>
-              <th>操作</th>
+              <!--v-if="false" 隱藏-->
+              <th v-if="false">操作</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="roomType in roomTypes" :key="roomType.roomTypeId">
+            <tr v-if="loading">
+              <td colspan="6" class="empty">房型資料讀取中……</td>
+            </tr>
+            <tr v-for="roomType in roomTypes" v-else:key="roomType.roomTypeId">
               <td>{{ roomType.roomTypeId }}</td>
               <td>{{ roomType.typeName }}</td>
               <td>{{ roomType.bedType }}</td>
               <td>{{ roomType.capacity }} 人</td>
               <td>{{ formatPrice(roomType.pricePerNight) }}</td>
               <td>{{ roomType.roomDescription || "—" }}</td>
-              <td class="action-cell">
-                <button
-                  type="button"
-                  class="btn edit"
-                  @click="editRoomType(roomType)"
-                >
+              <!--v-if="false" 隱藏-->
+              <td v-if="false" class="action-cell">
+                <button type="button" class="btn edit" @click="editRoomType(roomType)">
                   修改
                 </button>
 
-                <button
-                  type="button"
-                  class="btn delete"
-                  @click="deleteRoomType(roomType.roomTypeId)"
-                >
+                <button type="button" class="btn delete" @click="deleteRoomType(roomType.roomTypeId)">
                   刪除
                 </button>
               </td>
             </tr>
 
-            <tr v-if="roomTypes.length === 0">
-              <td colspan="7" class="empty">目前沒有房型資料</td>
+            <tr v-if="!loading && roomTypes.length === 0">
+              <td colspan="6" class="empty">
+                目前沒有房型資料
+              </td>
             </tr>
           </tbody>
         </table>
@@ -306,7 +318,6 @@ function formatPrice(price) {
 
 .admin-card {
   margin-bottom: 24px;
-  padding: px;
   padding: 24px;
   background: white;
   border: 1px solid #e4e7ec;
@@ -426,7 +437,19 @@ td {
 }
 
 th {
-  background: #f8fafc;
+  color: #ffffff;
+  font-weight: 700;
+  background-color: #4b3c34;
+  border-bottom: 2px solid #3b2f29;
+}
+
+td {
+  color: #344054;
+  background-color: #ffffff;
+}
+
+tbody tr:hover td {
+  background-color: #faf7f2;
 }
 
 .empty {

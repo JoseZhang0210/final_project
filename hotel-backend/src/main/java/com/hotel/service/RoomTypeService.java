@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hotel.model.entity.RoomType;
 import com.hotel.repository.RoomTypeRepository;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @Service
 @Transactional
 public class RoomTypeService {
@@ -21,8 +23,6 @@ public class RoomTypeService {
 
     // 1. Create - 新增房型
     public RoomType insert(RoomType roomType) {
-        // 處理外鍵約束：若 imageId 為 0 強制轉為 null
-        normalizeImageId(roomType);
         return roomTypeRepository.save(roomType);
     }
 
@@ -32,67 +32,49 @@ public class RoomTypeService {
         return roomTypeRepository.findAll();
     }
 
-    // 3-1. Read Optional by ID (保留原本的方法以利其他彈性用途)
+    // 3-1. Read Optional by ID
     @Transactional(readOnly = true)
     public Optional<RoomType> findOptionalById(Integer id) {
         return roomTypeRepository.findById(id);
     }
 
-    // 3-2. Read by ID (可以直接回傳 Entity 物件，完美對接 REST Controller)
-    @Transactional(readOnly = true)
-    public RoomType findById(Integer id) {
-        return roomTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("找不到 ID 為 " + id + " 的房型資料"));
-    }
+    // // 3-2. Read by ID (找不到即拋出特定例外)
+    // @Transactional(readOnly = true)
+    // public RoomType findById(Integer id) {
+    // return roomTypeRepository.findById(id)
+    // .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料"));
+    // }
 
-    // 4. Update - 更新房型資料
+    // 4. Update - 更新房型資料 (依賴 JPA Dirty Checking)
     public RoomType update(Integer id, RoomType updatedRoomType) {
-        return roomTypeRepository.findById(id)
-                .map(roomType -> {
-                    if (updatedRoomType.getTypeName() != null) {
-                        roomType.setTypeName(updatedRoomType.getTypeName());
-                    }
-                    if (updatedRoomType.getBedType() != null) {
-                        roomType.setBedType(updatedRoomType.getBedType());
-                    }
-                    if (updatedRoomType.getDescription() != null) {
-                        roomType.setDescription(updatedRoomType.getDescription());
-                    }
-                    if (updatedRoomType.getPricePerNight() != null) {
-                        roomType.setPricePerNight(updatedRoomType.getPricePerNight());
-                    }
-                    if (updatedRoomType.getCapacity() != null) {
-                        roomType.setCapacity(updatedRoomType.getCapacity());
-                    }
+        RoomType existingRoomType = roomTypeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料"));
 
-                    // 處理圖片 ID：若傳入 0 或 null 則清空外鍵，否則更新為新 ID
-                    if (updatedRoomType.getImageId() == null || updatedRoomType.getImageId() == 0) {
-                        roomType.setImageId(null);
-                    } else {
-                        roomType.setImageId(updatedRoomType.getImageId());
-                    }
+        if (updatedRoomType.getTypeName() != null) {
+            existingRoomType.setTypeName(updatedRoomType.getTypeName());
+        }
+        if (updatedRoomType.getBedType() != null) {
+            existingRoomType.setBedType(updatedRoomType.getBedType());
+        }
+        if (updatedRoomType.getCapacity() != null) {
+            existingRoomType.setCapacity(updatedRoomType.getCapacity());
+        }
+        if (updatedRoomType.getRoomDescription() != null) {
+            existingRoomType.setRoomDescription(updatedRoomType.getRoomDescription());
+        }
+        if (updatedRoomType.getPricePerNight() != null) {
+            existingRoomType.setPricePerNight(updatedRoomType.getPricePerNight());
+        }
 
-                    return roomTypeRepository.save(roomType);
-                })
-                .orElseThrow(() -> new RuntimeException(" RoomType not found with id: " +
-                        id));
+        // 交易結束時 JPA 會自動比對狀態並執行 Update SQL，無須 call save()
+        return existingRoomType;
     }
 
     // 5. Delete By Id - 刪除房型
-    public boolean deleteById(Integer id) {
-        if (roomTypeRepository.existsById(id)) {
-            roomTypeRepository.deleteById(id);
-            return true;
+    public void deleteById(Integer id) {
+        if (!roomTypeRepository.existsById(id)) {
+            throw new EntityNotFoundException("欲刪除的房型 ID: " + id + " 不存在");
         }
-        return false;
-    }
-
-    /**
-     * 輔助方法：清洗與校正 imageId 資料
-     */
-    private void normalizeImageId(RoomType roomType) {
-        if (roomType.getImageId() != null && roomType.getImageId() == 0) {
-            roomType.setImageId(null);
-        }
+        roomTypeRepository.deleteById(id);
     }
 }

@@ -1,33 +1,22 @@
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
-// 暫時使用測試房型，後端完成後改成 GET /api/room-types
+const ROOM_API_URL = "/api/rooms";
+
+// 暫時提供隱藏表單使用
+// 後續可改成 GET /api/room-types
 const roomTypes = ref([
   { roomTypeId: 1, typeName: "豪華雙人房" },
   { roomTypeId: 2, typeName: "家庭四人房" },
 ]);
 
-// 暫時使用測試房間，後端完成後改成 GET /api/rooms
-const rooms = ref([
-  {
-    roomId: 1,
-    roomNumber: "301",
-    roomTypeId: 1,
-    floor: 3,
-    roomStatus: "可入住",
-  },
-  {
-    roomId: 2,
-    roomNumber: "501",
-    roomTypeId: 2,
-    floor: 5,
-    roomStatus: "清潔中",
-  },
-]);
+const rooms = ref([]);
+const loading = ref(false);
 
 const message = ref("");
 const messageType = ref("");
 const formTitle = ref("新增房間");
+
 const form = ref(createEmptyForm());
 
 const roomStatuses = [
@@ -58,13 +47,84 @@ function clearForm() {
   formTitle.value = "新增房間";
 }
 
-function getRoomTypeName(roomTypeId) {
-  const roomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(roomTypeId),
-  );
+function getRoomTypeName(room) {
+  // 後端若有回傳房型名稱，就顯示名稱
+  if (room.roomType?.typeName) {
+    return room.roomType.typeName;
+  }
 
-  return roomType?.typeName ?? "未知房型";
+  // 沒有名稱但有房型 ID，就顯示 ID
+  if (room.roomType?.roomTypeId) {
+    return `房型 ID：${room.roomType.roomTypeId}`;
+  }
+
+  return "未知房型";
 }
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+// =====================================================
+// 從 SQL 讀取房間
+// GET /api/rooms
+// =====================================================
+
+async function loadRooms() {
+  loading.value = true;
+  message.value = "";
+
+  try {
+    const response = await fetch(ROOM_API_URL, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (response.status === 401) {
+      showMessage("請先登入後再查看房間資料", "error");
+      return;
+    }
+
+    if (response.status === 403) {
+      showMessage("目前帳號沒有查看房間資料的權限", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage(`讀取房間失敗：${response.status}`, "error");
+      return;
+    }
+
+    const data = await response.json();
+
+    rooms.value = Array.isArray(data)
+      ? data
+      : data.content || [];
+
+    console.log("SQL room 資料：", rooms.value);
+  } catch (error) {
+    console.error("讀取房間錯誤：", error);
+    showMessage("無法連線至房間 API", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
+// =====================================================
+// 新增／修改房間
+// 目前保留原本前端測試功能
+// =====================================================
 
 function saveRoom() {
   if (!form.value.roomNumber.trim()) {
@@ -133,13 +193,17 @@ function editRoom(room) {
 }
 
 function deleteRoom(id) {
-  const room = rooms.value.find((item) => item.roomId === id);
+  const room = rooms.value.find(
+    (item) => item.roomId === id,
+  );
 
   if (!window.confirm(`確定刪除房間 ${room?.roomNumber} 嗎？`)) {
     return;
   }
 
-  rooms.value = rooms.value.filter((item) => item.roomId !== id);
+  rooms.value = rooms.value.filter(
+    (item) => item.roomId !== id,
+  );
 
   if (form.value.roomId === id) {
     clearForm();
@@ -151,55 +215,61 @@ function deleteRoom(id) {
 function getStatusClass(status) {
   return {
     available: status === "可入住",
+    reserved: status === "已預訂",
     occupied: status === "已入住",
+    "checkout-cleaning": status === "退房待清潔",
     cleaning: status === "清潔中",
     maintenance: status === "維修中",
     disabled: status === "停用",
   };
 }
+
+onMounted(() => {
+  loadRooms();
+});
 </script>
 
 <template>
   <main class="room-page">
     <header class="page-header">
-      <h1>房間狀態管理</h1>
-      <p>管理實際房號、所屬房型、樓層及目前狀態</p>
+      <div>
+        <h1>房間狀態管理</h1>
+        <p>管理實際房號、所屬房型、樓層及目前狀態</p>
+      </div>
+
+      <button type="button" class="refresh-button" :disabled="loading" @click="loadRooms">
+        {{ loading ? "讀取中…" : "重新整理" }}
+      </button>
     </header>
 
     <div v-if="message" class="message" :class="messageType">
       {{ message }}
     </div>
 
-    <section class="admin-card">
+    <!--
+      新增與修改表單暫時隱藏。
+      要恢復時，移除 v-if="false"。
+    -->
+    <section v-if="false" class="admin-card">
       <h2>{{ formTitle }}</h2>
 
       <form @submit.prevent="saveRoom">
         <div class="form-grid">
           <div class="form-group">
             <label for="roomNumber">房號 *</label>
-            <input
-              id="roomNumber"
-              v-model.trim="form.roomNumber"
-              type="text"
-              placeholder="例如：301"
-              required
-            />
+
+            <input id="roomNumber" v-model.trim="form.roomNumber" type="text" placeholder="例如：301" required />
           </div>
 
           <div class="form-group">
             <label for="roomType">房型 *</label>
-            <select
-              id="roomType"
-              v-model="form.roomTypeId"
-              required
-            >
-              <option value="" disabled>請選擇房型</option>
 
-              <option
-                v-for="roomType in roomTypes"
-                :key="roomType.roomTypeId"
-                :value="roomType.roomTypeId"
-              >
+            <select id="roomType" v-model="form.roomTypeId" required>
+              <option value="" disabled>
+                請選擇房型
+              </option>
+
+              <option v-for="roomType in roomTypes" :key="roomType.roomTypeId" :value="roomType.roomTypeId">
                 {{ roomType.typeName }}
               </option>
             </select>
@@ -207,23 +277,15 @@ function getStatusClass(status) {
 
           <div class="form-group">
             <label for="floor">樓層 *</label>
-            <input
-              id="floor"
-              v-model.number="form.floor"
-              type="number"
-              min="1"
-              required
-            />
+
+            <input id="floor" v-model.number="form.floor" type="number" min="1" required />
           </div>
 
           <div class="form-group">
             <label for="roomStatus">房間狀態 *</label>
+
             <select id="roomStatus" v-model="form.roomStatus">
-              <option
-                v-for="status in roomStatuses"
-                :key="status"
-                :value="status"
-              >
+              <option v-for="status in roomStatuses" :key="status" :value="status">
                 {{ status }}
               </option>
             </select>
@@ -257,32 +319,46 @@ function getStatusClass(status) {
               <th>房型</th>
               <th>樓層</th>
               <th>房間狀態</th>
-              <th>操作</th>
+
+              <!-- 操作欄暫時隱藏 -->
+              <th v-if="false">操作</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="room in rooms" :key="room.roomId">
+            <tr v-if="loading">
+              <td colspan="5" class="empty">
+                房間資料讀取中……
+              </td>
+            </tr>
+
+            <tr v-for="room in rooms" v-else :key="room.roomId">
               <td>{{ room.roomId }}</td>
               <td>{{ room.roomNumber }}</td>
-              <td>{{ getRoomTypeName(room.roomTypeId) }}</td>
+              <td>{{ getRoomTypeName(room) }}</td>
               <td>{{ room.floor }} 樓</td>
+
               <td>
-                <span
-                  class="status"
-                  :class="getStatusClass(room.roomStatus)"
-                >
+                <span class="status" :class="getStatusClass(room.roomStatus)">
                   {{ room.roomStatus }}
                 </span>
               </td>
-              <td class="actions">
-                <button class="btn edit" @click="editRoom(room)">
+
+              <!-- 修改及刪除按鈕暫時隱藏 -->
+              <td v-if="false" class="actions">
+                <button type="button" class="btn edit" @click="editRoom(room)">
                   修改
                 </button>
 
-                <button class="btn delete" @click="deleteRoom(room.roomId)">
+                <button type="button" class="btn delete" @click="deleteRoom(room.roomId)">
                   刪除
                 </button>
+              </td>
+            </tr>
+
+            <tr v-if="!loading && rooms.length === 0">
+              <td colspan="5" class="empty">
+                SQL 目前沒有房間資料
               </td>
             </tr>
           </tbody>
@@ -299,6 +375,9 @@ function getStatusClass(status) {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 22px;
   padding: 24px;
   background: white;
@@ -337,6 +416,20 @@ function getStatusClass(status) {
 .message.error {
   color: #b42318;
   background: #feeceb;
+}
+
+.refresh-button {
+  padding: 10px 16px;
+  color: white;
+  background: #315b7d;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .form-grid {
@@ -406,24 +499,91 @@ select {
 
 table {
   width: 100%;
+  overflow: hidden;
   border-collapse: collapse;
+  border-radius: 8px;
 }
 
 th,
 td {
-  padding: 13px 12px;
+  padding: 14px 16px;
   text-align: left;
   border-bottom: 1px solid #e4e7ec;
 }
 
 th {
-  background: #f8fafc;
+  color: #ffffff;
+  font-weight: 700;
+  background-color: #4b3c34;
+  border-bottom: 2px solid #3b2f29;
+}
+
+td {
+  color: #344054;
+  background-color: #ffffff;
+}
+
+tbody tr:hover td {
+  background-color: #faf7f2;
+}
+
+.empty {
+  padding: 35px;
+  text-align: center;
+  color: #667085;
 }
 
 .status {
   display: inline-block;
-  padding: 5px 10px;
-  border-radius: 20px;
+  min-width: 64px;
+  padding: 6px 12px;
+  color: #475467;
+  text-align: center;
+  white-space: nowrap;
+  background-color: #f2f4f7;
+  border-radius: 999px;
+}
+
+/* 可入住：綠色 */
+.status.available {
+  color: #087443;
+  background-color: #e7f8ef;
+}
+
+/* 已預訂：紫色 */
+.status.reserved {
+  color: #6941c6;
+  background-color: #f0eaff;
+}
+
+/* 已入住：藍色 */
+.status.occupied {
+  color: #175cd3;
+  background-color: #eaf2ff;
+}
+
+/* 退房待清潔：橘色 */
+.status.checkout-cleaning {
+  color: #b54708;
+  background-color: #fff0df;
+}
+
+/* 清潔中：黃色 */
+.status.cleaning {
+  color: #9a6700;
+  background-color: #fff4ce;
+}
+
+/* 維修中：紅色 */
+.status.maintenance {
+  color: #b42318;
+  background-color: #feeceb;
+}
+
+/* 停用：灰色 */
+.status.disabled {
+  color: #475467;
+  background-color: #e4e7ec;
 }
 
 .available {
@@ -452,6 +612,16 @@ th {
 }
 
 @media (max-width: 768px) {
+  .room-page {
+    padding: 16px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }

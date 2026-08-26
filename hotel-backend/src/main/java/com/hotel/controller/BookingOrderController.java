@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hotel.model.entity.BookingOrder;
 import com.hotel.service.BookingOrderService;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @RestController
 @RequestMapping("/api/booking-orders")
 public class BookingOrderController {
@@ -29,27 +31,42 @@ public class BookingOrderController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getBookingOrders(
+    public ResponseEntity<List<BookingOrder>> getBookingOrders(
             @RequestParam(required = false) Integer bookingOrderId,
-            @RequestParam(required = false) Integer memberId,
-            @RequestParam(required = false) String orderStatus) {
-        try {
-            List<BookingOrder> list = bookingOrderService.search(bookingOrderId, memberId, orderStatus);
+            @RequestParam(required = false) Integer memberId) {
+
+        // 1. 依 bookingOrderId 查詢 (回傳單筆封裝成 List)
+        if (bookingOrderId != null) {
+            List<BookingOrder> list = bookingOrderService.findOptionalById(bookingOrderId)
+                    .map(List::of)
+                    .orElse(List.of());
             return ResponseEntity.ok(list);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "查詢失敗：" + e.getMessage()));
         }
+
+        // 2. 依 memberId 查詢
+        if (memberId != null) {
+            return ResponseEntity.ok(bookingOrderService.findByMemberId(memberId));
+        }
+
+        // 3. 預設查全部
+        return ResponseEntity.ok(bookingOrderService.findAll());
     }
 
     // 3. 新增預訂訂單 (POST /api/booking-orders)
     @PostMapping
     public ResponseEntity<?> createBookingOrder(@RequestBody BookingOrder bookingOrder) {
         try {
-            // 純 FK 模式下，不需做複雜的 entity 補值 (prepareBookingOrder)，直接 insert
+            // 確保新增時 ID 為空，由資料庫自動遞增
+            bookingOrder.setBookingOrderId(null);
+
             BookingOrder savedOrder = bookingOrderService.insert(bookingOrder);
-            return ResponseEntity.ok(savedOrder);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
         } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.contains("FK_")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "外鍵約束錯誤：請確認關聯的會員 ID 是否存在！"));
+            }
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "新增訂單失敗：" + e.getMessage()));
         }
@@ -59,9 +76,11 @@ public class BookingOrderController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBookingOrder(@PathVariable Integer id, @RequestBody BookingOrder bookingOrder) {
         try {
-            bookingOrder.setBookingOrderId(id);
             BookingOrder updatedOrder = bookingOrderService.update(id, bookingOrder);
             return ResponseEntity.ok(updatedOrder);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "更新訂單失敗：" + e.getMessage()));
@@ -74,33 +93,12 @@ public class BookingOrderController {
         try {
             bookingOrderService.deleteById(id);
             return ResponseEntity.ok(Map.of("message", "訂單已成功刪除！"));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            // 在後端 Console 印出完整的 Exception 堆疊追蹤，方便除錯
-            e.printStackTrace();
-
-            // 將具體的錯誤訊息回傳給前端，不再寫死提示字串
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "刪除失敗：" + e.getMessage()));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "刪除失敗：該訂單可能已被其他資料關聯或無法被級聯刪除！"));
         }
     }
-
-    /**
-     * 輔助方法：處理時間設定與 JPA 雙向關聯外鍵
-     * //
-     */
-    // private void prepareBookingOrder(BookingOrder bookingOrder) {
-    // if (bookingOrder.getCreatedAt() == null) {
-    // bookingOrder.setCreatedAt(LocalDateTime.now());
-    // }
-
-    // if (bookingOrder.getBookings() != null) {
-    // List<Booking> validBookings = bookingOrder.getBookings().stream()
-    // .filter(b -> b.getCheckInDate() != null && b.getCheckOutDate() != null)
-    // .peek(b -> b.setBookingOrder(bookingOrder)) // 確保每一個子 Booking 都綁定父層物件
-    // .collect(Collectors.toList());
-
-    // bookingOrder.getBookings().clear();
-    // bookingOrder.getBookings().addAll(validBookings);
-    // }
-    // }
 }
