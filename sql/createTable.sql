@@ -214,7 +214,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[permission](
-	[permission_id] [int] NOT NULL,
+	[permission_id] [int] IDENTITY(1,1) NOT NULL,
 	[permission_code] [nvarchar](50) NOT NULL,
 	[permission_name] [nvarchar](50) NOT NULL,
  CONSTRAINT [PK_permission] PRIMARY KEY CLUSTERED 
@@ -526,11 +526,6 @@ ALTER TABLE [dbo].[order_item]  WITH CHECK ADD  CONSTRAINT [FK_order_item_produc
 REFERENCES [dbo].[product] ([product_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_product]
-GO
-ALTER TABLE [dbo].[payment]  WITH CHECK ADD  CONSTRAINT [FK_payment_member] FOREIGN KEY([member_id])
-REFERENCES [dbo].[member] ([member_id])
-GO
-ALTER TABLE [dbo].[payment] CHECK CONSTRAINT [FK_payment_member]
 GO
 ALTER TABLE [dbo].[profile]  WITH CHECK ADD  CONSTRAINT [FK_user_profile_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
