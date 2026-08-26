@@ -2,6 +2,7 @@ package com.hotel.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -94,6 +95,30 @@ public class OrderApiController {
 
         return orderService
                 .getOrdersByMemberId(memberId);
+    }
+
+    // 修改訂單商品數量
+    @PutMapping("/{orderId}/items/{productId}")
+    public void updateOrderItemQuantity(
+            @PathVariable Integer orderId,
+            @PathVariable Integer productId,
+            @RequestParam Integer quantity) {
+
+        orderService.updateOrderItemQuantity(
+                orderId,
+                productId,
+                quantity);
+    }
+
+    // 刪除訂單商品
+    @DeleteMapping("/{orderId}/items/{productId}")
+    public void deleteOrderItem(
+            @PathVariable Integer orderId,
+            @PathVariable Integer productId) {
+
+        orderService.deleteOrderItem(
+                orderId,
+                productId);
     }
 
 }
