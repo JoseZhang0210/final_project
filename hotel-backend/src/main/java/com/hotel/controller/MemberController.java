@@ -34,8 +34,8 @@ public class MemberController {
     // 1. 查詢會員列表（支援關鍵字與狀態篩選）
     // GET /api/members
     // 例如：GET /api/members
-    // GET /api/members?keyword=王小明
-    // GET /api/members?status=1
+    //      GET /api/members?keyword=王小明
+    //      GET /api/members?status=1
     // =========================================
     @GetMapping
     public ResponseEntity<List<MemberDTO>> findAllMembers(
@@ -167,3 +167,4 @@ public class MemberController {
         }
     }
 }
+

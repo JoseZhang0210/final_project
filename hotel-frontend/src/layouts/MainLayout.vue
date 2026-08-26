@@ -1,26 +1,10 @@
 <script setup>
-import { useRouter } from "vue-router";
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter();
+const authStore = useAuthStore();
+const { isLoggedIn } = storeToRefs(authStore);
 
-async function logout() {
-  try {
-    const response = await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (response.ok) {
-      router.push("/login");
-    } else {
-      alert("登出失敗");
-    }
-  } catch (error) {
-    console.error(error);
-
-    alert("登出失敗");
-  }
-}
 </script>
 <template>
   <div class="layout">
@@ -38,11 +22,15 @@ async function logout() {
 
         <RouterLink to="/restaurant-menu"> 餐廳 </RouterLink>
 
-        <RouterLink to="/register"> 註冊 </RouterLink>
+        <template v-if="!isLoggedIn">
+          <RouterLink to="/register"> 註冊 </RouterLink>
+          <RouterLink to="/login"> 登入 </RouterLink>
+        </template>
 
-        <RouterLink to="/login"> 登入 </RouterLink>
-
-        <RouterLink to="/logout"> 登出 </RouterLink>
+        <template v-else>
+          <RouterLink to="/logout"> 登出 </RouterLink>
+          <RouterLink to="/admin"> 前往後台 </RouterLink>
+        </template>
       </nav>
     </header>
 
