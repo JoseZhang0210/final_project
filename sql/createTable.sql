@@ -202,7 +202,6 @@ GO CREATE TABLE [dbo].[member](
 	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[order]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-	/****** 物件: Table [dbo].[order] ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON

@@ -128,7 +128,7 @@ async function loadOrders() {
   try {
     // 目前期中測試先固定
     // 之後換成真正登入會員
-    const memberId = 3;
+    const memberId = 1;
 
     const response =
       await fetch(
@@ -144,6 +144,57 @@ async function loadOrders() {
         "訂單讀取失敗"
       );
     }
+
+// ===============================
+// try {
+//   const memberId =
+//     Number(
+//       localStorage.getItem("memberId")
+//     );
+
+//   if (!memberId) {
+//     throw new Error(
+//       "找不到登入會員資料"
+//     );
+//   }
+
+//   const response =
+//     await fetch(
+//       `http://localhost:8081/api/orders/member/${memberId}`,
+//       {
+//         method: "GET",
+//         headers: getAuthHeaders(),
+//       }
+//     );
+
+//   if (!response.ok) {
+//     throw new Error(
+//       "訂單讀取失敗"
+//     );
+//   }
+
+//   const data =
+//     await response.json();
+
+//   orders.value =
+//     Array.isArray(data)
+//       ? data
+//       : [];
+
+// } catch (error) {
+//   console.error(error);
+
+//   errorMessage.value =
+//     error.message ||
+//     "訂單讀取失敗";
+// }
+// ===========================
+
+
+
+
+
+
 
     const data =
       await response.json();
