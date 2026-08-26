@@ -1,4 +1,3 @@
-<
 <script setup>
 import { onMounted, ref } from "vue";
 
@@ -43,29 +42,6 @@ function getAuthHeaders() {
   return headers;
 }
 
-// 1. 取得所有房型列表 (GET /api/roomtypes)
-async function loadRoomTypes() {
-  try {
-    const response = await fetch(API_BASE_URL, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      showMessage(errorData.message || "載入房型資料失敗", "error");
-      return;
-    }
-
-    const data = await response.json();
-    roomTypes.value = Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("loadRoomTypes Error:", error);
-    showMessage("無法連線至房型 API", "error");
-  }
-}
-
 // 2. 新增與修改房型 (POST / PUT /api/roomtypes)
 async function saveRoomType() {
   if (!form.value.typeName.trim()) {
@@ -90,10 +66,9 @@ async function saveRoomType() {
 
   const isEdit = form.value.roomTypeId !== null;
   const url = isEdit
-    ? `${API_BASE_URL}/${form.value.roomTypeId}`
-    : API_BASE_URL;
+    ? `${ROOM_TYPE_API_URL}/${form.value.roomTypeId}`
+    : ROOM_TYPE_API_URL;
   const method = isEdit ? "PUT" : "POST";
-
   const payload = {
     roomTypeId: form.value.roomTypeId,
     typeName: form.value.typeName,
@@ -110,7 +85,6 @@ async function saveRoomType() {
       credentials: "include",
       body: JSON.stringify(payload),
     });
-
     const resData = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -164,7 +138,7 @@ async function deleteRoomType(id) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(`${ROOM_TYPE_API_URL}/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
       credentials: "include",
@@ -195,20 +169,6 @@ function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(price || 0);
 }
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
 async function loadRoomTypes() {
   loading.value = true;
   message.value = "";
@@ -237,9 +197,7 @@ async function loadRoomTypes() {
 
     const data = await response.json();
 
-    roomTypes.value = Array.isArray(data)
-      ? data
-      : data.content || [];
+    roomTypes.value = Array.isArray(data) ? data : data.content || [];
 
     console.log("SQL room_type 資料：", roomTypes.value);
   } catch (error) {
@@ -276,28 +234,56 @@ onMounted(() => {
         <div class="form-grid">
           <div class="form-group">
             <label for="typeName">房型名稱 *</label>
-            <input id="typeName" v-model.trim="form.typeName" type="text" placeholder="例如：豪華雙人房" required />
+            <input
+              id="typeName"
+              v-model.trim="form.typeName"
+              type="text"
+              placeholder="例如：豪華雙人房"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label for="bedType">床型 *</label>
-            <input id="bedType" v-model.trim="form.bedType" type="text" placeholder="例如：一張雙人床" required />
+            <input
+              id="bedType"
+              v-model.trim="form.bedType"
+              type="text"
+              placeholder="例如：一張雙人床"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label for="capacity">容納人數 *</label>
-            <input id="capacity" v-model.number="form.capacity" type="number" min="1" required />
+            <input
+              id="capacity"
+              v-model.number="form.capacity"
+              type="number"
+              min="1"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label for="pricePerNight">每晚價格 *</label>
-            <input id="pricePerNight" v-model.number="form.pricePerNight" type="number" min="0" required />
+            <input
+              id="pricePerNight"
+              v-model.number="form.pricePerNight"
+              type="number"
+              min="0"
+              required
+            />
           </div>
 
           <div class="form-group full-width">
             <label for="roomDescription">房型說明</label>
-            <textarea id="roomDescription" v-model.trim="form.roomDescription" rows="4"
-              placeholder="請輸入房型特色及設備說明"></textarea>
+            <textarea
+              id="roomDescription"
+              v-model.trim="form.roomDescription"
+              rows="4"
+              placeholder="請輸入房型特色及設備說明"
+            ></textarea>
           </div>
         </div>
 
@@ -338,7 +324,7 @@ onMounted(() => {
             <tr v-if="loading">
               <td colspan="6" class="empty">房型資料讀取中……</td>
             </tr>
-            <tr v-for="roomType in roomTypes" v-else:key="roomType.roomTypeId">
+            <tr v-for="roomType in roomTypes" :key="roomType.roomTypeId">
               <td>{{ roomType.roomTypeId }}</td>
               <td>{{ roomType.typeName }}</td>
               <td>{{ roomType.bedType }}</td>
@@ -347,20 +333,26 @@ onMounted(() => {
               <td>{{ roomType.roomDescription || "—" }}</td>
               <!--v-if="false" 隱藏-->
               <td v-if="false" class="action-cell">
-                <button type="button" class="btn edit" @click="editRoomType(roomType)">
+                <button
+                  type="button"
+                  class="btn edit"
+                  @click="editRoomType(roomType)"
+                >
                   修改
                 </button>
 
-                <button type="button" class="btn delete" @click="deleteRoomType(roomType.roomTypeId)">
+                <button
+                  type="button"
+                  class="btn delete"
+                  @click="deleteRoomType(roomType.roomTypeId)"
+                >
                   刪除
                 </button>
               </td>
             </tr>
 
             <tr v-if="!loading && roomTypes.length === 0">
-              <td colspan="6" class="empty">
-                目前沒有房型資料
-              </td>
+              <td colspan="6" class="empty">目前沒有房型資料</td>
             </tr>
           </tbody>
         </table>

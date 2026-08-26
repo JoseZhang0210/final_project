@@ -48,7 +48,7 @@ public class BookingOrder {
     @JsonIgnore
     private Member member;
 
-    @Column(name = "total_price", nullable = false)
+    @Column(name = "booking_total_price", nullable = false)
     private Integer bookingTotalPrice;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

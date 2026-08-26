@@ -232,7 +232,7 @@ onMounted(async () => {
 <template>
   <div class="page">
     <section class="hero">
-      <h1>訂房訂單管理</h1>
+      <h1>預訂訂房管理</h1>
       <p>管理顧客訂房訂單狀態、會員資料與訂單總金額。</p>
     </section>
 
@@ -243,12 +243,22 @@ onMounted(async () => {
         <div class="form-grid">
           <div class="form-group">
             <label>訂單 ID</label>
-            <input v-model="searchCriteria.bookingOrderId" type="number" min="1" placeholder="搜尋訂單 ID" />
+            <input
+              v-model="searchCriteria.bookingOrderId"
+              type="number"
+              min="1"
+              placeholder="搜尋訂單 ID"
+            />
           </div>
 
           <div class="form-group">
             <label>會員 ID</label>
-            <input v-model="searchCriteria.memberId" type="number" min="1" placeholder="搜尋會員 ID" />
+            <input
+              v-model="searchCriteria.memberId"
+              type="number"
+              min="1"
+              placeholder="搜尋會員 ID"
+            />
           </div>
 
           <div class="form-group">
@@ -280,17 +290,34 @@ onMounted(async () => {
           <div class="form-grid">
             <div class="form-group">
               <label>會員 ID *</label>
-              <input v-model="form.memberId" type="number" min="1" required placeholder="請輸入會員 ID" />
+              <input
+                v-model="form.memberId"
+                type="number"
+                min="1"
+                required
+                placeholder="請輸入會員 ID"
+              />
             </div>
 
             <div class="form-group">
               <label>訂單總金額</label>
-              <input v-model="form.bookingTotalPrice" type="number" min="0" step="0.01" placeholder="請輸入總金額" />
+              <input
+                v-model="form.bookingTotalPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="請輸入總金額"
+              />
             </div>
 
             <div class="form-group">
               <label>付款方式 ID</label>
-              <input v-model="form.paymentId" type="number" min="1" placeholder="請輸入付款方式 ID" />
+              <input
+                v-model="form.paymentId"
+                type="number"
+                min="1"
+                placeholder="請輸入付款方式 ID"
+              />
             </div>
 
             <div class="form-group">
@@ -339,13 +366,16 @@ onMounted(async () => {
                 <td colspan="7" class="empty">目前沒有訂單資料</td>
               </tr>
 
-              <tr v-for="order in bookingOrders" :key="order.bookingOrderId ?? order.booking_order_id">
+              <tr
+                v-for="order in bookingOrders"
+                :key="order.bookingOrderId ?? order.booking_order_id"
+              >
                 <td>{{ order.bookingOrderId ?? order.booking_order_id }}</td>
                 <td>{{ order.memberId ?? order.member_id ?? "" }}</td>
                 <td>
                   {{
                     (order.bookingTotalPrice ?? order.booking_total_price) !=
-                      null
+                    null
                       ? `$${Number(order.bookingTotalPrice ?? order.booking_total_price).toLocaleString()}`
                       : "-"
                   }}
@@ -359,11 +389,14 @@ onMounted(async () => {
                   <button class="btn-edit" @click="editBookingOrder(order)">
                     修改
                   </button>
-                  <button class="btn-delete" @click="
-                    deleteBookingOrder(
-                      order.bookingOrderId ?? order.booking_order_id,
-                    )
-                    ">
+                  <button
+                    class="btn-delete"
+                    @click="
+                      deleteBookingOrder(
+                        order.bookingOrderId ?? order.booking_order_id,
+                      )
+                    "
+                  >
                     刪除
                   </button>
                 </td>
@@ -390,7 +423,8 @@ onMounted(async () => {
   color: white;
   background:
     linear-gradient(rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.52)),
-    url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center / cover no-repeat;
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center /
+      cover no-repeat;
 }
 
 .hero h1 {
