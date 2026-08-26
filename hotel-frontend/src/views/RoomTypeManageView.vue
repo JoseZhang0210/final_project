@@ -1,3 +1,4 @@
+<
 <script setup>
 import { onMounted, ref } from "vue";
 
@@ -28,7 +29,45 @@ function clearForm() {
   formTitle.value = "新增房型";
 }
 
-function saveRoomType() {
+function showMessage(text, type) {
+  message.value = text;
+  messageType.value = type;
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
+  return headers;
+}
+
+// 1. 取得所有房型列表 (GET /api/roomtypes)
+async function loadRoomTypes() {
+  try {
+    const response = await fetch(API_BASE_URL, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      showMessage(errorData.message || "載入房型資料失敗", "error");
+      return;
+    }
+
+    const data = await response.json();
+    roomTypes.value = Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("loadRoomTypes Error:", error);
+    showMessage("無法連線至房型 API", "error");
+  }
+}
+
+// 2. 新增與修改房型 (POST / PUT /api/roomtypes)
+async function saveRoomType() {
   if (!form.value.typeName.trim()) {
     showMessage("請輸入房型名稱", "error");
     return;
@@ -49,42 +88,61 @@ function saveRoomType() {
     return;
   }
 
-  if (form.value.roomTypeId === null) {
-    const nextId =
-      roomTypes.value.length === 0
-        ? 1
-        : Math.max(...roomTypes.value.map((room) => room.roomTypeId)) + 1;
+  const isEdit = form.value.roomTypeId !== null;
+  const url = isEdit
+    ? `${API_BASE_URL}/${form.value.roomTypeId}`
+    : API_BASE_URL;
+  const method = isEdit ? "PUT" : "POST";
 
-    roomTypes.value.push({
-      ...form.value,
-      roomTypeId: nextId,
-      capacity: Number(form.value.capacity),
-      pricePerNight: Number(form.value.pricePerNight),
+  const payload = {
+    roomTypeId: form.value.roomTypeId,
+    typeName: form.value.typeName,
+    bedType: form.value.bedType,
+    capacity: Number(form.value.capacity),
+    pricePerNight: Number(form.value.pricePerNight),
+    roomDescription: form.value.roomDescription || "",
+  };
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: getAuthHeaders(),
+      credentials: "include",
+      body: JSON.stringify(payload),
     });
 
-    showMessage("房型新增成功", "success");
-  } else {
-    const index = roomTypes.value.findIndex(
-      (room) => room.roomTypeId === form.value.roomTypeId,
-    );
+    const resData = await response.json().catch(() => ({}));
 
-    if (index !== -1) {
-      roomTypes.value[index] = {
-        ...form.value,
-        capacity: Number(form.value.capacity),
-        pricePerNight: Number(form.value.pricePerNight),
-      };
+    if (!response.ok) {
+      showMessage(
+        resData.message || (isEdit ? "房型修改失敗" : "房型新增失敗"),
+        "error",
+      );
+      return;
     }
 
-    showMessage("房型修改成功", "success");
+    showMessage(isEdit ? "房型修改成功" : "房型新增成功", "success");
+    clearForm();
+    await loadRoomTypes();
+  } catch (error) {
+    console.error("saveRoomType Error:", error);
+    showMessage("無法連線至房型 API", "error");
   }
-
-  clearForm();
 }
 
+// 點擊修改：將資料填入表單
 function editRoomType(roomType) {
-  form.value = { ...roomType };
-  formTitle.value = `修改房型：${roomType.typeName}`;
+  form.value = {
+    roomTypeId: roomType.roomTypeId ?? roomType.room_type_id,
+    typeName: roomType.typeName ?? roomType.type_name ?? "",
+    bedType: roomType.bedType ?? roomType.bed_type ?? "",
+    capacity: roomType.capacity ?? 1,
+    pricePerNight: roomType.pricePerNight ?? roomType.price_per_night ?? 0,
+    roomDescription:
+      roomType.roomDescription ?? roomType.room_description ?? "",
+  };
+
+  formTitle.value = `修改房型：${form.value.typeName}`;
 
   window.scrollTo({
     top: 0,
@@ -92,27 +150,42 @@ function editRoomType(roomType) {
   });
 }
 
-function deleteRoomType(id) {
-  const roomType = roomTypes.value.find((room) => room.roomTypeId === id);
+// 3. 刪除房型 (DELETE /api/roomtypes/{id})
+async function deleteRoomType(id) {
+  const roomType = roomTypes.value.find(
+    (room) => (room.roomTypeId ?? room.room_type_id) === id,
+  );
+  const typeName = roomType
+    ? (roomType.typeName ?? roomType.type_name)
+    : `ID ${id}`;
 
-  if (!window.confirm(`確定要刪除「${roomType?.typeName}」嗎？`)) {
+  if (!window.confirm(`確定要刪除「${typeName}」嗎？`)) {
     return;
   }
 
-  roomTypes.value = roomTypes.value.filter(
-    (room) => room.roomTypeId !== id,
-  );
+  try {
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: "include",
+    });
 
-  if (form.value.roomTypeId === id) {
-    clearForm();
+    const resData = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      showMessage(resData.message || "刪除失敗", "error");
+      return;
+    }
+
+    showMessage(resData.message || "房型已刪除", "success");
+    if (form.value.roomTypeId === id) {
+      clearForm();
+    }
+    await loadRoomTypes();
+  } catch (error) {
+    console.error("deleteRoomType Error:", error);
+    showMessage("無法連線至房型 API", "error");
   }
-
-  showMessage("房型已刪除", "success");
-}
-
-function showMessage(text, type) {
-  message.value = text;
-  messageType.value = type;
 }
 
 function formatPrice(price) {
@@ -120,7 +193,7 @@ function formatPrice(price) {
     style: "currency",
     currency: "TWD",
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(price || 0);
 }
 function getAuthHeaders() {
   const token = localStorage.getItem("token");

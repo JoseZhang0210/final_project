@@ -178,15 +178,14 @@ async function saveBookingOrder() {
 
 // 帶入編輯資料
 function editBookingOrder(order) {
-  const orderId = order.bookingOrderId ?? order.booking_order_id;
+  const orderId = order.bookingOrderId;
   form.value = {
     bookingOrderId: orderId,
-    memberId: order.memberId ?? order.member_id ?? "",
-    orderStatus: order.orderStatus ?? order.order_status ?? "待付款",
-    bookingTotalPrice:
-      order.bookingTotalPrice ?? order.booking_total_price ?? "",
-    paymentId: order.paymentId ?? order.payment_id ?? "",
-    createdAt: order.createdAt ?? order.created_at ?? "",
+    memberId: order.memberId,
+    orderStatus: order.orderStatus,
+    bookingTotalPrice: order.bookingTotalPrice,
+    paymentId: order.paymentId,
+    createdAt: order.createdAt,
   };
 
   formTitle.value = `修改訂單`;

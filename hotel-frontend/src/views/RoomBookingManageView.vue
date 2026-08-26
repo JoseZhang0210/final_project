@@ -23,13 +23,13 @@ const searchCriteria = ref({
   status: "",
 });
 
-const bookingStatuses = ["待確認", "已預訂", "待入住", "已入住", "已完成", "已取消",];
+const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
 
 const form = ref(createEmptyForm());
 
 function createEmptyForm() {
   return {
-    bookingId: null,
+    bookingId: "",
     bookingOrderId: "",
     roomTypeId: "",
     roomId: "",
@@ -37,10 +37,11 @@ function createEmptyForm() {
     checkOutDate: "",
     guestNum: 1,
     bookingPrice: 0,
-    bookingStatus: "待確認",
+    bookingStatus: "待入住",
   };
 }
 
+// 支援駝峰與底線命名格式
 const availableRooms = computed(() => {
   if (!form.value.roomTypeId) {
     return [];
@@ -192,6 +193,7 @@ function getRoomTypeName(roomTypeId) {
     roomTypes.value.find((item) => item.roomTypeId === Number(roomTypeId))
       ?.typeName ?? `房型 ${roomTypeId}`
   );
+  return found ? (found.typeName ?? found.type_name) : `編號 ${roomTypeId}`;
 }
 
 function getRoomNumber(roomId) {
@@ -200,12 +202,16 @@ function getRoomNumber(roomId) {
     rooms.value.find((item) => item.roomId === Number(roomId))?.roomNumber ??
     `房號 ${roomId}`
   );
+  return found ? (found.roomNumber ?? found.room_number) : `編號 ${roomId}`;
 }
 
 function changeRoomType() {
+  // 1. 清空已選擇的房號
   form.value.roomId = "";
   const selectedRoomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(form.value.roomTypeId),
+    (item) =>
+      Number(item.roomTypeId ?? item.room_type_id) ===
+      Number(form.value.roomTypeId),
   );
   if (selectedRoomType && form.value.guestNum > selectedRoomType.capacity) {
     form.value.guestNum = selectedRoomType.capacity;
@@ -214,8 +220,17 @@ function changeRoomType() {
 }
 
 function calculatePrice() {
+  // 1. 防呆：若未選擇房型或住宿天數小於等於 0，價格歸零
+  if (!form.value.roomTypeId || stayNights.value <= 0) {
+    form.value.bookingPrice = 0;
+    return;
+  }
+
+  // 2. 尋找匹配的房型物件（相容駝峰與底線命名）
   const selectedRoomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(form.value.roomTypeId),
+    (item) =>
+      Number(item.roomTypeId ?? item.room_type_id) ===
+      Number(form.value.roomTypeId),
   );
   if (!selectedRoomType || stayNights.value === 0) {
     form.value.bookingPrice = 0;
@@ -288,7 +303,6 @@ async function saveBooking() {
     showMessage("無法連線至預訂 API", "error");
   }
 }
-
 function editBooking(booking) {
   form.value = {
     bookingId: booking.bookingId,
