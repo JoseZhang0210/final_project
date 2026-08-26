@@ -969,3 +969,14 @@ INSERT INTO room_task (
 (4,   27, N'緊急', N'設備維修', N'進行中', N'冷氣不冷',                 '2026-08-23 16:00:00', NULL),
 (14,  28, N'重要', N'設備維修', N'待處理', N'馬桶堵塞',                 '2026-08-23 16:30:00', NULL);
 GO
+/* =========================================================
+   24. rental_payment 供 rental 使用的 payment
+   ========================================================= */
+SET IDENTITY_INSERT [dbo].[rental_payment] ON 
+GO
+INSERT [dbo].[rental_payment] ([payment_id], [payment_method], [payment_time], [total_price], [payment_status], [member_id]) VALUES (1, NULL, NULL, 50000, N'待付款', 1)
+GO
+INSERT [dbo].[rental_payment] ([payment_id], [payment_method], [payment_time], [total_price], [payment_status], [member_id]) VALUES (2, NULL, NULL, 12000, N'待付款', 1)
+GO
+SET IDENTITY_INSERT [dbo].[rental_payment] OFF
+GO

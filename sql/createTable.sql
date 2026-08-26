@@ -451,6 +451,16 @@ CREATE TABLE [dbo].[venue](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+/****** 物件:  Table [dbo].[rental_payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE rental_payment (
+    payment_id INT IDENTITY(1,1) PRIMARY KEY,
+    payment_method VARCHAR(50),
+    payment_time DATETIME2,
+    total_price INT,
+    payment_status VARCHAR(20),
+    member_id INT
+)
+GO
 ALTER TABLE [dbo].[account] ADD  CONSTRAINT [DF__account__status__4F7CD00D]  DEFAULT ('ACTIVE') FOR [status]
 GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__creat__5FB337D6]  DEFAULT (getdate()) FOR [created_at]
@@ -537,10 +547,10 @@ REFERENCES [dbo].[member] ([member_id])
 GO
 ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_member]
 GO
-ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_payment] FOREIGN KEY([payment_id])
-REFERENCES [dbo].[payment] ([payment_id])
+ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_rental_payment] FOREIGN KEY([payment_id])
+REFERENCES [dbo].[rental_payment] ([payment_id])
 GO
-ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_payment]
+ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_rental_payment]
 GO
 ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_venue] FOREIGN KEY([venue_id])
 REFERENCES [dbo].[venue] ([venue_id])
