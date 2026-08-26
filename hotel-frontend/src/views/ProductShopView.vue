@@ -1,13 +1,22 @@
 <template>
   <div class="shop-page">
     <!-- =========================
-         搜尋區
+         商城 Hero
          ========================= -->
+    <section class="shop-hero">
+      <div class="hero-overlay"></div>
 
-    <section class="shop-top">
-      <div class="shop-search-wrap">
-        <div class="shop-title">星澄飯店商城</div>
+      <div class="hero-container">
+        <!-- 標題 -->
+        <div class="hero-content">
+          <span class="hero-eyebrow"> STARLIGHT HOTEL SHOP </span>
 
+          <h1>星澄飯店嚴選商城</h1>
+
+          <p>將旅途中喜愛的質感帶回生活， 精選飯店用品、特色商品與限定好物。</p>
+        </div>
+
+        <!-- 搜尋 -->
         <div class="shop-search">
           <input
             v-model="keyword"
@@ -18,91 +27,71 @@
 
           <button type="button" @click="searchProducts">搜尋</button>
         </div>
+
+        <!-- 商品分類 -->
+        <div class="category-list">
+          <button
+            type="button"
+            class="category-button"
+            :class="{
+              active: selectedCategory === null,
+            }"
+            @click="selectCategory(null)"
+          >
+            全部商品
+          </button>
+
+          <button
+            v-for="category in categories"
+            :key="category.categoryId"
+            type="button"
+            class="category-button"
+            :class="{
+              active: selectedCategory === category.categoryId,
+            }"
+            @click="selectCategory(category.categoryId)"
+          >
+            {{ category.categoryName }}
+          </button>
+        </div>
       </div>
     </section>
 
     <!-- =========================
-         商品分類
+         商品主要內容
          ========================= -->
-
-    <section class="category-section">
-      <div class="category-list">
-        <button
-          type="button"
-          class="category-button"
-          :class="{
-            active: selectedCategory === null,
-          }"
-          @click="selectCategory(null)"
-        >
-          全部商品
-        </button>
-
-        <button
-          v-for="category in categories"
-          :key="category.categoryId"
-          type="button"
-          class="category-button"
-          :class="{
-            active: selectedCategory === category.categoryId,
-          }"
-          @click="selectCategory(category.categoryId)"
-        >
-          {{ category.categoryName }}
-        </button>
-      </div>
-    </section>
-
-    <!-- =========================
-         Banner
-         ========================= -->
-
-    <section class="shop-banner">
-      <div class="banner-content">
-        <span class="banner-small"> HOTEL SHOP </span>
-
-        <h1>星澄飯店嚴選商城</h1>
-
-        <p>精選飯店好物、質感生活用品與限定商品</p>
-
-        <button type="button" @click="scrollToProducts">立即選購</button>
-      </div>
-    </section>
-
-    <!-- =========================
-         商品區
-         ========================= -->
-
     <main ref="productSection" class="product-section">
+      <!-- 商品標題 -->
       <div class="product-section-header">
         <div>
+          <span class="section-eyebrow"> HOTEL COLLECTION </span>
+
           <h2>
             {{ selectedCategoryName }}
           </h2>
+        </div>
 
-          <p>
-            共
+        <div class="product-count">
+          共
+          <strong>
             {{ filteredProducts.length }}
-            件商品
-          </p>
+          </strong>
+          件商品
         </div>
       </div>
 
       <!-- API 錯誤 -->
-
-      <div v-if="errorMessage" class="error-message">
+      <div v-if="errorMessage" class="state-message error-message">
         {{ errorMessage }}
       </div>
 
       <!-- Loading -->
+      <div v-if="loading" class="state-message">商品資料讀取中...</div>
 
-      <div v-if="loading" class="loading-message">商品資料讀取中...</div>
-
-      <!-- 查無商品 -->
-
+      <!-- 沒商品 -->
       <div
         v-else-if="!errorMessage && filteredProducts.length === 0"
-        class="empty-message"
+        class="state-message"
       >
         查無商品資料
       </div>
@@ -110,7 +99,6 @@
       <!-- =========================
            商品 Grid
            ========================= -->
-
       <div v-else-if="!errorMessage" class="product-grid">
         <article
           v-for="product in filteredProducts"
@@ -118,10 +106,7 @@
           class="product-card"
           @click="goProductDetail(product.productId)"
         >
-          <!-- =========================
-               商品圖片
-               ========================= -->
-
+          <!-- 商品圖片 -->
           <div class="product-image-wrap">
             <img
               :src="getProductImage(product)"
@@ -131,7 +116,6 @@
             />
 
             <!-- 缺貨 -->
-
             <span
               v-if="
                 product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
@@ -142,7 +126,6 @@
             </span>
 
             <!-- 庫存少 -->
-
             <span
               v-else-if="Number(product.stock) <= 5"
               class="product-badge stock-low"
@@ -151,13 +134,10 @@
             </span>
           </div>
 
-          <!-- =========================
-               商品資訊
-               ========================= -->
-
+          <!-- 商品資訊 -->
           <div class="product-info">
             <div class="product-category">
-              {{ product.category?.categoryName || "飯店商城" }}
+              {{ product.category?.categoryName || "星澄嚴選" }}
             </div>
 
             <h3 class="product-name">
@@ -168,24 +148,19 @@
               {{ product.description || "星澄飯店精選商品" }}
             </p>
 
-            <div class="product-bottom">
-              <!-- 價格 -->
-
+            <div class="product-meta">
               <div class="price-area">
-                <span class="currency"> $ </span>
+                <span class="currency"> NT$ </span>
 
                 <strong>
                   {{ formatPrice(product.price) }}
                 </strong>
               </div>
 
-              <!-- 庫存 -->
-
-              <div class="stock-text">
+              <span class="stock-text">
                 庫存
-
                 {{ product.stock ?? 0 }}
-              </div>
+              </span>
             </div>
 
             <button
@@ -575,67 +550,130 @@ onMounted(async () => {
 
 <style scoped>
 /* =====================================================
-   整體商城
+   整體
    ===================================================== */
 
 .shop-page {
   min-height: 100vh;
 
-  background-color: #f5f5f5;
+  background: #f8f6f1;
 
-  color: #333;
+  color: #3f382f;
+}
+
+/* =====================================================
+   Hero
+   ===================================================== */
+
+.shop-hero {
+  position: relative;
+
+  min-height: 430px;
+
+  display: flex;
+
+  align-items: center;
+
+  overflow: hidden;
+
+  background: url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85")
+    center / cover no-repeat;
+}
+
+.hero-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(
+    90deg,
+    rgba(31, 25, 18, 0.88) 0%,
+    rgba(31, 25, 18, 0.68) 42%,
+    rgba(31, 25, 18, 0.22) 100%
+  );
+}
+
+.hero-container {
+  position: relative;
+
+  z-index: 1;
+
+  width: min(1180px, 90%);
+
+  margin: 0 auto;
+
+  padding: 72px 0 48px;
+}
+
+/* =====================================================
+   Hero 文字
+   ===================================================== */
+
+.hero-content {
+  width: 100%;
+  max-width: 680px;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+
+  margin-bottom: 13px;
+
+  color: #dfc58c;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  letter-spacing: 4px;
+}
+
+.hero-content h1 {
+  margin: 0 0 14px;
+
+  color: white;
+
+  font-size: clamp(36px, 5vw, 54px);
+
+  line-height: 1.2;
+
+  letter-spacing: 2px;
+}
+
+.hero-content p {
+  max-width: 560px;
+
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.82);
+
+  font-size: 16px;
+
+  line-height: 1.9;
 }
 
 /* =====================================================
    搜尋
    ===================================================== */
 
-.shop-top {
-  background-color: white;
-
-  border-bottom: 1px solid #eeeeee;
-}
-
-.shop-search-wrap {
-  width: min(1200px, 92%);
-
-  min-height: 92px;
-
-  margin: 0 auto;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 50px;
-}
-
-.shop-title {
-  flex-shrink: 0;
-
-  color: #9b7435;
-
-  font-size: 27px;
-
-  font-weight: bold;
-
-  letter-spacing: 2px;
-}
-
 .shop-search {
   width: 100%;
 
-  max-width: 650px;
+  max-width: 680px;
+
+  height: 54px;
+
+  margin-top: 30px;
 
   display: flex;
 
   overflow: hidden;
 
-  background-color: white;
+  background: rgba(255, 255, 255, 0.96);
 
-  border: 2px solid #b58a46;
+  border-radius: 8px;
 
-  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
 }
 
 .shop-search input {
@@ -643,27 +681,33 @@ onMounted(async () => {
 
   min-width: 0;
 
-  padding: 14px 18px;
+  padding: 0 20px;
 
   border: none;
 
   outline: none;
 
+  background: transparent;
+
+  color: #443a31;
+
   font-size: 15px;
 }
 
+.shop-search input::placeholder {
+  color: #aaa39a;
+}
+
 .shop-search button {
-  width: 95px;
+  width: 110px;
 
   border: none;
 
-  background-color: #b58a46;
+  background: #b58a46;
 
   color: white;
 
-  font-size: 15px;
-
-  font-weight: bold;
+  font-weight: 700;
 
   cursor: pointer;
 
@@ -671,31 +715,32 @@ onMounted(async () => {
 }
 
 .shop-search button:hover {
-  background-color: #8f692f;
+  background: #9d7438;
 }
 
 /* =====================================================
-   商品分類
+   分類
    ===================================================== */
 
-.category-section {
-  background-color: white;
-
-  border-bottom: 1px solid #eeeeee;
-}
-
 .category-list {
-  width: min(1200px, 92%);
+  width: 100%;
+  max-width: 680px;
 
-  margin: auto;
-
-  padding: 12px 0;
+  margin-top: 20px;
 
   display: flex;
 
-  gap: 7px;
+  gap: 9px;
 
   overflow-x: auto;
+
+  padding-bottom: 3px;
+
+  scrollbar-width: none;
+}
+
+.category-list::-webkit-scrollbar {
+  display: none;
 }
 
 .category-button {
@@ -703,15 +748,17 @@ onMounted(async () => {
 
   padding: 9px 17px;
 
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.32);
 
-  border-radius: 20px;
+  border-radius: 30px;
 
-  background-color: transparent;
+  background: rgba(255, 255, 255, 0.1);
 
-  color: #555;
+  backdrop-filter: blur(6px);
 
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+
+  font-size: 13px;
 
   cursor: pointer;
 
@@ -719,116 +766,87 @@ onMounted(async () => {
 }
 
 .category-button:hover {
-  background-color: #f3eadc;
+  border-color: #dabe82;
 
-  color: #8f692f;
+  background: rgba(181, 138, 70, 0.35);
+
+  color: white;
 }
 
 .category-button.active {
-  background-color: #b58a46;
+  border-color: #b58a46;
+
+  background: #b58a46;
 
   color: white;
 }
 
 /* =====================================================
-   Banner
+   商品內容
    ===================================================== */
 
-.shop-banner {
-  min-height: 320px;
+.product-section {
+  width: min(1180px, 90%);
 
+  margin: 0 auto;
+
+  padding: 60px 0 90px;
+}
+
+/* =====================================================
+   商品標題
+   ===================================================== */
+
+.product-section-header {
   display: flex;
 
-  align-items: center;
+  justify-content: space-between;
 
-  background:
-    linear-gradient(90deg, rgba(25, 20, 15, 0.78), rgba(25, 20, 15, 0.25)),
-    url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85")
-      center / cover no-repeat;
+  align-items: flex-end;
+
+  gap: 20px;
+
+  margin-bottom: 28px;
+
+  padding-bottom: 17px;
+
+  border-bottom: 1px solid #ded8cf;
 }
 
-.banner-content {
-  width: min(1200px, 92%);
+.section-eyebrow {
+  display: block;
 
-  margin: auto;
+  margin-bottom: 7px;
 
-  color: white;
-}
+  color: #b58a46;
 
-.banner-small {
-  color: #e5c887;
+  font-size: 11px;
 
-  font-size: 13px;
-
-  font-weight: bold;
+  font-weight: 700;
 
   letter-spacing: 3px;
 }
 
-.banner-content h1 {
-  margin: 12px 0;
-
-  color: white;
-
-  font-size: 42px;
-}
-
-.banner-content p {
-  margin-bottom: 24px;
-
-  color: #eeeeee;
-
-  font-size: 17px;
-}
-
-.banner-content button {
-  padding: 12px 24px;
-
-  border: none;
-
-  border-radius: 5px;
-
-  background-color: #b58a46;
-
-  color: white;
-
-  font-weight: bold;
-
-  cursor: pointer;
-}
-
-.banner-content button:hover {
-  background-color: #8f692f;
-}
-
-/* =====================================================
-   商品區
-   ===================================================== */
-
-.product-section {
-  width: min(1200px, 92%);
-
-  margin: 38px auto 70px;
-}
-
-.product-section-header {
-  margin-bottom: 20px;
-}
-
 .product-section-header h2 {
-  margin: 0 0 5px;
+  margin: 0;
 
   color: #4a3b2a;
 
-  font-size: 25px;
+  font-size: 28px;
+
+  font-weight: 700;
 }
 
-.product-section-header p {
-  margin: 0;
-
-  color: #888888;
+.product-count {
+  color: #92887d;
 
   font-size: 14px;
+}
+
+.product-count strong {
+  color: #9b7435;
+
+  font-size: 17px;
 }
 
 /* =====================================================
@@ -840,7 +858,7 @@ onMounted(async () => {
 
   grid-template-columns: repeat(4, minmax(0, 1fr));
 
-  gap: 16px;
+  gap: 24px;
 }
 
 /* =====================================================
@@ -850,21 +868,29 @@ onMounted(async () => {
 .product-card {
   overflow: hidden;
 
-  background-color: white;
+  display: flex;
 
-  border: 1px solid #eeeeee;
+  flex-direction: column;
+
+  background: white;
+
+  border: 1px solid rgba(94, 75, 52, 0.1);
+
+  border-radius: 12px;
+
+  box-shadow: 0 3px 14px rgba(70, 55, 38, 0.05);
 
   cursor: pointer;
 
   transition:
-    transform 0.25s,
-    box-shadow 0.25s;
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
 
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 14px 35px rgba(70, 55, 38, 0.13);
 }
 
 /* =====================================================
@@ -876,11 +902,11 @@ onMounted(async () => {
 
   width: 100%;
 
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
 
   overflow: hidden;
 
-  background-color: #f7f7f7;
+  background: #eeeae4;
 }
 
 .product-image {
@@ -888,43 +914,47 @@ onMounted(async () => {
 
   height: 100%;
 
+  display: block;
+
   object-fit: cover;
 
-  transition: transform 0.35s;
+  transition: transform 0.45s ease;
 }
 
 .product-card:hover .product-image {
-  transform: scale(1.04);
+  transform: scale(1.055);
 }
 
 /* =====================================================
-   商品狀態 Badge
+   Badge
    ===================================================== */
 
 .product-badge {
   position: absolute;
 
-  top: 10px;
+  top: 12px;
 
-  left: 10px;
+  left: 12px;
 
-  padding: 5px 9px;
+  padding: 6px 11px;
 
-  border-radius: 4px;
+  border-radius: 30px;
 
   color: white;
 
-  font-size: 12px;
+  font-size: 11px;
 
-  font-weight: bold;
+  font-weight: 700;
+
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
 }
 
 .sold-out {
-  background-color: #777777;
+  background: rgba(69, 65, 60, 0.9);
 }
 
 .stock-low {
-  background-color: #b3443c;
+  background: #a95647;
 }
 
 /* =====================================================
@@ -932,27 +962,37 @@ onMounted(async () => {
    ===================================================== */
 
 .product-info {
-  padding: 15px;
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  padding: 19px 18px 18px;
 }
 
 .product-category {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 
-  color: #999999;
+  color: #b58a46;
 
-  font-size: 12px;
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
 }
 
 .product-name {
-  min-height: 44px;
+  min-height: 46px;
 
-  margin: 0 0 8px;
+  margin: 0 0 9px;
 
-  color: #333333;
+  color: #40382f;
 
-  font-size: 16px;
+  font-size: 17px;
 
-  line-height: 1.4;
+  line-height: 1.45;
 
   display: -webkit-box;
 
@@ -964,15 +1004,15 @@ onMounted(async () => {
 }
 
 .product-description {
-  min-height: 38px;
+  min-height: 42px;
 
-  margin: 0 0 13px;
+  margin: 0 0 18px;
 
-  color: #777777;
+  color: #8a8178;
 
   font-size: 13px;
 
-  line-height: 1.5;
+  line-height: 1.65;
 
   display: -webkit-box;
 
@@ -984,41 +1024,51 @@ onMounted(async () => {
 }
 
 /* =====================================================
-   價格
+   價格 / 庫存
    ===================================================== */
 
-.product-bottom {
+.product-meta {
+  margin-top: auto;
+
   display: flex;
 
   justify-content: space-between;
 
-  align-items: end;
+  align-items: flex-end;
 
   gap: 10px;
 
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .price-area {
-  color: #b3443c;
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 5px;
+
+  color: #9c6934;
 }
 
 .currency {
-  font-size: 15px;
+  font-size: 12px;
 
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .price-area strong {
   font-size: 25px;
 
-  font-weight: bold;
+  line-height: 1;
+
+  font-weight: 700;
 }
 
 .stock-text {
-  color: #999999;
+  color: #a39b92;
 
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* =====================================================
@@ -1028,33 +1078,37 @@ onMounted(async () => {
 .product-button {
   width: 100%;
 
-  padding: 10px;
+  padding: 11px 14px;
 
   border: 1px solid #b58a46;
 
-  background-color: white;
+  border-radius: 6px;
+
+  background: transparent;
 
   color: #9b7435;
 
-  font-weight: bold;
+  font-size: 13px;
+
+  font-weight: 700;
 
   cursor: pointer;
 
   transition: 0.2s;
 }
 
-.product-button:hover {
-  background-color: #b58a46;
+.product-button:hover:not(:disabled) {
+  background: #b58a46;
 
   color: white;
 }
 
 .product-button:disabled {
-  border-color: #cccccc;
+  border-color: #ddd7ce;
 
-  background-color: #eeeeee;
+  background: #efede9;
 
-  color: #999999;
+  color: #aaa39a;
 
   cursor: not-allowed;
 }
@@ -1063,79 +1117,114 @@ onMounted(async () => {
    Loading / Empty / Error
    ===================================================== */
 
-.loading-message,
-.empty-message,
-.error-message {
-  padding: 60px 20px;
+.state-message {
+  padding: 70px 20px;
 
-  background-color: white;
+  border: 1px solid #e6e0d8;
+
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.65);
+
+  color: #91887e;
 
   text-align: center;
 }
 
-.loading-message,
-.empty-message {
-  color: #888888;
-}
-
 .error-message {
-  color: #b3443c;
+  border-color: #e9c5c0;
 
-  background-color: #fde9e7;
+  background: #fff4f2;
+
+  color: #a65349;
 }
 
 /* =====================================================
    RWD
    ===================================================== */
 
-@media (max-width: 1000px) {
+@media (max-width: 1050px) {
   .product-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .shop-search-wrap {
-    flex-direction: column;
-
-    align-items: stretch;
-
-    gap: 15px;
-
-    padding: 20px 0;
+  .shop-hero {
+    min-height: 400px;
   }
 
-  .shop-title {
-    text-align: center;
+  .hero-container {
+    position: relative;
+
+    z-index: 1;
+
+    width: min(1180px, 90%);
+
+    margin: 0 auto;
+
+    padding: 72px 0 48px;
+  }
+
+  .hero-overlay {
+    background: rgba(31, 25, 18, 0.72);
+  }
+
+  .hero-content p {
+    font-size: 14px;
   }
 
   .shop-search {
     max-width: none;
   }
 
-  .shop-banner {
-    min-height: 280px;
-  }
-
-  .banner-content h1 {
-    font-size: 32px;
-  }
-
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+  }
+
+  .product-section {
+    padding: 40px 0 65px;
+  }
+
+  .product-section-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
   }
 }
 
 @media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 31px;
+  }
+
+  .shop-search {
+    height: 48px;
+  }
+
+  .shop-search button {
+    width: 78px;
+  }
+
+  .category-button {
+    padding: 8px 14px;
+  }
+
   .product-grid {
     gap: 10px;
   }
 
   .product-info {
-    padding: 11px;
+    padding: 13px;
   }
 
   .product-name {
+    min-height: 40px;
+
     font-size: 14px;
   }
 
@@ -1145,6 +1234,10 @@ onMounted(async () => {
 
   .price-area strong {
     font-size: 20px;
+  }
+
+  .product-button {
+    padding: 9px;
   }
 }
 </style>

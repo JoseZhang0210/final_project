@@ -65,8 +65,8 @@ header,
       cover no-repeat;
 }
 .hero-content {
-  max-width: 750px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 680px;
 }
 
 .home-hero h1 {
