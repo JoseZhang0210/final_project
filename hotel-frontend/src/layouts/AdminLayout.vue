@@ -21,11 +21,7 @@
              餐廳管理群組
              ========================= -->
         <div class="sidebar-group">
-          <button
-            type="button"
-            class="sidebar-group-title"
-            @click="restaurantOpen = !restaurantOpen"
-          >
+          <button type="button" class="sidebar-group-title" @click="restaurantOpen = !restaurantOpen">
             <span> 🍽 餐廳管理 </span>
 
             <span class="arrow">
@@ -44,11 +40,7 @@
 
         <!-- ＝＝＝＝＝訂房管理＝＝＝＝＝ -->
         <div class="sidebar-group">
-          <button
-            type="button"
-            class="sidebar-group-title"
-            @click="roombookingOpen = !roombookingOpen"
-          >
+          <button type="button" class="sidebar-group-title" @click="roombookingOpen = !roombookingOpen">
             <span> 🛏 訂房管理 </span>
 
             <span class="arrow">
@@ -69,6 +61,15 @@
 
         <!-- 會員管理 -->
         <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
+
+        <!-- 員工管理 -->
+        <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
+
+        <!-- 場地管理 -->
+        <RouterLink to="/admin/venues"> 場地管理 </RouterLink>
+
+        <!-- 場地租借管理 -->
+        <RouterLink to="/admin/rental"> 場地租借管理 </RouterLink>
       </nav>
 
       <!-- =========================
@@ -110,7 +111,7 @@ import { ref } from "vue";
  * false = 預設收合
  */
 const restaurantOpen = ref(true);
-const roombookingOpen = ref(false);
+const roombookingOpen = ref(true);
 </script>
 
 <style></style>

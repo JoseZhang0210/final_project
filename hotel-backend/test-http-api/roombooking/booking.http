@@ -33,7 +33,7 @@ Authorization: Bearer {{jwtToken}}
 
 ### 4. 更新預訂 (PUT /api/bookings/{id})
 PUT {{baseUrl}}/{{bookingId}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
@@ -54,4 +54,4 @@ Content-Type: application/json
 
 ### 5. 刪除預訂 (DELETE /api/bookings/{id})
 DELETE {{baseUrl}}/{{bookingId}}
-Authorization: Bearer {{jwtToken}}
+Authorization: {{auth}}

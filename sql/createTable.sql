@@ -49,7 +49,7 @@ GO
 CREATE TABLE [dbo].[booking_order](
 	[booking_order_id] [int] IDENTITY(1,1) NOT NULL,
 	[member_id] [int] NOT NULL,
-	[total_price] [int] NOT NULL,
+	[booking_total_price] [int] NOT NULL,
 	[order_status] [nvarchar](20) NOT NULL,
 	[created_at] [datetime] NOT NULL,
 	[payment_id] [int] NULL,
@@ -65,12 +65,11 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[category](
-	[category_id] [int]IDENTITY(1,1) NOT NULL,
-	[category_name] [nvarchar](50) NULL,
-	[parent_category] [int] NULL,
+    [category_id] [int]IDENTITY(1,1) NOT NULL,
+    [category_name] [nvarchar](50) NULL,
  CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED 
 (
-	[category_id] ASC
+    [category_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
@@ -102,7 +101,6 @@ CREATE TABLE [dbo].[employee](
 	[department_id] [int] NOT NULL,
 	[account_id] [int] NOT NULL,
 	[position] [varchar](50) NOT NULL,
-	[is_admin] [bit] NOT NULL,
  CONSTRAINT [PK__employee__C52E0BA8B3F6391D] PRIMARY KEY CLUSTERED 
 (
 	[employee_id] ASC
@@ -231,17 +229,17 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[product](
-	[product_id] [int] IDENTITY(1,1) NOT NULL,
-	[product_name] [nvarchar](50) NOT NULL,
-	[category_id] [int] NOT NULL,
-	[description] [nvarchar](50) NOT NULL,
-	[price] [int] NOT NULL,
-	[stock] [int] NOT NULL,
-	[image_id] [int] NULL,
-	[status] [nvarchar](50) NULL,
- CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED 
+    product_id INT IDENTITY(1,1) NOT NULL,
+    [product_name] [nvarchar](50) NOT NULL,
+    [category_id] [int] NOT NULL,
+    [description] NVARCHAR(255) NULL,
+    [price] [int] NOT NULL,
+    [stock] [int] NOT NULL,
+    [ImageURL] NVARCHAR(255),
+    [status] [nvarchar](50) NULL,
+CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED 
 (
-	[product_id] ASC
+    [product_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
@@ -454,8 +452,6 @@ CREATE TABLE [dbo].[venue](
 ) ON [PRIMARY]
 GO
 ALTER TABLE [dbo].[account] ADD  CONSTRAINT [DF__account__status__4F7CD00D]  DEFAULT ('ACTIVE') FOR [status]
-GO
-ALTER TABLE [dbo].[employee] ADD  CONSTRAINT [DF__employee__is_adm__5629CD9C]  DEFAULT ((0)) FOR [is_admin]
 GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__creat__5FB337D6]  DEFAULT (getdate()) FOR [created_at]
 GO

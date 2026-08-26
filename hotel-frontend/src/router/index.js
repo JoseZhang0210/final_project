@@ -5,6 +5,7 @@ import AdminLayout from "../layouts/AdminLayout.vue";
 import DashboardView from "../views/DashboardView.vue";
 import HomeView from "../views/HomeView.vue";
 import MemberManageView from "../views/MemberManageView.vue";
+import EmployeeManageView from "../views/EmployeeManageView.vue";
 //--------------------餐廳後台管理-----------------------------------
 import RestaurantMenuView from "../views/RestaurantMenuView.vue";
 import RestaurantManageView from "../views/RestaurantManageView.vue";
@@ -23,7 +24,7 @@ import ProductShopView from "../views/ProductShopView.vue";
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
 //---------------------------------------------------
-import RoomBookingOrderView from "@/views/RoomBookingOrderView.vue";
+import RoomBookingOrderView from "../views/RoomBookingOrderView.vue";
 import RoomTypeManageView from "../views/RoomTypeManageView.vue";
 import RoomManageView from "../views/RoomManageView.vue";
 import RoomImageManageView from "../views/RoomImageManageView.vue";
@@ -47,6 +48,11 @@ const router = createRouter({
           path: "members",
           name: "admin-members",
           component: MemberManageView,
+        },
+        {
+          path: "employees",
+          name: "admin-employees",
+          component: EmployeeManageView,
         },
         {
           path: "restaurants",
@@ -114,6 +120,11 @@ const router = createRouter({
           path: "venues",
           name: "admin-venues",
           component: VenueView,
+        },
+        {
+          path: "rental",
+          name: "admin-rental",
+          component: RentalView,
         },
       ],
     },
