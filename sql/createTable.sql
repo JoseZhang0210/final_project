@@ -65,7 +65,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[category](
-    [category_id] [int]IDENTITY(1,1) NOT NULL,
+	[category_id] INT IDENTITY(1,1) NOT NULL,
     [category_name] [nvarchar](50) NULL,
  CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED 
 (
@@ -229,7 +229,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[product](
-    product_id INT IDENTITY(1,1) NOT NULL,
+    [product_id] INT IDENTITY(1,1) NOT NULL,
     [product_name] [nvarchar](50) NOT NULL,
     [category_id] [int] NOT NULL,
     [description] NVARCHAR(255) NULL,
@@ -482,11 +482,6 @@ REFERENCES [dbo].[payment] ([payment_id])
 GO
 ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_payment]
 GO
-ALTER TABLE [dbo].[category]  WITH CHECK ADD  CONSTRAINT [FK_category_category] FOREIGN KEY([parent_category])
-REFERENCES [dbo].[category] ([category_id])
-GO
-ALTER TABLE [dbo].[category] CHECK CONSTRAINT [FK_category_category]
-GO
 ALTER TABLE [dbo].[employee]  WITH CHECK ADD  CONSTRAINT [FK_employee_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
 GO
@@ -532,10 +527,10 @@ REFERENCES [dbo].[product] ([product_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_product]
 GO
-ALTER TABLE [dbo].[product]  WITH CHECK ADD  CONSTRAINT [FK_product_category] FOREIGN KEY([category_id])
-REFERENCES [dbo].[category] ([category_id])
+ALTER TABLE [dbo].[payment]  WITH CHECK ADD  CONSTRAINT [FK_payment_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id])
 GO
-ALTER TABLE [dbo].[product] CHECK CONSTRAINT [FK_product_category]
+ALTER TABLE [dbo].[payment] CHECK CONSTRAINT [FK_payment_member]
 GO
 ALTER TABLE [dbo].[profile]  WITH CHECK ADD  CONSTRAINT [FK_user_profile_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
