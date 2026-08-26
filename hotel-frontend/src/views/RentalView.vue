@@ -6,6 +6,7 @@ import {
   createRental,
   getApiErrorMessage,
   getMyRentals,
+  getRentals,
   getStoredToken,
   getVenues,
 } from "../api/venueRentalApi";
@@ -85,11 +86,12 @@ async function loadData() {
     const [venueData, rentalData] =
       await Promise.all([
         getVenues(token.value),
-        getMyRentals(token.value),
+        getRentals(token.value),
       ]);
 
     venues.value = venueData ?? [];
     rentals.value = rentalData ?? [];
+    console.log(rentals.value);
   } catch (error) {
     errorMessage.value =
       getApiErrorMessage(error);
