@@ -72,14 +72,24 @@ public class BookingService {
             existingBooking.setCheckOutDate(newBookingData.getCheckOutDate());
         }
 
-        // 3. 入住人數 (guest_number)
+        // 3. 入住人數 (guest_num)
         if (newBookingData.getGuestNum() != null) {
             existingBooking.setGuestNum(newBookingData.getGuestNum());
         }
 
-        // 4. 預約狀態
+        // 4. 預約狀態 (booking_status)
         if (newBookingData.getBookingStatus() != null) {
             existingBooking.setBookingStatus(newBookingData.getBookingStatus());
+        }
+
+        // 5. 房間編號 (room_id)
+        if (newBookingData.getRoomId() != null) {
+            existingBooking.setRoomId(newBookingData.getRoomId());
+        }
+
+        // 6. 房型編號 (room_type_id)
+        if (newBookingData.getRoomTypeId() != null) {
+            existingBooking.setRoomTypeId(newBookingData.getRoomTypeId());
         }
 
         // 交易結束時 JPA 會自動進行比對並發送 UPDATE SQL，無需呼叫 save()

@@ -26,7 +26,7 @@ const form = ref(createEmptyForm());
 
 function createEmptyForm() {
   return {
-    bookingId: null,
+    bookingId: "",
     bookingOrderId: "",
     roomTypeId: "",
     roomId: "",
@@ -34,14 +34,17 @@ function createEmptyForm() {
     checkOutDate: "",
     guestNum: 1,
     bookingPrice: 0,
-    bookingStatus: "待確認",
+    bookingStatus: "待入住",
   };
 }
 
+// 支援駝峰與底線命名格式
 const availableRooms = computed(() => {
   if (!form.value.roomTypeId) return [];
   return rooms.value.filter(
-    (room) => room.roomTypeId === Number(form.value.roomTypeId),
+    (room) =>
+      Number(room.roomTypeId ?? room.room_type_id) ===
+      Number(form.value.roomTypeId),
   );
 });
 
@@ -67,10 +70,39 @@ function clearForm() {
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   const headers = { "Content-Type": "application/json" };
-  if (token) {
-    headers.Authorization = "Bearer " + token;
+
+  // 嚴格檢查 token 是否有效，避免傳入無效格式導致 Fetch 拋出 SyntaxError
+  if (
+    token &&
+    token !== "undefined" &&
+    token !== "null" &&
+    token.trim() !== ""
+  ) {
+    headers.Authorization = `Bearer ${token.trim()}`;
   }
+
   return headers;
+}
+async function loadRoomTypes() {
+  try {
+    const headers = getAuthHeaders();
+
+    const response = await fetch("/api/roomtypes", {
+      method: "GET",
+      headers: headers,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      console.warn(`[loadRoomTypes] HTTP 狀態碼異常: ${response.status}`);
+      return;
+    }
+
+    const data = await response.json();
+    roomTypes.value = Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("載入房型資料失敗:", error);
+  }
 }
 
 // 1. 載入與條件查詢 (對應 @GetMapping)
@@ -78,7 +110,6 @@ async function loadBookings() {
   try {
     let url = BOOKING_API_URL;
 
-    // 依據條件切換 API Endpoint；若無條件則直接請求 /api/bookings (getAllBookings)
     if (searchCriteria.value.checkInDate) {
       url = `${BOOKING_API_URL}/check-in?date=${searchCriteria.value.checkInDate}`;
     } else if (searchCriteria.value.status) {
@@ -117,52 +148,89 @@ function clearSearch() {
 function getOrderLabel(orderId) {
   if (!orderId) return "未指定訂單";
   const order = bookingOrders.value.find(
-    (item) => item.bookingOrderId === Number(orderId),
+    (item) =>
+      Number(item.bookingOrderId ?? item.booking_order_id) === Number(orderId),
   );
   return order
-    ? `訂單 ${order.bookingOrderId}－${order.memberName}`
+    ? `訂單 ${order.bookingOrderId ?? order.booking_order_id}－${order.memberName ?? order.member_name}`
     : `訂單 ${orderId}`;
 }
 
 function getRoomTypeName(roomTypeId) {
   if (!roomTypeId) return "未指定房型";
-  return (
-    roomTypes.value.find((item) => item.roomTypeId === Number(roomTypeId))
-      ?.typeName ?? `房型 ${roomTypeId}`
+  const found = roomTypes.value.find(
+    (item) =>
+      Number(item.roomTypeId ?? item.room_type_id) === Number(roomTypeId),
   );
+  return found ? (found.typeName ?? found.type_name) : `編號 ${roomTypeId}`;
 }
 
 function getRoomNumber(roomId) {
   if (!roomId) return "尚未分配";
-  return (
-    rooms.value.find((item) => item.roomId === Number(roomId))?.roomNumber ??
-    `房號 ${roomId}`
+  const found = rooms.value.find(
+    (item) => Number(item.roomId ?? item.room_id) === Number(roomId),
   );
+  return found ? (found.roomNumber ?? found.room_number) : `編號 ${roomId}`;
 }
 
 function changeRoomType() {
+  // 1. 清空已選擇的房號
   form.value.roomId = "";
-  const selectedRoomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(form.value.roomTypeId),
-  );
-  if (selectedRoomType && form.value.guestNum > selectedRoomType.capacity) {
-    form.value.guestNum = selectedRoomType.capacity;
+
+  // 2. 防呆：若未選擇房型（例如切回預設空白選項），重置金額並結束
+  if (!form.value.roomTypeId) {
+    form.value.bookingPrice = 0;
+    return;
   }
+
+  // 3. 尋找對應的房型物件（同時相容 roomTypeId 與 room_type_id）
+  const selectedRoomType = roomTypes.value.find(
+    (item) =>
+      Number(item.roomTypeId ?? item.room_type_id) ===
+      Number(form.value.roomTypeId),
+  );
+
+  // 4. 若找到房型且目前人數超過上限，自動調整人數為上限值
+  if (selectedRoomType && selectedRoomType.capacity) {
+    if (form.value.guestNum > selectedRoomType.capacity) {
+      form.value.guestNum = selectedRoomType.capacity;
+    }
+  }
+
+  // 5. 重新計算價格
   calculatePrice();
 }
 
 function calculatePrice() {
-  const selectedRoomType = roomTypes.value.find(
-    (item) => item.roomTypeId === Number(form.value.roomTypeId),
-  );
-  if (!selectedRoomType || stayNights.value === 0) {
+  // 1. 防呆：若未選擇房型或住宿天數小於等於 0，價格歸零
+  if (!form.value.roomTypeId || stayNights.value <= 0) {
     form.value.bookingPrice = 0;
     return;
   }
-  form.value.bookingPrice = selectedRoomType.pricePerNight * stayNights.value;
+
+  // 2. 尋找匹配的房型物件（相容駝峰與底線命名）
+  const selectedRoomType = roomTypes.value.find(
+    (item) =>
+      Number(item.roomTypeId ?? item.room_type_id) ===
+      Number(form.value.roomTypeId),
+  );
+
+  // 3. 若找不到房型，價格歸零
+  if (!selectedRoomType) {
+    form.value.bookingPrice = 0;
+    return;
+  }
+
+  // 4. 取出每晚價格（強制轉為 Number，確保型態正確）
+  const price = Number(
+    selectedRoomType.pricePerNight ?? selectedRoomType.price_per_night ?? 0,
+  );
+
+  // 5. 計算總價
+  form.value.bookingPrice = price * stayNights.value;
 }
 
-// 2. 儲存/更新預訂 (對應 PUT /api/bookings/{id})
+// 2. 儲存/更新預訂
 async function saveBooking() {
   if (form.value.bookingId === null) {
     showMessage("後端尚未開放新增預訂功能 (POST 已註解)", "error");
@@ -226,24 +294,36 @@ async function saveBooking() {
     showMessage("無法連線至預訂 API", "error");
   }
 }
-
 function editBooking(booking) {
+  console.log("👉 傳入 editBooking 的原始資料：", booking);
+  console.log("👉 傳入的型態:", typeof booking.roomId, booking.roomId);
+
+  const rawRoomTypeId = booking.roomTypeId;
+  const rawOrderId = booking.bookingOrderId;
+  const rawRoomId = booking.roomId;
+
+  const parseDate = (dateStr) => {
+    if (!dateStr) return "";
+    return String(dateStr).split("T")[0];
+  };
+
   form.value = {
     bookingId: booking.bookingId,
-    bookingOrderId: booking.bookingOrderId ?? booking.booking_order_id ?? "",
-    roomTypeId: booking.roomTypeId ?? booking.room_type_id ?? "",
-    roomId: booking.roomId ?? booking.room_id ?? "",
-    checkInDate: booking.checkInDate ?? booking.check_in_date ?? "",
-    checkOutDate: booking.checkOutDate ?? booking.check_out_date ?? "",
-    guestNum: booking.guestNum ?? booking.guest_num ?? 1,
-    bookingPrice: booking.bookingPrice ?? booking.booking_price ?? 0,
-    bookingStatus: booking.bookingStatus ?? booking.booking_status ?? "待確認",
+    bookingOrderId: Number(rawOrderId),
+    roomTypeId: Number(rawRoomTypeId),
+    roomId: Number(rawRoomId),
+    checkInDate: booking.checkInDate,
+    checkOutDate: booking.checkOutDate,
+    guestNum: booking.guestNum,
+    bookingPrice: booking.bookingPrice,
+    bookingStatus: booking.bookingStatus,
   };
-  formTitle.value = `修改訂房明細 ID：${booking.bookingId}`;
+
+  formTitle.value = `修改訂房明細 ID：${form.value.bookingId}`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// 3. 刪除預訂 (對應 DELETE /api/bookings/{id})
+// 3. 刪除預訂
 async function deleteBooking(id) {
   if (!window.confirm("確定刪除這筆訂房明細嗎？")) {
     return;
@@ -286,7 +366,7 @@ function formatPrice(price) {
 }
 
 onMounted(async () => {
-  await loadBookings();
+  await Promise.all([loadBookings(), loadRoomTypes()]);
 });
 </script>
 
@@ -359,10 +439,10 @@ onMounted(async () => {
               <option value="" disabled>請選擇房型</option>
               <option
                 v-for="roomType in roomTypes"
-                :key="roomType.roomTypeId"
-                :value="roomType.roomTypeId"
+                :key="roomType.roomTypeId ?? roomType.room_type_id"
+                :value="roomType.roomTypeId ?? roomType.room_type_id"
               >
-                {{ roomType.typeName }}
+                {{ roomType.typeName ?? roomType.type_name }}
               </option>
             </select>
           </div>
@@ -517,6 +597,7 @@ onMounted(async () => {
     </section>
   </main>
 </template>
+
 <style scoped>
 .booking-page {
   padding: 28px;

@@ -6,7 +6,7 @@ const BOOKING_ORDER_API_URL = "/api/booking-orders";
 const bookingOrders = ref([]);
 const message = ref("");
 const messageType = ref("");
-const formTitle = ref("編輯訂房訂單");
+const formTitle = ref("訂房訂單");
 
 // 搜尋條件
 const searchCriteria = ref({
@@ -178,15 +178,14 @@ async function saveBookingOrder() {
 
 // 帶入編輯資料
 function editBookingOrder(order) {
-  const orderId = order.bookingOrderId ?? order.booking_order_id;
+  const orderId = order.bookingOrderId;
   form.value = {
     bookingOrderId: orderId,
-    memberId: order.memberId ?? order.member_id ?? "",
-    orderStatus: order.orderStatus ?? order.order_status ?? "待付款",
-    bookingTotalPrice:
-      order.bookingTotalPrice ?? order.booking_total_price ?? "",
-    paymentId: order.paymentId ?? order.payment_id ?? "",
-    createdAt: order.createdAt ?? order.created_at ?? "",
+    memberId: order.memberId,
+    orderStatus: order.orderStatus,
+    bookingTotalPrice: order.bookingTotalPrice,
+    paymentId: order.paymentId,
+    createdAt: order.createdAt,
   };
 
   formTitle.value = `修改訂單 ID：${orderId}`;
