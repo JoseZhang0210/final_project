@@ -11,7 +11,7 @@
         <div class="hero-content">
           <span class="hero-eyebrow"> STARLIGHT HOTEL SHOP </span>
 
-          <h1>星澄飯店嚴選商城</h1>
+          <h1>精品商城</h1>
 
           <p>將旅途中喜愛的質感帶回生活， 精選飯店用品、特色商品與限定好物。</p>
         </div>

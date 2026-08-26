@@ -64,7 +64,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[category](
-	category_id INT IDENTITY(1,1) NOT NULL,
+	[category_id] INT IDENTITY(1,1) NOT NULL,
     [category_name] [nvarchar](50) NULL,
  CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED 
 (
@@ -230,7 +230,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[product](
-    product_id INT IDENTITY(1,1) NOT NULL,
+    [product_id] INT IDENTITY(1,1) NOT NULL,
     [product_name] [nvarchar](50) NOT NULL,
     [category_id] [int] NOT NULL,
     [description] NVARCHAR(255) NULL,
