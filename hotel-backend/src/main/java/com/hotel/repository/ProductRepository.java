@@ -10,4 +10,7 @@ public interface ProductRepository
         extends JpaRepository<Product, Integer> {
 
     List<Product> findByProductNameContainingIgnoreCase(String keyword);
+
+    boolean existsByCategoryCategoryId(
+            Integer categoryId);
 }

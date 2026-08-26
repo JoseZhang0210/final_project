@@ -1,179 +1,59 @@
-<template>
-  <div>
-    <!-- 頁面標題 -->
-    <div class="admin-page-header">
-      <div>
-        <h1>修改商品</h1>
-
-        <p>修改商品基本資料、價格、庫存與商品狀態</p>
-      </div>
-    </div>
-
-    <!-- 修改表單 -->
-    <section class="admin-card product-form-card">
-      <!-- 訊息 -->
-      <div v-if="message" class="admin-message" :class="messageType">
-        {{ message }}
-      </div>
-
-      <!-- Loading -->
-      <div v-if="loading" class="loading-message">商品資料讀取中...</div>
-
-      <form v-else @submit.prevent="updateProduct">
-        <div class="admin-form-grid">
-          <!-- 商品名稱 -->
-          <div class="admin-form-group full-width">
-            <label for="productName"> 商品名稱 </label>
-
-            <input
-              id="productName"
-              v-model="product.productName"
-              type="text"
-              placeholder="請輸入商品名稱"
-              required
-            />
-          </div>
-
-          <!-- 商品分類 -->
-          <div class="admin-form-group">
-            <label for="category"> 商品分類 </label>
-
-            <select id="category" v-model="product.categoryId" required>
-              <option value="">請選擇商品分類</option>
-
-              <option
-                v-for="category in categories"
-                :key="category.categoryId"
-                :value="category.categoryId"
-              >
-                {{ category.categoryName }}
-              </option>
-            </select>
-          </div>
-
-          <!-- 商品狀態 -->
-          <div class="admin-form-group">
-            <label for="status"> 商品狀態 </label>
-
-            <select id="status" v-model="product.status">
-              <option value="ACTIVE">上架</option>
-
-              <option value="INACTIVE">下架</option>
-
-              <option value="OUT_OF_STOCK">缺貨</option>
-
-              <option value="DISCONTINUED">停售</option>
-            </select>
-          </div>
-
-          <!-- 價格 -->
-          <div class="admin-form-group">
-            <label for="price"> 價格 </label>
-
-            <input
-              id="price"
-              v-model.number="product.price"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-
-          <!-- 庫存 -->
-          <div class="admin-form-group">
-            <label for="stock"> 庫存 </label>
-
-            <input
-              id="stock"
-              v-model.number="product.stock"
-              type="number"
-              min="0"
-              required
-            />
-          </div>
-
-          <!-- 圖片網址 -->
-          <div class="admin-form-group full-width">
-            <label for="imageUrl"> 圖片網址 </label>
-
-            <input
-              id="imageUrl"
-              v-model="product.imageUrl"
-              type="text"
-              placeholder="請輸入商品圖片網址"
-            />
-          </div>
-
-          <!-- 商品描述 -->
-          <div class="admin-form-group full-width">
-            <label for="description"> 商品描述 </label>
-
-            <textarea
-              id="description"
-              v-model="product.description"
-              placeholder="請輸入商品描述"
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- 按鈕 -->
-        <div class="admin-form-actions">
-          <button
-            type="submit"
-            class="admin-btn admin-btn-primary"
-            :disabled="saving"
-          >
-            {{ saving ? "儲存中..." : "儲存修改" }}
-          </button>
-
-          <button
-            type="button"
-            class="admin-btn admin-btn-secondary"
-            @click="backToList"
-          >
-            返回商品列表
-          </button>
-        </div>
-      </form>
-    </section>
-  </div>
-</template>
-
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 
+import { getAuthHeaders } from "@/utils/auth";
+
+// =====================================================
+// Router
+// =====================================================
+
 const route = useRoute();
 
 const router = useRouter();
 
-// ==============================
-// Product ID
-// ==============================
-
 const productId = route.params.id;
 
-// ==============================
+// =====================================================
+// API
+// =====================================================
+
+const PRODUCT_API = "/api/products";
+
+const CATEGORY_API = "/api/categories";
+
+const IMAGE_UPLOAD_API = "/api/products/upload-image";
+
+// =====================================================
 // 狀態
-// ==============================
+// =====================================================
 
-const categories = ref([]);
-
-const loading = ref(true);
+const loading = ref(false);
 
 const saving = ref(false);
+
+const categories = ref([]);
 
 const message = ref("");
 
 const messageType = ref("");
 
-// ==============================
-// 商品資料
-// ==============================
+// =====================================================
+// 圖片
+// =====================================================
 
-const product = reactive({
+const imagePreview = ref("");
+
+const selectedImageFile = ref(null);
+
+const imageError = ref(false);
+
+// =====================================================
+// 表單
+// =====================================================
+
+const form = reactive({
   productName: "",
 
   categoryId: "",
@@ -189,242 +69,802 @@ const product = reactive({
   status: "ACTIVE",
 });
 
-// ==============================
-// JWT Header
-// ==============================
+// =====================================================
+// 訊息
+// =====================================================
 
-function getAuthHeaders() {
+function showMessage(text, type) {
+  message.value = text;
+
+  messageType.value = type;
+
+  setTimeout(() => {
+    message.value = "";
+  }, 2500);
+}
+
+// =====================================================
+// 讀取分類
+// =====================================================
+
+async function loadCategories() {
+  try {
+    const response = await fetch(CATEGORY_API, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      console.error("分類讀取失敗：", response.status);
+
+      return;
+    }
+
+    categories.value = await response.json();
+  } catch (error) {
+    console.error("分類讀取錯誤：", error);
+  }
+}
+
+// =====================================================
+// 讀取商品
+// =====================================================
+
+async function loadProduct() {
+  loading.value = true;
+
+  try {
+    const response = await fetch(`${PRODUCT_API}/${productId}`, {
+      method: "GET",
+
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      showMessage("登入狀態失效或沒有權限", "error");
+
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage("找不到商品資料", "error");
+
+      return;
+    }
+
+    const product = await response.json();
+
+    console.log("商品資料：", product);
+
+    form.productName = product.productName || "";
+
+    form.categoryId = product.category?.categoryId ?? product.categoryId ?? "";
+
+    form.description = product.description || "";
+
+    form.price = product.price ?? 0;
+
+    form.stock = product.stock ?? 0;
+
+    form.imageUrl = product.imageUrl || "";
+
+    form.status = product.status || "ACTIVE";
+
+    // 原本圖片直接顯示
+    imagePreview.value = form.imageUrl;
+  } catch (error) {
+    console.error("讀取商品錯誤：", error);
+
+    showMessage("讀取商品失敗", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
+// =====================================================
+// URL 即時預覽
+// =====================================================
+
+function previewUrlImage() {
+  selectedImageFile.value = null;
+
+  imageError.value = false;
+
+  if (form.imageUrl && form.imageUrl.trim()) {
+    imagePreview.value = form.imageUrl.trim();
+  } else {
+    imagePreview.value = "";
+  }
+}
+
+// =====================================================
+// 選擇本機圖片
+// =====================================================
+
+function handleImageSelect(event) {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  // 必須是圖片
+  if (!file.type.startsWith("image/")) {
+    showMessage("只能選擇圖片檔案", "error");
+
+    event.target.value = "";
+
+    return;
+  }
+
+  // 最大 5MB
+  const maxSize = 5 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+    showMessage("圖片大小不能超過 5MB", "error");
+
+    event.target.value = "";
+
+    return;
+  }
+
+  selectedImageFile.value = file;
+
+  imageError.value = false;
+
+  // 建立本機預覽
+  imagePreview.value = URL.createObjectURL(file);
+}
+
+// =====================================================
+// 圖片預覽失敗
+// =====================================================
+
+function handlePreviewError() {
+  imageError.value = true;
+}
+
+// =====================================================
+// 清除圖片
+// =====================================================
+
+function clearImage() {
+  form.imageUrl = "";
+
+  selectedImageFile.value = null;
+
+  imagePreview.value = "";
+
+  imageError.value = false;
+}
+
+// =====================================================
+// 上傳圖片
+// =====================================================
+
+async function uploadImage() {
+  // 沒有選本機圖片
+  // 直接使用 URL
+  if (!selectedImageFile.value) {
+    return form.imageUrl;
+  }
+
+  const formData = new FormData();
+
+  formData.append("file", selectedImageFile.value);
+
+  // 上傳檔案時
+  // 不可以使用 getAuthHeaders()
+  // 因為不能手動指定 application/json
+  const headers = {};
+
   const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
 
   if (token) {
     headers.Authorization = "Bearer " + token;
   }
 
-  return headers;
-}
+  const response = await fetch(IMAGE_UPLOAD_API, {
+    method: "POST",
 
-// ==============================
-// 讀取分類
-// GET /api/categories
-// ==============================
+    headers,
 
-async function loadCategories() {
-  try {
-    const response = await fetch("/api/categories", {
-      method: "GET",
+    body: formData,
+  });
 
-      headers: getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error("分類讀取失敗");
-    }
-
-    categories.value = await response.json();
-  } catch (error) {
-    console.error("分類讀取失敗：", error);
-
-    showError("分類資料讀取失敗");
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("登入狀態失效或沒有上傳權限");
   }
-}
 
-// ==============================
-// 讀取單一商品
-// GET /api/products/{id}
-// ==============================
-
-async function loadProduct() {
-  try {
-    const response = await fetch(`/api/products/${productId}`, {
-      method: "GET",
-
-      headers: getAuthHeaders(),
-    });
-
-    if (response.status === 404) {
-      showError("找不到這筆商品資料");
-
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error("商品資料讀取失敗");
-    }
-
-    const data = await response.json();
-
-    product.productName = data.productName ?? "";
-
-    product.description = data.description ?? "";
-
-    product.price = Number(data.price ?? 0);
-
-    product.stock = Number(data.stock ?? 0);
-
-    product.imageUrl = data.imageUrl ?? "";
-
-    product.status = data.status ?? "ACTIVE";
-
-    if (data.category) {
-      product.categoryId = data.category.categoryId;
-    }
-  } catch (error) {
-    console.error("商品資料讀取失敗：", error);
-
-    showError("讀取商品資料時發生錯誤");
+  if (!response.ok) {
+    throw new Error("圖片上傳失敗");
   }
+
+  const data = await response.json();
+
+  return data.imageUrl;
 }
 
-// ==============================
-// 修改商品
-// PUT /api/products/{id}
-// ==============================
+// =====================================================
+// 儲存修改
+// =====================================================
 
 async function updateProduct() {
-  message.value = "";
+  if (!form.productName.trim()) {
+    showMessage("請輸入商品名稱", "error");
+
+    return;
+  }
+
+  if (!form.categoryId) {
+    showMessage("請選擇商品分類", "error");
+
+    return;
+  }
+
+  if (form.price < 0) {
+    showMessage("價格不能小於 0", "error");
+
+    return;
+  }
+
+  if (form.stock < 0) {
+    showMessage("庫存不能小於 0", "error");
+
+    return;
+  }
 
   saving.value = true;
 
   try {
-    const requestBody = {
-      productName: product.productName,
+    // ==========================
+    // 有本機圖片先上傳
+    // ==========================
+
+    const finalImageUrl = await uploadImage();
+
+    form.imageUrl = finalImageUrl || "";
+
+    // ==========================
+    // 商品資料
+    // ==========================
+
+    const payload = {
+      productName: form.productName.trim(),
+
+      description: form.description,
+
+      price: Number(form.price),
+
+      stock: Number(form.stock),
+
+      imageUrl: form.imageUrl,
+
+      status: form.status,
 
       category: {
-        categoryId: Number(product.categoryId),
+        categoryId: Number(form.categoryId),
       },
-
-      description: product.description,
-
-      price: Number(product.price),
-
-      stock: Number(product.stock),
-
-      imageUrl: product.imageUrl,
-
-      status: product.status,
     };
 
-    const response = await fetch(`/api/products/${productId}`, {
+    console.log("送出商品資料：", payload);
+
+    const response = await fetch(`${PRODUCT_API}/${productId}`, {
       method: "PUT",
 
       headers: getAuthHeaders(),
 
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(payload),
     });
 
-    if (response.ok) {
-      showSuccess("商品修改成功");
-
-      setTimeout(() => {
-        router.push("/admin/products");
-      }, 800);
-
-      return;
-    }
-
-    if (response.status === 404) {
-      showError("找不到這筆商品");
-
-      return;
-    }
-
     if (response.status === 401 || response.status === 403) {
-      showError("沒有權限修改商品，請重新登入");
+      showMessage("登入狀態失效或沒有修改權限", "error");
 
       return;
     }
 
-    showError("修改失敗，錯誤代碼：" + response.status);
-  } catch (error) {
-    console.error("修改商品失敗：", error);
+    if (!response.ok) {
+      const text = await response.text();
 
-    showError("修改商品時發生錯誤");
+      console.error("修改商品失敗：", text);
+
+      showMessage("商品修改失敗", "error");
+
+      return;
+    }
+
+    showMessage("商品修改成功", "success");
+
+    setTimeout(() => {
+      router.push("/admin/products");
+    }, 800);
+  } catch (error) {
+    console.error("修改商品錯誤：", error);
+
+    showMessage(error.message || "商品修改失敗", "error");
   } finally {
     saving.value = false;
   }
 }
 
-// ==============================
-// 回商品列表
-// ==============================
+// =====================================================
+// 返回
+// =====================================================
 
-function backToList() {
+function goBack() {
   router.push("/admin/products");
 }
 
-// ==============================
-// 顯示錯誤
-// ==============================
-
-function showError(text) {
-  message.value = text;
-
-  messageType.value = "error";
-}
-
-// ==============================
-// 顯示成功
-// ==============================
-
-function showSuccess(text) {
-  message.value = text;
-
-  messageType.value = "success";
-}
-
-// ==============================
-// 頁面載入
-// ==============================
+// =====================================================
+// 初始化
+// =====================================================
 
 onMounted(async () => {
-  if (!productId) {
-    showError("網址中沒有商品 ID");
-
-    loading.value = false;
-
-    return;
-  }
-
   await loadCategories();
 
   await loadProduct();
-
-  loading.value = false;
 });
 </script>
 
+<template>
+  <div class="product-edit-page">
+    <!-- =========================
+         Header
+         ========================= -->
+
+    <div class="admin-page-header">
+      <div>
+        <h1>修改商品</h1>
+
+        <p>修改商品基本資料、價格、庫存與商品狀態</p>
+      </div>
+    </div>
+
+    <!-- =========================
+         訊息
+         ========================= -->
+
+    <div v-if="message" class="admin-message" :class="messageType">
+      {{ message }}
+    </div>
+
+    <!-- =========================
+         Loading
+         ========================= -->
+
+    <div v-if="loading" class="admin-card loading-box">商品資料讀取中...</div>
+
+    <!-- =========================
+         Form
+         ========================= -->
+
+    <form
+      v-else
+      class="admin-card product-form"
+      @submit.prevent="updateProduct"
+    >
+      <div class="admin-form-grid">
+        <!-- 商品名稱 -->
+
+        <div class="admin-form-group full-width">
+          <label> 商品名稱 </label>
+
+          <input
+            v-model="form.productName"
+            type="text"
+            placeholder="請輸入商品名稱"
+            required
+          />
+        </div>
+
+        <!-- 商品分類 -->
+
+        <div class="admin-form-group">
+          <label> 商品分類 </label>
+
+          <select v-model="form.categoryId" required>
+            <option value="">請選擇分類</option>
+
+            <option
+              v-for="category in categories"
+              :key="category.categoryId"
+              :value="category.categoryId"
+            >
+              {{ category.categoryName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- 商品狀態 -->
+
+        <div class="admin-form-group">
+          <label> 商品狀態 </label>
+
+          <select v-model="form.status">
+            <option value="ACTIVE">上架</option>
+
+            <option value="INACTIVE">下架</option>
+
+            <option value="OUT_OF_STOCK">缺貨</option>
+
+            <option value="DISCONTINUED">停售</option>
+          </select>
+        </div>
+
+        <!-- 價格 -->
+
+        <div class="admin-form-group">
+          <label> 價格 </label>
+
+          <input
+            v-model.number="form.price"
+            type="number"
+            min="0"
+            placeholder="請輸入價格"
+            required
+          />
+        </div>
+
+        <!-- 庫存 -->
+
+        <div class="admin-form-group">
+          <label> 庫存 </label>
+
+          <input
+            v-model.number="form.stock"
+            type="number"
+            min="0"
+            placeholder="請輸入庫存"
+            required
+          />
+        </div>
+
+        <!-- =========================
+             商品圖片
+             ========================= -->
+
+        <div class="admin-form-group full-width">
+          <label> 商品圖片 </label>
+
+          <div class="image-section">
+            <!-- URL -->
+
+            <div class="url-section">
+              <span class="image-label"> 圖片網址 </span>
+
+              <input
+                v-model="form.imageUrl"
+                type="text"
+                placeholder="例如：https://images.example.com/product.jpg"
+                @input="previewUrlImage"
+              />
+
+              <small> 可直接輸入圖片 URL，或使用下方按鈕上傳本機圖片 </small>
+            </div>
+
+            <!-- Upload -->
+
+            <div class="image-actions">
+              <label class="image-btn upload-image-btn">
+                📁 選擇圖片
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  @change="handleImageSelect"
+                />
+              </label>
+
+              <button
+                type="button"
+                class="image-btn clear-image-btn"
+                @click="clearImage"
+              >
+                清除圖片
+              </button>
+            </div>
+
+            <!-- 本機檔名 -->
+
+            <div v-if="selectedImageFile" class="selected-file">
+              已選擇：
+
+              <strong>
+                {{ selectedImageFile.name }}
+              </strong>
+            </div>
+
+            <!-- Preview -->
+
+            <div v-if="imagePreview" class="image-preview-area">
+              <span class="image-label"> 圖片預覽 </span>
+
+              <div class="preview-card">
+                <img
+                  :src="imagePreview"
+                  alt="商品圖片預覽"
+                  @error="handlePreviewError"
+                />
+              </div>
+            </div>
+
+            <!-- Error -->
+
+            <div v-if="imageError" class="image-error">
+              圖片無法顯示， 請確認圖片網址是否為真正的圖片網址。
+            </div>
+          </div>
+        </div>
+
+        <!-- 商品描述 -->
+
+        <div class="admin-form-group full-width">
+          <label> 商品描述 </label>
+
+          <textarea
+            v-model="form.description"
+            rows="5"
+            placeholder="請輸入商品描述"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- =========================
+           Buttons
+           ========================= -->
+
+      <div class="admin-form-actions">
+        <button
+          type="submit"
+          class="admin-btn admin-btn-primary"
+          :disabled="saving"
+        >
+          {{ saving ? "儲存中..." : "儲存修改" }}
+        </button>
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary"
+          @click="goBack"
+        >
+          返回商品列表
+        </button>
+      </div>
+    </form>
+  </div>
+</template>
+
 <style scoped>
-.product-form-card {
-  max-width: 850px;
+.product-edit-page {
+  width: 100%;
 }
 
-.loading-message {
-  padding: 40px;
+/* =========================
+   Form
+   ========================= */
+
+.product-form {
+  padding: 26px;
+}
+
+.loading-box {
+  padding: 50px;
 
   text-align: center;
 
+  color: #777;
+}
+
+/* =========================
+   Image Section
+   ========================= */
+
+.image-section {
+  padding: 18px;
+
+  border: 1px solid #e3ddd4;
+
+  border-radius: 12px;
+
+  background-color: #faf8f4;
+}
+
+.url-section {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.image-label {
+  color: #6f5328;
+
+  font-size: 14px;
+
+  font-weight: bold;
+}
+
+.url-section small {
   color: #888;
+
+  font-size: 12px;
 }
 
-.admin-form-actions {
-  margin-top: 28px;
+/* =========================
+   Image Buttons
+   ========================= */
+
+.image-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 15px;
 }
 
-.admin-btn:disabled {
-  opacity: 0.65;
+.image-btn {
+  display: inline-flex;
 
-  cursor: not-allowed;
+  justify-content: center;
 
-  transform: none;
+  align-items: center;
+
+  padding: 10px 18px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  font-size: 14px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition: 0.2s;
 }
+
+.upload-image-btn {
+  background-color: #b58a46;
+
+  color: white;
+}
+
+.upload-image-btn:hover {
+  background-color: #8f692f;
+}
+
+.clear-image-btn {
+  background-color: #eee9e1;
+
+  color: #5c4d3d;
+}
+
+.clear-image-btn:hover {
+  background-color: #dfd5c7;
+}
+
+/* =========================
+   Selected File
+   ========================= */
+
+.selected-file {
+  margin-top: 12px;
+
+  padding: 10px;
+
+  border-radius: 7px;
+
+  background-color: #f0eadf;
+
+  color: #665744;
+
+  font-size: 13px;
+}
+
+/* =========================
+   Preview
+   ========================= */
+
+.image-preview-area {
+  margin-top: 20px;
+}
+
+.preview-card {
+  width: 260px;
+
+  height: 220px;
+
+  margin-top: 10px;
+
+  overflow: hidden;
+
+  border: 1px solid #ddd5c9;
+
+  border-radius: 12px;
+
+  background-color: white;
+
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.preview-card img {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+/* =========================
+   Image Error
+   ========================= */
+
+.image-error {
+  margin-top: 10px;
+
+  padding: 10px 12px;
+
+  border-radius: 7px;
+
+  background-color: #fde9e7;
+
+  color: #b3443c;
+
+  font-size: 13px;
+}
+
+/* =========================
+   Textarea
+   ========================= */
+
+textarea {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  border: 1px solid #d8d0c5;
+
+  border-radius: 8px;
+
+  resize: vertical;
+
+  font-family: inherit;
+
+  font-size: 15px;
+}
+
+textarea:focus {
+  outline: none;
+
+  border-color: #b58a46;
+
+  box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.14);
+}
+
+/* =========================
+   RWD
+   ========================= */
 
 @media (max-width: 700px) {
-  .product-form-card {
-    max-width: 100%;
+  .image-actions {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .image-btn {
+    width: 100%;
+  }
+
+  .preview-card {
+    width: 100%;
   }
 }
 </style>

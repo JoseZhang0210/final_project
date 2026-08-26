@@ -14,7 +14,7 @@ SET IDENTITY_INSERT room_type ON;
 
 -- 4. 重新寫入中文資料
 INSERT INTO room_type
-    (room_type_id, type_name, bed_type, description, price_per_night, capacity)
+    (room_type_id, type_name, bed_type, room_description, price_per_night, capacity)
 VALUES
     (1, N'標準海景雙人房', N'1張雙人床', N'含雙人早餐，擁有獨立海景陽台', 3500, 2),
     (2, N'標準山景雙人房', N'1張雙人床', N'含雙人早餐，享受靜謐山景', 3000, 2),
