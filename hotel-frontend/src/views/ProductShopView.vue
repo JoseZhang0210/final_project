@@ -3,6 +3,7 @@
     <!-- =========================
          搜尋區
          ========================= -->
+
     <section class="shop-top">
       <div class="shop-search-wrap">
         <div class="shop-title">星澄飯店商城</div>
@@ -23,6 +24,7 @@
     <!-- =========================
          商品分類
          ========================= -->
+
     <section class="category-section">
       <div class="category-list">
         <button
@@ -54,6 +56,7 @@
     <!-- =========================
          Banner
          ========================= -->
+
     <section class="shop-banner">
       <div class="banner-content">
         <span class="banner-small"> HOTEL SHOP </span>
@@ -69,6 +72,7 @@
     <!-- =========================
          商品區
          ========================= -->
+
     <main ref="productSection" class="product-section">
       <div class="product-section-header">
         <div>
@@ -76,19 +80,26 @@
             {{ selectedCategoryName }}
           </h2>
 
-          <p>共 {{ filteredProducts.length }} 件商品</p>
+          <p>
+            共
+            {{ filteredProducts.length }}
+            件商品
+          </p>
         </div>
       </div>
 
       <!-- API 錯誤 -->
+
       <div v-if="errorMessage" class="error-message">
         {{ errorMessage }}
       </div>
 
       <!-- Loading -->
+
       <div v-if="loading" class="loading-message">商品資料讀取中...</div>
 
       <!-- 查無商品 -->
+
       <div
         v-else-if="!errorMessage && filteredProducts.length === 0"
         class="empty-message"
@@ -99,6 +110,7 @@
       <!-- =========================
            商品 Grid
            ========================= -->
+
       <div v-else-if="!errorMessage" class="product-grid">
         <article
           v-for="product in filteredProducts"
@@ -106,7 +118,10 @@
           class="product-card"
           @click="goProductDetail(product.productId)"
         >
-          <!-- 商品圖片 -->
+          <!-- =========================
+               商品圖片
+               ========================= -->
+
           <div class="product-image-wrap">
             <img
               :src="getProductImage(product)"
@@ -116,6 +131,7 @@
             />
 
             <!-- 缺貨 -->
+
             <span
               v-if="
                 product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
@@ -126,6 +142,7 @@
             </span>
 
             <!-- 庫存少 -->
+
             <span
               v-else-if="Number(product.stock) <= 5"
               class="product-badge stock-low"
@@ -134,7 +151,10 @@
             </span>
           </div>
 
-          <!-- 商品內容 -->
+          <!-- =========================
+               商品資訊
+               ========================= -->
+
           <div class="product-info">
             <div class="product-category">
               {{ product.category?.categoryName || "飯店商城" }}
@@ -150,6 +170,7 @@
 
             <div class="product-bottom">
               <!-- 價格 -->
+
               <div class="price-area">
                 <span class="currency"> $ </span>
 
@@ -159,8 +180,10 @@
               </div>
 
               <!-- 庫存 -->
+
               <div class="stock-text">
                 庫存
+
                 {{ product.stock ?? 0 }}
               </div>
             </div>
@@ -185,68 +208,69 @@ import { computed, onMounted, ref } from "vue";
 
 import { useRouter } from "vue-router";
 
+import { getAuthHeaders } from "@/utils/auth";
+
 const router = useRouter();
 
-// ==============================
+// =====================================================
+// 圖片設定
+// =====================================================
+
+// Vue public 裡面的預設圖片
+//
+// hotel-frontend/
+// public/
+//   upload/
+//     products/
+//       default-product.jpg
+//
+// 網址：
+// /upload/products/default-product.jpg
+
+const DEFAULT_IMAGE = "/upload/products/default-product.jpg";
+
+// =====================================================
 // 商品資料
-// ==============================
+// =====================================================
 
 const products = ref([]);
 
-// ==============================
+// =====================================================
 // 商品分類
-// ==============================
+// =====================================================
 
 const categories = ref([]);
 
-// ==============================
+// =====================================================
 // 搜尋文字
-// ==============================
+// =====================================================
 
 const keyword = ref("");
 
-// ==============================
+// =====================================================
 // 選擇分類
 // null = 全部商品
-// ==============================
+// =====================================================
 
 const selectedCategory = ref(null);
 
-// ==============================
+// =====================================================
 // Loading
-// ==============================
+// =====================================================
 
 const loading = ref(false);
 
-// ==============================
+// =====================================================
 // 錯誤訊息
-// ==============================
+// =====================================================
 
 const errorMessage = ref("");
 
-// ==============================
+// =====================================================
 // 商品區 DOM
-// ==============================
+// =====================================================
 
 const productSection = ref(null);
-
-// =====================================================
-// JWT Header
-// =====================================================
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
-
-  return headers;
-}
 
 // =====================================================
 // 讀取所有商品
@@ -279,20 +303,9 @@ async function loadProducts() {
 
     console.log("前台取得商品資料：", data);
 
-    /*
-     * 前台顯示商品規則：
-     *
-     * ACTIVE
-     * OUT_OF_STOCK
-     *
-     * 不顯示：
-     * INACTIVE
-     * DISCONTINUED
-     *
-     * 如果你目前資料庫 status
-     * 不是英文 enum，
-     * 這裡也支援「上架」「上架中」「缺貨」
-     */
+    // ==========================
+    // 前台只顯示上架 / 缺貨商品
+    // ==========================
 
     products.value = data.filter((product) => {
       const status = product.status;
@@ -431,23 +444,81 @@ function selectCategory(categoryId) {
 // =====================================================
 // 商品圖片
 // =====================================================
-
 function getProductImage(product) {
-  if (product.imageUrl && product.imageUrl.trim() !== "") {
-    return product.imageUrl;
+  const imageUrl = product.imageUrl?.trim();
+
+  // ==========================
+  // 沒有圖片
+  // ==========================
+  if (!imageUrl) {
+    return DEFAULT_IMAGE;
   }
 
-  return "/images/products/default-product.jpg";
+  // ==========================
+  // 外部網址
+  //
+  // https://images.xxx.com/xxx.jpg
+  // ==========================
+
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl;
+  }
+
+  // ==========================
+  // Spring Boot 上傳圖片
+  //
+  // /uploads/products/xxx.png
+  //
+  // 注意 uploads 有 s
+  // ==========================
+
+  if (imageUrl.startsWith("/upload/")) {
+    return imageUrl;
+  }
+
+  // ==========================
+  // Vue public 圖片
+  //
+  // /upload/products/xxx.jpg
+  //
+  // 注意 upload 沒有 s
+  // ==========================
+
+  if (imageUrl.startsWith("/upload/")) {
+    return imageUrl;
+  }
+
+  // ==========================
+  // 其他 / 開頭網址
+  // ==========================
+
+  if (imageUrl.startsWith("/")) {
+    return imageUrl;
+  }
+
+  // ==========================
+  // 資料庫只有存檔名
+  //
+  // abc.jpg
+  //
+  // 預設當成後端上傳圖片
+  // ==========================
+
+  return "/upload/products/" + imageUrl;
 }
 
-function handleImageError(event) {
-  const defaultImage = "/images/products/default-product.jpg";
+// =====================================================
+// 圖片失敗 → 預設圖
+// =====================================================
 
-  if (event.target.src.endsWith(defaultImage)) {
+function handleImageError(event) {
+  if (event.target.dataset.fallback === "true") {
     return;
   }
 
-  event.target.src = defaultImage;
+  event.target.dataset.fallback = "true";
+
+  event.target.src = DEFAULT_IMAGE;
 }
 
 // =====================================================
@@ -494,12 +565,10 @@ function scrollToProducts() {
 }
 
 // =====================================================
-// 頁面初始化
+// 初始化
 // =====================================================
 
 onMounted(async () => {
-  console.log("目前 JWT：", localStorage.getItem("token"));
-
   await Promise.all([loadProducts(), loadCategories()]);
 });
 </script>
