@@ -1,4 +1,3 @@
-<
 <script setup>
 import { onMounted, ref } from "vue";
 
@@ -43,29 +42,6 @@ function getAuthHeaders() {
   return headers;
 }
 
-// 1. 取得所有房型列表 (GET /api/roomtypes)
-async function loadRoomTypes() {
-  try {
-    const response = await fetch(API_BASE_URL, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      showMessage(errorData.message || "載入房型資料失敗", "error");
-      return;
-    }
-
-    const data = await response.json();
-    roomTypes.value = Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.error("loadRoomTypes Error:", error);
-    showMessage("無法連線至房型 API", "error");
-  }
-}
-
 // 2. 新增與修改房型 (POST / PUT /api/roomtypes)
 async function saveRoomType() {
   if (!form.value.typeName.trim()) {
@@ -90,10 +66,9 @@ async function saveRoomType() {
 
   const isEdit = form.value.roomTypeId !== null;
   const url = isEdit
-    ? `${API_BASE_URL}/${form.value.roomTypeId}`
-    : API_BASE_URL;
+    ? `${ROOM_TYPE_API_URL}/${form.value.roomTypeId}`
+    : ROOM_TYPE_API_URL;
   const method = isEdit ? "PUT" : "POST";
-
   const payload = {
     roomTypeId: form.value.roomTypeId,
     typeName: form.value.typeName,
@@ -110,7 +85,6 @@ async function saveRoomType() {
       credentials: "include",
       body: JSON.stringify(payload),
     });
-
     const resData = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -164,7 +138,7 @@ async function deleteRoomType(id) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
+    const response = await fetch(`${ROOM_TYPE_API_URL}/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
       credentials: "include",
@@ -195,20 +169,6 @@ function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(price || 0);
 }
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
 async function loadRoomTypes() {
   loading.value = true;
   message.value = "";
@@ -338,7 +298,7 @@ onMounted(() => {
             <tr v-if="loading">
               <td colspan="6" class="empty">房型資料讀取中……</td>
             </tr>
-            <tr v-for="roomType in roomTypes" v-else:key="roomType.roomTypeId">
+            <tr v-for="roomType in roomTypes" :key="roomType.roomTypeId">
               <td>{{ roomType.roomTypeId }}</td>
               <td>{{ roomType.typeName }}</td>
               <td>{{ roomType.bedType }}</td>
