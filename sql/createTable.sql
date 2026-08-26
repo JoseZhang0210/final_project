@@ -28,10 +28,11 @@ GO
 CREATE TABLE [dbo].[booking](
 	[booking_id] [int] IDENTITY(1,1) NOT NULL,
 	[booking_order_id] [int] NOT NULL,
+	[booking_price] [int] NOT NULL,
 	[check_in_date] [datetime] NOT NULL,
 	[check_out_date] [datetime] NOT NULL,
 	[guest_num] [int] NOT NULL,
-	[booking_status] [nvarchar](50) NOT NULL,
+	[booking_status] [nvarchar](20) NOT NULL,
 	[room_id] [int] NULL,
 	[room_type_id] [int] NOT NULL,
  CONSTRAINT [PK__booking__5DE3A5B16E4B0B5A] PRIMARY KEY CLUSTERED 
@@ -46,12 +47,12 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[booking_order](
-	[booking_order_id] [int] NOT NULL,
+	[booking_order_id] [int] IDENTITY(1,1) NOT NULL,
 	[member_id] [int] NOT NULL,
 	[booking_total_price] [int] NOT NULL,
-	[order_status] [nvarchar](50) NOT NULL,
+	[order_status] [nvarchar](20) NOT NULL,
 	[created_at] [datetime] NOT NULL,
-	[payment_id] [int] NOT NULL,
+	[payment_id] [int] NULL,
  CONSTRAINT [PK_booking_order] PRIMARY KEY CLUSTERED 
 (
 	[booking_order_id] ASC
@@ -116,7 +117,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[employee_permission](
-	[permission_id] [int] NOT NULL,
+	[permission_id] [int]IDENTITY(1,1) NOT NULL,
 	[employee_id] [int] NOT NULL,
  CONSTRAINT [PK_employee_permission] PRIMARY KEY CLUSTERED 
 (
@@ -130,10 +131,11 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[image](
-	[image_id] [int] NOT NULL,
-	[path] [nvarchar](50) NOT NULL,
-	[image_desc] [nchar](10) NULL,
+CREATE TABLE [dbo].[room_image](
+	[image_id] [int]IDENTITY(1,1) NOT NULL,
+	[path] [nvarchar](255) NOT NULL,
+	[image_description] [nvarchar](MAX) NULL,
+	[room_type_id] [int] NOT NULL
  CONSTRAINT [PK_image] PRIMARY KEY CLUSTERED 
 (
 	[image_id] ASC
@@ -164,7 +166,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[order](
-	[order_id] [int] NOT NULL,
+	[order_id] [int] IDENTITY(1,1) NOT NULL,
 	[member_id] [int] NOT NULL,
 	[order_date] [datetime] NOT NULL,
 	[is_ordered] [bit] NOT NULL,
@@ -181,7 +183,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[order_item](
-	[order_id] [int] NOT NULL,
+	[order_id] [int] IDENTITY(1,1) NOT NULL,
 	[product_id] [int] NOT NULL,
 	[quantity] [int] NOT NULL,
  CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED 
@@ -197,12 +199,9 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[payment](
-	[payment_id] [int] NOT NULL,
+	[payment_id] [int] IDENTITY(1,1) NOT NULL,
 	[payment_method] [nvarchar](50) NULL,
-	[payment_time] [datetime] NULL,
-	[total_price] [int] NOT NULL,
-	[payment_status] [nvarchar](50) NOT NULL,
-	[member_id] [int] NULL,
+	
  CONSTRAINT [PK_payment] PRIMARY KEY CLUSTERED 
 (
 	[payment_id] ASC
@@ -279,7 +278,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[rental](
-	[rental_id] [int] NOT NULL,
+	[rental_id] [int] IDENTITY(1,1) NOT NULL,
 	[venue_id] [int] NOT NULL,
 	[member_id] [int] NOT NULL,
 	[event_name] [nvarchar](50) NOT NULL,
@@ -382,10 +381,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[room](
 	[room_id] [int] IDENTITY(1,1) NOT NULL,
-	[room_number] [int] NOT NULL,
+	[room_number] [NVARCHAR](20) NOT NULL,
 	[room_type_id] [int] NOT NULL,
 	[floor] [int] NOT NULL,
-	[status] [nvarchar](50) NOT NULL,
+	[room_status] [nvarchar](20) NOT NULL,
  CONSTRAINT [PK__room__19675A8A9D13DCA5] PRIMARY KEY CLUSTERED 
 (
 	[room_id] ASC
@@ -405,12 +404,12 @@ CREATE TABLE [dbo].[room_task](
 	[task_id] [int] IDENTITY(1,1) NOT NULL,
 	[room_id] [int] NOT NULL,
 	[employee_id] [int] NOT NULL,
-	[remark] [nvarchar](50) NULL,
-	[priority] [nvarchar](50) NOT NULL,
+	[priority] [nvarchar](20) NOT NULL,
+	[task_type] [nvarchar](20) NOT NULL,
+	[task_status] [nvarchar](20) NOT NULL,
+	[remark] [nvarchar](100) NULL,
 	[created_at] [datetime] NOT NULL,
 	[completed_at] [datetime] NULL,
-	[task_type] [nvarchar](50) NOT NULL,
-	[task_status] [nvarchar](50) NOT NULL,
  CONSTRAINT [PK__room_tas__0492148D9F40B673] PRIMARY KEY CLUSTERED 
 (
 	[task_id] ASC
@@ -424,12 +423,11 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[room_type](
 	[room_type_id] [int] IDENTITY(1,1) NOT NULL,
-	[type_name] [nvarchar](50) NOT NULL,
-	[bed_type] [nvarchar](50) NOT NULL,
-	[description] [nvarchar](50) NULL,
-	[price_per_night] [int] NOT NULL,
+	[type_name] [nvarchar](20) NOT NULL,
+	[bed_type] [nvarchar](20) NOT NULL,
 	[capacity] [int] NOT NULL,
-	[image_id] [int] NULL,
+	[room_description] [nvarchar](100) NULL,
+	[price_per_night] [int] NOT NULL,
  CONSTRAINT [PK_room_type] PRIMARY KEY CLUSTERED 
 (
 	[room_type_id] ASC
@@ -469,10 +467,10 @@ REFERENCES [dbo].[room] ([room_id])
 GO
 ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room]
 GO
-ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_room_type1] FOREIGN KEY([room_type_id])
+ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_room_type] FOREIGN KEY([room_type_id])
 REFERENCES [dbo].[room_type] ([room_type_id])
 GO
-ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room_type1]
+ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room_type]
 GO
 ALTER TABLE [dbo].[booking_order]  WITH CHECK ADD  CONSTRAINT [FK_booking_order_member] FOREIGN KEY([member_id])
 REFERENCES [dbo].[member] ([member_id])
@@ -569,13 +567,13 @@ REFERENCES [dbo].[room] ([room_id])
 GO
 ALTER TABLE [dbo].[room_task] CHECK CONSTRAINT [FK_room_task_room]
 GO
-ALTER TABLE [dbo].[room_type]  WITH CHECK ADD  CONSTRAINT [FK_room_type_image] FOREIGN KEY([image_id])
-REFERENCES [dbo].[image] ([image_id])
+
+ALTER TABLE [dbo].[room_image] WITH CHECK ADD CONSTRAINT [FK_room_image_room_type] FOREIGN KEY([room_type_id])
+REFERENCES [dbo].[room_type] ([room_type_id])
 GO
-ALTER TABLE [dbo].[room_type] CHECK CONSTRAINT [FK_room_type_image]
+
+ALTER TABLE [dbo].[room_image] CHECK CONSTRAINT [FK_room_image_room_type]
 GO
-ALTER TABLE [dbo].[room_type]  WITH CHECK ADD  CONSTRAINT [FK_room_type_image1] FOREIGN KEY([image_id])
-REFERENCES [dbo].[image] ([image_id])
-GO
-ALTER TABLE [dbo].[room_type] CHECK CONSTRAINT [FK_room_type_image1]
-GO
+
+
+

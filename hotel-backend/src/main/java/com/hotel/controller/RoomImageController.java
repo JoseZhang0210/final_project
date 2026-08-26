@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -25,20 +26,22 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hotel.model.entity.Image;
-import com.hotel.service.ImageService;
+import com.hotel.model.entity.RoomImage;
+import com.hotel.service.RoomImageService;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/images")
-public class ImageController {
+public class RoomImageController {
 
-    private final ImageService imageService;
+    private final RoomImageService imageService;
 
-    // 可從 application.properties 讀取自訂路徑，若未設定則自動備用至專案 static/images/room/
+    // 可從 application.properties 讀取自訂路徑，若未設定則自動備用至專案 uploads 目錄
     @Value("${file.upload-dir:#{null}}")
     private String customUploadDir;
 
-    public ImageController(ImageService imageService) {
+    public RoomImageController(RoomImageService imageService) {
         this.imageService = imageService;
     }
 
@@ -47,7 +50,7 @@ public class ImageController {
     public ResponseEntity<?> createImage(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "staticPath", required = false) String staticPath,
-            @RequestParam(value = "imageDesc", required = false) String imageDesc) {
+            @RequestParam(value = "imageDescription", required = false) String imageDescription) {
         try {
             String dbPath = "";
 
@@ -71,25 +74,28 @@ public class ImageController {
                 dbPath = "/images/room/" + fileName;
 
                 // 情境 B: 選擇系統內建的靜態圖片
-            } else if (staticPath != null && !staticPath.trim().isEmpty()) {
+            } else if (StringUtils.hasText(staticPath)) {
                 dbPath = staticPath.trim();
 
                 // 情境 C: 兩者皆未提供
             } else {
-                return ResponseEntity.badRequest().body("請上傳圖片檔案或選擇預設圖片！");
+                return ResponseEntity.badRequest().body(Map.of("message", "請上傳圖片檔案或選擇預設圖片！"));
             }
 
             // 寫入資料庫
-            Image image = new Image();
+            RoomImage image = new RoomImage();
             image.setPath(dbPath);
-            image.setImageDesc(imageDesc != null ? imageDesc : "");
+            image.setImageDescription(imageDescription != null ? imageDescription : "");
 
-            Image savedImage = imageService.insert(image);
-            return new ResponseEntity<>(savedImage, HttpStatus.CREATED);
+            RoomImage savedImage = imageService.insert(image);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedImage);
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("圖片處理失敗：" + e.getMessage());
+                    .body(Map.of("message", "圖片處理失敗：" + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "新增圖片失敗：" + e.getMessage()));
         }
     }
 
@@ -97,58 +103,73 @@ public class ImageController {
     @PostMapping("/uploadimagesroompic")
     public ResponseEntity<?> uploadimagesroompic(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "imageDesc", required = false) String imageDesc) {
-        return createImage(file, null, imageDesc);
+            @RequestParam(value = "imageDescription", required = false) String imageDescription) {
+        return createImage(file, null, imageDescription);
     }
 
     // 3. 查詢所有圖片
     @GetMapping
-    public ResponseEntity<List<Image>> getAllImages() {
+    public ResponseEntity<List<RoomImage>> getAllImages() {
         return ResponseEntity.ok(imageService.findAll());
     }
 
     // 4. 依 ID 查詢單一圖片
     @GetMapping("/{id}")
-    public ResponseEntity<Image> getImageById(@PathVariable Integer id) {
-        return imageService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<?> getImageById(@PathVariable Integer id) {
+        try {
+            RoomImage image = imageService.findById(id);
+            return ResponseEntity.ok(image);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        }
     }
 
     // 5. 修改圖片資訊
     @PutMapping("/{id}")
-    public ResponseEntity<Image> updateImage(@PathVariable Integer id, @RequestBody Image updatedImage) {
-        Image image = imageService.update(id, updatedImage);
-        if (image != null) {
+    public ResponseEntity<?> updateImage(@PathVariable Integer id, @RequestBody RoomImage updatedImage) {
+        try {
+            RoomImage image = imageService.update(id, updatedImage);
             return ResponseEntity.ok(image);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "更新失敗：" + e.getMessage()));
         }
-        return ResponseEntity.notFound().build();
     }
 
     // 6. 刪除圖片 (包含資料庫紀錄與實體檔案)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteImage(@PathVariable Integer id) {
-        // 先查出圖片資訊以利後面刪除實體檔案 (對接 Optional 回傳)
-        Image image = imageService.findById(id).orElse(null);
-        if (image == null) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<?> deleteImage(@PathVariable Integer id) {
+        try {
+            // 先查出圖片實體路徑，以便後續刪除檔案
+            RoomImage image = imageService.findById(id);
 
-        boolean deleted = imageService.deleteById(id);
-        if (deleted) {
-            // 同步刪除實體檔案 (僅針對動態上傳的圖片，避免誤刪內建預設圖片)
+            // 執行 Service 刪除（若不存在會丟出 EntityNotFoundException）
+            imageService.deleteById(id);
+
+            // 同步刪除本地實體檔案 (僅針對上傳檔案，避免誤刪靜態資源)
             if (image.getPath() != null && image.getPath().startsWith("/images/room/")) {
                 String fileName = image.getPath().replace("/images/room/", "");
                 Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (IOException e) {
-                    System.err.println("刪除實體檔案失敗: " + e.getMessage());
+                    System.err.println("資料庫已刪除，但實體檔案刪除失敗: " + e.getMessage());
                 }
             }
-            return ResponseEntity.noContent().build();
+
+            return ResponseEntity.ok(Map.of("message", "圖片刪除成功！"));
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "刪除失敗：該圖片可能已被其他資料關聯！"));
         }
-        return ResponseEntity.notFound().build();
     }
 
     // 取得圖片上傳實體路徑 Helper
