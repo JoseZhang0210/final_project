@@ -23,6 +23,13 @@ import ProductShopView from "../views/ProductShopView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
+//---------------------------------------------------
+import RoomBookingOrderView from "../views/RoomBookingOrderView.vue";
+import RoomTypeManageView from "../views/RoomTypeManageView.vue";
+import RoomManageView from "../views/RoomManageView.vue";
+import RoomImageManageView from "../views/RoomImageManageView.vue";
+import RoomTaskManageView from "../views/RoomTaskManageView.vue";
+import RoomBookingManageView from "../views/RoomBookingManageView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -77,10 +84,47 @@ const router = createRouter({
           name: "admin-reservations",
           component: ReservationManageView,
         },
+        // ==========訂房==========
+        {
+          path: "room-booking-order",
+          name: "admin-roombookingorder",
+          component: RoomBookingOrderView,
+        },
+        {
+          path: "room-status",
+          name: "admin-room-status",
+          component: RoomManageView,
+        },
+        {
+          path: "room-types",
+          name: "admin-room-types",
+          component: RoomTypeManageView,
+        },
+        {
+          path: "room-images",
+          name: "admin-room-images",
+          component: RoomImageManageView,
+        },
+        {
+          path: "room-task",
+          name: "admin-room-task",
+          component: RoomTaskManageView,
+        },
+        {
+          path: "room-booking",
+          name: "admin-room-booking",
+          component: RoomBookingManageView,
+        },
+        //===============================
         {
           path: "venues",
           name: "admin-venues",
           component: VenueView,
+        },
+        {
+          path: "rental",
+          name: "admin-rental",
+          component: RentalView,
         },
       ],
     },
@@ -142,8 +186,7 @@ const router = createRouter({
         {
           path: "about",
           name: "about",
-          component: () =>
-            import("../views/AboutView.vue"),
+          component: () => import("../views/AboutView.vue"),
         },
       ],
     },

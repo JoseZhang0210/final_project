@@ -13,7 +13,7 @@
 
         <div>
           <span>商品數量</span>
-          <strong>12</strong>
+          <strong>{{ productCount }}</strong>
         </div>
       </div>
 
@@ -22,7 +22,7 @@
 
         <div>
           <span>餐廳數量</span>
-          <strong>3</strong>
+          <strong>{{ restaurantCount }}</strong>
         </div>
       </div>
 
@@ -31,7 +31,7 @@
 
         <div>
           <span>餐廳訂位</span>
-          <strong>18</strong>
+          <strong>{{ reservationCount }}</strong>
         </div>
       </div>
 
@@ -40,7 +40,7 @@
 
         <div>
           <span>會員人數</span>
-          <strong>35</strong>
+          <strong>{{ memberCount }}</strong>
         </div>
       </div>
     </div>
@@ -104,6 +104,67 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+// =====================================================
+// 統計數字
+// =====================================================
+
+const productCount = ref('—');
+const restaurantCount = ref('—');
+const reservationCount = ref('—');
+const memberCount = ref('—');
+
+// =====================================================
+// JWT Header
+// =====================================================
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = 'Bearer ' + token;
+  }
+  return headers;
+}
+
+// =====================================================
+// 取得單一統計數字 (從陣列長度)
+// =====================================================
+
+async function fetchCount(url) {
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) return '—';
+    const data = await response.json();
+    return Array.isArray(data) ? data.length : (data.total ?? data.count ?? '—');
+  } catch {
+    return '—';
+  }
+}
+
+// =====================================================
+// 初始化：一次呼叫四支 API
+// =====================================================
+
+onMounted(async () => {
+  const [p, r, res, m] = await Promise.all([
+    fetchCount('/api/products'),
+    fetchCount('/api/restaurant'),
+    fetchCount('/api/reservations'),
+    fetchCount('/api/members'),
+  ]);
+  productCount.value = p;
+  restaurantCount.value = r;
+  reservationCount.value = res;
+  memberCount.value = m;
+});
+</script>
 
 <style scoped>
 .dashboard-title {

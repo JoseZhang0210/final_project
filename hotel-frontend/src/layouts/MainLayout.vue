@@ -1,10 +1,9 @@
 <script setup>
-import { storeToRefs } from 'pinia';
-import { useAuthStore } from '@/stores/auth';
+import { storeToRefs } from "pinia";
+import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
 const { isLoggedIn } = storeToRefs(authStore);
-
 </script>
 <template>
   <div class="layout">
@@ -39,7 +38,7 @@ const { isLoggedIn } = storeToRefs(authStore);
     </main>
 
     <footer>
-      <p>© 2026 Hotel Shop 飯店商城｜All Rights Reserved</p>
+      <p>© 2026 Hotel Shop 星澄飯店｜All Rights Reserved</p>
     </footer>
   </div>
 </template>

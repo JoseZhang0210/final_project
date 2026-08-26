@@ -1,27 +1,51 @@
+### 變數設定
+@baseUrl = http://localhost:8081/api/roomtask
+@authUrl = http://localhost:8081/api/auth
+@taskId = 10
+
+### 0. 登入獲取 JWT Token
+# @name login
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin01",
+  "password": "123456"
+}
+
+### 自動綁定 Token 變數
+@jwtToken = {{login.response.body.token}}
+
+### --------------------------------------------------------
+
 ### 1. GET 查詢所有房務任務
-GET http://localhost:8081/api/roomtask
-Authorization: Basic vic1 111
+GET {{baseUrl}}
+Authorization: Bearer {{jwtToken}}
 
-### 1. 依任務狀態查詢 (例如：待處理)
-GET http://localhost:8081/api/roomtask?taskStatus=待處理
-Authorization: Basic vic1 111
+### 2. 依條件過濾任務 (RequestParam 查詢)
+# 2.1 依任務 ID 查詢 (回傳 List)
+GET {{baseUrl}}?taskId={{taskId}}
+Authorization: Bearer {{jwtToken}}
 
-### 2. 依任務類型查詢 (例如：退房清潔)
-GET http://localhost:8081/api/roomtask?taskType=退房清潔
-Authorization: Basic vic1 111
+### 2.2 依房間 ID 查詢
+GET {{baseUrl}}?roomId=15
+Authorization: Bearer {{jwtToken}}
 
-### 3. GET 查詢單一房務任務 (例如 taskID = 30)
-GET http://localhost:8081/api/roomtask?taskId=142
-Authorization: Basic vic1 111
+### 2.3 依員工 ID 查詢
+GET {{baseUrl}}?employeeId=21
+Authorization: Bearer {{jwtToken}}
 
-### GET  By RoomId 
-GET http://localhost:8081/api/roomtask?roomId=77
-Authorization: Basic vic1 111
+### 2.4 依優先級查詢 (例如：緊急、重要、一般)
+GET {{baseUrl}}?priority=緊急
+Authorization: Bearer {{jwtToken}}
 
+### 3. GET 依 ID 查詢單一房務任務 (PathVariable 查詢)
+GET {{baseUrl}}/{{taskId}}
+Authorization: Bearer {{jwtToken}}
 
 ### 4. POST 新增房務任務
-POST http://localhost:8081/api/roomtask
-Authorization: Basic vic1 111
+POST {{baseUrl}}
+Authorization: Bearer {{jwtToken}}
 Content-Type: application/json
 
 {
@@ -33,9 +57,9 @@ Content-Type: application/json
   "taskStatus": "待處理"
 }
 
-### 5. PUT 修改房務任務資訊但不會修改建立時間 (修改 ID = 1 的資料)
-PUT http://localhost:8081/api/roomtask/131
-Authorization: Basic vic1 111
+### 5. PUT 修改房務任務資訊 (修改 ID = {{taskId}} 的資料)
+PUT {{baseUrl}}/{{taskId}}
+Authorization: Bearer {{jwtToken}}
 Content-Type: application/json
 
 {
@@ -47,10 +71,6 @@ Content-Type: application/json
   "taskStatus": "已完成"
 }
 
-# ### 6. PATCH 快速更新任務狀態 (將 ID = 1 的狀態改為已完成)
-# PATCH http://localhost:8081/api/roomtask/1/status?status=已完成
-# Authorization: Basic vic1 111
-
-### 7. DELETE 刪除房務任務 (刪除 ID = 1 的資料)
-DELETE http://localhost:8081/api/roomtask/191
-Authorization: Basic vic1 111
+### 6. DELETE 刪除房務任務 (刪除 ID = {{taskId}} 的資料)
+DELETE {{baseUrl}}/{{taskId}}
+Authorization: Bearer {{jwtToken}}
