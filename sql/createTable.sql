@@ -484,11 +484,6 @@ REFERENCES [dbo].[payment] ([payment_id])
 GO
 ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_payment]
 GO
-ALTER TABLE [dbo].[category]  WITH CHECK ADD  CONSTRAINT [FK_category_category] FOREIGN KEY([parent_category])
-REFERENCES [dbo].[category] ([category_id])
-GO
-ALTER TABLE [dbo].[category] CHECK CONSTRAINT [FK_category_category]
-GO
 ALTER TABLE [dbo].[employee]  WITH CHECK ADD  CONSTRAINT [FK_employee_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
 GO
