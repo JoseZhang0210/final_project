@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.dto.RentalCreateRequest;
-import com.hotel.entity.Rental;
-import com.hotel.entity.Venue;
+import com.hotel.model.entity.Rental;
+import com.hotel.model.entity.Venue;
 import com.hotel.repository.RentalRepository;
 import com.hotel.repository.VenueRepository;
 

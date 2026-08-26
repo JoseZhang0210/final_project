@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hotel.entity.Venue;
+import com.hotel.model.entity.Venue;
 import com.hotel.repository.RentalRepository;
 import com.hotel.repository.VenueRepository;
 
