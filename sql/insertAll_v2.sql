@@ -350,6 +350,8 @@ INSERT [dbo].[venue] ([venue_id], [venue_name], [capacity], [price_per_day], [ve
 GO
 INSERT [dbo].[venue] ([venue_id], [venue_name], [capacity], [price_per_day], [venue_status]) VALUES (2, N'會議室 A', 50, 12000, N'可預約')
 GO
+INSERT [dbo].[venue] ([venue_id], [venue_name], [capacity], [price_per_day], [venue_status]) VALUES (3, N'會議室 B', 30, 8000, N'可預約');
+GO
 SET IDENTITY_INSERT [dbo].[rental] ON 
 GO
 INSERT [dbo].[rental] ([rental_id], [venue_id], [member_id], [event_name], [rental_date], [guest_count], [payment_id], [rental_status]) VALUES (1, 1, 1, N'公司尾牙', CAST(N'2026-12-20T18:00:00.000' AS DateTime), 200, 1, N'已確認')
