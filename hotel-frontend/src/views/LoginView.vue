@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login-page">
     <div class="login-container">
       <div class="login-card">
@@ -115,8 +115,15 @@ async function login() {
     message.value = "登入成功";
     messageType.value = "success";
 
-    // 判斷是不是管理員
-    if (data.authorities && data.authorities.includes("ROLE_ADMIN")) {
+    // 管理員或員工登入後進入後台
+    const canEnterAdmin =
+      data.authorities &&
+      (
+        data.authorities.includes("ROLE_ADMIN") ||
+        data.authorities.includes("ROLE_EMPLOYEE")
+      );
+
+    if (canEnterAdmin) {
       router.push("/admin");
     } else {
       router.push("/");

@@ -2,6 +2,7 @@ package com.hotel.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -65,6 +66,23 @@ public class SecurityConfig {
                                                                 // Spring Boot error
                                                                 // -------------------------
                                                                 .requestMatchers("/error").permitAll()
+                                                                // -------------------------
+                                                                // Venue management:
+                                                                // GET remains available to authenticated users.
+                                                                // POST / PUT / DELETE require ROLE_ADMIN.
+                                                                // -------------------------
+                                                                .requestMatchers(
+                                                                                HttpMethod.POST,
+                                                                                "/api/venues/**")
+                                                                .hasRole("ADMIN")
+                                                                .requestMatchers(
+                                                                                HttpMethod.PUT,
+                                                                                "/api/venues/**")
+                                                                .hasRole("ADMIN")
+                                                                .requestMatchers(
+                                                                                HttpMethod.DELETE,
+                                                                                "/api/venues/**")
+                                                                .hasRole("ADMIN")
                                                                 // -------------------------
                                                                 // 其他 API
                                                                 // 需要 JWT

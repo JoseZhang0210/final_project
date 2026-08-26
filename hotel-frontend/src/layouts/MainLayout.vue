@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
@@ -21,6 +21,8 @@ const { isLoggedIn } = storeToRefs(authStore);
         <RouterLink to="/room-booking"> 訂房管理 </RouterLink>
 
         <RouterLink to="/restaurant-menu"> 餐廳 </RouterLink>
+
+        <RouterLink to="/rentals"> 可預約場地 </RouterLink>
 
         <template v-if="!isLoggedIn">
           <RouterLink to="/register"> 註冊 </RouterLink>

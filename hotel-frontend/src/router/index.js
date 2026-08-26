@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+﻿import { createRouter, createWebHistory } from "vue-router";
 
 import MainLayout from "../layouts/MainLayout.vue";
 import AdminLayout from "../layouts/AdminLayout.vue";
@@ -193,4 +193,35 @@ const router = createRouter({
   ],
 });
 
+router.beforeEach((to) => {
+  if (!to.path.startsWith("/admin")) {
+    return true;
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    return "/login";
+  }
+
+  let authorities = [];
+
+  try {
+    authorities = JSON.parse(
+      localStorage.getItem("authorities") || "[]",
+    );
+  } catch {
+    authorities = [];
+  }
+
+  const canEnterAdmin =
+    authorities.includes("ROLE_ADMIN") ||
+    authorities.includes("ROLE_EMPLOYEE");
+
+  if (!canEnterAdmin) {
+    return "/";
+  }
+
+  return true;
+});
 export default router;

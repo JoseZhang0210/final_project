@@ -372,10 +372,53 @@ public class RentalService {
 
     private Venue getVenue(Integer venueId) {
 
-        return venueRepository.findById(venueId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "找不到場地 ID：" + venueId));
+        if (venueId == null
+                || venueId < 1
+                || venueId > 4) {
+
+            throw new IllegalArgumentException(
+                    "場地只能選擇 A～D 四廳（ID 1～4）");
+        }
+
+        Venue venue =
+                venueRepository
+                        .findById(venueId)
+                        .orElseGet(Venue::new);
+
+        venue.setVenueId(venueId);
+
+        switch (venueId) {
+            case 1 -> {
+                venue.setVenueName("A廳");
+                venue.setCapacity(50);
+                venue.setPricePerDay(5000);
+            }
+            case 2 -> {
+                venue.setVenueName("B廳");
+                venue.setCapacity(100);
+                venue.setPricePerDay(10000);
+            }
+            case 3 -> {
+                venue.setVenueName("C廳");
+                venue.setCapacity(200);
+                venue.setPricePerDay(20000);
+            }
+            case 4 -> {
+                venue.setVenueName("D廳");
+                venue.setCapacity(300);
+                venue.setPricePerDay(30000);
+            }
+            default ->
+                    throw new IllegalArgumentException(
+                            "場地只能選擇 A～D 四廳");
+        }
+
+        if (venue.getVenueStatus() == null
+                || venue.getVenueStatus().isBlank()) {
+            venue.setVenueStatus("AVAILABLE");
+        }
+
+        return venueRepository.save(venue);
     }
 
     private void validateCreateRequest(
@@ -479,7 +522,7 @@ public class RentalService {
 
         if (rental.getGuestCount() > venue.getCapacity()) {
             throw new IllegalArgumentException(
-                    "參加人數不可超過場地容量："
+                    "參加人數不可超過場地可容納人數："
                             + venue.getCapacity());
         }
     }

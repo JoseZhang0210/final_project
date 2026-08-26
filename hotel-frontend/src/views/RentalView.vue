@@ -6,11 +6,19 @@ import {
   createRental,
   getApiErrorMessage,
   getMyRentals,
+  getRentals,
+  getStoredAuthorities,
   getStoredToken,
   getVenues,
 } from "../api/venueRentalApi";
 
 const router = useRouter();
+
+const authorities = getStoredAuthorities();
+
+const isStaffAccount =
+  authorities.includes("ROLE_ADMIN") ||
+  authorities.includes("ROLE_EMPLOYEE");
 
 const token = ref("");
 const venues = ref([]);
@@ -81,18 +89,40 @@ async function loadData() {
   loading.value = true;
   errorMessage.value = "";
 
+  // 先取得場地。
+  // 場地資料與會員 Rental 資料分開載入，
+  // 避免 admin 沒有 member profile 時連場地下拉選單也一起失敗。
   try {
-    const [venueData, rentalData] =
-      await Promise.all([
-        getVenues(token.value),
-        getMyRentals(token.value),
-      ]);
+    const venueData =
+      await getVenues(token.value);
 
     venues.value = venueData ?? [];
-    rentals.value = rentalData ?? [];
   } catch (error) {
+    venues.value = [];
     errorMessage.value =
       getApiErrorMessage(error);
+    loading.value = false;
+    return;
+  }
+
+  // admin / employee 顯示全部 Rental；
+  // 一般會員只顯示自己的 Rental。
+  try {
+    const rentalData =
+      isStaffAccount
+        ? await getRentals(token.value)
+        : await getMyRentals(token.value);
+
+    rentals.value = rentalData ?? [];
+  } catch (error) {
+    rentals.value = [];
+
+    // 員工帳號本來就不一定具有 member profile，
+    // 不讓此錯誤阻斷 Venue -> Rental 的場地連動。
+    if (!isStaffAccount) {
+      errorMessage.value =
+        getApiErrorMessage(error);
+    }
   } finally {
     loading.value = false;
   }
@@ -139,7 +169,7 @@ async function handleSubmit() {
     guestCount > selectedVenue.value.capacity
   ) {
     errorMessage.value =
-      `參加人數不可超過場地容量 ${selectedVenue.value.capacity}`;
+      `參加人數不可超過場地可容納人數 ${selectedVenue.value.capacity} 人`;
     return;
   }
 
@@ -250,6 +280,15 @@ function money(value) {
     <section class="card">
       <h2>新增租借</h2>
 
+      <p
+        v-if="isStaffAccount"
+        class="hint"
+      >
+        管理員模式已連動場地與全部租借資料。
+        目前前台送出租借仍以會員帳號建立；
+        管理員代會員新增將在後台 CRUD 流程處理。
+      </p>
+
       <div class="form-grid">
         <label>
           <span>場地</span>
@@ -268,7 +307,7 @@ function money(value) {
               :value="venue.venueId"
             >
               {{ venue.venueName }}
-              ｜容量 {{ venue.capacity }}
+              ｜可容納 {{ venue.capacity }} 人
               ｜{{ money(venue.pricePerDay) }}/日
             </option>
           </select>
@@ -320,7 +359,7 @@ function money(value) {
         </strong>
 
         <span>
-          容量：
+          可容納人數：
           {{ selectedVenue.capacity }} 人
         </span>
 
@@ -357,7 +396,13 @@ function money(value) {
     <section class="card">
       <div class="table-title">
         <div>
-          <h2>我的租借</h2>
+          <h2>
+            {{
+              isStaffAccount
+                ? "全部租借"
+                : "我的租借"
+            }}
+          </h2>
           <p>
             共 {{ rentals.length }} 筆
           </p>
@@ -551,6 +596,11 @@ button.secondary {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.hint {
+  color: #75685c;
+  line-height: 1.7;
 }
 
 .notice {

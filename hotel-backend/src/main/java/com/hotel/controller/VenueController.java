@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hotel.model.entity.Venue;
 import com.hotel.service.VenueService;
 
-/**
- * 場地 REST API。
- */
 @RestController
 @RequestMapping("/api/venues")
 public class VenueController {
@@ -52,7 +48,8 @@ public class VenueController {
     public ResponseEntity<Venue> findById(
             @PathVariable Integer id) {
 
-        return venueService.findById(id)
+        return venueService
+                .findById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() ->
                         ResponseEntity.notFound().build());
@@ -60,32 +57,13 @@ public class VenueController {
 
     @PostMapping
     public ResponseEntity<?> create(
-            @RequestBody Venue venue) {
-
-        String validationError =
-                validateVenue(venue);
-
-        if (validationError != null) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "message",
-                            validationError));
-        }
-
-        if (venueService.existsById(
-                venue.getVenueId())) {
-
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of(
-                            "message",
-                            "場地 ID 已存在："
-                                    + venue.getVenueId()));
-        }
+            @RequestBody(required = false) Venue venue) {
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(venueService.save(venue));
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Map.of(
+                        "message",
+                        "場地固定為 A～D 四廳，由系統自動建立，不能新增"));
     }
 
     @PutMapping("/{id}")
@@ -93,113 +71,76 @@ public class VenueController {
             @PathVariable Integer id,
             @RequestBody Venue venue) {
 
-        if (!venueService.existsById(id)) {
+        if (!venueService.isFixedId(id)) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(Map.of(
                             "message",
-                            "找不到場地 ID：" + id));
+                            "場地 ID 只能是 1、2、3、4"));
         }
 
-        venue.setVenueId(id);
-
-        String validationError =
-                validateVenue(venue);
-
-        if (validationError != null) {
-            return ResponseEntity.badRequest()
+        if (venue == null) {
+            return ResponseEntity
+                    .badRequest()
                     .body(Map.of(
                             "message",
-                            validationError));
+                            "場地資料不可空白"));
         }
 
-        return ResponseEntity.ok(
-                venueService.save(venue));
+        String status =
+                normalizeStatus(
+                        venue.getVenueStatus());
+
+        if (status == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of(
+                            "message",
+                            "場地狀態只能是 AVAILABLE、MAINTENANCE 或 DISABLED"));
+        }
+
+        try {
+            return ResponseEntity.ok(
+                    venueService.updateStatus(
+                            id,
+                            status));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of(
+                            "message",
+                            e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
             @PathVariable Integer id) {
 
-        if (!venueService.existsById(id)) {
+        if (!venueService.isFixedId(id)) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(Map.of(
                             "message",
-                            "找不到場地 ID：" + id));
+                            "場地 ID 只能是 1、2、3、4"));
         }
 
-        try {
-            venueService.deleteById(id);
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "message",
-                            "場地已刪除"));
-
-        } catch (IllegalStateException e) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of(
-                            "message",
-                            e.getMessage()));
-
-        } catch (DataIntegrityViolationException e) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of(
-                            "message",
-                            "此場地已有租借或其他關聯資料，無法刪除"));
-        }
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Map.of(
+                        "message",
+                        "A～D 四個固定場地不可刪除，只能修改狀態"));
     }
 
-    private String validateVenue(Venue venue) {
+    private String normalizeStatus(String status) {
 
-        if (venue.getVenueId() == null) {
-            return "場地 ID 不可空白";
+        if (status == null || status.isBlank()) {
+            return null;
         }
 
-        if (venue.getVenueName() == null
-                || venue.getVenueName().isBlank()) {
-            return "場地名稱不可空白";
-        }
+        String key =
+                status.trim().toUpperCase(Locale.ROOT);
 
-        if (venue.getVenueName().trim().length() > 50) {
-            return "場地名稱不可超過 50 個字元";
-        }
-
-        venue.setVenueName(
-                venue.getVenueName().trim());
-
-        if (venue.getCapacity() == null
-                || venue.getCapacity() <= 0) {
-            return "場地容量必須大於 0";
-        }
-
-        if (venue.getPricePerDay() == null
-                || venue.getPricePerDay() < 0) {
-            return "每日價格不可小於 0";
-        }
-
-        if (venue.getVenueStatus() == null
-                || venue.getVenueStatus().isBlank()) {
-            return "場地狀態不可空白";
-        }
-
-        String statusKey =
-                venue.getVenueStatus()
-                        .trim()
-                        .toUpperCase(Locale.ROOT);
-
-        String normalized =
-                STATUS_ALIASES.get(statusKey);
-
-        if (normalized == null) {
-            return "場地狀態只能是 AVAILABLE、MAINTENANCE 或 DISABLED";
-        }
-
-        venue.setVenueStatus(normalized);
-
-        return null;
+        return STATUS_ALIASES.get(key);
     }
 }

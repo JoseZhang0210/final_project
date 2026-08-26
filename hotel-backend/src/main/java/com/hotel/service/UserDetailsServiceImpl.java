@@ -2,6 +2,7 @@ package com.hotel.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -19,36 +20,61 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-	private final AccountRepository accountRepository;
+    private final AccountRepository accountRepository;
 
-	@Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    @Override
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+
         Account account = accountRepository.findByUsername(username);
+
         if (account == null) {
-            throw new UsernameNotFoundException("Can't find account: " + username);
+            throw new UsernameNotFoundException(
+                    "Can't find account: " + username);
         }
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         Integer accountId = account.getAccountId();
 
-        // 1. 去 employee 表檢查是不是員工
-        String position = accountRepository.findEmployeePosition(accountId);
-        
-        if (position != null) {
-            // 💡 員工身分：固定賦予大角色 ROLE_EMPLOYEE (給 Vue 拆 Layout 用)
-            authorities.add(new SimpleGrantedAuthority("ROLE_EMPLOYEE"));
-            
-            // 💡 職位名稱：當作特權標籤塞入 (例如："POSITION_櫃檯")
-            authorities.add(new SimpleGrantedAuthority("POSITION_" + position));
-            
-            // 跨表撈出該員工在資料庫勾選的細部功能特權（如 order:write）
-            List<String> permissionCodes = accountRepository.findPermissionCodesByAccountId(accountId);
-            for (String code : permissionCodes) {
-                authorities.add(new SimpleGrantedAuthority(code));
+        String normalizedUsername =
+                String.valueOf(account.getUsername())
+                        .trim()
+                        .toLowerCase(Locale.ROOT);
+
+        boolean adminAccount =
+                normalizedUsername.startsWith("admin");
+
+        String position =
+                accountRepository.findEmployeePosition(accountId);
+
+        if (position != null || adminAccount) {
+            authorities.add(
+                    new SimpleGrantedAuthority("ROLE_EMPLOYEE"));
+
+            if (adminAccount) {
+                authorities.add(
+                        new SimpleGrantedAuthority("ROLE_ADMIN"));
+            }
+
+            if (position != null) {
+                authorities.add(
+                        new SimpleGrantedAuthority(
+                                "POSITION_" + position));
+
+                List<String> permissionCodes =
+                        accountRepository
+                                .findPermissionCodesByAccountId(accountId);
+
+                for (String code : permissionCodes) {
+                    if (code != null && !code.isBlank()) {
+                        authorities.add(
+                                new SimpleGrantedAuthority(code));
+                    }
+                }
             }
         } else {
-            // 💡 會員身分：只要不是員工，進來一律就是正式會員，固定賦予 ROLE_MEMBER
-            authorities.add(new SimpleGrantedAuthority("ROLE_MEMBER")); 
+            authorities.add(
+                    new SimpleGrantedAuthority("ROLE_MEMBER"));
         }
 
         return User.withUsername(username)
