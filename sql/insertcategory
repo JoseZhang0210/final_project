@@ -1,0 +1,9 @@
+USE [finalproject]
+GO
+
+INSERT [dbo].[Category] ( [Category_Name]) VALUES ( N'客房備品')
+GO
+INSERT [dbo].[Category] ( [Category_Name]) VALUES ( N'紀念商品')
+GO
+INSERT [dbo].[Category] ( [Category_Name]) VALUES ( N'餐飲商品')
+GO
