@@ -2,7 +2,7 @@ package com.hotel.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.hotel.entity.Venue;
+import com.hotel.model.entity.Venue;
 
 /**
  * Venue 的資料存取層。
