@@ -1238,15 +1238,30 @@ INSERT [dbo].[room_task] ([task_id], [room_id], [employee_id], [priority], [task
 GO
 SET IDENTITY_INSERT [dbo].[room_task] OFF
 GO
-SET IDENTITY_INSERT [dbo].[order] ON 
-GO
-INSERT [dbo].[order] ([order_id], [member_id], [order_date], [is_ordered], [payment_id]) VALUES (1, 1, CAST(N'2026-08-10T15:20:00.000' AS DateTime), 1, 1)
-GO
-INSERT [dbo].[order] ([order_id], [member_id], [order_date], [is_ordered], [payment_id]) VALUES (2, 2, CAST(N'2026-08-11T12:10:00.000' AS DateTime), 1, 2)
-GO
-INSERT [dbo].[order] ([order_id], [member_id], [order_date], [is_ordered], [payment_id]) VALUES (3, 1, CAST(N'2026-08-13T18:50:00.000' AS DateTime), 1, 4)
-GO
-SET IDENTITY_INSERT [dbo].[order] OFF
+/* =========================================================
+    21. order
+    ========================================================= */
+INSERT INTO dbo.[order] (
+      member_id,
+      order_date,
+      is_ordered,
+      payment_id,
+      order_status
+   )
+VALUES (
+      1,
+      '2026-08-26 18:00:00',
+      0,
+      NULL,
+      N'PENDING'
+   ),
+   (
+      2,
+      '2026-08-26 18:05:00',
+      1,
+      2,
+      N'COMPLETED'
+   );
 GO
 SET IDENTITY_INSERT [dbo].[restaurant] ON 
 GO

@@ -1,0 +1,154 @@
+USE [finalproject];
+GO
+
+/* =====================================================
+   1. 先刪除 order_item
+   因為它有 FK 指向 [order]
+   ===================================================== */
+
+IF OBJECT_ID('dbo.order_item', 'U') IS NOT NULL
+BEGIN
+    DROP TABLE dbo.order_item;
+END
+GO
+
+
+/* =====================================================
+   2. 再刪除 [order]
+   ===================================================== */
+
+IF OBJECT_ID('dbo.[order]', 'U') IS NOT NULL
+BEGIN
+    DROP TABLE dbo.[order];
+END
+GO
+
+
+/* =====================================================
+   3. 建立訂單主表 [order]
+   ===================================================== */
+
+CREATE TABLE dbo.[order] (
+
+    /* 訂單編號，自動遞增 */
+    order_id INT IDENTITY(1,1) NOT NULL,
+
+    /* 會員編號
+       由會員組負責
+       訂單系統只保存 member_id
+    */
+    member_id INT NOT NULL,
+
+    /* 建立訂單時間 */
+    order_date DATETIME NOT NULL
+        CONSTRAINT DF_order_order_date
+        DEFAULT GETDATE(),
+
+    /* 是否完成訂單
+       0 = 尚未完成
+       1 = 已完成
+    */
+    is_ordered BIT NOT NULL
+        CONSTRAINT DF_order_is_ordered
+        DEFAULT 0,
+
+    /* 付款資料
+       現階段可以沒有付款資料
+    */
+    payment_id INT NULL,
+
+    /* 訂單狀態 */
+    order_status NVARCHAR(20) NOT NULL
+        CONSTRAINT DF_order_status
+        DEFAULT N'PENDING',
+
+    /* Primary Key */
+    CONSTRAINT PK_order
+        PRIMARY KEY CLUSTERED (order_id),
+
+    /* 限制訂單狀態 */
+    CONSTRAINT CK_order_status
+        CHECK (
+            order_status IN (
+                N'PENDING',
+                N'COMPLETED',
+                N'CANCELLED'
+            )
+        )
+);
+GO
+
+
+/* =====================================================
+   4. 建立訂單商品明細 order_item
+   ===================================================== */
+
+CREATE TABLE dbo.order_item (
+
+    /* 所屬訂單 */
+    order_id INT NOT NULL,
+
+    /* 商品 */
+    product_id INT NOT NULL,
+
+    /* 購買數量 */
+    quantity INT NOT NULL,
+
+    /* 一張訂單中，同一商品只能存在一筆 */
+    CONSTRAINT PK_order_item
+        PRIMARY KEY CLUSTERED (
+            order_id,
+            product_id
+        ),
+
+    /* 數量一定要大於 0 */
+    CONSTRAINT CK_order_item_quantity
+        CHECK (
+            quantity > 0
+        )
+);
+GO
+
+
+/* =====================================================
+   5. order → member FK
+   ===================================================== */
+
+ALTER TABLE dbo.[order]
+ADD CONSTRAINT FK_order_member
+FOREIGN KEY (member_id)
+REFERENCES dbo.member(member_id);
+GO
+
+
+/* =====================================================
+   6. order → payment FK
+   ===================================================== */
+
+ALTER TABLE dbo.[order]
+ADD CONSTRAINT FK_order_payment
+FOREIGN KEY (payment_id)
+REFERENCES dbo.payment(payment_id);
+GO
+
+
+/* =====================================================
+   7. order_item → order FK
+   ===================================================== */
+
+ALTER TABLE dbo.order_item
+ADD CONSTRAINT FK_order_item_order
+FOREIGN KEY (order_id)
+REFERENCES dbo.[order](order_id);
+GO
+
+
+/* =====================================================
+   8. order_item → product FK
+   ===================================================== */
+
+ALTER TABLE dbo.order_item
+ADD CONSTRAINT FK_order_item_product
+FOREIGN KEY (product_id)
+REFERENCES dbo.product(product_id);
+GO
