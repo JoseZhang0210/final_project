@@ -164,34 +164,36 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO
+GO 
 CREATE TABLE [dbo].[order](
-	[order_id] [int] IDENTITY(1,1) NOT NULL,
-	[member_id] [int] NOT NULL,
-	[order_date] [datetime] NOT NULL,
-	[is_ordered] [bit] NOT NULL,
-	[payment_id] [int] NOT NULL,
- CONSTRAINT [PK_order] PRIMARY KEY CLUSTERED 
-(
-	[order_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+		[order_id] [int] IDENTITY(1, 1) NOT NULL,
+		[member_id] [int] NOT NULL,
+		[order_date] [datetime] NOT NULL CONSTRAINT [DF_order_order_date] DEFAULT (GETDATE()),
+		[is_ordered] [bit] NOT NULL CONSTRAINT [DF_order_is_ordered] DEFAULT ((0)),
+		[payment_id] [int] NULL,
+		[order_status] [nvarchar](20) NOT NULL CONSTRAINT [DF_order_status] DEFAULT (N'PENDING'),
+		CONSTRAINT [PK_order] PRIMARY KEY CLUSTERED ([order_id] ASC),
+		CONSTRAINT [CK_order_status] CHECK (
+			[order_status] IN (
+				N'PENDING',
+				N'COMPLETED',
+				N'CANCELLED'
+			)
+		)
+	);
 GO
 /****** 物件:  Table [dbo].[order_item]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO
+GO 
 CREATE TABLE [dbo].[order_item](
-	[order_id] [int] IDENTITY(1,1) NOT NULL,
-	[product_id] [int] NOT NULL,
-	[quantity] [int] NOT NULL,
- CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED 
-(
-	[order_id] ASC,
-	[product_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+		[order_id] [int] NOT NULL,
+		[product_id] [int] NOT NULL,
+		[quantity] [int] NOT NULL,
+		CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED ([order_id] ASC, [product_id] ASC),
+		CONSTRAINT [CK_order_item_quantity] CHECK ([quantity] > 0)
+	);
 GO
 /****** 物件:  Table [dbo].[payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
@@ -579,6 +581,3 @@ GO
 
 ALTER TABLE [dbo].[room_image] CHECK CONSTRAINT [FK_room_image_room_type]
 GO
-
-
-

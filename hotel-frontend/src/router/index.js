@@ -20,6 +20,8 @@ import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
 import ProductAddView from "../views/ProductAddView.vue";
 import ProductShopView from "../views/ProductShopView.vue";
+//---------------------- 訂單後台管理 -----------------
+import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
@@ -30,6 +32,15 @@ import RoomManageView from "../views/RoomManageView.vue";
 import RoomImageManageView from "../views/RoomImageManageView.vue";
 import RoomTaskManageView from "../views/RoomTaskManageView.vue";
 import RoomBookingManageView from "../views/RoomBookingManageView.vue";
+
+// ---------------購物車-------------------
+import CartView from "../views/CartView.vue";
+
+
+//--------------- 會員訂單管理 -----------------
+import MyOrdersView from "../views/MyOrdersView.vue";
+
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,6 +85,12 @@ const router = createRouter({
           name: "admin-product-add",
           component: ProductAddView,
         },
+        {
+          path: "orders",
+          name: "admin-orders",
+          component: AdminOrdersView,
+        },
+
         {
           path: "restaurant-times",
           name: "admin-restaurant-times",
@@ -121,6 +138,7 @@ const router = createRouter({
           name: "admin-venues",
           component: VenueView,
         },
+
         {
           path: "rental",
           name: "admin-rental",
@@ -159,6 +177,11 @@ const router = createRouter({
           component: ProductShopView,
         },
         {
+          path: "/cart",
+          name: "cart",
+          component: CartView,
+        },
+        {
           path: "restaurant-menu",
           name: "restaurant-menu",
           component: RestaurantMenuView,
@@ -187,6 +210,11 @@ const router = createRouter({
           path: "about",
           name: "about",
           component: () => import("../views/AboutView.vue"),
+        },
+        {
+          path: "my-orders",
+          name: "my-orders",
+          component: MyOrdersView,
         },
       ],
     },
