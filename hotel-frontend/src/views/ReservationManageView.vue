@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from "vue";
 const RESTAURANT_API_URL = "/api/restaurant";
 const TIME_API_URL = "/api/restaurant_times";
 const RESERVATION_API_URL = "/api/reservations";
+const MEMBER_API_URL = "/api/members";
 
 const restaurants = ref([]);
 const allTimes = ref([]);
@@ -16,6 +17,7 @@ const formTitle = ref("新增訂位");
 
 const loading = ref(false);
 const saving = ref(false);
+const memberLoaded = ref(false);
 
 const form = ref(createEmptyForm());
 
@@ -105,13 +107,59 @@ function getTimeName(timeId) {
 }
 
 // ==============================
-// 有會員 ID 時清空聯絡資訊
+// 會員資料
 // ==============================
 
-function clearContactInfo() {
-  if (hasMember.value) {
-    form.value.contactName = "";
-    form.value.contactPhone = "";
+function handleMemberIdInput() {
+  memberLoaded.value = false;
+  form.value.contactName = "";
+  form.value.contactPhone = "";
+}
+
+async function loadMemberInfo() {
+  const memberId = String(form.value.memberId ?? "").trim();
+
+  memberLoaded.value = false;
+
+  if (!memberId) {
+    return;
+  }
+
+  if (!/^\d+$/.test(memberId)) {
+    showMessage("會員 ID 必須為數字", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${MEMBER_API_URL}/${memberId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 404) {
+      showMessage("查無此會員 ID", "error");
+      return;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      showMessage("登入狀態失效或沒有會員資料權限", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage("讀取會員資料失敗", "error");
+      return;
+    }
+
+    const member = await response.json();
+
+    form.value.memberId = String(member.memberId);
+    form.value.contactName = member.name ?? "";
+    form.value.contactPhone = member.phone ?? "";
+    memberLoaded.value = true;
+  } catch (error) {
+    console.error(error);
+    showMessage("無法連線至會員 API", "error");
   }
 }
 
@@ -259,6 +307,7 @@ async function loadReservations() {
 function clearForm() {
   form.value = createEmptyForm();
   timeOptions.value = [];
+  memberLoaded.value = false;
   formTitle.value = "新增訂位";
   message.value = "";
   messageType.value = "";
@@ -271,6 +320,11 @@ function clearForm() {
 // ==============================
 
 async function saveReservation() {
+  if (hasMember.value && !memberLoaded.value) {
+    showMessage("請先輸入有效的會員 ID", "error");
+    return;
+  }
+
   if (!hasMember.value) {
     if (!form.value.contactName.trim() || !form.value.contactPhone.trim()) {
       showMessage("非會員訂位必須填寫姓名與電話", "error");
@@ -281,9 +335,9 @@ async function saveReservation() {
   const payload = {
     memberId: hasMember.value ? Number(form.value.memberId) : null,
 
-    contactName: hasMember.value ? null : form.value.contactName.trim(),
+    contactName: form.value.contactName.trim() || null,
 
-    contactPhone: hasMember.value ? null : form.value.contactPhone.trim(),
+    contactPhone: form.value.contactPhone.trim() || null,
 
     restaurantId: Number(form.value.restaurantId),
 
@@ -364,7 +418,11 @@ async function editReservation(reservation) {
     status: reservation.status,
   };
 
-  clearContactInfo();
+  memberLoaded.value = false;
+
+  if (hasMember.value) {
+    await loadMemberInfo();
+  }
 
   await loadTimeOptions(reservation.timeId);
 
@@ -458,7 +516,8 @@ onMounted(async () => {
               type="number"
               min="1"
               placeholder="會員訂位可輸入會員 ID"
-              @input="clearContactInfo"
+              @input="handleMemberIdInput"
+              @blur="loadMemberInfo"
             />
           </div>
 
@@ -470,7 +529,7 @@ onMounted(async () => {
               v-model="form.contactName"
               type="text"
               placeholder="請輸入訂位人姓名"
-              :disabled="hasMember"
+              :disabled="memberLoaded"
             />
           </div>
 
@@ -482,7 +541,7 @@ onMounted(async () => {
               v-model="form.contactPhone"
               type="text"
               placeholder="請輸入聯絡電話"
-              :disabled="hasMember"
+              :disabled="memberLoaded"
             />
           </div>
 
