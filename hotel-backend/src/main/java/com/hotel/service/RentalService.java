@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.dto.RentalCreateRequest;
-import com.hotel.entity.Rental;
-import com.hotel.entity.Venue;
+import com.hotel.model.entity.Rental;
+import com.hotel.model.entity.Venue;
 import com.hotel.repository.RentalRepository;
 import com.hotel.repository.VenueRepository;
 
@@ -21,7 +21,7 @@ import com.hotel.repository.VenueRepository;
  * V2.0：
  * 1. memberId 由登入帳號取得。
  * 2. rentalId 由後端產生。
- * 3. Payment 由後端建立。
+ * 3. rental_payment 由後端建立。
  * 4. paymentId 自動回填 Rental。
  * 5. 新 Rental 狀態固定 PENDING。
  */
@@ -90,12 +90,12 @@ public class RentalService {
         }
 
         /*
-         * Payment 是共享資料表。
+         * rental_payment 是共享資料表。
          *
          * 目前 main 的 Java Entity 將 payment_id 視為 IDENTITY，
          * 但 SQL createTable.sql 仍可能是一般 int PK。
          *
-         * 因此此處不修改共享 Payment Entity，
+         * 因此此處不修改共享 rental_payment Entity，
          * 而是先檢查實際 DB schema，再採取相容寫法。
          */
         Integer paymentId = createPendingPayment(
@@ -234,12 +234,12 @@ public class RentalService {
             Integer totalPrice) {
 
         if (isIdentityColumn(
-                "dbo.payment",
+                "dbo.rental_payment",
                 "payment_id")) {
 
             return jdbcTemplate.queryForObject(
                     """
-                    INSERT INTO dbo.payment
+                    INSERT INTO dbo.rental_payment
                         (payment_method,
                          payment_time,
                          total_price,
@@ -256,7 +256,7 @@ public class RentalService {
 
         return jdbcTemplate.queryForObject(
                 """
-                INSERT INTO dbo.payment
+                INSERT INTO dbo.rental_payment
                     (payment_id,
                      payment_method,
                      payment_time,
@@ -271,7 +271,7 @@ public class RentalService {
                     ?,
                     ?,
                     ?
-                FROM dbo.payment WITH (TABLOCKX, HOLDLOCK)
+                FROM dbo.rental_payment WITH (TABLOCKX, HOLDLOCK)
                 """,
                 Integer.class,
                 totalPrice,

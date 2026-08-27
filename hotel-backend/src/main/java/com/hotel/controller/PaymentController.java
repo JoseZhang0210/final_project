@@ -1,24 +1,24 @@
 package com.hotel.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Payment;
 import com.hotel.service.PaymentService;
+
+import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -30,200 +30,75 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    // =========================================
-    // 1. 查詢付款列表（支援依 memberId / paymentStatus / paymentMethod 篩選）
-    // GET /api/payments
-    // 例如：GET /api/payments
-    // GET /api/payments?memberId=1
-    // GET /api/payments?paymentStatus=已付款
-    // GET /api/payments?paymentMethod=信用卡
-    // =========================================
+    // 1. 查詢所有付款記錄 (GET /api/payments)
     @GetMapping
-    public ResponseEntity<List<Payment>> findPayments(
-            @RequestParam(required = false) Integer memberId,
-            @RequestParam(required = false) String paymentStatus,
-            @RequestParam(required = false) String paymentMethod) {
-
-        if (memberId != null) {
-            return ResponseEntity.ok(paymentService.findByMemberId(memberId));
+    public ResponseEntity<?> getAllPayments() {
+        try {
+            List<Payment> list = paymentService.findAll();
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "查詢失敗：" + e.getMessage()));
         }
-
-        if (paymentStatus != null && !paymentStatus.isBlank()) {
-            return ResponseEntity.ok(paymentService.findByPaymentStatus(paymentStatus));
-        }
-
-        if (paymentMethod != null && !paymentMethod.isBlank()) {
-            return ResponseEntity.ok(paymentService.findByPaymentMethod(paymentMethod));
-        }
-
-        List<Payment> payments = paymentService.findAllPayments();
-        return ResponseEntity.ok(payments);
     }
 
-    // =========================================
-    // 2. 查詢單一付款詳細資料
-    // GET /api/payments/{id}
-    // 例如：GET /api/payments/1
-    // =========================================
+    // 2. 依 ID 查詢付款記錄 (GET /api/payments/{id})
     @GetMapping("/{id}")
-    public ResponseEntity<Payment> findPaymentById(@PathVariable Integer id) {
-
-        Payment payment = paymentService.findById(id);
-
-        if (payment == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> getPaymentById(@PathVariable Integer id) {
+        try {
+            Payment payment = paymentService.findById(id);
+            return ResponseEntity.ok(payment);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "系統錯誤：" + e.getMessage()));
         }
-
-        return ResponseEntity.ok(payment);
     }
 
-    // =========================================
-    // 3. 新增付款記錄
-    // POST /api/payments
-    // =========================================
+    // 3. 新增付款記錄 (POST /api/payments)
     @PostMapping
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-
-        /*
-         * 新增付款時不應由前端指定 PaymentID
-         * PaymentID 由 SQL Server IDENTITY 自動產生
-         */
-        payment.setPaymentId(null);
-
-        /*
-         * 若前端未帶入付款時間，預設使用當前系統時間
-         */
-        if (payment.getPaymentTime() == null) {
-            payment.setPaymentTime(LocalDateTime.now());
+    public ResponseEntity<?> createPayment(@RequestBody Payment payment) {
+        try {
+            Payment savedPayment = paymentService.insert(payment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedPayment);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "新增付款記錄失敗：" + e.getMessage()));
         }
-
-        /*
-         * 若前端未送 paymentStatus，預設成「待付款」
-         */
-        if (payment.getPaymentStatus() == null || payment.getPaymentStatus().isBlank()) {
-            payment.setPaymentStatus("待付款");
-        }
-
-        Payment savedPayment = paymentService.save(payment);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(savedPayment);
     }
 
-    // =========================================
-    // 4. 修改付款資料
-    // PUT /api/payments/{id}
-    // 例如：PUT /api/payments/1
-    // =========================================
+    // 4. 更新付款記錄 (PUT /api/payments/{id})
     @PutMapping("/{id}")
-    public ResponseEntity<Payment> updatePayment(
-            @PathVariable Integer id,
-            @RequestBody Payment formPayment) {
-
-        Payment existingPayment = paymentService.findById(id);
-
-        /*
-         * 付款記錄不存在
-         */
-        if (existingPayment == null) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> updatePayment(@PathVariable Integer id, @RequestBody Payment payment) {
+        try {
+            Payment updatedPayment = paymentService.update(id, payment);
+            return ResponseEntity.ok(updatedPayment);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "更新付款失敗：" + e.getMessage()));
         }
-
-        /*
-         * 更新付款方式
-         */
-        existingPayment.setPaymentMethod(formPayment.getPaymentMethod());
-
-        /*
-         * 更新付款時間
-         */
-        if (formPayment.getPaymentTime() != null) {
-            existingPayment.setPaymentTime(formPayment.getPaymentTime());
-        }
-
-        /*
-         * 更新金額
-         */
-        if (formPayment.getTotalPrice() != null) {
-            existingPayment.setTotalPrice(formPayment.getTotalPrice());
-        }
-
-        /*
-         * 更新付款狀態
-         */
-        if (formPayment.getPaymentStatus() != null && !formPayment.getPaymentStatus().isBlank()) {
-            existingPayment.setPaymentStatus(formPayment.getPaymentStatus());
-        }
-
-        /*
-         * 更新會員 ID
-         */
-        existingPayment.setMemberId(formPayment.getMemberId());
-
-        Payment updatedPayment = paymentService.save(existingPayment);
-
-        return ResponseEntity.ok(updatedPayment);
     }
 
-    // =========================================
-    // 5. 快速更新付款狀態（如：退款、確認付款）
-    // PATCH /api/payments/{id}/status
-    // 例如：PATCH /api/payments/1/status?status=已退款
-    // =========================================
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Payment> updatePaymentStatus(
-            @PathVariable Integer id,
-            @RequestParam String status) {
-
-        Payment existingPayment = paymentService.findById(id);
-
-        /*
-         * 付款記錄不存在
-         */
-        if (existingPayment == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        existingPayment.setPaymentStatus(status);
-
-        Payment updatedPayment = paymentService.save(existingPayment);
-
-        return ResponseEntity.ok(updatedPayment);
-    }
-
-    // =========================================
-    // 6. 刪除付款記錄
-    // DELETE /api/payments/{id}
-    // 例如：DELETE /api/payments/1
-    // =========================================
+    // 5. 刪除付款記錄 (DELETE /api/payments/{id})
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePayment(@PathVariable Integer id) {
-
-        Payment payment = paymentService.findById(id);
-
-        /*
-         * 付款記錄不存在
-         */
-        if (payment == null) {
-            return ResponseEntity.notFound().build();
-        }
-
         try {
             paymentService.deleteById(id);
-
-            /*
-             * 204 No Content
-             * 代表刪除成功，無回傳內容
-             */
             return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
         } catch (DataIntegrityViolationException e) {
-            /*
-             * 若該付款記錄已有關聯訂單（booking_order, order, rental），回傳 409 Conflict
-             */
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body("無法刪除：該付款記錄已被其他訂單關聯。");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "無法刪除：該付款記錄仍被其他資料關聯。"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "刪除失敗：" + e.getMessage()));
         }
     }
 }
