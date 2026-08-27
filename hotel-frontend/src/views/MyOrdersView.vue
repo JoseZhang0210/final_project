@@ -3,36 +3,20 @@
     <div class="orders-container">
       <h1>我的訂單</h1>
 
-      <div
-        v-if="loading"
-        class="message-box"
-      >
+      <div v-if="loading" class="message-box">
         訂單讀取中...
       </div>
 
-      <div
-        v-else-if="errorMessage"
-        class="error-box"
-      >
+      <div v-else-if="errorMessage" class="error-box">
         {{ errorMessage }}
       </div>
 
-      <div
-        v-else-if="orders.length === 0"
-        class="message-box"
-      >
+      <div v-else-if="orders.length === 0" class="message-box">
         目前沒有訂單
       </div>
 
-      <div
-        v-else
-        class="order-list"
-      >
-        <div
-          v-for="order in orders"
-          :key="order.orderId"
-          class="order-card"
-        >
+      <div v-else class="order-list">
+        <div v-for="order in orders" :key="order.orderId" class="order-card">
           <!-- 訂單上方 -->
           <div class="order-header">
             <div>
@@ -45,21 +29,14 @@
               </div>
             </div>
 
-            <span
-              class="status-badge"
-              :class="getStatusClass(order.status)"
-            >
+            <span class="status-badge" :class="getStatusClass(order.status)">
               {{ getStatusText(order.status) }}
             </span>
           </div>
 
           <!-- 商品 -->
           <div class="order-items">
-            <div
-              v-for="item in order.items"
-              :key="item.productId"
-              class="order-item"
-            >
+            <div v-for="item in order.items" :key="item.productId" class="order-item">
               <div>
                 <div class="product-name">
                   {{ item.productName }}
@@ -132,7 +109,7 @@ async function loadOrders() {
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/member/${memberId}`,
+        `/api/orders/member/${memberId}`,
         {
           method: "GET",
           headers: getAuthHeaders(),
@@ -145,50 +122,50 @@ async function loadOrders() {
       );
     }
 
-// ===============================
-// try {
-//   const memberId =
-//     Number(
-//       localStorage.getItem("memberId")
-//     );
+    // ===============================
+    // try {
+    //   const memberId =
+    //     Number(
+    //       localStorage.getItem("memberId")
+    //     );
 
-//   if (!memberId) {
-//     throw new Error(
-//       "找不到登入會員資料"
-//     );
-//   }
+    //   if (!memberId) {
+    //     throw new Error(
+    //       "找不到登入會員資料"
+    //     );
+    //   }
 
-//   const response =
-//     await fetch(
-//       `http://localhost:8081/api/orders/member/${memberId}`,
-//       {
-//         method: "GET",
-//         headers: getAuthHeaders(),
-//       }
-//     );
+    //   const response =
+    //     await fetch(
+    //       `/api/orders/member/${memberId}`,
+    //       {
+    //         method: "GET",
+    //         headers: getAuthHeaders(),
+    //       }
+    //     );
 
-//   if (!response.ok) {
-//     throw new Error(
-//       "訂單讀取失敗"
-//     );
-//   }
+    //   if (!response.ok) {
+    //     throw new Error(
+    //       "訂單讀取失敗"
+    //     );
+    //   }
 
-//   const data =
-//     await response.json();
+    //   const data =
+    //     await response.json();
 
-//   orders.value =
-//     Array.isArray(data)
-//       ? data
-//       : [];
+    //   orders.value =
+    //     Array.isArray(data)
+    //       ? data
+    //       : [];
 
-// } catch (error) {
-//   console.error(error);
+    // } catch (error) {
+    //   console.error(error);
 
-//   errorMessage.value =
-//     error.message ||
-//     "訂單讀取失敗";
-// }
-// ===========================
+    //   errorMessage.value =
+    //     error.message ||
+    //     "訂單讀取失敗";
+    // }
+    // ===========================
 
 
 

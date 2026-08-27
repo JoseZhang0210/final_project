@@ -16,10 +16,7 @@
         <!-- =========================
              訂單狀態篩選
              ========================= -->
-        <select
-          v-model="selectedStatus"
-          class="filter-select"
-        >
+        <select v-model="selectedStatus" class="filter-select">
           <option value="ALL">
             全部狀態
           </option>
@@ -40,11 +37,7 @@
         <!-- =========================
              重新整理
              ========================= -->
-        <button
-          type="button"
-          class="refresh-button"
-          @click="loadOrders"
-        >
+        <button type="button" class="refresh-button" @click="loadOrders">
           重新整理
         </button>
 
@@ -55,10 +48,7 @@
     <!-- =====================================================
          Loading
          ===================================================== -->
-    <div
-      v-if="loading"
-      class="message-box"
-    >
+    <div v-if="loading" class="message-box">
       訂單讀取中...
     </div>
 
@@ -66,10 +56,7 @@
     <!-- =====================================================
          Error
          ===================================================== -->
-    <div
-      v-else-if="errorMessage"
-      class="error-box"
-    >
+    <div v-else-if="errorMessage" class="error-box">
       {{ errorMessage }}
     </div>
 
@@ -77,10 +64,7 @@
     <!-- =====================================================
          完全沒有訂單
          ===================================================== -->
-    <div
-      v-else-if="orders.length === 0"
-      class="message-box"
-    >
+    <div v-else-if="orders.length === 0" class="message-box">
       目前沒有訂單
     </div>
 
@@ -88,10 +72,7 @@
     <!-- =====================================================
          篩選後沒有資料
          ===================================================== -->
-    <div
-      v-else-if="filteredOrders.length === 0"
-      class="message-box"
-    >
+    <div v-else-if="filteredOrders.length === 0" class="message-box">
       此狀態目前沒有訂單
     </div>
 
@@ -99,10 +80,7 @@
     <!-- =====================================================
          訂單列表
          ===================================================== -->
-    <div
-      v-else
-      class="table-card"
-    >
+    <div v-else class="table-card">
 
       <table>
 
@@ -127,10 +105,7 @@
              ========================= -->
         <tbody>
 
-          <tr
-            v-for="order in filteredOrders"
-            :key="order.orderId"
-          >
+          <tr v-for="order in filteredOrders" :key="order.orderId">
 
             <!-- =================================================
                  訂單編號
@@ -167,18 +142,12 @@
                  ================================================= -->
             <td class="items-cell">
 
-              <div
-                v-if="
-                  order.items &&
-                  order.items.length > 0
-                "
-              >
+              <div v-if="
+                order.items &&
+                order.items.length > 0
+              ">
 
-                <div
-                  v-for="item in order.items"
-                  :key="item.productId"
-                  class="order-item"
-                >
+                <div v-for="item in order.items" :key="item.productId" class="order-item">
 
                   <!-- 商品名稱 -->
                   <div class="item-name">
@@ -196,12 +165,9 @@
                   <!-- =========================
                        一般模式
                        ========================= -->
-                  <div
-                    v-if="
-                      editingOrderId !== order.orderId
-                    "
-                    class="item-detail"
-                  >
+                  <div v-if="
+                    editingOrderId !== order.orderId
+                  " class="item-detail">
                     數量：
                     {{ item.quantity }}
                   </div>
@@ -210,45 +176,29 @@
                   <!-- =========================
                        編輯模式
                        ========================= -->
-                  <div
-                    v-else
-                    class="edit-quantity-area"
-                  >
+                  <div v-else class="edit-quantity-area">
 
                     <span class="quantity-label">
                       數量：
                     </span>
 
-                    <input
-                      v-model.number="item.quantity"
-                      type="number"
-                      min="1"
-                      class="quantity-input"
-                    />
+                    <input v-model.number="item.quantity" type="number" min="1" class="quantity-input" />
 
-                    <button
-                      type="button"
-                      class="save-item-button"
-                      @click="
-                        updateItemQuantity(
-                          order,
-                          item
-                        )
-                      "
-                    >
+                    <button type="button" class="save-item-button" @click="
+                      updateItemQuantity(
+                        order,
+                        item
+                      )
+                      ">
                       儲存
                     </button>
 
-                    <button
-                      type="button"
-                      class="delete-item-button"
-                      @click="
-                        deleteOrderItem(
-                          order,
-                          item
-                        )
-                      "
-                    >
+                    <button type="button" class="delete-item-button" @click="
+                      deleteOrderItem(
+                        order,
+                        item
+                      )
+                      ">
                       刪除
                     </button>
 
@@ -272,10 +222,7 @@
 
 
               <!-- 無商品 -->
-              <div
-                v-else
-                class="no-item"
-              >
+              <div v-else class="no-item">
                 無商品資料
               </div>
 
@@ -302,21 +249,15 @@
                  ================================================= -->
             <td class="status-cell">
 
-              <select
-                class="status-select"
-                :class="
-                  getStatusClass(
-                    order.status
-                  )
-                "
-                :value="order.status"
-                @change="
+              <select class="status-select" :class="getStatusClass(
+                order.status
+              )
+                " :value="order.status" @change="
                   updateOrderStatus(
                     order,
                     $event.target.value
                   )
-                "
-              >
+                  ">
 
                 <option value="PENDING">
                   待處理
@@ -349,37 +290,25 @@
             <td class="action-cell">
 
               <!-- 只有待處理可以修改商品 -->
-              <template
-                v-if="
-                  order.status === 'PENDING'
-                "
-              >
+              <template v-if="
+                order.status === 'PENDING'
+              ">
 
                 <!-- 尚未進入編輯 -->
-                <button
-                  v-if="
-                    editingOrderId !==
-                    order.orderId
-                  "
-                  type="button"
-                  class="edit-button"
-                  @click="
+                <button v-if="
+                  editingOrderId !==
+                  order.orderId
+                " type="button" class="edit-button" @click="
                     startEdit(order)
-                  "
-                >
+                    ">
                   編輯商品
                 </button>
 
 
                 <!-- 編輯中 -->
-                <button
-                  v-else
-                  type="button"
-                  class="finish-button"
-                  @click="
-                    finishEdit()
-                  "
-                >
+                <button v-else type="button" class="finish-button" @click="
+                  finishEdit()
+                  ">
                   完成編輯
                 </button>
 
@@ -387,10 +316,7 @@
 
 
               <!-- 完成或取消訂單不可修改 -->
-              <span
-                v-else
-                class="disabled-edit-text"
-              >
+              <span v-else class="disabled-edit-text">
                 無法編輯
               </span>
 
@@ -523,7 +449,7 @@ async function loadOrders() {
 
     const response =
       await fetch(
-        "http://localhost:8081/api/orders",
+        "/api/orders",
         {
           method: "GET",
 
@@ -773,7 +699,7 @@ async function updateOrderStatus(
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/status?status=${newStatus}`,
+        `/api/orders/${order.orderId}/status?status=${newStatus}`,
         {
           method: "PUT",
 
@@ -824,7 +750,7 @@ async function updateOrderStatus(
     if (
       newStatus !== "PENDING" &&
       editingOrderId.value ===
-        order.orderId
+      order.orderId
     ) {
 
       editingOrderId.value =
@@ -922,7 +848,7 @@ async function updateItemQuantity(
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/items/${item.productId}?quantity=${quantity}`,
+        `/api/orders/${order.orderId}/items/${item.productId}?quantity=${quantity}`,
         {
           method: "PUT",
 
@@ -1019,7 +945,7 @@ async function deleteOrderItem(
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/items/${item.productId}`,
+        `/api/orders/${order.orderId}/items/${item.productId}`,
         {
           method: "DELETE",
 
@@ -1100,8 +1026,8 @@ onMounted(() => {
 </script>
 
 
-<style scoped>d
-
+<style scoped>
+d
 /* =====================================================
    頁面
    ===================================================== */
@@ -1228,8 +1154,7 @@ onMounted(() => {
   border-radius: 10px;
 
   box-shadow:
-    0 4px 16px
-    rgba(0, 0, 0, 0.06);
+    0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 
@@ -1685,9 +1610,7 @@ tbody tr:hover {
    RWD
    ===================================================== */
 
-@media (
-  max-width: 768px
-) {
+@media (max-width: 768px) {
 
   .orders-page {
     padding: 10px;
@@ -1715,5 +1638,4 @@ tbody tr:hover {
     padding: 10px 8px;
   }
 }
-
 </style>

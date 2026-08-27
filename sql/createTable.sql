@@ -1,33 +1,26 @@
 USE [finalproject]
 GO
-	/****** 物件:  Table [dbo].[account]    指令碼日期: 2026/8/11 下午 03:52:41 ******/
+/****** 物件:  Table [dbo].[account]    指令碼日期: 2026/8/11 下午 03:52:41 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[account](
-		[account_id] [int] IDENTITY(1, 1) NOT NULL,
-		[username] [varchar](50) NOT NULL,
-		[password] [varchar](255) NOT NULL,
-		[status] [varchar](20) NOT NULL,
-		CONSTRAINT [PK__account__46A222CD1984288D] PRIMARY KEY CLUSTERED ([account_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY],
-		CONSTRAINT [UQ__account__F3DBC572356CBDC7] UNIQUE NONCLUSTERED ([username] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY]
-	) ON [PRIMARY]
 GO
-	/****** 物件:  Table [dbo].[booking]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[account](
+	[account_id] [int] IDENTITY(1,1) NOT NULL,
+	[username] [varchar](50) NOT NULL,
+	[password] [varchar](255) NOT NULL,
+	[status] [varchar](20) NOT NULL,
+ CONSTRAINT [PK__account__46A222CD1984288D] PRIMARY KEY CLUSTERED 
+(
+	[account_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__account__F3DBC572356CBDC7] UNIQUE NONCLUSTERED 
+(
+	[username] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[booking]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -84,55 +77,41 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[department](
-		[department_id] [int] IDENTITY(1, 1) NOT NULL,
-		[department_name] [varchar](50) NOT NULL,
-		CONSTRAINT [PK__departme__C2232422D5FF8FCD] PRIMARY KEY CLUSTERED ([department_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY],
-		CONSTRAINT [UQ__departme__226ED157968C41E7] UNIQUE NONCLUSTERED ([department_name] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY]
-	) ON [PRIMARY]
 GO
-	/****** 物件:  Table [dbo].[employee]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[department](
+	[department_id] [int] IDENTITY(1,1) NOT NULL,
+	[department_name] [varchar](50) NOT NULL,
+ CONSTRAINT [PK__departme__C2232422D5FF8FCD] PRIMARY KEY CLUSTERED 
+(
+	[department_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__departme__226ED157968C41E7] UNIQUE NONCLUSTERED 
+(
+	[department_name] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[employee]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[employee](
-		[employee_id] [int] IDENTITY(1, 1) NOT NULL,
-		[department_id] [int] NOT NULL,
-		[account_id] [int] NOT NULL,
-		[position] [varchar](50) NOT NULL,
-		CONSTRAINT [PK__employee__C52E0BA8B3F6391D] PRIMARY KEY CLUSTERED ([employee_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY],
-		CONSTRAINT [UQ__employee__46A222CC22732DA3] UNIQUE NONCLUSTERED ([account_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY]
-	) ON [PRIMARY]
 GO
-	/****** 物件:  Table [dbo].[employee_permission]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[employee](
+	[employee_id] [int] IDENTITY(1,1) NOT NULL,
+	[department_id] [int] NOT NULL,
+	[account_id] [int] NOT NULL,
+	[position] [varchar](50) NOT NULL,
+ CONSTRAINT [PK__employee__C52E0BA8B3F6391D] PRIMARY KEY CLUSTERED 
+(
+	[employee_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__employee__46A222CC22732DA3] UNIQUE NONCLUSTERED 
+(
+	[account_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[employee_permission]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -167,59 +146,54 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[member](
-		[member_id] [int] IDENTITY(1, 1) NOT NULL,
-		[account_id] [int] NOT NULL,
-		CONSTRAINT [PK__member__B29B85343DF336B3] PRIMARY KEY CLUSTERED ([member_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY],
-		CONSTRAINT [UQ__member__46A222CC89E0140C] UNIQUE NONCLUSTERED ([account_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY]
-	) ON [PRIMARY]
 GO
-	/****** 物件:  Table [dbo].[order]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[member](
+	[member_id] [int] IDENTITY(1,1) NOT NULL,
+	[account_id] [int] NOT NULL,
+ CONSTRAINT [PK__member__B29B85343DF336B3] PRIMARY KEY CLUSTERED 
+(
+	[member_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__member__46A222CC89E0140C] UNIQUE NONCLUSTERED 
+(
+	[account_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[order]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO
+GO 
 CREATE TABLE [dbo].[order](
-	[order_id] [int] IDENTITY(1,1) NOT NULL,
-	[member_id] [int] NOT NULL,
-	[order_date] [datetime] NOT NULL,
-	[is_ordered] [bit] NOT NULL,
-	[payment_id] [int] NOT NULL,
- CONSTRAINT [PK_order] PRIMARY KEY CLUSTERED 
-(
-	[order_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+		[order_id] [int] IDENTITY(1, 1) NOT NULL,
+		[member_id] [int] NOT NULL,
+		[order_date] [datetime] NOT NULL CONSTRAINT [DF_order_order_date] DEFAULT (GETDATE()),
+		[is_ordered] [bit] NOT NULL CONSTRAINT [DF_order_is_ordered] DEFAULT ((0)),
+		[payment_id] [int] NULL,
+		[order_status] [nvarchar](20) NOT NULL CONSTRAINT [DF_order_status] DEFAULT (N'PENDING'),
+		CONSTRAINT [PK_order] PRIMARY KEY CLUSTERED ([order_id] ASC),
+		CONSTRAINT [CK_order_status] CHECK (
+			[order_status] IN (
+				N'PENDING',
+				N'COMPLETED',
+				N'CANCELLED'
+			)
+		)
+	);
 GO
 /****** 物件:  Table [dbo].[order_item]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO
+GO 
 CREATE TABLE [dbo].[order_item](
-	[order_id] [int] IDENTITY(1,1) NOT NULL,
-	[product_id] [int] NOT NULL,
-	[quantity] [int] NOT NULL,
- CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED 
-(
-	[order_id] ASC,
-	[product_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+		[order_id] [int] NOT NULL,
+		[product_id] [int] NOT NULL,
+		[quantity] [int] NOT NULL,
+		CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED ([order_id] ASC, [product_id] ASC),
+		CONSTRAINT [CK_order_item_quantity] CHECK ([quantity] > 0)
+	);
 GO
 /****** 物件:  Table [dbo].[payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
@@ -275,39 +249,32 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[profile](
-		[profile_id] [int] IDENTITY(1, 1) NOT NULL,
-		[account_id] [int] NOT NULL,
-		[name] [varchar](50) NOT NULL,
-		[email] [varchar](100) NULL,
-		[phone] [varchar](20) NULL,
-		[zipcode] [varchar](10) NULL,
-		[city] [varchar](50) NULL,
-		[district] [varchar](50) NULL,
-		[address] [varchar](200) NULL,
-		[created_at] [datetime] NOT NULL,
-		[birthday] [date] NULL,
-		[gender] [varchar](10) NULL,
-		[updated_at] [datetime] NULL,
-		CONSTRAINT [PK__user_pro__AEBB701FB4CA65F5] PRIMARY KEY CLUSTERED ([profile_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY],
-		CONSTRAINT [UQ__user_pro__46A222CC77765872] UNIQUE NONCLUSTERED ([account_id] ASC) WITH (
-			PAD_INDEX = OFF,
-			STATISTICS_NORECOMPUTE = OFF,
-			IGNORE_DUP_KEY = OFF,
-			ALLOW_ROW_LOCKS = ON,
-			ALLOW_PAGE_LOCKS = ON,
-			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-		) ON [PRIMARY]
-	) ON [PRIMARY]
 GO
-	/****** 物件:  Table [dbo].[rental]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[profile](
+	[profile_id] [int] IDENTITY(1,1) NOT NULL,
+	[account_id] [int] NOT NULL,
+	[name] [varchar](50) NOT NULL,
+	[email] [varchar](100) NULL,
+	[phone] [varchar](20) NULL,
+	[zipcode] [varchar](10) NULL,
+	[city] [varchar](50) NULL,
+	[district] [varchar](50) NULL,
+	[address] [varchar](200) NULL,
+	[created_at] [datetime] NOT NULL,
+	[birthday] [date] NULL,
+	[gender] [varchar](10) NULL,
+	[updated_at] [datetime] NULL,
+ CONSTRAINT [PK__user_pro__AEBB701FB4CA65F5] PRIMARY KEY CLUSTERED 
+(
+	[profile_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+ CONSTRAINT [UQ__user_pro__46A222CC77765872] UNIQUE NONCLUSTERED 
+(
+	[account_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** 物件:  Table [dbo].[rental]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -332,56 +299,84 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[restaurant] (
-		[restaurant_id] INT IDENTITY(1, 1) NOT NULL,
-		[restaurant_name] NVARCHAR(100) NOT NULL,
-		[address] NVARCHAR(200) NULL,
-		[phone] VARCHAR(20) NULL,
-		[capacity] INT NULL,
-		[description] NVARCHAR(MAX) NULL,
-		CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED ([restaurant_id] ASC)
-	);
 GO
-	/****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+
+CREATE TABLE [dbo].[restaurant] (
+    [restaurant_id]   INT IDENTITY(1,1) NOT NULL,
+    [restaurant_name] NVARCHAR(100) NOT NULL,
+    [address]         NVARCHAR(200) NULL,
+    [phone]           VARCHAR(20) NULL,
+    [capacity]        INT NULL,
+    [description]     NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_restaurant]
+        PRIMARY KEY CLUSTERED ([restaurant_id] ASC)
+);
+GO
+/****** 物件:  Table [dbo].[restaurant_time]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[restaurant_time] (
-		[time_id] INT IDENTITY(1, 1) NOT NULL,
-		[restaurant_id] INT NOT NULL,
-		[meal_type] NVARCHAR(20) NOT NULL,
-		[open_time] TIME(7) NOT NULL,
-		[close_time] TIME(7) NOT NULL,
-		CONSTRAINT [PK_restaurant_time] PRIMARY KEY CLUSTERED ([time_id] ASC),
-		CONSTRAINT [FK_restaurant_time_restaurant] FOREIGN KEY ([restaurant_id]) REFERENCES [dbo].[restaurant]([restaurant_id])
-	);
 GO
-	/****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-	CREATE TABLE [dbo].[reservation] (
-		[reservation_id] INT IDENTITY(1, 1) NOT NULL,
-		[member_id] INT NULL,
-		[contact_name] NVARCHAR(50) NULL,
-		[contact_phone] VARCHAR(20) NULL,
-		[restaurant_id] INT NOT NULL,
-		[reservation_date] DATE NOT NULL,
-		[time_id] INT NOT NULL,
-		[people_count] INT NOT NULL,
-		[status] NVARCHAR(20) NOT NULL CONSTRAINT [DF_reservation_status] DEFAULT (N'已訂位'),
-		[create_time] DATETIME NOT NULL CONSTRAINT [DF_reservation_create_time] DEFAULT (GETDATE()),
-		CONSTRAINT [PK_reservation] PRIMARY KEY CLUSTERED ([reservation_id] ASC),
-		CONSTRAINT [FK_reservation_member] FOREIGN KEY ([member_id]) REFERENCES [dbo].[member]([member_id]),
-		CONSTRAINT [FK_reservation_restaurant] FOREIGN KEY ([restaurant_id]) REFERENCES [dbo].[restaurant]([restaurant_id]),
-		CONSTRAINT [FK_reservation_restaurant_time] FOREIGN KEY ([time_id]) REFERENCES [dbo].[restaurant_time]([time_id]),
-		CONSTRAINT [CK_reservation_member_or_contact] CHECK (
-			[member_id] IS NOT NULL
-			OR (
-				[contact_name] IS NOT NULL
-				AND [contact_phone] IS NOT NULL
-			)
-		)
-	);
+CREATE TABLE [dbo].[restaurant_time] (
+    [time_id]       INT IDENTITY(1,1) NOT NULL,
+    [restaurant_id] INT NOT NULL,
+    [meal_type]     NVARCHAR(20) NOT NULL,
+    [open_time]     TIME(7) NOT NULL,
+    [close_time]    TIME(7) NOT NULL,
+
+    CONSTRAINT [PK_restaurant_time]
+        PRIMARY KEY CLUSTERED ([time_id] ASC),
+
+    CONSTRAINT [FK_restaurant_time_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id])
+);
 GO
-	/****** 物件:  Table [dbo].[room]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+	
+/****** 物件:  Table [dbo].[reservation]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+CREATE TABLE [dbo].[reservation] (
+    [reservation_id]   INT IDENTITY(1,1) NOT NULL,
+    [member_id]        INT NULL,
+    [contact_name]     NVARCHAR(50) NULL,
+    [contact_phone]    VARCHAR(20) NULL,
+    [restaurant_id]    INT NOT NULL,
+    [reservation_date] DATE NOT NULL,
+    [time_id]          INT NOT NULL,
+    [people_count]     INT NOT NULL,
+    [status]           NVARCHAR(20) NOT NULL
+        CONSTRAINT [DF_reservation_status] DEFAULT (N'已訂位'),
+    [create_time]      DATETIME NOT NULL
+        CONSTRAINT [DF_reservation_create_time] DEFAULT (GETDATE()),
+
+    CONSTRAINT [PK_reservation]
+        PRIMARY KEY CLUSTERED ([reservation_id] ASC),
+
+    CONSTRAINT [FK_reservation_member]
+        FOREIGN KEY ([member_id])
+        REFERENCES [dbo].[member]([member_id]),
+
+    CONSTRAINT [FK_reservation_restaurant]
+        FOREIGN KEY ([restaurant_id])
+        REFERENCES [dbo].[restaurant]([restaurant_id]),
+
+    CONSTRAINT [FK_reservation_restaurant_time]
+        FOREIGN KEY ([time_id])
+        REFERENCES [dbo].[restaurant_time]([time_id]),
+
+    CONSTRAINT [CK_reservation_member_or_contact]
+        CHECK (
+            [member_id] IS NOT NULL
+            OR (
+                [contact_name] IS NOT NULL
+                AND [contact_phone] IS NOT NULL
+            )
+        )
+);
+GO
+	
+
+/****** 物件:  Table [dbo].[room]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -479,8 +474,8 @@ REFERENCES [dbo].[booking_order] ([booking_order_id])
 GO
 ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_booking_order]
 GO
-ALTER TABLE [dbo].[booking] WITH CHECK
-ADD CONSTRAINT [FK_booking_room] FOREIGN KEY([room_id]) REFERENCES [dbo].[room] ([room_id])
+ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_room] FOREIGN KEY([room_id])
+REFERENCES [dbo].[room] ([room_id])
 GO
 ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room]
 GO
@@ -489,13 +484,13 @@ REFERENCES [dbo].[room_type] ([room_type_id])
 GO
 ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room_type]
 GO
-ALTER TABLE [dbo].[booking_order] WITH CHECK
-ADD CONSTRAINT [FK_booking_order_member] FOREIGN KEY([member_id]) REFERENCES [dbo].[member] ([member_id])
+ALTER TABLE [dbo].[booking_order]  WITH CHECK ADD  CONSTRAINT [FK_booking_order_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id])
 GO
 ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_member]
 GO
-ALTER TABLE [dbo].[booking_order] WITH CHECK
-ADD CONSTRAINT [FK_booking_order_payment] FOREIGN KEY([payment_id]) REFERENCES [dbo].[payment] ([payment_id])
+ALTER TABLE [dbo].[booking_order]  WITH CHECK ADD  CONSTRAINT [FK_booking_order_payment] FOREIGN KEY([payment_id])
+REFERENCES [dbo].[payment] ([payment_id])
 GO
 ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_payment]
 GO
@@ -504,43 +499,43 @@ REFERENCES [dbo].[account] ([account_id])
 GO
 ALTER TABLE [dbo].[employee] CHECK CONSTRAINT [FK_employee_account]
 GO
-ALTER TABLE [dbo].[employee] WITH CHECK
-ADD CONSTRAINT [FK_employee_department] FOREIGN KEY([department_id]) REFERENCES [dbo].[department] ([department_id])
+ALTER TABLE [dbo].[employee]  WITH CHECK ADD  CONSTRAINT [FK_employee_department] FOREIGN KEY([department_id])
+REFERENCES [dbo].[department] ([department_id])
 GO
 ALTER TABLE [dbo].[employee] CHECK CONSTRAINT [FK_employee_department]
 GO
-ALTER TABLE [dbo].[employee_permission] WITH CHECK
-ADD CONSTRAINT [FK_employee_permission_employee] FOREIGN KEY([employee_id]) REFERENCES [dbo].[employee] ([employee_id])
+ALTER TABLE [dbo].[employee_permission]  WITH CHECK ADD  CONSTRAINT [FK_employee_permission_employee] FOREIGN KEY([employee_id])
+REFERENCES [dbo].[employee] ([employee_id])
 GO
 ALTER TABLE [dbo].[employee_permission] CHECK CONSTRAINT [FK_employee_permission_employee]
 GO
-ALTER TABLE [dbo].[employee_permission] WITH CHECK
-ADD CONSTRAINT [FK_employee_permission_permission] FOREIGN KEY([permission_id]) REFERENCES [dbo].[permission] ([permission_id])
+ALTER TABLE [dbo].[employee_permission]  WITH CHECK ADD  CONSTRAINT [FK_employee_permission_permission] FOREIGN KEY([permission_id])
+REFERENCES [dbo].[permission] ([permission_id])
 GO
 ALTER TABLE [dbo].[employee_permission] CHECK CONSTRAINT [FK_employee_permission_permission]
 GO
-ALTER TABLE [dbo].[member] WITH CHECK
-ADD CONSTRAINT [FK_member_account] FOREIGN KEY([account_id]) REFERENCES [dbo].[account] ([account_id])
+ALTER TABLE [dbo].[member]  WITH CHECK ADD  CONSTRAINT [FK_member_account] FOREIGN KEY([account_id])
+REFERENCES [dbo].[account] ([account_id])
 GO
 ALTER TABLE [dbo].[member] CHECK CONSTRAINT [FK_member_account]
 GO
-ALTER TABLE [dbo].[order] WITH CHECK
-ADD CONSTRAINT [FK_order_member] FOREIGN KEY([member_id]) REFERENCES [dbo].[member] ([member_id])
+ALTER TABLE [dbo].[order]  WITH CHECK ADD  CONSTRAINT [FK_order_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id])
 GO
 ALTER TABLE [dbo].[order] CHECK CONSTRAINT [FK_order_member]
 GO
-ALTER TABLE [dbo].[order] WITH CHECK
-ADD CONSTRAINT [FK_order_payment] FOREIGN KEY([payment_id]) REFERENCES [dbo].[payment] ([payment_id])
+ALTER TABLE [dbo].[order]  WITH CHECK ADD  CONSTRAINT [FK_order_payment] FOREIGN KEY([payment_id])
+REFERENCES [dbo].[payment] ([payment_id])
 GO
 ALTER TABLE [dbo].[order] CHECK CONSTRAINT [FK_order_payment]
 GO
-ALTER TABLE [dbo].[order_item] WITH CHECK
-ADD CONSTRAINT [FK_order_item_order] FOREIGN KEY([order_id]) REFERENCES [dbo].[order] ([order_id])
+ALTER TABLE [dbo].[order_item]  WITH CHECK ADD  CONSTRAINT [FK_order_item_order] FOREIGN KEY([order_id])
+REFERENCES [dbo].[order] ([order_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_order]
 GO
-ALTER TABLE [dbo].[order_item] WITH CHECK
-ADD CONSTRAINT [FK_order_item_product] FOREIGN KEY([product_id]) REFERENCES [dbo].[product] ([product_id])
+ALTER TABLE [dbo].[order_item]  WITH CHECK ADD  CONSTRAINT [FK_order_item_product] FOREIGN KEY([product_id])
+REFERENCES [dbo].[product] ([product_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_product]
 GO
@@ -549,8 +544,8 @@ REFERENCES [dbo].[account] ([account_id])
 GO
 ALTER TABLE [dbo].[profile] CHECK CONSTRAINT [FK_user_profile_account]
 GO
-ALTER TABLE [dbo].[rental] WITH CHECK
-ADD CONSTRAINT [FK_rental_member] FOREIGN KEY([member_id]) REFERENCES [dbo].[member] ([member_id])
+ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id])
 GO
 ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_member]
 GO
@@ -559,23 +554,23 @@ REFERENCES [dbo].[rental_payment] ([payment_id])
 GO
 ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_rental_payment]
 GO
-ALTER TABLE [dbo].[rental] WITH CHECK
-ADD CONSTRAINT [FK_rental_venue] FOREIGN KEY([venue_id]) REFERENCES [dbo].[venue] ([venue_id])
+ALTER TABLE [dbo].[rental]  WITH CHECK ADD  CONSTRAINT [FK_rental_venue] FOREIGN KEY([venue_id])
+REFERENCES [dbo].[venue] ([venue_id])
 GO
 ALTER TABLE [dbo].[rental] CHECK CONSTRAINT [FK_rental_venue]
 GO
-ALTER TABLE [dbo].[room] WITH CHECK
-ADD CONSTRAINT [FK_room_room_type] FOREIGN KEY([room_type_id]) REFERENCES [dbo].[room_type] ([room_type_id])
+ALTER TABLE [dbo].[room]  WITH CHECK ADD  CONSTRAINT [FK_room_room_type] FOREIGN KEY([room_type_id])
+REFERENCES [dbo].[room_type] ([room_type_id])
 GO
 ALTER TABLE [dbo].[room] CHECK CONSTRAINT [FK_room_room_type]
 GO
-ALTER TABLE [dbo].[room_task] WITH CHECK
-ADD CONSTRAINT [FK_room_task_employee] FOREIGN KEY([employee_id]) REFERENCES [dbo].[employee] ([employee_id])
+ALTER TABLE [dbo].[room_task]  WITH CHECK ADD  CONSTRAINT [FK_room_task_employee] FOREIGN KEY([employee_id])
+REFERENCES [dbo].[employee] ([employee_id])
 GO
 ALTER TABLE [dbo].[room_task] CHECK CONSTRAINT [FK_room_task_employee]
 GO
-ALTER TABLE [dbo].[room_task] WITH CHECK
-ADD CONSTRAINT [FK_room_task_room] FOREIGN KEY([room_id]) REFERENCES [dbo].[room] ([room_id])
+ALTER TABLE [dbo].[room_task]  WITH CHECK ADD  CONSTRAINT [FK_room_task_room] FOREIGN KEY([room_id])
+REFERENCES [dbo].[room] ([room_id])
 GO
 ALTER TABLE [dbo].[room_task] CHECK CONSTRAINT [FK_room_task_room]
 GO
@@ -586,6 +581,3 @@ GO
 
 ALTER TABLE [dbo].[room_image] CHECK CONSTRAINT [FK_room_image_room_type]
 GO
-
-
-

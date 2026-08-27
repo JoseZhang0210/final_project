@@ -8,11 +8,7 @@
       </div>
 
       <div v-else>
-        <div
-          v-for="item in cartItems"
-          :key="item.productId"
-          class="cart-item"
-        >
+        <div v-for="item in cartItems" :key="item.productId" class="cart-item">
           <div class="item-info">
             <h3>{{ item.productName }}</h3>
 
@@ -23,10 +19,7 @@
           </div>
 
           <div class="quantity-control">
-            <button
-              type="button"
-              @click="decreaseQuantity(item)"
-            >
+            <button type="button" @click="decreaseQuantity(item)">
               −
             </button>
 
@@ -34,11 +27,7 @@
               {{ item.quantity }}
             </span>
 
-            <button
-              type="button"
-              :disabled="item.quantity >= item.stock"
-              @click="increaseQuantity(item)"
-            >
+            <button type="button" :disabled="item.quantity >= item.stock" @click="increaseQuantity(item)">
               ＋
             </button>
           </div>
@@ -48,11 +37,7 @@
             ${{ formatPrice(item.price * item.quantity) }}
           </div>
 
-          <button
-            type="button"
-            class="delete-button"
-            @click="removeItem(item.productId)"
-          >
+          <button type="button" class="delete-button" @click="removeItem(item.productId)">
             刪除
           </button>
         </div>
@@ -63,12 +48,7 @@
             ${{ formatPrice(totalAmount) }}
           </h2>
 
-          <button
-            type="button"
-            class="checkout-button"
-            :disabled="submitting"
-            @click="submitOrder"
-          >
+          <button type="button" class="checkout-button" :disabled="submitting" @click="submitOrder">
             {{ submitting ? "送出中..." : "確認結帳" }}
           </button>
         </div>
@@ -201,7 +181,7 @@ const totalAmount = computed(() => {
       return (
         total +
         Number(item.price) *
-          Number(item.quantity)
+        Number(item.quantity)
       );
     },
     0
@@ -239,19 +219,19 @@ async function submitOrder() {
   const memberId = 3
   //   -----等會員token儲存改好後再把下面的打開-------
   //     Number(localStorage.getItem("memberId"));
-  
+
   //   console.log(
-    //     "目前登入會員 memberId：",
-    //     memberId
-    //   );
-    
-    //   // 找不到會員 ID
-    //   if (!memberId || memberId <= 0) {
-    //     alert("找不到登入會員資料，請重新登入");
-    //     return;
-    //   }
-//   -----等會員token儲存改好後再把上面的打開-------
-        
+  //     "目前登入會員 memberId：",
+  //     memberId
+  //   );
+
+  //   // 找不到會員 ID
+  //   if (!memberId || memberId <= 0) {
+  //     alert("找不到登入會員資料，請重新登入");
+  //     return;
+  //   }
+  //   -----等會員token儲存改好後再把上面的打開-------
+
   submitting.value = true;
 
   try {
@@ -284,7 +264,7 @@ async function submitOrder() {
 
     const response =
       await fetch(
-        "http://localhost:8081/api/orders",
+        "/api/orders",
         {
           method: "POST",
 
