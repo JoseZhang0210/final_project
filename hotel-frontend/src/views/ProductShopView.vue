@@ -18,39 +18,23 @@
 
         <!-- 搜尋 -->
         <div class="shop-search">
-          <input
-            v-model="keyword"
-            type="text"
-            placeholder="搜尋商品名稱..."
-            @keyup.enter="searchProducts"
-          />
+          <input v-model="keyword" type="text" placeholder="搜尋商品名稱..." @keyup.enter="searchProducts" />
 
           <button type="button" @click="searchProducts">搜尋</button>
         </div>
 
         <!-- 商品分類 -->
         <div class="category-list">
-          <button
-            type="button"
-            class="category-button"
-            :class="{
-              active: selectedCategory === null,
-            }"
-            @click="selectCategory(null)"
-          >
+          <button type="button" class="category-button" :class="{
+            active: selectedCategory === null,
+          }" @click="selectCategory(null)">
             全部商品
           </button>
 
-          <button
-            v-for="category in categories"
-            :key="category.categoryId"
-            type="button"
-            class="category-button"
+          <button v-for="category in categories" :key="category.categoryId" type="button" class="category-button"
             :class="{
               active: selectedCategory === category.categoryId,
-            }"
-            @click="selectCategory(category.categoryId)"
-          >
+            }" @click="selectCategory(category.categoryId)">
             {{ category.categoryName }}
           </button>
         </div>
@@ -89,10 +73,7 @@
       <div v-if="loading" class="state-message">商品資料讀取中...</div>
 
       <!-- 沒商品 -->
-      <div
-        v-else-if="!errorMessage && filteredProducts.length === 0"
-        class="state-message"
-      >
+      <div v-else-if="!errorMessage && filteredProducts.length === 0" class="state-message">
         查無商品資料
       </div>
 
@@ -100,36 +81,22 @@
            商品 Grid
            ========================= -->
       <div v-else-if="!errorMessage" class="product-grid">
-        <article
-          v-for="product in filteredProducts"
-          :key="product.productId"
-          class="product-card"
-          @click="goProductDetail(product.productId)"
-        >
+        <article v-for="product in filteredProducts" :key="product.productId" class="product-card"
+          @click="goProductDetail(product.productId)">
           <!-- 商品圖片 -->
           <div class="product-image-wrap">
-            <img
-              :src="getProductImage(product)"
-              :alt="product.productName"
-              class="product-image"
-              @error="handleImageError"
-            />
+            <img :src="getProductImage(product)" :alt="product.productName" class="product-image"
+              @error="handleImageError" />
 
             <!-- 缺貨 -->
-            <span
-              v-if="
-                product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
-              "
-              class="product-badge sold-out"
-            >
+            <span v-if="
+              product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
+            " class="product-badge sold-out">
               缺貨
             </span>
 
             <!-- 庫存少 -->
-            <span
-              v-else-if="Number(product.stock) <= 5"
-              class="product-badge stock-low"
-            >
+            <span v-else-if="Number(product.stock) <= 5" class="product-badge stock-low">
               即將售完
             </span>
           </div>
@@ -148,28 +115,63 @@
               {{ product.description || "星澄飯店精選商品" }}
             </p>
 
-            <div class="product-meta">
-              <div class="price-area">
-                <span class="currency"> NT$ </span>
+            <div class="product-bottom">
 
-                <strong>
-                  {{ formatPrice(product.price) }}
-                </strong>
+              <!-- 庫存 -->
+              <div class="stock-text">
+                <div class="product-meta">
+                  <div class="price-area">
+                    <span class="currency"> NT$ </span>
+
+                    <strong>
+                      {{ formatPrice(product.price) }}
+                    </strong>
+                  </div>
+
+                  <span class="stock-text">
+                    庫存
+                    {{ product.stock ?? 0 }}
+                  </span>
+                </div>
               </div>
-
-              <span class="stock-text">
-                庫存
-                {{ product.stock ?? 0 }}
-              </span>
             </div>
 
-            <button
-              type="button"
-              class="product-button"
-              :disabled="!canBuy(product)"
-              @click.stop="goProductDetail(product.productId)"
-            >
-              {{ canBuy(product) ? "查看商品" : "暫無法購買" }}
+            <!-- =========================
+              購買數量
+              ========================= -->
+            <div v-if="canBuy(product)" class="quantity-area" @click.stop>
+              <span class="quantity-label">
+                數量
+              </span>
+
+              <div class="quantity-control">
+
+                <!-- 減少 -->
+                <button type="button" class="quantity-button" :disabled="product.buyQuantity <= 1"
+                  @click.stop="decreaseQuantity(product)">
+                  −
+                </button>
+
+                <!-- 數量 -->
+                <span class="quantity-number">
+                  {{ product.buyQuantity }}
+                </span>
+
+                <!-- 增加 -->
+                <button type="button" class="quantity-button" :disabled="product.buyQuantity >= Number(product.stock)
+                  " @click.stop="increaseQuantity(product)">
+                  ＋
+                </button>
+
+              </div>
+            </div>
+
+
+            <!-- =========================
+              購買
+              ========================= -->
+            <button type="button" class="product-button" :disabled="!canBuy(product)" @click.stop="buyProduct(product)">
+              {{ canBuy(product) ? "購買" : "暫無法購買" }}
             </button>
           </div>
         </article>
@@ -282,17 +284,24 @@ async function loadProducts() {
     // 前台只顯示上架 / 缺貨商品
     // ==========================
 
-    products.value = data.filter((product) => {
-      const status = product.status;
+    products.value = data
+      .filter((product) => {
+        const status = product.status;
 
-      return (
-        status === "ACTIVE" ||
-        status === "OUT_OF_STOCK" ||
-        status === "上架" ||
-        status === "上架中" ||
-        status === "缺貨"
-      );
-    });
+        return (
+          status === "ACTIVE" ||
+          status === "OUT_OF_STOCK" ||
+          status === "上架" ||
+          status === "上架中" ||
+          status === "缺貨"
+        );
+      })
+      .map((product) => ({
+        ...product,
+
+        // 每個商品預設購買數量 1
+        buyQuantity: 1,
+      }));
 
     console.log("前台實際顯示商品：", products.value);
   } catch (error) {
@@ -512,9 +521,145 @@ function canBuy(product) {
   const status = product.status;
 
   const active =
-    status === "ACTIVE" || status === "上架" || status === "上架中";
+    status === "ACTIVE" ||
+    status === "上架" ||
+    status === "上架中";
 
-  return active && Number(product.stock ?? 0) > 0;
+  return (
+    active &&
+    Number(product.stock ?? 0) > 0
+  );
+}
+
+// =====================================================
+// 增加數量
+// =====================================================
+
+function increaseQuantity(product) {
+  const stock =
+    Number(product.stock ?? 0);
+
+  const currentQuantity =
+    Number(product.buyQuantity ?? 1);
+
+  if (currentQuantity < stock) {
+    product.buyQuantity =
+      currentQuantity + 1;
+  }
+}
+
+// =====================================================
+// 減少數量
+// =====================================================
+
+function decreaseQuantity(product) {
+  const currentQuantity =
+    Number(product.buyQuantity ?? 1);
+
+  if (currentQuantity > 1) {
+    product.buyQuantity =
+      currentQuantity - 1;
+  }
+}
+
+// =====================================================
+// 加入購物車
+// =====================================================
+
+function buyProduct(product) {
+  if (!canBuy(product)) {
+    alert("此商品目前無法購買");
+    return;
+  }
+
+  const quantity =
+    Number(product.buyQuantity ?? 1);
+
+  const stock =
+    Number(product.stock ?? 0);
+
+  if (quantity < 1) {
+    alert("購買數量至少為 1");
+    return;
+  }
+
+  if (quantity > stock) {
+    alert("購買數量不能超過庫存");
+    return;
+  }
+
+  const savedCart =
+    localStorage.getItem("cart");
+
+  let cart = [];
+
+  if (savedCart) {
+    try {
+      cart = JSON.parse(savedCart);
+    } catch (error) {
+      console.error(
+        "購物車資料格式錯誤：",
+        error
+      );
+
+      cart = [];
+    }
+  }
+
+  const existingItem =
+    cart.find(
+      (item) =>
+        Number(item.productId) ===
+        Number(product.productId)
+    );
+
+  if (existingItem) {
+    const newQuantity =
+      Number(existingItem.quantity) +
+      quantity;
+
+    if (newQuantity > stock) {
+      alert(
+        `購物車中的總數量不能超過庫存 ${stock}`
+      );
+
+      return;
+    }
+
+    existingItem.quantity =
+      newQuantity;
+  } else {
+    cart.push({
+      productId:
+        product.productId,
+
+      productName:
+        product.productName,
+
+      price:
+        product.price,
+
+      quantity:
+        quantity,
+
+      stock:
+        product.stock,
+
+      imageUrl:
+        product.imageUrl ?? null,
+    });
+  }
+
+  localStorage.setItem(
+    "cart",
+    JSON.stringify(cart)
+  );
+
+  alert(
+    `${product.productName} × ${quantity} 已加入購物車`
+  );
+
+  product.buyQuantity = 1;
 }
 
 // =====================================================
@@ -522,7 +667,9 @@ function canBuy(product) {
 // =====================================================
 
 function goProductDetail(productId) {
-  router.push(`/products/${productId}`);
+  router.push(
+    `/products/${productId}`
+  );
 }
 
 // =====================================================
@@ -576,8 +723,7 @@ onMounted(async () => {
 
   overflow: hidden;
 
-  background: url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85")
-    center / cover no-repeat;
+  background: url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85") center / cover no-repeat;
 }
 
 .hero-overlay {
@@ -585,12 +731,10 @@ onMounted(async () => {
 
   inset: 0;
 
-  background: linear-gradient(
-    90deg,
-    rgba(31, 25, 18, 0.88) 0%,
-    rgba(31, 25, 18, 0.68) 42%,
-    rgba(31, 25, 18, 0.22) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(31, 25, 18, 0.88) 0%,
+      rgba(31, 25, 18, 0.68) 42%,
+      rgba(31, 25, 18, 0.22) 100%);
 }
 
 .hero-container {
