@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.dto.RentalCreateRequest;
-import com.hotel.entity.Rental;
+import com.hotel.model.entity.Rental;
 import com.hotel.service.RentalService;
 
 /**

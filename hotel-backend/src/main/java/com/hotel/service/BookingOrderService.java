@@ -56,12 +56,11 @@ public class BookingOrderService {
         }
 
         // 2. 更新支付關聯 (對應 payment_id)
-        if (updatedOrder.getPayments() != null) {
-            existingOrder.setPayments(updatedOrder.getPayments());
+        if (updatedOrder.getPaymentId() != null) {
+            existingOrder.setPaymentId(updatedOrder.getPaymentId());
         }
 
-        // 交易結束時 JPA 會自動進行比對並發送 UPDATE SQL，無須呼叫 save()
-        return existingOrder;
+        return bookingOrderRepository.save(existingOrder);
     }
 
     // 5. Delete - 刪除訂單 (依賴 CascadeType.ALL 自動連帶刪除子明細)
