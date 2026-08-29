@@ -1,0 +1,141 @@
+### 測試用 API 請求 - 郵件相關功能
+### TestEndpoints for Mail-related APIs
+
+### 設定變數
+@baseUrl = http://localhost:8081/api/bookings
+@authUrl = http://localhost:8081/api/auth
+@baseUrl = http://localhost:8081
+@testEmail = test@example.com
+
+### 0. 登入獲取 JWT Token
+# @name login
+POST {{authUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin01",
+  "password": "123456"
+}
+
+### 自動綁定 Token
+@jwtToken = {{login.response.body.token}}
+
+
+###############################################################################
+### 1. 測試發送 HTML 郵件
+### GET /api/test/email
+### 參數: to(收件人), subject(主旨), content(內容)
+###############################################################################
+
+# 發送一般 HTML 郵件
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=HTML郵件測試&content=<h1>這是HTML郵件測試</h1><p>這是一封包含HTML格式的郵件。</p>
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送 HTML 郵件 - 含連結與表格
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=訂單通知&content=<h2>您的訂單已確認</h2><p>訂單編號: #12345</p><a href=""http://example.com">查看訂單詳情</a>
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送 HTML 郵件 - 含中文字元
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=預訂確認&content=<div><h3>住宿確認</h3><p>您好，您的房型已確認。</p><ul><li>入住日期: 2025-01-15</li><li>退房日期: 2025-01-17</li><li>房號: 201</li></ul></div>
+Authorization: Bearer {{jwtToken}}
+###############################################################################
+### 2. 测试發送純文字郵件
+### GET /api/test/email/text
+### 參數: to(收件人), subject(主旨), content(純文字內容)
+###############################################################################
+
+# 發送一般純文字郵件
+GET {{baseUrl}}/api/test/email/text?to={{testEmail}}&subject=文字郵件測試&content=這是一封純文字郵件測試。
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送純文字郵件 - 多行內容
+GET {{baseUrl}}/api/test/email/text?to={{testEmail}}&subject=系統通知&content=系統將於今晚 23:00 進行維護。\n維護期間服務可能中斷。\n感謝您的配合。
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送純文字郵件 - 含中文字元
+GET {{baseUrl}}/api/test/email/text?to={{testEmail}}&subject=訂房確認函&content=您好，\n\n您的訂房已確認，詳細資訊如下：\n- 房型：雙人房\n- 入住日期：2025-01-15\n- 退房日期：2025-01-17\n\n若有問題請來電諮詢。\n\n謝謝。
+Authorization: Bearer {{jwtToken}}
+###############################################################################
+### 3. 測試發送帶附件的郵件
+### GET /api/test/email/attachment
+### 參數: to(收件人), subject(主旨), content(內容), filePath(附件路徑)
+###############################################################################
+
+# 發送帶附件的郵件 - 使用絕對路徑
+GET {{baseUrl}}/api/test/email/attachment?to={{testEmail}}&subject=附件郵件測試&content=請查收附件。&filePath=C:/Users/Public/test-attachment.txt
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送帶附件的郵件 - 檔案不存在（應回傳錯誤）
+GET {{baseUrl}}/api/test/email/attachment?to={{testEmail}}&subject=附件郵件測試&content=請查收附件。&filePath=C:/Users/Public/nonexistent-file.pdf
+Authorization: Bearer {{jwtToken}}
+###
+
+# 發送帶附件的郵件 - 使用相對路徑
+GET {{baseUrl}}/api/test/email/attachment?to={{testEmail}}&subject=發票寄送&content=您的發票附件如下。&filePath=./src/main/resources/receipt.pdf
+Authorization: Bearer {{jwtToken}}
+###############################################################################
+### 邊界測試用例
+###############################################################################
+
+# 參數缺失測試 - 缺少 to 參數
+GET {{baseUrl}}/api/test/email?subject=測試&content=缺少收件人參數
+Authorization: Bearer {{jwtToken}}
+###
+
+# 參數缺失測試 - 缺少 subject 參數
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&content=缺少主旨參數
+Authorization: Bearer {{jwtToken}}
+###
+
+# 參數缺失測試 - 缺少 content 參數
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=缺少內容參數
+Authorization: Bearer {{jwtToken}}
+###
+
+# 空白內容測試
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=空白內容測試&content=
+Authorization: Bearer {{jwtToken}}
+###
+
+# 重複收件人測試
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=重複收件人&content=測試重複參數?to=other@example.com
+Authorization: Bearer {{jwtToken}}
+###
+
+# 特殊字元測試 - URL編碼
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=特殊字元測試&content=含特殊字元: <>&"'!@#$%^&*()
+Authorization: Bearer {{jwtToken}}
+###
+
+# 特殊字元測試 - 主旨含空格（URL編碼為 %20）
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=測試%20主旨%20含%20空格&content=主旨測試
+Authorization: Bearer {{jwtToken}}
+###
+
+# 特殊字元測試 - 內容含 HTML 特殊字元未編碼
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=HTML特殊字元&content=<script>alert('test')</script>
+Authorization: Bearer {{jwtToken}}
+###############################################################################
+### 壓力測試（可重複執行）
+###############################################################################
+
+# 連續發送多封郵件，觀察無伺服器端問題
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=壓力測試-1&content=第1封郵件
+Authorization: Bearer {{jwtToken}}
+
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=壓力測試-2&content=第2封郵件
+Authorization: Bearer {{jwtToken}}
+
+GET {{baseUrl}}/api/test/email?to={{testEmail}}&subject=壓力測試-3&content=第3封郵件
+Authorization: Bearer {{jwtToken}}
+
+GET {{baseUrl}}/api/test/email/text?to={{testEmail}}&subject=文字壓力測試-1&content=純文字第1封
+Authorization: Bearer {{jwtToken}}
+
+GET {{baseUrl}}/api/test/email/text?to={{testEmail}}&subject=文字壓力測試-2&content=純文字第2封
+Authorization: Bearer {{jwtToken}}
