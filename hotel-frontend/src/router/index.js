@@ -37,10 +37,10 @@ import RoomBookingManageView from "../views/RoomBookingManageView.vue";
 import CartView from "../views/CartView.vue";
 
 
-//--------------- 會員訂單管理 -----------------
+//--------------- 會員中心 -----------------
+import MemberLayout from "../layouts/MemberLayout.vue";
+import MemberProfileView from "../views/MemberProfileView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
-
-
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -215,6 +215,27 @@ const router = createRouter({
           path: "my-orders",
           name: "my-orders",
           component: MyOrdersView,
+        },
+        {
+          path: "member",
+          component: MemberLayout,
+          children: [
+            {
+              path: "",
+              name: "member-center",
+              component: MemberProfileView,
+            },
+            {
+              path: "profile",
+              name: "member-profile",
+              component: MemberProfileView,
+            },
+            {
+              path: "orders",
+              name: "member-orders",
+              component: MyOrdersView,
+            },
+          ],
         },
       ],
     },

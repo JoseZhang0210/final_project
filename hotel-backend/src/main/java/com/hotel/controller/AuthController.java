@@ -1,45 +1,3 @@
-// package com.hotel.controller;
-
-// import org.springframework.http.ResponseEntity;
-// import org.springframework.security.authentication.BadCredentialsException;
-// import org.springframework.security.core.userdetails.UserDetails;
-// import org.springframework.security.core.userdetails.UserDetailsService;
-// import org.springframework.security.crypto.password.PasswordEncoder;
-// import org.springframework.web.bind.annotation.PostMapping;
-// import org.springframework.web.bind.annotation.RequestBody;
-// import org.springframework.web.bind.annotation.RequestMapping;
-// import org.springframework.web.bind.annotation.RestController;
-
-// import com.hotel.model.entity.Account;
-// import com.hotel.repository.AccountRepository;
-
-// import lombok.AllArgsConstructor;
-
-// @RestController
-// @AllArgsConstructor
-// @RequestMapping("/api/auth")
-// public class AuthController {
-//     private final PasswordEncoder passwordEncoder;
-//     private final AccountRepository accountRepository;
-
-//     @PostMapping("/register")
-//     public ResponseEntity<Account> createAccount(@RequestBody Account account) {
-//         account.setPassword(passwordEncoder.encode(account.getPassword()));
-//         account.setStatus("1");
-//         Account savedAccount = accountRepository.save(account);
-//         return ResponseEntity.ok(savedAccount);
-//     }
-
-//      @PostMapping("/login")
-//     public String login(@RequestBody Account account) {
-//         UserDetails user = UserDetailsService.loadUserByUsername(request.getUsername());
-//         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-//             throw new BadCredentialsException("Authentication fails because of incorrect password.");
-//         }
-
-//         return "帳密正確，回傳 JWT";
-//     }
-// }
 package com.hotel.controller;
 
 import java.util.HashMap;
@@ -58,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Account;
+import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
+import com.hotel.repository.ProfileRepository;
 import com.hotel.util.JwtUtils; // 確保有匯入您的 JwtUtils
 
 import lombok.AllArgsConstructor;
@@ -71,6 +31,7 @@ public class AuthController {
     private final AccountRepository accountRepository;
     private final UserDetailsService userDetailsService; // 1. 注入 Spring Security 的 UserDetailsService
     private final JwtUtils jwtUtils; // 2. 注入您的 JWT 工具類別
+    private final ProfileRepository profileRepository;
 
     @PostMapping("/register")
     public ResponseEntity<Account> createAccount(@RequestBody Account account) {
@@ -115,9 +76,12 @@ public class AuthController {
 
         // 6. 包裝成 JSON 格式回傳給前端（標準做法是回傳帶有 token 欄位的物件）
         Map<String, Object> response = new HashMap<>();
+        // 查詢 Profile table 中的使用者姓名
+        String name = profileRepository.findByUsername(user.getUsername()).orElse(null).getName();
+        
         response.put("token", token);
         response.put("authorities", authorities);
-
+        response.put("name", name);
         return ResponseEntity.ok(response);
     }
 }
