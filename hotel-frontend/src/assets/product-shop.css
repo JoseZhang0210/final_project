@@ -375,13 +375,11 @@
 
   display: block;
 
-  object-fit: cover;
+  object-fit: contain;
+
+  object-position: center;
 
   transition: transform 0.45s ease;
-}
-
-.product-card:hover .product-image {
-  transform: scale(1.055);
 }
 
 .wishlist-button {
@@ -868,13 +866,11 @@
 
   display: block;
 
-  object-fit: cover;
+  object-fit: contain;
+
+  object-position: center;
 
   transition: transform 0.3s ease;
-}
-
-.recent-product-card:hover .recent-product-image {
-  transform: scale(1.05);
 }
 
 /* =====================================================
@@ -1043,13 +1039,11 @@
 
   display: block;
 
-  object-fit: cover;
+  object-fit: contain;
+
+  object-position: center;
 
   transition: transform 0.35s ease;
-}
-
-.recommend-card:hover .recommend-image {
-  transform: scale(1.05);
 }
 
 .recommend-badge {

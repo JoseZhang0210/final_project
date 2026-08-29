@@ -151,6 +151,7 @@
                   📁 選擇圖片
 
                   <input
+                    ref="imageInput"
                     type="file"
                     accept="image/*"
                     hidden
@@ -237,6 +238,7 @@
           <button
             type="button"
             class="admin-btn admin-btn-secondary"
+            :disabled="saving"
             @click="backToList"
           >
             返回商品列表
@@ -266,6 +268,13 @@ const PRODUCT_API = "/api/products";
 
 const IMAGE_UPLOAD_API = "/api/products/upload-image";
 
+const PRODUCT_STATUSES = new Set([
+  "ACTIVE",
+  "INACTIVE",
+  "OUT_OF_STOCK",
+  "DISCONTINUED",
+]);
+
 // =====================================================
 // 狀態
 // =====================================================
@@ -287,6 +296,8 @@ const imagePreview = ref("");
 const selectedImageFile = ref(null);
 
 const imageError = ref(false);
+
+const imageInput = ref(null);
 
 let objectUrl = null;
 
@@ -351,7 +362,13 @@ async function loadCategories() {
       throw new Error("分類讀取失敗");
     }
 
-    categories.value = await response.json();
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("分類資料格式錯誤");
+    }
+
+    categories.value = data;
   } catch (error) {
     console.error("分類讀取失敗：", error);
 
@@ -456,6 +473,10 @@ function clearImage() {
 
   imageError.value = false;
 
+  if (imageInput.value) {
+    imageInput.value.value = "";
+  }
+
   revokeObjectUrl();
 }
 
@@ -503,13 +524,9 @@ async function uploadImage() {
   // 要讓瀏覽器自己建立
   // ==========================
 
-  const headers = {};
+  const headers = getAuthHeaders();
 
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
+  delete headers["Content-Type"];
 
   const response = await fetch(IMAGE_UPLOAD_API, {
     method: "POST",
@@ -546,6 +563,10 @@ async function uploadImage() {
 // =====================================================
 
 async function addProduct() {
+  if (saving.value) {
+    return;
+  }
+
   message.value = "";
 
   // ==========================
@@ -558,20 +579,32 @@ async function addProduct() {
     return;
   }
 
-  if (!product.categoryId) {
-    showError("請選擇商品分類");
+  const categoryId = Number(product.categoryId);
+
+  if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+    showError("請選擇有效的商品分類");
 
     return;
   }
 
-  if (Number(product.price) < 0) {
-    showError("商品價格不能小於 0");
+  const price = Number(product.price);
+
+  if (!Number.isSafeInteger(price) || price < 0) {
+    showError("商品價格必須是大於或等於 0 的整數");
 
     return;
   }
 
-  if (Number(product.stock) < 0) {
-    showError("商品庫存不能小於 0");
+  const stock = Number(product.stock);
+
+  if (!Number.isSafeInteger(stock) || stock < 0) {
+    showError("商品庫存必須是大於或等於 0 的整數");
+
+    return;
+  }
+
+  if (!PRODUCT_STATUSES.has(product.status)) {
+    showError("商品狀態不正確");
 
     return;
   }
@@ -594,14 +627,14 @@ async function addProduct() {
       productName: product.productName.trim(),
 
       category: {
-        categoryId: Number(product.categoryId),
+        categoryId,
       },
 
       description: product.description?.trim() || "",
 
-      price: Number(product.price),
+      price,
 
-      stock: Number(product.stock),
+      stock,
 
       imageUrl: finalImageUrl,
 

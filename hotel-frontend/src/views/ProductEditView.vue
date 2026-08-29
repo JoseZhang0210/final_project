@@ -1,9 +1,11 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 
 import { getAuthHeaders } from "@/utils/auth";
+
+import { normalizeProductId } from "@/utils/productId";
 
 // =====================================================
 // Router
@@ -24,6 +26,13 @@ const PRODUCT_API = "/api/products";
 const CATEGORY_API = "/api/categories";
 
 const IMAGE_UPLOAD_API = "/api/products/upload-image";
+
+const PRODUCT_STATUSES = new Set([
+  "ACTIVE",
+  "INACTIVE",
+  "OUT_OF_STOCK",
+  "DISCONTINUED",
+]);
 
 // =====================================================
 // 狀態
@@ -48,6 +57,12 @@ const imagePreview = ref("");
 const selectedImageFile = ref(null);
 
 const imageError = ref(false);
+
+const imageInput = ref(null);
+
+let objectUrl = null;
+
+let messageTimer = null;
 
 // =====================================================
 // 表單
@@ -74,12 +89,17 @@ const form = reactive({
 // =====================================================
 
 function showMessage(text, type) {
+  if (messageTimer) {
+    clearTimeout(messageTimer);
+  }
+
   message.value = text;
 
   messageType.value = type;
 
-  setTimeout(() => {
+  messageTimer = setTimeout(() => {
     message.value = "";
+    messageTimer = null;
   }, 2500);
 }
 
@@ -100,9 +120,17 @@ async function loadCategories() {
       return;
     }
 
-    categories.value = await response.json();
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("分類資料格式錯誤");
+    }
+
+    categories.value = data;
   } catch (error) {
     console.error("分類讀取錯誤：", error);
+
+    showMessage(error.message || "分類讀取失敗", "error");
   }
 }
 
@@ -111,10 +139,17 @@ async function loadCategories() {
 // =====================================================
 
 async function loadProduct() {
+  const id = normalizeProductId(productId);
+
+  if (id === null) {
+    showMessage("商品 ID 不正確", "error");
+    return;
+  }
+
   loading.value = true;
 
   try {
-    const response = await fetch(`${PRODUCT_API}/${productId}`, {
+    const response = await fetch(`${PRODUCT_API}/${id}`, {
       method: "GET",
 
       headers: getAuthHeaders(),
@@ -168,6 +203,8 @@ async function loadProduct() {
 function previewUrlImage() {
   selectedImageFile.value = null;
 
+  revokeObjectUrl();
+
   imageError.value = false;
 
   if (form.imageUrl && form.imageUrl.trim()) {
@@ -212,8 +249,13 @@ function handleImageSelect(event) {
 
   imageError.value = false;
 
-  // 建立本機預覽
-  imagePreview.value = URL.createObjectURL(file);
+  form.imageUrl = "";
+
+  revokeObjectUrl();
+
+  objectUrl = URL.createObjectURL(file);
+
+  imagePreview.value = objectUrl;
 }
 
 // =====================================================
@@ -236,6 +278,20 @@ function clearImage() {
   imagePreview.value = "";
 
   imageError.value = false;
+
+  if (imageInput.value) {
+    imageInput.value.value = "";
+  }
+
+  revokeObjectUrl();
+}
+
+function revokeObjectUrl() {
+  if (objectUrl) {
+    URL.revokeObjectURL(objectUrl);
+
+    objectUrl = null;
+  }
 }
 
 // =====================================================
@@ -253,16 +309,9 @@ async function uploadImage() {
 
   formData.append("file", selectedImageFile.value);
 
-  // 上傳檔案時
-  // 不可以使用 getAuthHeaders()
-  // 因為不能手動指定 application/json
-  const headers = {};
+  const headers = getAuthHeaders();
 
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
+  delete headers["Content-Type"];
 
   const response = await fetch(IMAGE_UPLOAD_API, {
     method: "POST",
@@ -290,26 +339,49 @@ async function uploadImage() {
 // =====================================================
 
 async function updateProduct() {
+  if (saving.value) {
+    return;
+  }
+
+  const id = normalizeProductId(productId);
+
+  if (id === null) {
+    showMessage("商品 ID 不正確", "error");
+    return;
+  }
+
   if (!form.productName.trim()) {
     showMessage("請輸入商品名稱", "error");
 
     return;
   }
 
-  if (!form.categoryId) {
-    showMessage("請選擇商品分類", "error");
+  const categoryId = Number(form.categoryId);
+
+  if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+    showMessage("請選擇有效的商品分類", "error");
 
     return;
   }
 
-  if (form.price < 0) {
-    showMessage("價格不能小於 0", "error");
+  const price = Number(form.price);
+
+  if (!Number.isSafeInteger(price) || price < 0) {
+    showMessage("商品價格必須是大於或等於 0 的整數", "error");
 
     return;
   }
 
-  if (form.stock < 0) {
-    showMessage("庫存不能小於 0", "error");
+  const stock = Number(form.stock);
+
+  if (!Number.isSafeInteger(stock) || stock < 0) {
+    showMessage("商品庫存必須是大於或等於 0 的整數", "error");
+
+    return;
+  }
+
+  if (!PRODUCT_STATUSES.has(form.status)) {
+    showMessage("商品狀態不正確", "error");
 
     return;
   }
@@ -334,22 +406,22 @@ async function updateProduct() {
 
       description: form.description,
 
-      price: Number(form.price),
+      price,
 
-      stock: Number(form.stock),
+      stock,
 
       imageUrl: form.imageUrl,
 
       status: form.status,
 
       category: {
-        categoryId: Number(form.categoryId),
+        categoryId,
       },
     };
 
     console.log("送出商品資料：", payload);
 
-    const response = await fetch(`${PRODUCT_API}/${productId}`, {
+    const response = await fetch(`${PRODUCT_API}/${id}`, {
       method: "PUT",
 
       headers: getAuthHeaders(),
@@ -392,6 +464,10 @@ async function updateProduct() {
 // =====================================================
 
 function goBack() {
+  if (saving.value) {
+    return;
+  }
+
   router.push("/admin/products");
 }
 
@@ -403,6 +479,14 @@ onMounted(async () => {
   await loadCategories();
 
   await loadProduct();
+});
+
+onBeforeUnmount(() => {
+  revokeObjectUrl();
+
+  if (messageTimer) {
+    clearTimeout(messageTimer);
+  }
 });
 </script>
 
@@ -500,6 +584,7 @@ onMounted(async () => {
             v-model.number="form.price"
             type="number"
             min="0"
+            step="1"
             placeholder="請輸入價格"
             required
           />
@@ -514,6 +599,7 @@ onMounted(async () => {
             v-model.number="form.stock"
             type="number"
             min="0"
+            step="1"
             placeholder="請輸入庫存"
             required
           />
@@ -549,6 +635,7 @@ onMounted(async () => {
                 📁 選擇圖片
 
                 <input
+                  ref="imageInput"
                   type="file"
                   accept="image/*"
                   hidden
@@ -626,6 +713,7 @@ onMounted(async () => {
         <button
           type="button"
           class="admin-btn admin-btn-secondary"
+          :disabled="saving"
           @click="goBack"
         >
           返回商品列表
