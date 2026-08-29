@@ -1,3 +1,5 @@
+import { normalizeProductId } from "@/utils/productId";
+
 const STORAGE_KEY = "recentlyViewedProducts";
 const MAX_ITEMS = 10;
 
@@ -6,7 +8,17 @@ export function getRecentlyViewedIds() {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
     // 保證一定是陣列
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return [
+      ...new Set(
+        data
+          .map(normalizeProductId)
+          .filter((id) => id !== null),
+      ),
+    ].slice(0, MAX_ITEMS);
   } catch (error) {
     console.error("讀取最近瀏覽失敗：", error);
 
@@ -15,9 +27,14 @@ export function getRecentlyViewedIds() {
 }
 
 export function addRecentlyViewed(productId) {
-  let ids = getRecentlyViewedIds();
+  const id = normalizeProductId(productId);
 
-  const id = Number(productId);
+  if (id === null) {
+    console.warn("無效的商品 ID：", productId);
+    return false;
+  }
+
+  let ids = getRecentlyViewedIds();
 
   // 移除重複商品
   ids = ids.filter((itemId) => Number(itemId) !== id);
@@ -29,6 +46,8 @@ export function addRecentlyViewed(productId) {
   ids = ids.slice(0, MAX_ITEMS);
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+
+  return true;
 }
 
 export function clearRecentlyViewed() {
