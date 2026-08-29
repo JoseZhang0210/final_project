@@ -115,6 +115,27 @@
               @error="handleImageError"
             />
 
+            <button
+              type="button"
+              class="wishlist-button"
+              :class="{ active: isProductInWishlist(product.productId) }"
+              :aria-label="
+                isProductInWishlist(product.productId)
+                  ? `將 ${product.productName} 移出願望清單`
+                  : `將 ${product.productName} 加入願望清單`
+              "
+              :title="
+                isProductInWishlist(product.productId)
+                  ? '移出願望清單'
+                  : '加入願望清單'
+              "
+              @click.stop="handleToggleWishlist(product.productId)"
+            >
+              <span aria-hidden="true">
+                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
+              </span>
+            </button>
+
             <!-- 缺貨 -->
             <span
               v-if="
@@ -376,6 +397,8 @@ import {
   clearRecentlyViewed,
 } from "@/utils/recentlyViewed";
 
+import { getWishlistIds, toggleWishlist } from "@/utils/wishlist";
+
 const router = useRouter();
 // =====================================================
 // 猜你喜歡
@@ -476,6 +499,12 @@ const productSection = ref(null);
 // =====================================================
 
 const recentlyViewedIds = ref([]);
+
+// =====================================================
+// 願望清單商品 ID
+// =====================================================
+
+const wishlistIds = ref([]);
 
 // =====================================================
 // 讀取所有商品
@@ -847,6 +876,22 @@ function handleClearRecentlyViewed() {
 }
 
 // =====================================================
+// 願望清單
+// =====================================================
+
+function isProductInWishlist(productId) {
+  return wishlistIds.value.some(
+    (id) => Number(id) === Number(productId),
+  );
+}
+
+function handleToggleWishlist(productId) {
+  toggleWishlist(productId);
+
+  wishlistIds.value = getWishlistIds();
+}
+
+// =====================================================
 // 捲動到商品區
 // =====================================================
 
@@ -867,6 +912,8 @@ onMounted(async () => {
   await Promise.all([loadProducts(), loadCategories()]);
 
   recentlyViewedIds.value = getRecentlyViewedIds();
+
+  wishlistIds.value = getWishlistIds();
 });
 </script>
 
@@ -1247,6 +1294,69 @@ onMounted(async () => {
 
 .product-card:hover .product-image {
   transform: scale(1.055);
+}
+
+.wishlist-button {
+  position: absolute;
+
+  z-index: 2;
+
+  top: 12px;
+
+  right: 12px;
+
+  width: 40px;
+
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.75);
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  color: #806f5e;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 27px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 12px rgba(38, 30, 22, 0.16);
+
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.wishlist-button:hover {
+  transform: scale(1.08);
+
+  color: #b74f5e;
+}
+
+.wishlist-button:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.45);
+
+  outline-offset: 2px;
+}
+
+.wishlist-button.active {
+  background: #fff5f6;
+
+  color: #b74f5e;
 }
 
 /* =====================================================
