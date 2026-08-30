@@ -1,7 +1,6 @@
 <script setup>
-import { onMounted, ref } from "vue";
-
-const ROOM_API_URL = "/api/rooms";
+import { onMounted, ref , computed } from "vue";
+import { roomApi } from "@/api/roomApi";
 
 // 暫時提供隱藏表單使用
 // 後續可改成 GET /api/room-types
@@ -48,12 +47,10 @@ function clearForm() {
 }
 
 function getRoomTypeName(room) {
-  // 後端若有回傳房型名稱，就顯示名稱
   if (room.roomType?.typeName) {
     return room.roomType.typeName;
   }
 
-  // 沒有名稱但有房型 ID，就顯示 ID
   if (room.roomType?.roomTypeId) {
     return `房型 ID：${room.roomType.roomTypeId}`;
   }
@@ -61,61 +58,21 @@ function getRoomTypeName(room) {
   return "未知房型";
 }
 
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
 // =====================================================
 // 從 SQL 讀取房間
-// GET /api/rooms
 // =====================================================
-
 async function loadRooms() {
+  currentPage.value = 1;
   loading.value = true;
   message.value = "";
 
   try {
-    const response = await fetch(ROOM_API_URL, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-
-    if (response.status === 401) {
-      showMessage("請先登入後再查看房間資料", "error");
-      return;
-    }
-
-    if (response.status === 403) {
-      showMessage("目前帳號沒有查看房間資料的權限", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      showMessage(`讀取房間失敗：${response.status}`, "error");
-      return;
-    }
-
-    const data = await response.json();
-
-    rooms.value = Array.isArray(data)
-      ? data
-      : data.content || [];
-
+    const data = await roomApi.getAllRooms();
+    rooms.value = Array.isArray(data) ? data : data.content || [];
     console.log("SQL room 資料：", rooms.value);
   } catch (error) {
     console.error("讀取房間錯誤：", error);
-    showMessage("無法連線至房間 API", "error");
+    showMessage(error.message || "無法連線至房間 API", "error");
   } finally {
     loading.value = false;
   }
@@ -123,10 +80,8 @@ async function loadRooms() {
 
 // =====================================================
 // 新增／修改房間
-// 目前保留原本前端測試功能
 // =====================================================
-
-function saveRoom() {
+async function saveRoom() {
   if (!form.value.roomNumber.trim()) {
     showMessage("請輸入房號", "error");
     return;
@@ -155,31 +110,20 @@ function saveRoom() {
     floor: Number(form.value.floor),
   };
 
-  if (form.value.roomId === null) {
-    const nextId =
-      rooms.value.length === 0
-        ? 1
-        : Math.max(...rooms.value.map((room) => room.roomId)) + 1;
-
-    rooms.value.push({
-      ...roomData,
-      roomId: nextId,
-    });
-
-    showMessage("房間新增成功", "success");
-  } else {
-    const index = rooms.value.findIndex(
-      (room) => room.roomId === form.value.roomId,
-    );
-
-    if (index !== -1) {
-      rooms.value[index] = roomData;
+  try {
+    if (form.value.roomId === null) {
+      await roomApi.createRoom(roomData);
+      showMessage("房間新增成功", "success");
+    } else {
+      await roomApi.updateRoom(form.value.roomId, roomData);
+      showMessage("房間修改成功", "success");
     }
-
-    showMessage("房間修改成功", "success");
+    
+    clearForm();
+    await loadRooms();
+  } catch (error) {
+    showMessage(error.message || "儲存失敗", "error");
   }
-
-  clearForm();
 }
 
 function editRoom(room) {
@@ -192,7 +136,7 @@ function editRoom(room) {
   });
 }
 
-function deleteRoom(id) {
+async function deleteRoom(id) {
   const room = rooms.value.find(
     (item) => item.roomId === id,
   );
@@ -201,15 +145,17 @@ function deleteRoom(id) {
     return;
   }
 
-  rooms.value = rooms.value.filter(
-    (item) => item.roomId !== id,
-  );
-
-  if (form.value.roomId === id) {
-    clearForm();
+  try {
+    await roomApi.deleteRoom(id);
+    showMessage("房間已刪除", "success");
+    
+    if (form.value.roomId === id) {
+      clearForm();
+    }
+    await loadRooms();
+  } catch(error) {
+    showMessage(error.message || "刪除失敗", "error");
   }
-
-  showMessage("房間已刪除", "success");
 }
 
 function getStatusClass(status) {
@@ -227,6 +173,17 @@ function getStatusClass(status) {
 onMounted(() => {
   loadRooms();
 });
+
+const currentPage = ref(1);
+const itemsPerPage = 20;
+const totalPages = computed(() => Math.ceil(rooms.value.length / itemsPerPage));
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return rooms.value.slice(start, start + itemsPerPage);
+});
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
+function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+
 </script>
 
 <template>
@@ -332,7 +289,7 @@ onMounted(() => {
               </td>
             </tr>
 
-            <tr v-for="room in rooms" v-else :key="room.roomId">
+            <tr v-for="room in paginatedData" v-else :key="room.roomId">
               <td>{{ room.roomId }}</td>
               <td>{{ room.roomNumber }}</td>
               <td>{{ getRoomTypeName(room) }}</td>
@@ -363,6 +320,14 @@ onMounted(() => {
             </tr>
           </tbody>
         </table>
+
+      <div class="pagination-container" v-if="totalPages > 1">
+        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
+        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      </div>
+  
+
       </div>
     </section>
   </main>
@@ -626,4 +591,5 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 </style>

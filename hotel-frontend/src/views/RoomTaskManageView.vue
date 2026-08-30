@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, ref } from "vue";
-
-const API_BASE_URL = "/api/roomtask";
+import { onMounted, ref , computed } from "vue";
+import { roomTaskApi } from "@/api/roomTaskApi";
+import { roomApi } from "@/api/roomApi";
+import { fetchClient } from "@/api/apiClient"; // for employees API
 
 // 下拉選單資料 (透過 API 動態載入)
 const rooms = ref([]);
@@ -52,31 +53,15 @@ function clearForm() {
   formTitle.value = "新增房務工單";
 }
 
-function getAuthHeaders() {
-  const token = localStorage.getItem("token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
-  return headers;
-}
-
 // 動態載入房間下拉選項 (GET /api/rooms)
 async function loadRooms() {
   try {
-    const response = await fetch("/api/rooms", {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-    if (response.ok) {
-      const data = await response.json();
-      rooms.value = data.map((item) => ({
-        roomId: item.roomId ?? item.room_id,
-        roomNumber:
-          item.roomNumber ?? item.room_number ?? item.roomId ?? item.room_id,
-      }));
-    }
+    const data = await roomApi.getAllRooms();
+    rooms.value = data.map((item) => ({
+      roomId: item.roomId ?? item.room_id,
+      roomNumber:
+        item.roomNumber ?? item.room_number ?? item.roomId ?? item.room_id,
+    }));
   } catch (error) {
     console.error("loadRooms Error:", error);
   }
@@ -85,22 +70,16 @@ async function loadRooms() {
 // 動態載入員工下拉選項 (GET /api/employees)
 async function loadEmployees() {
   try {
-    const response = await fetch("/api/employees", {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-    if (response.ok) {
-      const data = await response.json();
-      employees.value = data.map((item) => ({
-        employeeId: item.employeeId ?? item.employee_id,
-        employeeName:
-          item.employeeName ??
-          item.employee_name ??
-          item.name ??
-          `員工 ${item.employeeId ?? item.employee_id}`,
-      }));
-    }
+    // We don't have an employeeApi yet, so use fetchClient for now
+    const data = await fetchClient("/api/employees", { method: "GET" });
+    employees.value = data.map((item) => ({
+      employeeId: item.employeeId ?? item.employee_id,
+      employeeName:
+        item.employeeName ??
+        item.employee_name ??
+        item.name ??
+        `員工 ${item.employeeId ?? item.employee_id}`,
+    }));
   } catch (error) {
     console.error("loadEmployees Error:", error);
   }
@@ -147,41 +126,19 @@ function ensureSecondsFormat(dateTimeStr) {
 
 // 1. 載入與條件查詢房務工單 (GET /api/roomtask?...)
 async function loadRoomTasks() {
+  currentPage.value = 1;
   try {
-    const params = new URLSearchParams();
-    if (searchParams.value.taskId)
-      params.append("taskId", searchParams.value.taskId);
-    if (searchParams.value.roomId)
-      params.append("roomId", searchParams.value.roomId);
-    if (searchParams.value.employeeId)
-      params.append("employeeId", searchParams.value.employeeId);
-    if (searchParams.value.priority)
-      params.append("priority", searchParams.value.priority);
+    const params = {};
+    if (searchParams.value.taskId) params.taskId = searchParams.value.taskId;
+    if (searchParams.value.roomId) params.roomId = searchParams.value.roomId;
+    if (searchParams.value.employeeId) params.employeeId = searchParams.value.employeeId;
+    if (searchParams.value.priority) params.priority = searchParams.value.priority;
 
-    const queryString = params.toString();
-    const url = queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        showMessage("權限不足或登入已過期 (403)", "error");
-        return;
-      }
-      const errorData = await response.json().catch(() => ({}));
-      showMessage(errorData.message || "載入房務工單失敗", "error");
-      return;
-    }
-
-    const data = await response.json();
+    const data = await roomTaskApi.getRoomTasks(params);
     roomTasks.value = Array.isArray(data) ? data : data ? [data] : [];
   } catch (error) {
     console.error("loadRoomTasks Error:", error);
-    showMessage("無法連線至房務工單 API", "error");
+    showMessage(error.message || "無法連線至房務工單 API", "error");
   }
 }
 
@@ -226,37 +183,21 @@ async function saveRoomTask() {
   };
 
   const isEdit = form.value.taskId !== null;
-  const url = isEdit ? `${API_BASE_URL}/${form.value.taskId}` : API_BASE_URL;
-  const method = isEdit ? "PUT" : "POST";
 
   try {
-    const response = await fetch(url, {
-      method,
-      headers: getAuthHeaders(),
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
-    const resData = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        showMessage("權限不足或登入已過期 (403)", "error");
-        return;
-      }
-      showMessage(
-        resData.message || (isEdit ? "工單修改失敗" : "工單新增失敗"),
-        "error",
-      );
-      return;
+    if (isEdit) {
+      await roomTaskApi.updateRoomTask(form.value.taskId, payload);
+      showMessage("工單修改成功", "success");
+    } else {
+      await roomTaskApi.createRoomTask(payload);
+      showMessage("工單新增成功", "success");
     }
 
-    showMessage(isEdit ? "工單修改成功" : "工單新增成功", "success");
     clearForm();
     await loadRoomTasks();
   } catch (error) {
     console.error("saveRoomTask Error:", error);
-    showMessage("無法連線至房務工單 API", "error");
+    showMessage(error.message || (isEdit ? "工單修改失敗" : "工單新增失敗"), "error");
   }
 }
 
@@ -316,29 +257,12 @@ async function completeRoomTask(task) {
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/${taskId}`, {
-      method: "PUT",
-      headers: getAuthHeaders(),
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
-    const resData = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        showMessage("權限不足或登入已過期 (403)", "error");
-        return;
-      }
-      showMessage(resData.message || "更新完成狀態失敗", "error");
-      return;
-    }
-
+    await roomTaskApi.updateRoomTask(taskId, payload);
     showMessage(`工單 ${taskId} 已完成`, "success");
     await loadRoomTasks();
   } catch (error) {
     console.error("completeRoomTask Error:", error);
-    showMessage("無法連線至房務工單 API", "error");
+    showMessage(error.message || "更新完成狀態失敗", "error");
   }
 }
 
@@ -349,31 +273,15 @@ async function deleteRoomTask(id) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/${id}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-      credentials: "include",
-    });
-
-    const resData = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        showMessage("權限不足或登入已過期 (403)", "error");
-        return;
-      }
-      showMessage(resData.message || "刪除失敗", "error");
-      return;
-    }
-
-    showMessage(resData.message || "工單已刪除", "success");
+    await roomTaskApi.deleteRoomTask(id);
+    showMessage("工單已刪除", "success");
     if (form.value.taskId === id) {
       clearForm();
     }
     await loadRoomTasks();
   } catch (error) {
     console.error("deleteRoomTask Error:", error);
-    showMessage("無法連線至房務工單 API", "error");
+    showMessage(error.message || "刪除失敗", "error");
   }
 }
 
@@ -398,6 +306,17 @@ function getStatusClass(status) {
 onMounted(async () => {
   await Promise.all([loadRoomTasks(), loadRooms(), loadEmployees()]);
 });
+
+const currentPage = ref(1);
+const itemsPerPage = 20;
+const totalPages = computed(() => Math.ceil(roomTasks.value.length / itemsPerPage));
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return roomTasks.value.slice(start, start + itemsPerPage);
+});
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
+function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+
 </script>
 
 <template>
@@ -633,7 +552,7 @@ onMounted(async () => {
               </td>
             </tr>
 
-            <tr v-for="task in roomTasks" :key="task.taskId ?? task.task_id">
+            <tr v-for="task in paginatedData" :key="task.taskId ?? task.task_id">
               <td>{{ task.taskId ?? task.task_id }}</td>
               <td>{{ getRoomNumber(task.roomId ?? task.room_id) }}</td>
               <td>
@@ -687,6 +606,14 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+
+      <div class="pagination-container" v-if="totalPages > 1">
+        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
+        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      </div>
+  
+
       </div>
     </section>
   </main>
@@ -870,4 +797,5 @@ th {
     grid-column: auto;
   }
 }
+.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 </style>

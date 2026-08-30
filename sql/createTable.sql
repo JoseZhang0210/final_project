@@ -27,7 +27,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[booking](
 	[booking_id] [int] IDENTITY(1,1) NOT NULL,
-	[booking_order_id] [int] NOT NULL,
 	[booking_price] [int] NOT NULL,
 	[check_in_date] [datetime] NOT NULL,
 	[check_out_date] [datetime] NOT NULL,
@@ -35,27 +34,31 @@ CREATE TABLE [dbo].[booking](
 	[booking_status] [nvarchar](20) NOT NULL,
 	[room_id] [int] NULL,
 	[room_type_id] [int] NOT NULL,
+	[member_id] [int] NOT NULL,
+	[created_at] [datetime] NOT NULL,
  CONSTRAINT [PK__booking__5DE3A5B16E4B0B5A] PRIMARY KEY CLUSTERED 
 (
 	[booking_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** 物件:  Table [dbo].[booking_order]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+/****** 物件:  Table [dbo].[booking_payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[booking_order](
-	[booking_order_id] [int] IDENTITY(1,1) NOT NULL,
-	[member_id] [int] NOT NULL,
-	[booking_total_price] [int] NOT NULL,
-	[order_status] [nvarchar](20) NOT NULL,
-	[created_at] [datetime] NOT NULL,
-	[payment_id] [int] NULL,
- CONSTRAINT [PK_booking_order] PRIMARY KEY CLUSTERED 
+CREATE TABLE [dbo].[booking_payment](
+	[payment_id] [int] IDENTITY(1,1) NOT NULL,
+	[booking_id] [int] NOT NULL,
+	[amount] [int] NOT NULL,
+	[payment_method] [nvarchar](50) NULL,
+	[payment_status] [nvarchar](20) NOT NULL,
+	[transaction_id] [nvarchar](50) NULL,
+	[created_at] [datetime2] NOT NULL,
+	[paid_at] [datetime2] NULL,
+ CONSTRAINT [PK_booking_payment] PRIMARY KEY CLUSTERED 
 (
-	[booking_order_id] ASC
+	[payment_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
@@ -194,21 +197,6 @@ CREATE TABLE [dbo].[order_item](
 		CONSTRAINT [PK_order_item] PRIMARY KEY CLUSTERED ([order_id] ASC, [product_id] ASC),
 		CONSTRAINT [CK_order_item_quantity] CHECK ([quantity] > 0)
 	);
-GO
-/****** 物件:  Table [dbo].[payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[payment](
-	[payment_id] [int] IDENTITY(1,1) NOT NULL,
-	[payment_method] [nvarchar](50) NULL,
-	
- CONSTRAINT [PK_payment] PRIMARY KEY CLUSTERED 
-(
-	[payment_id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
 GO
 /****** 物件:  Table [dbo].[permission]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
@@ -430,6 +418,7 @@ CREATE TABLE [dbo].[room_type](
 	[capacity] [int] NOT NULL,
 	[room_description] [nvarchar](100) NULL,
 	[price_per_night] [int] NOT NULL,
+	[available_rooms] [int] NOT NULL,
  CONSTRAINT [PK_room_type] PRIMARY KEY CLUSTERED 
 (
 	[room_type_id] ASC
@@ -469,10 +458,15 @@ ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__creat__5FB337D6]  DE
 GO
 ALTER TABLE [dbo].[profile] ADD  CONSTRAINT [DF__user_prof__updat__60A75C0F]  DEFAULT (getdate()) FOR [updated_at]
 GO
-ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_booking_order] FOREIGN KEY([booking_order_id])
-REFERENCES [dbo].[booking_order] ([booking_order_id])
+ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id])
 GO
-ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_booking_order]
+ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_member]
+GO
+ALTER TABLE [dbo].[booking_payment]  WITH CHECK ADD  CONSTRAINT [FK_booking_payment_booking] FOREIGN KEY([booking_id])
+REFERENCES [dbo].[booking] ([booking_id])
+GO
+ALTER TABLE [dbo].[booking_payment] CHECK CONSTRAINT [FK_booking_payment_booking]
 GO
 ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_room] FOREIGN KEY([room_id])
 REFERENCES [dbo].[room] ([room_id])
@@ -483,16 +477,6 @@ ALTER TABLE [dbo].[booking]  WITH CHECK ADD  CONSTRAINT [FK_booking_room_type] F
 REFERENCES [dbo].[room_type] ([room_type_id])
 GO
 ALTER TABLE [dbo].[booking] CHECK CONSTRAINT [FK_booking_room_type]
-GO
-ALTER TABLE [dbo].[booking_order]  WITH CHECK ADD  CONSTRAINT [FK_booking_order_member] FOREIGN KEY([member_id])
-REFERENCES [dbo].[member] ([member_id])
-GO
-ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_member]
-GO
-ALTER TABLE [dbo].[booking_order]  WITH CHECK ADD  CONSTRAINT [FK_booking_order_payment] FOREIGN KEY([payment_id])
-REFERENCES [dbo].[payment] ([payment_id])
-GO
-ALTER TABLE [dbo].[booking_order] CHECK CONSTRAINT [FK_booking_order_payment]
 GO
 ALTER TABLE [dbo].[employee]  WITH CHECK ADD  CONSTRAINT [FK_employee_account] FOREIGN KEY([account_id])
 REFERENCES [dbo].[account] ([account_id])
@@ -523,11 +507,6 @@ ALTER TABLE [dbo].[order]  WITH CHECK ADD  CONSTRAINT [FK_order_member] FOREIGN 
 REFERENCES [dbo].[member] ([member_id])
 GO
 ALTER TABLE [dbo].[order] CHECK CONSTRAINT [FK_order_member]
-GO
-ALTER TABLE [dbo].[order]  WITH CHECK ADD  CONSTRAINT [FK_order_payment] FOREIGN KEY([payment_id])
-REFERENCES [dbo].[payment] ([payment_id])
-GO
-ALTER TABLE [dbo].[order] CHECK CONSTRAINT [FK_order_payment]
 GO
 ALTER TABLE [dbo].[order_item]  WITH CHECK ADD  CONSTRAINT [FK_order_item_order] FOREIGN KEY([order_id])
 REFERENCES [dbo].[order] ([order_id])
