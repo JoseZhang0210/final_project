@@ -12,6 +12,7 @@ import com.hotel.repository.CustomerOrderRepository;
 import com.hotel.repository.PaymentRepository;
 
 @Service
+@Transactional
 public class PaymentService {
 
         private final PaymentRepository paymentRepository;

@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hotel.model.entity.Room;
 import com.hotel.repository.RoomRepository;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @Service
 @Transactional
 public class RoomService {
@@ -19,61 +21,53 @@ public class RoomService {
         this.roomRepository = roomRepository;
     }
 
-    // Create
+    // 1. Create - 新增房間
     public Room insert(Room room) {
         return roomRepository.save(room);
     }
 
-    // Read All
+    // 2. Read All - 取得所有房間
     @Transactional(readOnly = true)
     public List<Room> findAll() {
         return roomRepository.findAll();
     }
 
+    // 1. 依樓層查詢
     @Transactional(readOnly = true)
     public List<Room> findByFloor(Integer floor) {
         return roomRepository.findByFloor(floor);
     }
 
-    // Read by RoomTypeId
+    // 2. 依房號查詢
     @Transactional(readOnly = true)
-    public List<Room> findByRoomTypeId(Integer roomTypeId) {
-        return roomRepository.findByRoomTypeId(roomTypeId);
+    public Optional<Room> findByRoomNumber(String roomNumber) {
+        return roomRepository.findByRoomNumber(roomNumber);
     }
 
-    // Read by ID
-    @Transactional(readOnly = true)
-    public Optional<Room> findById(Integer id) {
-        return roomRepository.findById(id);
-    }
-
-    // Update
+    // 4. Update - 更新房間狀態與房型 (利用 Dirty Checking)
     public Room update(Integer id, Room updatedRoom) {
-        return roomRepository.findById(id)
-                .map(room -> {
-                    if (updatedRoom.getRoomNumber() != null) {
-                        room.setRoomNumber(updatedRoom.getRoomNumber());
-                    }
-                    if (updatedRoom.getRoomTypeId() != null) {
-                        room.setRoomTypeId(updatedRoom.getRoomTypeId());
-                    }
-                    if (updatedRoom.getFloor() != null) {
-                        room.setFloor(updatedRoom.getFloor());
-                    }
-                    if (updatedRoom.getRoomStatus() != null) {
-                        room.setRoomStatus(updatedRoom.getRoomStatus());
-                    }
-                    return roomRepository.save(room);
-                })
-                .orElseThrow(() -> new RuntimeException("Room not found with id: " + id));
+        Room existingRoom = roomRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房間資料"));
+
+        // 1. 更新房間狀態
+        if (updatedRoom.getRoomStatus() != null) {
+            existingRoom.setRoomStatus(updatedRoom.getRoomStatus());
+        }
+
+        // 2. 更新房型關聯 (對應 room_type_id)
+        if (updatedRoom.getRoomType() != null) {
+            existingRoom.setRoomType(updatedRoom.getRoomType());
+        }
+
+        // 交易結束時 JPA 會自動比對並發送 UPDATE SQL (僅更新變更之欄位)
+        return existingRoom;
     }
 
-    // Delete By Id
-    public boolean deleteById(Integer id) {
-        if (roomRepository.existsById(id)) {
-            roomRepository.deleteById(id);
-            return true;
+    // 5. Delete By Id - 刪除房間
+    public void deleteById(Integer id) {
+        if (!roomRepository.existsById(id)) {
+            throw new EntityNotFoundException("欲刪除的房間 ID: " + id + " 不存在");
         }
-        return false;
+        roomRepository.deleteById(id);
     }
 }

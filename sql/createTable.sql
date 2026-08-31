@@ -50,11 +50,46 @@ GO CREATE TABLE [dbo].[booking](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[booking](
+		[booking_id] [int] IDENTITY(1, 1) NOT NULL,
+		[booking_order_id] [int] NOT NULL,
+		[booking_price] [int] NOT NULL,
+		[check_in_date] [datetime] NOT NULL,
+		[check_out_date] [datetime] NOT NULL,
+		[guest_num] [int] NOT NULL,
+		[booking_status] [nvarchar](20) NOT NULL,
+		[room_id] [int] NULL,
+		[room_type_id] [int] NOT NULL,
+		CONSTRAINT [PK__booking__5DE3A5B16E4B0B5A] PRIMARY KEY CLUSTERED ([booking_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[booking_order]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO CREATE TABLE [dbo].[booking_order](
+		[booking_order_id] [int] IDENTITY(1, 1) NOT NULL,
+		[member_id] [int] NOT NULL,
+		[booking_total_price] [int] NOT NULL,
+		[order_status] [nvarchar](20) NOT NULL,
+		[created_at] [datetime] NOT NULL,
+		[payment_id] [int] NULL,
+		CONSTRAINT [PK_booking_order] PRIMARY KEY CLUSTERED ([booking_order_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO CREATE TABLE [dbo].[booking_order](
 		[booking_order_id] [int] IDENTITY(1, 1) NOT NULL,
 		[member_id] [int] NOT NULL,
@@ -88,6 +123,18 @@ GO CREATE TABLE [dbo].[category](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[category](
+		[category_id] INT IDENTITY(1, 1) NOT NULL,
+		[category_name] [nvarchar](50) NULL,
+		CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED ([category_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[department]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
@@ -96,6 +143,26 @@ SET QUOTED_IDENTIFIER ON
 GO CREATE TABLE [dbo].[department](
 		[department_id] [int] IDENTITY(1, 1) NOT NULL,
 		[department_name] [nvarchar](50) NOT NULL,
+		CONSTRAINT [PK__departme__C2232422D5FF8FCD] PRIMARY KEY CLUSTERED ([department_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY],
+		CONSTRAINT [UQ__departme__226ED157968C41E7] UNIQUE NONCLUSTERED ([department_name] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[department](
+		[department_id] [int] IDENTITY(1, 1) NOT NULL,
+		[department_name] [varchar](50) NOT NULL,
 		CONSTRAINT [PK__departme__C2232422D5FF8FCD] PRIMARY KEY CLUSTERED ([department_id] ASC) WITH (
 			PAD_INDEX = OFF,
 			STATISTICS_NORECOMPUTE = OFF,
@@ -140,13 +207,35 @@ GO CREATE TABLE [dbo].[employee](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[employee](
+		[employee_id] [int] IDENTITY(1, 1) NOT NULL,
+		[department_id] [int] NOT NULL,
+		[account_id] [int] NOT NULL,
+		[position] [varchar](50) NOT NULL,
+		CONSTRAINT [PK__employee__C52E0BA8B3F6391D] PRIMARY KEY CLUSTERED ([employee_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY],
+		CONSTRAINT [UQ__employee__46A222CC22732DA3] UNIQUE NONCLUSTERED ([account_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[employee_permission]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO CREATE TABLE [dbo].[employee_permission](
-		[permission_id] [int] NOT NULL,
+		[permission_id] [int] IDENTITY(1, 1) NOT NULL,
 		[employee_id] [int] NOT NULL,
 		CONSTRAINT [PK_employee_permission] PRIMARY KEY CLUSTERED ([permission_id] ASC, [employee_id] ASC) WITH (
 			PAD_INDEX = OFF,
@@ -168,6 +257,19 @@ GO CREATE TABLE [dbo].[room_image](
 		[image_description] [nvarchar](MAX) NULL,
 		[room_type_id] [int] NOT NULL,
 		CONSTRAINT [PK_image] PRIMARY KEY CLUSTERED ([image_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[room_image](
+		[image_id] [int] IDENTITY(1, 1) NOT NULL,
+		[path] [nvarchar](255) NOT NULL,
+		[image_description] [nvarchar](MAX) NULL,
+		[room_type_id] [int] NOT NULL CONSTRAINT [PK_image] PRIMARY KEY CLUSTERED ([image_id] ASC) WITH (
 			PAD_INDEX = OFF,
 			STATISTICS_NORECOMPUTE = OFF,
 			IGNORE_DUP_KEY = OFF,
@@ -344,6 +446,18 @@ GO CREATE TABLE [dbo].[coupon](
 		),
 		CONSTRAINT [CK_coupon_date] CHECK ([end_date] > [start_date])
 	);
+GO CREATE TABLE [dbo].[payment](
+		[payment_id] [int] IDENTITY(1, 1) NOT NULL,
+		[payment_method] [nvarchar](50) NULL,
+		CONSTRAINT [PK_payment] PRIMARY KEY CLUSTERED ([payment_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[permission]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
@@ -362,11 +476,42 @@ GO CREATE TABLE [dbo].[permission](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[permission](
+		[permission_id] [int] IDENTITY(1, 1) NOT NULL,
+		[permission_code] [nvarchar](50) NOT NULL,
+		[permission_name] [nvarchar](50) NOT NULL,
+		CONSTRAINT [PK_permission] PRIMARY KEY CLUSTERED ([permission_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[product]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO CREATE TABLE [dbo].[product](
+		[product_id] INT IDENTITY(1, 1) NOT NULL,
+		[product_name] [nvarchar](50) NOT NULL,
+		[category_id] [int] NOT NULL,
+		[description] NVARCHAR(255) NULL,
+		[price] [int] NOT NULL,
+		[stock] [int] NOT NULL,
+		[ImageURL] NVARCHAR(255),
+		[status] [nvarchar](50) NULL,
+		CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED ([product_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO CREATE TABLE [dbo].[product](
 		[product_id] INT IDENTITY(1, 1) NOT NULL,
 		[product_name] [nvarchar](50) NOT NULL,
@@ -426,6 +571,24 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO CREATE TABLE [dbo].[rental](
+		[rental_id] [int] IDENTITY(1, 1) NOT NULL,
+		[venue_id] [int] NOT NULL,
+		[member_id] [int] NOT NULL,
+		[event_name] [nvarchar](50) NOT NULL,
+		[rental_date] [datetime] NOT NULL,
+		[guest_count] [int] NOT NULL,
+		[payment_id] [int] NOT NULL,
+		[rental_status] [nvarchar](50) NULL,
+		CONSTRAINT [PK_rental] PRIMARY KEY CLUSTERED ([rental_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO CREATE TABLE [dbo].[rental](
 		[rental_id] [int] IDENTITY(1, 1) NOT NULL,
 		[venue_id] [int] NOT NULL,
@@ -525,11 +688,53 @@ GO CREATE TABLE [dbo].[room](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
+GO CREATE TABLE [dbo].[room](
+		[room_id] [int] IDENTITY(1, 1) NOT NULL,
+		[room_number] [NVARCHAR](20) NOT NULL,
+		[room_type_id] [int] NOT NULL,
+		[floor] [int] NOT NULL,
+		[room_status] [nvarchar](20) NOT NULL,
+		CONSTRAINT [PK__room__19675A8A9D13DCA5] PRIMARY KEY CLUSTERED ([room_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY],
+		CONSTRAINT [UQ__room__FE22F61BD1367F20] UNIQUE NONCLUSTERED ([room_number] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO
 	/****** 物件:  Table [dbo].[room_task]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO CREATE TABLE [dbo].[room_task](
+		[task_id] [int] IDENTITY(1, 1) NOT NULL,
+		[room_id] [int] NOT NULL,
+		[employee_id] [int] NOT NULL,
+		[priority] [nvarchar](20) NOT NULL,
+		[task_type] [nvarchar](20) NOT NULL,
+		[task_status] [nvarchar](20) NOT NULL,
+		[remark] [nvarchar](100) NULL,
+		[created_at] [datetime] NOT NULL,
+		[completed_at] [datetime] NULL,
+		CONSTRAINT [PK__room_tas__0492148D9F40B673] PRIMARY KEY CLUSTERED ([task_id] ASC) WITH (
+			PAD_INDEX = OFF,
+			STATISTICS_NORECOMPUTE = OFF,
+			IGNORE_DUP_KEY = OFF,
+			ALLOW_ROW_LOCKS = ON,
+			ALLOW_PAGE_LOCKS = ON,
+			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
+		) ON [PRIMARY]
+	) ON [PRIMARY]
 GO CREATE TABLE [dbo].[room_task](
 		[task_id] [int] IDENTITY(1, 1) NOT NULL,
 		[room_id] [int] NOT NULL,
@@ -570,18 +775,14 @@ GO CREATE TABLE [dbo].[room_type](
 			OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 		) ON [PRIMARY]
 	) ON [PRIMARY]
-GO
-	/****** 物件:  Table [dbo].[venue]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO CREATE TABLE [dbo].[venue](
-		[venue_id] [int] NOT NULL,
-		[venue_name] [nvarchar](50) NOT NULL,
+GO CREATE TABLE [dbo].[room_type](
+		[room_type_id] [int] IDENTITY(1, 1) NOT NULL,
+		[type_name] [nvarchar](20) NOT NULL,
+		[bed_type] [nvarchar](20) NOT NULL,
 		[capacity] [int] NOT NULL,
-		[price_per_day] [int] NOT NULL,
-		[venue_status] [nvarchar](50) NOT NULL,
-		CONSTRAINT [PK_venue] PRIMARY KEY CLUSTERED ([venue_id] ASC) WITH (
+		[room_description] [nvarchar](100) NULL,
+		[price_per_night] [int] NOT NULL,
+		CONSTRAINT [PK_room_type] PRIMARY KEY CLUSTERED ([room_type_id] ASC) WITH (
 			PAD_INDEX = OFF,
 			STATISTICS_NORECOMPUTE = OFF,
 			IGNORE_DUP_KEY = OFF,
@@ -591,6 +792,11 @@ GO CREATE TABLE [dbo].[venue](
 		) ON [PRIMARY]
 	) ON [PRIMARY]
 GO
+	/****** 物件:  Table [dbo].[venue]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 	/****** 物件:  Table [dbo].[rental_payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
 	CREATE TABLE rental_payment (
 		payment_id INT IDENTITY(1, 1) PRIMARY KEY,
@@ -598,6 +804,19 @@ GO
 		payment_time DATETIME2,
 		total_price INT,
 		payment_status NVARCHAR(20),
+		member_id INT
+	)
+GO
+ALTER TABLE [dbo].[account]
+ADD CONSTRAINT [DF__account__status__4F7CD00D] DEFAULT ('ACTIVE') FOR [status]
+GO
+	/****** 物件:  Table [dbo].[rental_payment]    指令碼日期: 2026/8/11 下午 03:52:42 ******/
+	CREATE TABLE rental_payment (
+		payment_id INT IDENTITY(1, 1) PRIMARY KEY,
+		payment_method VARCHAR(50),
+		payment_time DATETIME2,
+		total_price INT,
+		payment_status VARCHAR(20),
 		member_id INT
 	)
 GO

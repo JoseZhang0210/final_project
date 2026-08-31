@@ -711,4 +711,246 @@ onBeforeUnmount(() => {
 });
 </script>
 
+<<<<<<< HEAD
 <style scoped src="@/assets/product-form.css"></style>
+=======
+<style scoped>
+.product-form-card {
+  max-width: 850px;
+}
+
+/* =========================
+   Form
+   ========================= */
+
+.admin-form-actions {
+  margin-top: 28px;
+}
+
+.admin-btn:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+/* =========================
+   圖片區
+   ========================= */
+
+.image-section {
+  padding: 18px;
+
+  border: 1px solid #e3ddd4;
+
+  border-radius: 12px;
+
+  background-color: #faf8f4;
+}
+
+.url-section {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.image-label {
+  color: #6f5328;
+
+  font-size: 14px;
+
+  font-weight: bold;
+}
+
+.url-section small {
+  color: #888;
+
+  font-size: 12px;
+}
+
+/* =========================
+   圖片按鈕
+   ========================= */
+
+.image-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 15px;
+}
+
+.image-btn {
+  display: inline-flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  padding: 10px 18px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  font-size: 14px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.upload-image-btn {
+  background-color: #b58a46;
+
+  color: white;
+}
+
+.upload-image-btn:hover {
+  background-color: #8f692f;
+}
+
+.clear-image-btn {
+  background-color: #eee9e1;
+
+  color: #5c4d3d;
+}
+
+.clear-image-btn:hover {
+  background-color: #dfd5c7;
+}
+
+/* =========================
+   已選圖片
+   ========================= */
+
+.selected-file {
+  margin-top: 12px;
+
+  padding: 10px;
+
+  border-radius: 7px;
+
+  background-color: #f0eadf;
+
+  color: #665744;
+
+  font-size: 13px;
+}
+
+/* =========================
+   圖片預覽
+   ========================= */
+
+.image-preview-area {
+  margin-top: 20px;
+}
+
+.preview-card {
+  width: 260px;
+
+  height: 220px;
+
+  margin-top: 10px;
+
+  overflow: hidden;
+
+  border: 1px solid #ddd5c9;
+
+  border-radius: 12px;
+
+  background-color: white;
+
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.preview-card img {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+/* =========================
+   圖片錯誤
+   ========================= */
+
+.image-error {
+  margin-top: 10px;
+
+  padding: 10px 12px;
+
+  border-radius: 7px;
+
+  background-color: #fde9e7;
+
+  color: #b3443c;
+
+  font-size: 13px;
+}
+
+/* =========================
+   Textarea
+   ========================= */
+
+textarea {
+  width: 100%;
+
+  min-height: 120px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #d8d0c5;
+
+  border-radius: 8px;
+
+  resize: vertical;
+
+  font-family: inherit;
+
+  font-size: 15px;
+}
+
+textarea:focus {
+  outline: none;
+
+  border-color: #b58a46;
+
+  box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.14);
+}
+
+/* =========================
+   RWD
+   ========================= */
+
+@media (max-width: 700px) {
+  .product-form-card {
+    max-width: 100%;
+  }
+
+  .image-actions {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .image-btn {
+    width: 100%;
+  }
+
+  .preview-card {
+    width: 100%;
+  }
+}
+</style>
+>>>>>>> a1a75996ad225216fcf2795e933e2c45374de82f

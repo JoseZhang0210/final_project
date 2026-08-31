@@ -1201,7 +1201,7 @@ onMounted(() => {
 }
 
 
-.cancelled-message {
+.cancellㄋed-message {
   color: #991b1b;
 
   font-size: 14px;

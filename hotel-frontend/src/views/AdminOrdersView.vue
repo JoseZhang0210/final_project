@@ -86,10 +86,7 @@
     <!-- =====================================================
          訂單列表
          ===================================================== -->
-    <div
-      v-else
-      class="table-card"
-    >
+    <div v-else class="table-card">
 
       <table>
 
@@ -111,10 +108,7 @@
 
         <tbody>
 
-          <tr
-            v-for="order in filteredOrders"
-            :key="order.orderId"
-          >
+          <tr v-for="order in filteredOrders" :key="order.orderId">
 
             <!-- =================================================
                  訂單編號
@@ -151,18 +145,12 @@
                  ================================================= -->
             <td class="items-cell">
 
-              <div
-                v-if="
-                  order.items &&
-                  order.items.length > 0
-                "
-              >
+              <div v-if="
+                order.items &&
+                order.items.length > 0
+              ">
 
-                <div
-                  v-for="item in order.items"
-                  :key="item.productId"
-                  class="order-item"
-                >
+                <div v-for="item in order.items" :key="item.productId" class="order-item">
 
                   <div class="item-name">
                     {{ item.productName }}
@@ -198,36 +186,23 @@
                       數量：
                     </span>
 
-                    <input
-                      v-model.number="item.quantity"
-                      type="number"
-                      min="1"
-                      class="quantity-input"
-                    />
+                    <input v-model.number="item.quantity" type="number" min="1" class="quantity-input" />
 
-                    <button
-                      type="button"
-                      class="save-item-button"
-                      @click="
-                        updateItemQuantity(
-                          order,
-                          item
-                        )
-                      "
-                    >
+                    <button type="button" class="save-item-button" @click="
+                      updateItemQuantity(
+                        order,
+                        item
+                      )
+                      ">
                       儲存
                     </button>
 
-                    <button
-                      type="button"
-                      class="delete-item-button"
-                      @click="
-                        deleteOrderItem(
-                          order,
-                          item
-                        )
-                      "
-                    >
+                    <button type="button" class="delete-item-button" @click="
+                      deleteOrderItem(
+                        order,
+                        item
+                      )
+                      ">
                       刪除
                     </button>
 
@@ -1626,9 +1601,7 @@ tbody tr:hover {
    RWD
    ===================================================== */
 
-@media (
-  max-width: 768px
-) {
+@media (max-width: 768px) {
 
   .orders-page {
     padding: 10px;
