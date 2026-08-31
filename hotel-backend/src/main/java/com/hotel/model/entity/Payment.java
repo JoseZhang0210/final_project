@@ -2,32 +2,44 @@ package com.hotel.model.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Table
-@Getter
-@Setter
+@Table(name = "payment", schema = "dbo")
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
-
 public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payment_id")
     private Integer paymentId;
-    private String paymentMethod;
-    private LocalDateTime paymentTime;
-    private Integer totalPrice;
-    private String paymentStatus;
+
+    @Column(name = "member_id")
     private Integer memberId;
 
+    @Column(name = "payment_method")
+    private String paymentMethod;
+
+    @Column(name = "transaction_id")
+    private String transactionId;
+
+    @Column(name = "total_price", nullable = false)
+    private Integer totalPrice;
+
+    @Column(name = "payment_status", nullable = false)
+    private String paymentStatus;
+
+    @Column(name = "payment_time")
+    private LocalDateTime paymentTime;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

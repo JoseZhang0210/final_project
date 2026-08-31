@@ -1,6 +1,5 @@
 package com.hotel.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,92 +29,105 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    // =========================================
-    // 1. 查詢付款列表（支援依 memberId / paymentStatus / paymentMethod 篩選）
+    // =====================================================
+    // 1. 查詢付款列表
+    //
     // GET /api/payments
-    // 例如：GET /api/payments
     // GET /api/payments?memberId=1
-    // GET /api/payments?paymentStatus=已付款
-    // GET /api/payments?paymentMethod=信用卡
-    // =========================================
+    // GET /api/payments?paymentStatus=PAID
+    // =====================================================
     @GetMapping
     public ResponseEntity<List<Payment>> findPayments(
             @RequestParam(required = false) Integer memberId,
-            @RequestParam(required = false) String paymentStatus,
-            @RequestParam(required = false) String paymentMethod) {
+            @RequestParam(required = false) String paymentStatus) {
 
         if (memberId != null) {
-            return ResponseEntity.ok(paymentService.findByMemberId(memberId));
+            return ResponseEntity.ok(
+                    paymentService.findByMemberId(memberId));
         }
 
-        if (paymentStatus != null && !paymentStatus.isBlank()) {
-            return ResponseEntity.ok(paymentService.findByPaymentStatus(paymentStatus));
+        if (paymentStatus != null
+                && !paymentStatus.isBlank()) {
+
+            return ResponseEntity.ok(
+                    paymentService.findByPaymentStatus(
+                            paymentStatus));
         }
 
-        if (paymentMethod != null && !paymentMethod.isBlank()) {
-            return ResponseEntity.ok(paymentService.findByPaymentMethod(paymentMethod));
-        }
-
-        List<Payment> payments = paymentService.findAllPayments();
-        return ResponseEntity.ok(payments);
+        return ResponseEntity.ok(
+                paymentService.findAllPayments());
     }
 
-    // =========================================
-    // 2. 查詢單一付款詳細資料
-    // GET /api/payments/{id}
-    // 例如：GET /api/payments/1
-    // =========================================
+    // =====================================================
+    // 2. 查詢單筆付款
+    //
+    // GET /api/payments/1
+    // =====================================================
     @GetMapping("/{id}")
-    public ResponseEntity<Payment> findPaymentById(@PathVariable Integer id) {
+    public ResponseEntity<Payment> findPaymentById(
+            @PathVariable Integer id) {
 
         Payment payment = paymentService.findById(id);
 
         if (payment == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
         return ResponseEntity.ok(payment);
     }
 
-    // =========================================
-    // 3. 新增付款記錄
-    // POST /api/payments
-    // =========================================
-    @PostMapping
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
+    // =====================================================
+    // 3. 依照訂單建立付款
+    //
+    // POST
+    // /api/payments/order/1?paymentMethod=信用卡
+    //
+    // 建議前端真正使用這支
+    // =====================================================
+    @PostMapping("/order/{orderId}")
+    public ResponseEntity<Payment> createPaymentForOrder(
+            @PathVariable Integer orderId,
+            @RequestParam String paymentMethod) {
 
-        /*
-         * 新增付款時不應由前端指定 PaymentID
-         * PaymentID 由 SQL Server IDENTITY 自動產生
-         */
-        payment.setPaymentId(null);
-
-        /*
-         * 若前端未帶入付款時間，預設使用當前系統時間
-         */
-        if (payment.getPaymentTime() == null) {
-            payment.setPaymentTime(LocalDateTime.now());
-        }
-
-        /*
-         * 若前端未送 paymentStatus，預設成「待付款」
-         */
-        if (payment.getPaymentStatus() == null || payment.getPaymentStatus().isBlank()) {
-            payment.setPaymentStatus("待付款");
-        }
-
-        Payment savedPayment = paymentService.save(payment);
+        Payment payment = paymentService.createPayment(
+                orderId,
+                paymentMethod);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(savedPayment);
+                .body(payment);
     }
 
-    // =========================================
-    // 4. 修改付款資料
-    // PUT /api/payments/{id}
-    // 例如：PUT /api/payments/1
-    // =========================================
+    // =====================================================
+    // 4. 模擬確認付款
+    //
+    // PUT /api/payments/1/confirm
+    //
+    // PENDING
+    // ↓
+    // PAID
+    //
+    // 同時更新：
+    // payment_time
+    // transaction_id
+    // order_status = COMPLETED
+    // =====================================================
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<Payment> confirmPayment(
+            @PathVariable Integer id) {
+
+        Payment payment = paymentService.confirmPayment(id);
+
+        return ResponseEntity.ok(payment);
+    }
+
+    // =====================================================
+    // 5. 後台修改 Payment 基本資料
+    //
+    // PUT /api/payments/1
+    // =====================================================
     @PutMapping("/{id}")
     public ResponseEntity<Payment> updatePayment(
             @PathVariable Integer id,
@@ -123,107 +135,143 @@ public class PaymentController {
 
         Payment existingPayment = paymentService.findById(id);
 
-        /*
-         * 付款記錄不存在
-         */
         if (existingPayment == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
-        /*
-         * 更新付款方式
-         */
-        existingPayment.setPaymentMethod(formPayment.getPaymentMethod());
+        // -----------------------------
+        // 付款方式
+        // -----------------------------
+        if (formPayment.getPaymentMethod() != null
+                && !formPayment.getPaymentMethod().isBlank()) {
 
-        /*
-         * 更新付款時間
-         */
-        if (formPayment.getPaymentTime() != null) {
-            existingPayment.setPaymentTime(formPayment.getPaymentTime());
+            existingPayment.setPaymentMethod(
+                    formPayment.getPaymentMethod());
         }
 
-        /*
-         * 更新金額
-         */
+        // -----------------------------
+        // 金流交易編號
+        // -----------------------------
+        if (formPayment.getTransactionId() != null
+                && !formPayment.getTransactionId().isBlank()) {
+
+            existingPayment.setTransactionId(
+                    formPayment.getTransactionId());
+        }
+
+        // -----------------------------
+        // 金額
+        // -----------------------------
         if (formPayment.getTotalPrice() != null) {
-            existingPayment.setTotalPrice(formPayment.getTotalPrice());
+
+            existingPayment.setTotalPrice(
+                    formPayment.getTotalPrice());
         }
 
-        /*
-         * 更新付款狀態
-         */
-        if (formPayment.getPaymentStatus() != null && !formPayment.getPaymentStatus().isBlank()) {
-            existingPayment.setPaymentStatus(formPayment.getPaymentStatus());
+        // -----------------------------
+        // Member
+        // -----------------------------
+        if (formPayment.getMemberId() != null) {
+
+            existingPayment.setMemberId(
+                    formPayment.getMemberId());
         }
 
-        /*
-         * 更新會員 ID
-         */
-        existingPayment.setMemberId(formPayment.getMemberId());
+        Payment updatedPayment = paymentService.save(
+                existingPayment);
 
-        Payment updatedPayment = paymentService.save(existingPayment);
-
-        return ResponseEntity.ok(updatedPayment);
+        return ResponseEntity.ok(
+                updatedPayment);
     }
 
-    // =========================================
-    // 5. 快速更新付款狀態（如：退款、確認付款）
-    // PATCH /api/payments/{id}/status
-    // 例如：PATCH /api/payments/1/status?status=已退款
-    // =========================================
+    // =====================================================
+    // 6. 後台快速修改付款狀態
+    //
+    // PATCH
+    // /api/payments/1/status?status=REFUNDED
+    //
+    // 可接受：
+    //
+    // PENDING
+    // PAID
+    // FAILED
+    // REFUNDED
+    // =====================================================
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Payment> updatePaymentStatus(
+    public ResponseEntity<?> updatePaymentStatus(
             @PathVariable Integer id,
             @RequestParam String status) {
 
         Payment existingPayment = paymentService.findById(id);
 
-        /*
-         * 付款記錄不存在
-         */
         if (existingPayment == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
-        existingPayment.setPaymentStatus(status);
+        String newStatus = status.toUpperCase();
 
-        Payment updatedPayment = paymentService.save(existingPayment);
+        // -----------------------------
+        // 驗證狀態
+        // -----------------------------
+        if (!newStatus.equals("PENDING")
+                && !newStatus.equals("PAID")
+                && !newStatus.equals("FAILED")
+                && !newStatus.equals("REFUNDED")) {
 
-        return ResponseEntity.ok(updatedPayment);
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            "不支援的付款狀態：" + status);
+        }
+
+        existingPayment.setPaymentStatus(
+                newStatus);
+
+        Payment updatedPayment = paymentService.save(
+                existingPayment);
+
+        return ResponseEntity.ok(
+                updatedPayment);
     }
 
-    // =========================================
-    // 6. 刪除付款記錄
-    // DELETE /api/payments/{id}
-    // 例如：DELETE /api/payments/1
-    // =========================================
+    // =====================================================
+    // 7. 刪除 Payment
+    //
+    // DELETE /api/payments/1
+    //
+    // 若已被 order / booking_order / rental 使用，
+    // DB Foreign Key 會阻止刪除
+    // =====================================================
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePayment(@PathVariable Integer id) {
+    public ResponseEntity<?> deletePayment(
+            @PathVariable Integer id) {
 
         Payment payment = paymentService.findById(id);
 
-        /*
-         * 付款記錄不存在
-         */
         if (payment == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity
+                    .notFound()
+                    .build();
         }
 
         try {
+
             paymentService.deleteById(id);
 
-            /*
-             * 204 No Content
-             * 代表刪除成功，無回傳內容
-             */
-            return ResponseEntity.noContent().build();
+            return ResponseEntity
+                    .noContent()
+                    .build();
+
         } catch (DataIntegrityViolationException e) {
-            /*
-             * 若該付款記錄已有關聯訂單（booking_order, order, rental），回傳 409 Conflict
-             */
+
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body("無法刪除：該付款記錄已被其他訂單關聯。");
+                    .body(
+                            "無法刪除：此付款紀錄已被訂單、訂房或場地租借使用。");
         }
     }
 }

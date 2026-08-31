@@ -10,34 +10,34 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "Product")
+@Table(name = "product", schema = "dbo")
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Product_ID")
+    @Column(name = "product_id")
     private Integer productId;
 
-    @Column(name = "Product_Name", nullable = false)
+    @Column(name = "product_name", nullable = false)
     private String productName;
 
     @ManyToOne
-    @JoinColumn(name = "Category_ID", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Column(name = "Description")
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "Price")
+    @Column(name = "price")
     private int price;
 
-    @Column(name = "Stock")
+    @Column(name = "stock")
     private Integer stock;
 
     @Column(name = "ImageURL")
-    private String imageUrl;
+    private String ImageUrl;
 
-    @Column(name = "Status")
+    @Column(name = "status")
     private String status;
 
     public Integer getProductId() {
@@ -89,11 +89,11 @@ public class Product {
     }
 
     public String getImageUrl() {
-        return imageUrl;
+        return ImageUrl;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public void setImageUrl(String imageId) {
+        this.ImageUrl = imageId;
     }
 
     public String getStatus() {
@@ -103,4 +103,5 @@ public class Product {
     public void setStatus(String status) {
         this.status = status;
     }
+
 }

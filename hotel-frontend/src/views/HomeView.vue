@@ -2,7 +2,7 @@
   <div>
     <section class="home-hero">
       <div class="hero-content">
-        <h1>飯店商城</h1>
+        <h1>星澄飯店</h1>
 
         <p>
           將飯店的舒適與質感帶回家， 精選寢具、沐浴用品及特色商品，

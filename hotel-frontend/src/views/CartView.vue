@@ -3,28 +3,39 @@
     <div class="cart-container">
       <h1>購物車</h1>
 
-      <div v-if="cartItems.length === 0" class="empty-cart">
+      <!-- 空購物車 -->
+      <div
+        v-if="cartItems.length === 0"
+        class="empty-cart"
+      >
         購物車目前沒有商品
       </div>
 
+      <!-- 購物車內容 -->
       <div v-else>
         <div
           v-for="item in cartItems"
           :key="item.productId"
           class="cart-item"
         >
+          <!-- 商品資訊 -->
           <div class="item-info">
-            <h3>{{ item.productName }}</h3>
+            <h3>
+              {{ item.productName }}
+            </h3>
 
             <p>
               單價：
-              ${{ formatPrice(item.price) }}
+              NT$
+              {{ formatPrice(item.price) }}
             </p>
           </div>
 
+          <!-- 數量 -->
           <div class="quantity-control">
             <button
               type="button"
+              :disabled="Number(item.quantity) <= 1"
               @click="decreaseQuantity(item)"
             >
               −
@@ -36,18 +47,29 @@
 
             <button
               type="button"
-              :disabled="item.quantity >= item.stock"
+              :disabled="
+                Number(item.quantity) >=
+                Number(item.stock)
+              "
               @click="increaseQuantity(item)"
             >
               ＋
             </button>
           </div>
 
+          <!-- 小計 -->
           <div class="subtotal">
             小計：
-            ${{ formatPrice(item.price * item.quantity) }}
+            NT$
+            {{
+              formatPrice(
+                Number(item.price) *
+                  Number(item.quantity),
+              )
+            }}
           </div>
 
+          <!-- 刪除 -->
           <button
             type="button"
             class="delete-button"
@@ -57,10 +79,12 @@
           </button>
         </div>
 
+        <!-- 總金額 -->
         <div class="cart-summary">
           <h2>
             總金額：
-            ${{ formatPrice(totalAmount) }}
+            NT$
+            {{ formatPrice(totalAmount) }}
           </h2>
 
           <button
@@ -69,7 +93,11 @@
             :disabled="submitting"
             @click="submitOrder"
           >
-            {{ submitting ? "送出中..." : "確認結帳" }}
+            {{
+              submitting
+                ? "建立訂單中..."
+                : "確認結帳"
+            }}
           </button>
         </div>
       </div>
@@ -88,12 +116,20 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
+// =====================================================
+// 購物車
+// =====================================================
+
 const cartItems = ref([]);
+
+// =====================================================
+// 是否正在建立訂單
+// =====================================================
 
 const submitting = ref(false);
 
 // =====================================================
-// JWT
+// JWT Header
 // =====================================================
 
 function getAuthHeaders() {
@@ -126,12 +162,43 @@ function loadCart() {
   }
 
   try {
-    cartItems.value =
+    const parsedCart =
       JSON.parse(savedCart);
+
+    if (!Array.isArray(parsedCart)) {
+      console.warn(
+        "購物車資料不是陣列：",
+        parsedCart,
+      );
+
+      cartItems.value = [];
+      return;
+    }
+
+    cartItems.value =
+      parsedCart.map((item) => ({
+        ...item,
+
+        productId:
+          Number(item.productId),
+
+        price:
+          Number(item.price ?? 0),
+
+        quantity:
+          Math.max(
+            1,
+            Number(item.quantity ?? 1),
+          ),
+
+        stock:
+          Number(item.stock ?? 0),
+      }));
+
   } catch (error) {
     console.error(
       "購物車資料錯誤：",
-      error
+      error,
     );
 
     cartItems.value = [];
@@ -145,7 +212,7 @@ function loadCart() {
 function saveCart() {
   localStorage.setItem(
     "cart",
-    JSON.stringify(cartItems.value)
+    JSON.stringify(cartItems.value),
   );
 }
 
@@ -154,14 +221,20 @@ function saveCart() {
 // =====================================================
 
 function increaseQuantity(item) {
-  if (
-    Number(item.quantity) <
-    Number(item.stock)
-  ) {
-    item.quantity++;
+  const quantity =
+    Number(item.quantity ?? 1);
 
-    saveCart();
+  const stock =
+    Number(item.stock ?? 0);
+
+  if (quantity >= stock) {
+    return;
   }
+
+  item.quantity =
+    quantity + 1;
+
+  saveCart();
 }
 
 // =====================================================
@@ -169,11 +242,17 @@ function increaseQuantity(item) {
 // =====================================================
 
 function decreaseQuantity(item) {
-  if (item.quantity > 1) {
-    item.quantity--;
+  const quantity =
+    Number(item.quantity ?? 1);
 
-    saveCart();
+  if (quantity <= 1) {
+    return;
   }
+
+  item.quantity =
+    quantity - 1;
+
+  saveCart();
 }
 
 // =====================================================
@@ -185,7 +264,7 @@ function removeItem(productId) {
     cartItems.value.filter(
       (item) =>
         Number(item.productId) !==
-        Number(productId)
+        Number(productId),
     );
 
   saveCart();
@@ -195,18 +274,19 @@ function removeItem(productId) {
 // 總金額
 // =====================================================
 
-const totalAmount = computed(() => {
-  return cartItems.value.reduce(
-    (total, item) => {
-      return (
-        total +
-        Number(item.price) *
-          Number(item.quantity)
-      );
-    },
-    0
-  );
-});
+const totalAmount =
+  computed(() => {
+    return cartItems.value.reduce(
+      (total, item) => {
+        return (
+          total +
+          Number(item.price ?? 0) *
+            Number(item.quantity ?? 0)
+        );
+      },
+      0,
+    );
+  });
 
 // =====================================================
 // 價格格式
@@ -214,7 +294,7 @@ const totalAmount = computed(() => {
 
 function formatPrice(price) {
   return Number(
-    price ?? 0
+    price ?? 0,
   ).toLocaleString("zh-TW");
 }
 
@@ -224,67 +304,111 @@ function formatPrice(price) {
 
 async function submitOrder() {
   // ==========================
-  // 檢查購物車
+  // 1. 檢查購物車
   // ==========================
 
-  if (cartItems.value.length === 0) {
+  if (
+    cartItems.value.length === 0
+  ) {
     alert("購物車沒有商品");
     return;
   }
 
   // ==========================
-  // 取得目前登入會員 ID
+  // 2. 取得登入會員 ID
+  // ==========================
+const savedMemberId =
+  localStorage.getItem("memberId");
+
+const memberId =
+  savedMemberId
+    ? Number(savedMemberId)
+    : null;
+
+console.log(
+  "目前登入會員 memberId：",
+  memberId
+);
+
+if (!memberId || memberId <= 0) {
+  alert(
+    "此帳號沒有會員資料，請使用會員帳號登入後再結帳"
+  );
+  return;
+}
+  // ==========================
+  // 3. 檢查購買數量
   // ==========================
 
-  const memberId = 3
-  //   -----等會員token儲存改好後再把下面的打開-------
-  //     Number(localStorage.getItem("memberId"));
-  
-  //   console.log(
-    //     "目前登入會員 memberId：",
-    //     memberId
-    //   );
-    
-    //   // 找不到會員 ID
-    //   if (!memberId || memberId <= 0) {
-    //     alert("找不到登入會員資料，請重新登入");
-    //     return;
-    //   }
-//   -----等會員token儲存改好後再把上面的打開-------
-        
+  const invalidItem =
+    cartItems.value.find(
+      (item) => {
+        const quantity =
+          Number(
+            item.quantity ?? 0,
+          );
+
+        const stock =
+          Number(
+            item.stock ?? 0,
+          );
+
+        return (
+          quantity <= 0 ||
+          quantity > stock
+        );
+      },
+    );
+
+  if (invalidItem) {
+    alert(
+      `${invalidItem.productName} 的購買數量不正確，請重新確認`,
+    );
+
+    return;
+  }
+
   submitting.value = true;
 
   try {
     // ==========================
-    // 建立訂單 JSON
+    // 4. 建立 Request JSON
     // ==========================
 
     const requestBody = {
-      memberId: memberId,
+      memberId,
 
-      items: cartItems.value.map(
-        (item) => ({
-          productId:
-            Number(item.productId),
+      // 目前沒有使用優惠券
+      couponCode: null,
 
-          quantity:
-            Number(item.quantity),
-        })
-      ),
+      items:
+        cartItems.value.map(
+          (item) => ({
+            productId:
+              Number(
+                item.productId,
+              ),
+
+            quantity:
+              Number(
+                item.quantity,
+              ),
+          }),
+        ),
     };
 
     console.log(
       "準備送出的訂單：",
-      requestBody
+      requestBody,
     );
 
     // ==========================
-    // POST 建立訂單
+    // 5. POST /api/orders
     // ==========================
 
     const response =
       await fetch(
-        "http://localhost:8081/api/orders",
+        "/api/orders",
         {
           method: "POST",
 
@@ -293,18 +417,18 @@ async function submitOrder() {
 
           body:
             JSON.stringify(
-              requestBody
+              requestBody,
             ),
-        }
+        },
       );
 
     console.log(
       "建立訂單 API status：",
-      response.status
+      response.status,
     );
 
     // ==========================
-    // JWT 權限問題
+    // 6. JWT 錯誤
     // ==========================
 
     if (
@@ -312,12 +436,12 @@ async function submitOrder() {
       response.status === 403
     ) {
       throw new Error(
-        "登入已失效，請重新登入"
+        "登入已失效，請重新登入",
       );
     }
 
     // ==========================
-    // 後端錯誤
+    // 7. 後端錯誤
     // ==========================
 
     if (!response.ok) {
@@ -326,16 +450,17 @@ async function submitOrder() {
 
       console.error(
         "建立訂單後端錯誤：",
-        errorText
+        errorText,
       );
 
       throw new Error(
-        `建立訂單失敗 (${response.status})`
+        errorText ||
+          `建立訂單失敗 (${response.status})`,
       );
     }
 
     // ==========================
-    // 建立成功
+    // 8. 建立訂單成功
     // ==========================
 
     const order =
@@ -343,46 +468,50 @@ async function submitOrder() {
 
     console.log(
       "建立訂單成功：",
-      order
+      order,
     );
 
-    alert(
-      `訂單 #${order.orderId} 建立成功`
-    );
+    // 防止後端沒有回 orderId
+    if (!order?.orderId) {
+      throw new Error(
+        "訂單已建立，但沒有取得 orderId",
+      );
+    }
 
     // ==========================
-    // 清空購物車
+    // 9. 清空購物車
     // ==========================
 
     cartItems.value = [];
 
     localStorage.removeItem(
-      "cart"
+      "cart",
     );
 
     // ==========================
-    // 回商城
+    // 10. 跳付款頁
     // ==========================
 
-    router.push(
-      "/products"
+    await router.push(
+      `/payment/${order.orderId}`,
     );
 
   } catch (error) {
     console.error(
       "結帳失敗：",
-      error
+      error,
     );
 
     alert(
       error.message ||
-      "結帳失敗"
+        "結帳失敗",
     );
 
   } finally {
     submitting.value = false;
   }
 }
+
 // =====================================================
 // 初始化
 // =====================================================
@@ -471,7 +600,7 @@ onMounted(() => {
 }
 
 .subtotal {
-  min-width: 130px;
+  min-width: 150px;
 
   color: #b3443c;
 

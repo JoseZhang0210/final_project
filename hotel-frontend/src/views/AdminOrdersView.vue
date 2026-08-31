@@ -8,14 +8,12 @@
 
       <div>
         <h1>訂單管理</h1>
-        <p>查看會員訂單與商品內容</p>
+        <p>查看會員訂單、付款狀態與商品交付情形</p>
       </div>
 
       <div class="header-actions">
 
-        <!-- =========================
-             訂單狀態篩選
-             ========================= -->
+        <!-- 訂單狀態篩選 -->
         <select
           v-model="selectedStatus"
           class="filter-select"
@@ -37,9 +35,6 @@
           </option>
         </select>
 
-        <!-- =========================
-             重新整理
-             ========================= -->
         <button
           type="button"
           class="refresh-button"
@@ -52,9 +47,7 @@
     </div>
 
 
-    <!-- =====================================================
-         Loading
-         ===================================================== -->
+    <!-- Loading -->
     <div
       v-if="loading"
       class="message-box"
@@ -63,9 +56,7 @@
     </div>
 
 
-    <!-- =====================================================
-         Error
-         ===================================================== -->
+    <!-- Error -->
     <div
       v-else-if="errorMessage"
       class="error-box"
@@ -74,9 +65,7 @@
     </div>
 
 
-    <!-- =====================================================
-         完全沒有訂單
-         ===================================================== -->
+    <!-- 沒有訂單 -->
     <div
       v-else-if="orders.length === 0"
       class="message-box"
@@ -85,9 +74,7 @@
     </div>
 
 
-    <!-- =====================================================
-         篩選後沒有資料
-         ===================================================== -->
+    <!-- 篩選後沒有資料 -->
     <div
       v-else-if="filteredOrders.length === 0"
       class="message-box"
@@ -106,25 +93,22 @@
 
       <table>
 
-        <!-- =========================
-             表頭
-             ========================= -->
         <thead>
           <tr>
             <th>訂單編號</th>
             <th>會員資料</th>
             <th>購買商品</th>
+            <th>原始金額</th>
+            <th>優惠</th>
             <th>總金額</th>
-            <th>狀態</th>
+            <th>付款狀態</th>
+            <th>訂單狀態</th>
             <th>建立時間</th>
             <th>操作</th>
           </tr>
         </thead>
 
 
-        <!-- =========================
-             訂單內容
-             ========================= -->
         <tbody>
 
           <tr
@@ -163,7 +147,7 @@
 
 
             <!-- =================================================
-                 購買商品
+                 商品
                  ================================================= -->
             <td class="items-cell">
 
@@ -180,25 +164,22 @@
                   class="order-item"
                 >
 
-                  <!-- 商品名稱 -->
                   <div class="item-name">
                     {{ item.productName }}
                   </div>
 
-
-                  <!-- 單價 -->
                   <div class="item-detail">
                     單價：
-                    ${{ formatPrice(item.price) }}
+                    NT$
+                    {{ formatPrice(item.price) }}
                   </div>
 
 
-                  <!-- =========================
-                       一般模式
-                       ========================= -->
+                  <!-- 一般顯示 -->
                   <div
                     v-if="
-                      editingOrderId !== order.orderId
+                      editingOrderId !==
+                      order.orderId
                     "
                     class="item-detail"
                   >
@@ -207,9 +188,7 @@
                   </div>
 
 
-                  <!-- =========================
-                       編輯模式
-                       ========================= -->
+                  <!-- 編輯模式 -->
                   <div
                     v-else
                     class="edit-quantity-area"
@@ -255,13 +234,16 @@
                   </div>
 
 
-                  <!-- 小計 -->
                   <div class="item-subtotal">
                     小計：
-                    ${{
+                    NT$
+                    {{
                       formatPrice(
-                        Number(item.price) *
-                        Number(item.quantity)
+                        item.subtotal ??
+                        (
+                          Number(item.price) *
+                          Number(item.quantity)
+                        )
                       )
                     }}
                   </div>
@@ -270,8 +252,6 @@
 
               </div>
 
-
-              <!-- 無商品 -->
               <div
                 v-else
                 class="no-item"
@@ -283,54 +263,100 @@
 
 
             <!-- =================================================
-                 總金額
+                 原始金額
                  ================================================= -->
-            <td class="total-cell">
-
-              ${{
+            <td class="amount-cell">
+              NT$
+              {{
                 formatPrice(
-                  calculateOrderTotal(order)
+                  order.originalAmount
                 )
               }}
+            </td>
+
+
+            <!-- =================================================
+                 優惠
+                 ================================================= -->
+            <td class="discount-cell">
+
+              <template
+                v-if="
+                  Number(
+                    order.discountAmount ?? 0
+                  ) > 0
+                "
+              >
+                - NT$
+                {{
+                  formatPrice(
+                    order.discountAmount
+                  )
+                }}
+              </template>
+
+              <template v-else>
+                -
+              </template>
 
             </td>
 
 
             <!-- =================================================
-                 訂單狀態
-                 每張訂單可以單獨修改
+                 最終金額
                  ================================================= -->
-            <td class="status-cell">
+            <td class="total-cell">
+              NT$
+              {{
+                formatPrice(
+                  order.finalAmount
+                )
+              }}
+            </td>
 
-              <select
-                class="status-select"
+
+            <!-- =================================================
+                 付款狀態
+                 ================================================= -->
+            <td class="payment-cell">
+
+              <span
+                class="payment-badge"
                 :class="
-                  getStatusClass(
-                    order.status
-                  )
-                "
-                :value="order.status"
-                @change="
-                  updateOrderStatus(
-                    order,
-                    $event.target.value
+                  getPaymentClass(
+                    order.paymentStatus
                   )
                 "
               >
+                {{
+                  getPaymentText(
+                    order.paymentStatus
+                  )
+                }}
+              </span>
 
-                <option value="PENDING">
-                  待處理
-                </option>
+            </td>
 
-                <option value="COMPLETED">
-                  已完成
-                </option>
 
-                <option value="CANCELLED">
-                  已取消
-                </option>
+            <!-- =================================================
+                 訂單處理狀態
+                 ================================================= -->
+            <td class="status-cell">
 
-              </select>
+              <span
+                class="status-badge"
+                :class="
+                  getStatusClass(
+                    order.orderStatus
+                  )
+                "
+              >
+                {{
+                  getStatusText(
+                    order.orderStatus
+                  )
+                }}
+              </span>
 
             </td>
 
@@ -348,14 +374,17 @@
                  ================================================= -->
             <td class="action-cell">
 
-              <!-- 只有待處理可以修改商品 -->
+              <!-- ===============================================
+                   PENDING + 尚未付款
+                   可以修改訂單
+                   =============================================== -->
               <template
                 v-if="
-                  order.status === 'PENDING'
+                  order.orderStatus === 'PENDING' &&
+                  order.paymentStatus !== 'PAID'
                 "
               >
 
-                <!-- 尚未進入編輯 -->
                 <button
                   v-if="
                     editingOrderId !==
@@ -363,36 +392,86 @@
                   "
                   type="button"
                   class="edit-button"
-                  @click="
-                    startEdit(order)
-                  "
+                  @click="startEdit(order)"
                 >
                   編輯商品
                 </button>
 
 
-                <!-- 編輯中 -->
                 <button
                   v-else
                   type="button"
                   class="finish-button"
-                  @click="
-                    finishEdit()
-                  "
+                  @click="finishEdit"
                 >
                   完成編輯
+                </button>
+
+
+                <button
+                  type="button"
+                  class="cancel-button"
+                  @click="cancelOrder(order)"
+                >
+                  取消訂單
                 </button>
 
               </template>
 
 
-              <!-- 完成或取消訂單不可修改 -->
-              <span
-                v-else
-                class="disabled-edit-text"
+              <!-- ===============================================
+                   PENDING + 已付款
+                   等管理員交付商品
+                   =============================================== -->
+              <template
+                v-else-if="
+                  order.orderStatus === 'PENDING' &&
+                  order.paymentStatus === 'PAID'
+                "
               >
-                無法編輯
-              </span>
+
+                <div class="paid-note">
+                  已付款
+                </div>
+
+                <button
+                  type="button"
+                  class="complete-button"
+                  @click="completeOrder(order)"
+                >
+                  完成訂單
+                </button>
+
+              </template>
+
+
+              <!-- ===============================================
+                   已完成
+                   =============================================== -->
+              <template
+                v-else-if="
+                  order.orderStatus ===
+                  'COMPLETED'
+                "
+              >
+
+                <span class="completed-text">
+                  已完成交付
+                </span>
+
+              </template>
+
+
+              <!-- ===============================================
+                   已取消
+                   =============================================== -->
+              <template v-else>
+
+                <span class="disabled-edit-text">
+                  已取消
+                </span>
+
+              </template>
 
             </td>
 
@@ -409,7 +488,6 @@
 
 
 <script setup>
-
 import {
   computed,
   onMounted,
@@ -417,76 +495,54 @@ import {
 } from "vue";
 
 
-// =====================================================
-// 訂單資料
-// =====================================================
+const orders =
+  ref([]);
 
-const orders = ref([]);
+const loading =
+  ref(false);
 
+const errorMessage =
+  ref("");
 
-// =====================================================
-// Loading
-// =====================================================
+const selectedStatus =
+  ref("ALL");
 
-const loading = ref(false);
-
-
-// =====================================================
-// Error
-// =====================================================
-
-const errorMessage = ref("");
+const editingOrderId =
+  ref(null);
 
 
 // =====================================================
-// 狀態篩選
-//
-// ALL
-// PENDING
-// COMPLETED
-// CANCELLED
+// 篩選
 // =====================================================
 
-const selectedStatus = ref("ALL");
+const filteredOrders =
+  computed(() => {
 
+    if (
+      selectedStatus.value ===
+      "ALL"
+    ) {
+      return orders.value;
+    }
 
-// =====================================================
-// 目前正在編輯哪一張訂單
-//
-// null = 沒有編輯
-// =====================================================
-
-const editingOrderId = ref(null);
-
-
-// =====================================================
-// 狀態篩選後的訂單
-// =====================================================
-
-const filteredOrders = computed(() => {
-
-  if (
-    selectedStatus.value === "ALL"
-  ) {
-    return orders.value;
-  }
-
-  return orders.value.filter(
-    (order) =>
-      order.status ===
-      selectedStatus.value
-  );
-});
+    return orders.value.filter(
+      (order) =>
+        order.orderStatus ===
+        selectedStatus.value
+    );
+  });
 
 
 // =====================================================
-// JWT Header
+// JWT
 // =====================================================
 
 function getAuthHeaders() {
 
   const token =
-    localStorage.getItem("token");
+    localStorage.getItem(
+      "token"
+    );
 
   const headers = {
     "Content-Type":
@@ -505,8 +561,6 @@ function getAuthHeaders() {
 
 // =====================================================
 // 讀取全部訂單
-//
-// GET /api/orders
 // =====================================================
 
 async function loadOrders() {
@@ -517,13 +571,9 @@ async function loadOrders() {
 
   try {
 
-    console.log(
-      "開始讀取訂單..."
-    );
-
     const response =
       await fetch(
-        "http://localhost:8081/api/orders",
+        "/api/orders",
         {
           method: "GET",
 
@@ -533,58 +583,35 @@ async function loadOrders() {
       );
 
 
-    console.log(
-      "訂單 API status：",
-      response.status
-    );
-
-
-    // =========================
-    // 權限問題
-    // =========================
-
     if (
       response.status === 401 ||
       response.status === 403
     ) {
 
       throw new Error(
-        "沒有權限讀取訂單資料，請確認登入狀態"
+        "沒有權限讀取訂單資料"
       );
     }
 
-
-    // =========================
-    // 其他錯誤
-    // =========================
 
     if (!response.ok) {
 
       const errorText =
         await response.text();
 
-      console.error(
-        "後端錯誤內容：",
-        errorText
-      );
-
       throw new Error(
-        "訂單讀取失敗，狀態碼：" +
-        response.status
+        errorText ||
+        "訂單讀取失敗"
       );
     }
 
-
-    // =========================
-    // JSON
-    // =========================
 
     const data =
       await response.json();
 
 
     console.log(
-      "訂單 API 回傳資料：",
+      "後台訂單資料：",
       data
     );
 
@@ -602,9 +629,11 @@ async function loadOrders() {
       error
     );
 
+
     errorMessage.value =
       error.message ||
       "訂單資料讀取失敗";
+
 
     orders.value = [];
 
@@ -612,62 +641,26 @@ async function loadOrders() {
   } finally {
 
     loading.value = false;
-
-    console.log(
-      "訂單讀取結束"
-    );
   }
 }
 
 
 // =====================================================
-// 計算訂單總金額
-//
-// 使用目前畫面商品資料重新計算
-// 修改數量時畫面也會立即更新
-// =====================================================
-
-function calculateOrderTotal(order) {
-
-  if (
-    !order.items ||
-    order.items.length === 0
-  ) {
-    return 0;
-  }
-
-  return order.items.reduce(
-    (total, item) => {
-
-      return (
-        total +
-        Number(item.price ?? 0) *
-        Number(item.quantity ?? 0)
-      );
-
-    },
-    0
-  );
-}
-
-
-// =====================================================
-// 金額格式
+// 金額
 // =====================================================
 
 function formatPrice(price) {
 
-  const number =
-    Number(price ?? 0);
-
-  return number.toLocaleString(
+  return Number(
+    price ?? 0
+  ).toLocaleString(
     "zh-TW"
   );
 }
 
 
 // =====================================================
-// 日期格式
+// 日期
 // =====================================================
 
 function formatDate(date) {
@@ -676,8 +669,10 @@ function formatDate(date) {
     return "";
   }
 
+
   const parsedDate =
     new Date(date);
+
 
   if (
     Number.isNaN(
@@ -686,6 +681,7 @@ function formatDate(date) {
   ) {
     return date;
   }
+
 
   return parsedDate.toLocaleString(
     "zh-TW",
@@ -701,7 +697,7 @@ function formatDate(date) {
 
 
 // =====================================================
-// 訂單狀態中文
+// 訂單狀態
 // =====================================================
 
 function getStatusText(status) {
@@ -718,14 +714,10 @@ function getStatusText(status) {
       return "已取消";
 
     default:
-      return status || "未知狀態";
+      return "未知";
   }
 }
 
-
-// =====================================================
-// 訂單狀態 CSS
-// =====================================================
 
 function getStatusClass(status) {
 
@@ -747,124 +739,72 @@ function getStatusClass(status) {
 
 
 // =====================================================
-// 修改訂單狀態
-//
-// PUT
-// /api/orders/{orderId}/status?status=...
+// 付款狀態
 // =====================================================
 
-async function updateOrderStatus(
-  order,
-  newStatus
-) {
+function getPaymentText(status) {
 
-  // 沒有改變
-  if (
-    newStatus === order.status
-  ) {
-    return;
+  switch (status) {
+
+    case "PAID":
+      return "已付款";
+
+    case "PENDING":
+      return "待付款";
+
+    case "FAILED":
+      return "付款失敗";
+
+    case "REFUNDED":
+      return "已退款";
+
+    default:
+      return "尚未付款";
   }
-
-  const oldStatus =
-    order.status;
+}
 
 
-  try {
+function getPaymentClass(status) {
 
-    const response =
-      await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/status?status=${newStatus}`,
-        {
-          method: "PUT",
+  switch (status) {
 
-          headers:
-            getAuthHeaders(),
-        }
-      );
+    case "PAID":
+      return "payment-paid";
 
+    case "PENDING":
+      return "payment-pending";
 
-    if (
-      response.status === 401 ||
-      response.status === 403
-    ) {
+    case "FAILED":
+      return "payment-failed";
 
-      throw new Error(
-        "沒有權限修改訂單狀態"
-      );
-    }
+    case "REFUNDED":
+      return "payment-refunded";
 
-
-    if (!response.ok) {
-
-      const errorText =
-        await response.text();
-
-      console.error(
-        "修改訂單狀態失敗：",
-        errorText
-      );
-
-      throw new Error(
-        "修改訂單狀態失敗"
-      );
-    }
-
-
-    // =========================
-    // 更新前端
-    // =========================
-
-    order.status =
-      newStatus;
-
-
-    // 如果不是待處理
-    // 自動離開編輯模式
-
-    if (
-      newStatus !== "PENDING" &&
-      editingOrderId.value ===
-        order.orderId
-    ) {
-
-      editingOrderId.value =
-        null;
-    }
-
-
-    alert(
-      `訂單 #${order.orderId} 狀態已改為 ${getStatusText(newStatus)}`
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "更新狀態失敗：",
-      error
-    );
-
-
-    order.status =
-      oldStatus;
-
-
-    alert(
-      error.message ||
-      "更新訂單狀態失敗"
-    );
-
-
-    await loadOrders();
+    default:
+      return "payment-none";
   }
 }
 
 
 // =====================================================
-// 開始編輯訂單商品
+// 開始編輯
 // =====================================================
 
 function startEdit(order) {
+
+  // 已付款不能再修改商品
+  if (
+    order.paymentStatus ===
+    "PAID"
+  ) {
+
+    alert(
+      "訂單已付款，不能再修改商品"
+    );
+
+    return;
+  }
+
 
   editingOrderId.value =
     order.orderId;
@@ -883,11 +823,7 @@ function finishEdit() {
 
 
 // =====================================================
-// 修改訂單商品數量
-//
-// PUT
-// /api/orders/{orderId}/items/{productId}
-// ?quantity=2
+// 修改商品數量
 // =====================================================
 
 async function updateItemQuantity(
@@ -895,16 +831,29 @@ async function updateItemQuantity(
   item
 ) {
 
+  if (
+    order.paymentStatus ===
+    "PAID"
+  ) {
+
+    alert(
+      "訂單已付款，不能修改商品"
+    );
+
+    return;
+  }
+
+
   const quantity =
-    Number(item.quantity);
+    Number(
+      item.quantity
+    );
 
-
-  // =========================
-  // 基本檢查
-  // =========================
 
   if (
-    !Number.isInteger(quantity) ||
+    !Number.isInteger(
+      quantity
+    ) ||
     quantity < 1
   ) {
 
@@ -922,7 +871,7 @@ async function updateItemQuantity(
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/items/${item.productId}?quantity=${quantity}`,
+        `/api/orders/${order.orderId}/items/${item.productId}?quantity=${quantity}`,
         {
           method: "PUT",
 
@@ -932,28 +881,13 @@ async function updateItemQuantity(
       );
 
 
-    if (
-      response.status === 401 ||
-      response.status === 403
-    ) {
-
-      throw new Error(
-        "沒有權限修改訂單商品"
-      );
-    }
-
-
     if (!response.ok) {
 
       const errorText =
         await response.text();
 
-      console.error(
-        "修改商品數量失敗：",
-        errorText
-      );
-
       throw new Error(
+        errorText ||
         "修改商品數量失敗"
       );
     }
@@ -964,11 +898,9 @@ async function updateItemQuantity(
     );
 
 
-    // 重新讀資料
     await loadOrders();
 
 
-    // 保持這張訂單的編輯狀態
     editingOrderId.value =
       order.orderId;
 
@@ -976,7 +908,6 @@ async function updateItemQuantity(
   } catch (error) {
 
     console.error(
-      "修改商品失敗：",
       error
     );
 
@@ -994,15 +925,25 @@ async function updateItemQuantity(
 
 // =====================================================
 // 刪除訂單商品
-//
-// DELETE
-// /api/orders/{orderId}/items/{productId}
 // =====================================================
 
 async function deleteOrderItem(
   order,
   item
 ) {
+
+  if (
+    order.paymentStatus ===
+    "PAID"
+  ) {
+
+    alert(
+      "訂單已付款，不能刪除商品"
+    );
+
+    return;
+  }
+
 
   const confirmed =
     confirm(
@@ -1019,7 +960,7 @@ async function deleteOrderItem(
 
     const response =
       await fetch(
-        `http://localhost:8081/api/orders/${order.orderId}/items/${item.productId}`,
+        `/api/orders/${order.orderId}/items/${item.productId}`,
         {
           method: "DELETE",
 
@@ -1029,28 +970,13 @@ async function deleteOrderItem(
       );
 
 
-    if (
-      response.status === 401 ||
-      response.status === 403
-    ) {
-
-      throw new Error(
-        "沒有權限刪除訂單商品"
-      );
-    }
-
-
     if (!response.ok) {
 
       const errorText =
         await response.text();
 
-      console.error(
-        "刪除商品失敗：",
-        errorText
-      );
-
       throw new Error(
+        errorText ||
         "刪除商品失敗"
       );
     }
@@ -1064,7 +990,6 @@ async function deleteOrderItem(
     await loadOrders();
 
 
-    // 保持編輯模式
     editingOrderId.value =
       order.orderId;
 
@@ -1072,7 +997,6 @@ async function deleteOrderItem(
   } catch (error) {
 
     console.error(
-      "刪除商品失敗：",
       error
     );
 
@@ -1089,26 +1013,214 @@ async function deleteOrderItem(
 
 
 // =====================================================
-// 頁面初始化
+// 取消訂單
+// =====================================================
+
+async function cancelOrder(order) {
+
+  if (
+    order.paymentStatus ===
+    "PAID"
+  ) {
+
+    alert(
+      "此訂單已付款，不能直接取消"
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      `確定要取消訂單 #${order.orderId} 嗎？`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/orders/${order.orderId}/cancel`,
+        {
+          method: "PUT",
+
+          headers:
+            getAuthHeaders(),
+        }
+      );
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        errorText ||
+        "取消訂單失敗"
+      );
+    }
+
+
+    alert(
+      `訂單 #${order.orderId} 已取消`
+    );
+
+
+    editingOrderId.value =
+      null;
+
+
+    await loadOrders();
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    alert(
+      error.message ||
+      "取消訂單失敗"
+    );
+  }
+}
+
+
+// =====================================================
+// 管理員確認商品已交付
+//
+// PENDING + PAID
+// ↓
+// COMPLETED
+// =====================================================
+
+async function completeOrder(order) {
+
+  if (
+    order.orderStatus !==
+    "PENDING"
+  ) {
+
+    alert(
+      "只有待處理訂單可以完成"
+    );
+
+    return;
+  }
+
+
+  if (
+    order.paymentStatus !==
+    "PAID"
+  ) {
+
+    alert(
+      "會員尚未付款，不能完成訂單"
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      `確認已將訂單 #${order.orderId} 的商品交付給會員嗎？`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        `/api/orders/${order.orderId}/status?status=COMPLETED`,
+        {
+          method: "PUT",
+
+          headers:
+            getAuthHeaders(),
+        }
+      );
+
+
+    if (
+      response.status === 401 ||
+      response.status === 403
+    ) {
+
+      throw new Error(
+        "沒有權限完成訂單"
+      );
+    }
+
+
+    if (!response.ok) {
+
+      const errorText =
+        await response.text();
+
+      throw new Error(
+        errorText ||
+        "完成訂單失敗"
+      );
+    }
+
+
+    alert(
+      `訂單 #${order.orderId} 已完成`
+    );
+
+
+    editingOrderId.value =
+      null;
+
+
+    await loadOrders();
+
+
+  } catch (error) {
+
+    console.error(
+      "完成訂單失敗：",
+      error
+    );
+
+
+    alert(
+      error.message ||
+      "完成訂單失敗"
+    );
+  }
+}
+
+
+// =====================================================
+// 初始化
 // =====================================================
 
 onMounted(() => {
 
   loadOrders();
 });
-
 </script>
 
 
-<style scoped>d
-
-/* =====================================================
-   頁面
-   ===================================================== */
-
+<style scoped>
 .orders-page {
   width: 100%;
-
   padding: 20px;
 }
 
@@ -1119,117 +1231,48 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-
-  justify-content:
-    space-between;
-
+  justify-content: space-between;
   align-items: center;
-
   gap: 20px;
-
   margin-bottom: 25px;
 }
 
-
 .page-header h1 {
   margin: 0 0 6px;
-
   color: #3f3328;
-
   font-size: 28px;
 }
 
-
 .page-header p {
   margin: 0;
-
   color: #888888;
-
   font-size: 14px;
 }
-
-
-/* =====================================================
-   Header 右側操作
-   ===================================================== */
 
 .header-actions {
   display: flex;
-
   align-items: center;
-
   gap: 10px;
 }
 
-
-/* =====================================================
-   狀態篩選
-   ===================================================== */
-
 .filter-select {
   min-width: 130px;
-
   padding: 9px 12px;
-
-  border:
-    1px solid #dddddd;
-
+  border: 1px solid #dddddd;
   border-radius: 6px;
-
   background-color: white;
-
   color: #444444;
-
   font-size: 14px;
-
-  cursor: pointer;
-
-  outline: none;
 }
-
-
-/* =====================================================
-   重新整理
-   ===================================================== */
 
 .refresh-button {
   padding: 9px 16px;
-
   border: none;
-
   border-radius: 6px;
-
-  background-color:
-    #b58a46;
-
+  background-color: #b58a46;
   color: white;
-
   font-weight: bold;
-
   cursor: pointer;
-}
-
-
-.refresh-button:hover {
-  background-color:
-    #8f692f;
-}
-
-
-/* =====================================================
-   Table Card
-   ===================================================== */
-
-.table-card {
-  overflow-x: auto;
-
-  background-color: white;
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 4px 16px
-    rgba(0, 0, 0, 0.06);
 }
 
 
@@ -1237,93 +1280,69 @@ onMounted(() => {
    Table
    ===================================================== */
 
+.table-card {
+  overflow-x: auto;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow:
+    0 4px 16px
+    rgba(0, 0, 0, 0.06);
+}
+
 table {
   width: 100%;
-
   border-collapse: collapse;
 }
 
-
 thead {
-  background-color:
-    #4a3b2a;
-
+  background-color: #4a3b2a;
   color: white;
 }
 
-
 th,
 td {
-  padding: 16px 14px;
-
+  padding: 16px 12px;
   border-bottom:
     1px solid #eeeeee;
 }
 
-
 th {
   text-align: center;
-
   white-space: nowrap;
 }
-
 
 td {
   vertical-align: top;
 }
 
-
 tbody tr:hover {
-  background-color:
-    #fcfaf6;
+  background-color: #fcfaf6;
 }
 
 
 /* =====================================================
-   訂單編號
+   訂單 / 會員
    ===================================================== */
 
 .order-id-cell {
-  width: 90px;
-
   text-align: center;
-
   font-weight: bold;
 }
 
-
-/* =====================================================
-   會員資料
-   ===================================================== */
-
 .member-cell {
-  width: 230px;
-
   min-width: 210px;
-
-  text-align: left;
-
   line-height: 1.7;
 }
 
-
 .member-name {
   margin-bottom: 6px;
-
   color: #333333;
-
-  font-size: 15px;
-
   font-weight: bold;
 }
 
-
 .member-detail {
   color: #666666;
-
   font-size: 13px;
-
-  word-break: break-word;
 }
 
 
@@ -1332,13 +1351,8 @@ tbody tr:hover {
    ===================================================== */
 
 .items-cell {
-  width: 360px;
-
-  min-width: 330px;
-
-  text-align: left;
+  min-width: 310px;
 }
-
 
 .order-item {
   padding: 10px 0;
@@ -1346,49 +1360,28 @@ tbody tr:hover {
     1px solid #eeeeee;
 }
 
-
-.order-item:first-child {
-  padding-top: 0;
-}
-
-
 .order-item:last-child {
-  padding-bottom: 0;
-
   border-bottom: none;
 }
 
-
 .item-name {
   margin-bottom: 5px;
-
   color: #4a3b2a;
-
-  font-size: 14px;
-
   font-weight: bold;
 }
-
 
 .item-detail {
   margin-bottom: 2px;
-
   color: #666666;
-
   font-size: 13px;
 }
-
 
 .item-subtotal {
   margin-top: 4px;
-
   color: #b3443c;
-
   font-size: 13px;
-
   font-weight: bold;
 }
-
 
 .no-item {
   color: #999999;
@@ -1396,196 +1389,144 @@ tbody tr:hover {
 
 
 /* =====================================================
-   編輯商品
+   編輯
    ===================================================== */
 
 .edit-quantity-area {
   display: flex;
-
   align-items: center;
-
   flex-wrap: wrap;
-
   gap: 6px;
-
   margin: 7px 0;
 }
 
-
-.quantity-label {
-  color: #666666;
-
-  font-size: 13px;
-}
-
-
 .quantity-input {
   width: 65px;
-
-  padding: 6px 7px;
-
+  padding: 6px;
   border:
     1px solid #cccccc;
-
   border-radius: 4px;
-
-  font-size: 13px;
-
   text-align: center;
-
-  outline: none;
 }
 
-
-.quantity-input:focus {
-  border-color:
-    #b58a46;
+.save-item-button,
+.delete-item-button {
+  padding: 6px 9px;
+  border-radius: 4px;
+  cursor: pointer;
 }
-
 
 .save-item-button {
-  padding: 6px 10px;
-
   border: none;
-
-  border-radius: 4px;
-
-  background-color:
-    #b58a46;
-
+  background-color: #b58a46;
   color: white;
-
-  cursor: pointer;
 }
-
-
-.save-item-button:hover {
-  background-color:
-    #8f692f;
-}
-
 
 .delete-item-button {
-  padding: 6px 10px;
-
   border:
     1px solid #b3443c;
-
-  border-radius: 4px;
-
   background-color: white;
-
   color: #b3443c;
-
-  cursor: pointer;
-}
-
-
-.delete-item-button:hover {
-  background-color:
-    #fde9e7;
 }
 
 
 /* =====================================================
-   總金額
+   金額
    ===================================================== */
+
+.amount-cell,
+.discount-cell,
+.total-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.discount-cell {
+  color: #3f7d56;
+}
 
 .total-cell {
-  width: 120px;
-
-  text-align: center;
-
   color: #b3443c;
-
   font-size: 16px;
-
   font-weight: bold;
 }
 
 
 /* =====================================================
-   狀態
+   Payment
    ===================================================== */
 
+.payment-cell,
 .status-cell {
-  width: 120px;
-
+  min-width: 105px;
   text-align: center;
 }
 
-
-.status-select {
-  min-width: 100px;
-
-  padding: 8px 10px;
-
-  border:
-    1px solid #dddddd;
-
-  border-radius: 6px;
-
+.payment-badge,
+.status-badge {
+  display: inline-block;
+  padding: 7px 11px;
+  border-radius: 20px;
   font-size: 13px;
-
   font-weight: bold;
-
-  text-align: center;
-
-  cursor: pointer;
-
-  outline: none;
+  white-space: nowrap;
 }
 
+.payment-paid {
+  background-color: #e8f1ff;
+  color: #2f5f9f;
+}
 
-/* 待處理 */
-.status-pending {
-  background-color:
-    #fff3d8;
-
+.payment-pending,
+.payment-none {
+  background-color: #fff3d8;
   color: #95691f;
 }
 
-
-/* 已完成 */
-.status-completed {
-  background-color:
-    #e5f6eb;
-
-  color: #257641;
-}
-
-
-/* 已取消 */
-.status-cancelled {
-  background-color:
-    #fee2e2;
-
+.payment-failed {
+  background-color: #fee2e2;
   color: #991b1b;
 }
 
-
-/* 未知 */
-.status-default {
-  background-color:
-    #eeeeee;
-
+.payment-refunded {
+  background-color: #eeeeee;
   color: #555555;
 }
 
 
 /* =====================================================
-   建立時間
+   Order Status
+   ===================================================== */
+
+.status-pending {
+  background-color: #fff3d8;
+  color: #95691f;
+}
+
+.status-completed {
+  background-color: #e5f6eb;
+  color: #257641;
+}
+
+.status-cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-default {
+  background-color: #eeeeee;
+  color: #555555;
+}
+
+
+/* =====================================================
+   日期
    ===================================================== */
 
 .date-cell {
-  width: 180px;
-
-  min-width: 160px;
-
+  min-width: 155px;
   text-align: center;
-
   color: #555555;
-
   font-size: 13px;
 }
 
@@ -1595,89 +1536,89 @@ tbody tr:hover {
    ===================================================== */
 
 .action-cell {
-  width: 120px;
-
-  min-width: 110px;
-
+  min-width: 135px;
   text-align: center;
 }
 
-
 .edit-button,
-.finish-button {
-  padding: 8px 12px;
-
-  border: none;
-
+.finish-button,
+.cancel-button,
+.complete-button {
+  width: 100%;
+  margin-bottom: 7px;
+  padding: 8px 10px;
   border-radius: 5px;
-
-  color: white;
-
   font-size: 13px;
-
   font-weight: bold;
-
   cursor: pointer;
 }
 
-
 .edit-button {
-  background-color:
-    #b58a46;
+  border: none;
+  background-color: #b58a46;
+  color: white;
 }
-
-
-.edit-button:hover {
-  background-color:
-    #8f692f;
-}
-
 
 .finish-button {
-  background-color:
-    #666666;
+  border: none;
+  background-color: #666666;
+  color: white;
 }
 
-
-.finish-button:hover {
-  background-color:
-    #444444;
+.cancel-button {
+  border:
+    1px solid #b3443c;
+  background-color: white;
+  color: #b3443c;
 }
 
+.complete-button {
+  border: none;
+  background-color: #3f7d56;
+  color: white;
+}
+
+.complete-button:hover {
+  background-color: #306345;
+}
+
+.paid-note {
+  margin-bottom: 7px;
+  color: #2f5f9f;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.completed-text {
+  color: #257641;
+  font-weight: bold;
+}
 
 .disabled-edit-text {
   color: #aaaaaa;
-
   font-size: 13px;
 }
 
 
 /* =====================================================
-   Loading / Error
+   Message
    ===================================================== */
 
 .message-box,
 .error-box {
   padding: 40px;
-
   background-color: white;
-
   border-radius: 8px;
-
   text-align: center;
 }
-
 
 .message-box {
   color: #777777;
 }
 
-
 .error-box {
   color: #b3443c;
-
-  background-color:
-    #fde9e7;
+  background-color: #fde9e7;
 }
 
 
@@ -1693,27 +1634,21 @@ tbody tr:hover {
     padding: 10px;
   }
 
-
   .page-header {
     align-items:
       flex-start;
-
     flex-direction:
       column;
   }
 
-
   .header-actions {
     width: 100%;
-
     flex-wrap: wrap;
   }
-
 
   th,
   td {
     padding: 10px 8px;
   }
 }
-
 </style>

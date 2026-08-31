@@ -20,7 +20,7 @@ import lombok.Setter;
 public class Account {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer accountId;
     private String username;
     private String password;

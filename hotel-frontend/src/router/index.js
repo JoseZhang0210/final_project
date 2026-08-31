@@ -25,9 +25,18 @@ import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
+//---------------------------------------------------
+import RoomBookingOrderView from "../views/RoomBookingOrderView.vue";
+import RoomTypeManageView from "../views/RoomTypeManageView.vue";
+import RoomManageView from "../views/RoomManageView.vue";
+import RoomImageManageView from "../views/RoomImageManageView.vue";
+import RoomTaskManageView from "../views/RoomTaskManageView.vue";
+import RoomBookingManageView from "../views/RoomBookingManageView.vue";
 
-// ---------------購物車-------------------
+// ---------------購物車 / 結帳 / 付款-------------------
 import CartView from "../views/CartView.vue";
+import CheckoutView from "../views/CheckoutView.vue";
+import PaymentView from "../views/PaymentView.vue";
 
 
 //--------------- 會員訂單管理 -----------------
@@ -94,12 +103,49 @@ const router = createRouter({
           name: "admin-reservations",
           component: ReservationManageView,
         },
+        // ==========訂房==========
+        {
+          path: "room-booking-order",
+          name: "admin-roombookingorder",
+          component: RoomBookingOrderView,
+        },
+        {
+          path: "room-status",
+          name: "admin-room-status",
+          component: RoomManageView,
+        },
+        {
+          path: "room-types",
+          name: "admin-room-types",
+          component: RoomTypeManageView,
+        },
+        {
+          path: "room-images",
+          name: "admin-room-images",
+          component: RoomImageManageView,
+        },
+        {
+          path: "room-task",
+          name: "admin-room-task",
+          component: RoomTaskManageView,
+        },
+        {
+          path: "room-booking",
+          name: "admin-room-booking",
+          component: RoomBookingManageView,
+        },
+        //===============================
         {
           path: "venues",
           name: "admin-venues",
           component: VenueView,
         },
 
+        {
+          path: "rental",
+          name: "admin-rental",
+          component: RentalView,
+        },
       ],
     },
 
@@ -131,6 +177,21 @@ const router = createRouter({
           path: "products",
           name: "product-shop",
           component: ProductShopView,
+        },
+        {
+          path: "cart",
+          name: "cart",
+          component: CartView,
+        },
+        {
+          path: "checkout",
+          name: "checkout",
+          component: CheckoutView,
+        },
+        {
+          path: "payment/:orderId",
+          name: "payment",
+          component: PaymentView,
         },
         {
           path: "/cart",
@@ -165,8 +226,7 @@ const router = createRouter({
         {
           path: "about",
           name: "about",
-          component: () =>
-            import("../views/AboutView.vue"),
+          component: () => import("../views/AboutView.vue"),
         },
         {
           path: "my-orders",

@@ -1,43 +1,152 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from "pinia";
+import { ref } from "vue";
 
-export const useAuthStore = defineStore('auth', () => {
-    const isLoggedIn = ref(!!localStorage.getItem('token'))
-    const authorities = ref(
-        localStorage.getItem('authorities')
-            ? JSON.parse(localStorage.getItem('authorities'))
-            : []
-    )
+export const useAuthStore = defineStore("auth", () => {
+  // =========================
+  // 登入狀態
+  // =========================
+  const isLoggedIn = ref(
+    !!localStorage.getItem("token")
+  );
 
-    // 登入成功時呼叫
-    function login(token, userAuthorities) {
-        // 確保傳進來的 userAuthorities 是一組陣列（防呆）
-        const authArray = Array.isArray(userAuthorities) ? userAuthorities : [userAuthorities];
+  // =========================
+  // 權限
+  // =========================
+  const authorities = ref(
+    localStorage.getItem("authorities")
+      ? JSON.parse(
+          localStorage.getItem("authorities")
+        )
+      : []
+  );
 
-        // 儲存 JWT 字串
-        localStorage.setItem('token', token)
-        
-        // 儲存權限：必須用 JSON.stringify() 把陣列轉成標準 JSON 字串
-        localStorage.setItem('authorities', JSON.stringify(authArray))
-        
-        // 更新 Pinia 狀態
-        isLoggedIn.value = true
-        authorities.value = authArray // 直接賦值陣列，千萬不要用 JSON.parse()
-        
-        console.log("Pinia 權限更新成功：", authorities.value);
+  // =========================
+  // 會員 ID
+  // =========================
+  const memberId = ref(
+    localStorage.getItem("memberId")
+      ? Number(
+          localStorage.getItem("memberId")
+        )
+      : null
+  );
+
+  // =========================
+  // 登入成功時呼叫
+  // =========================
+  function login(
+    token,
+    userAuthorities,
+    userMemberId
+  ) {
+    // 防呆：確保權限一定是陣列
+    const authArray =
+      Array.isArray(userAuthorities)
+        ? userAuthorities
+        : userAuthorities
+          ? [userAuthorities]
+          : [];
+
+    // -------------------------
+    // JWT
+    // -------------------------
+    localStorage.setItem(
+      "token",
+      token
+    );
+
+    // -------------------------
+    // 權限
+    // -------------------------
+    localStorage.setItem(
+      "authorities",
+      JSON.stringify(authArray)
+    );
+
+    // -------------------------
+    // memberId
+    // -------------------------
+    const validMemberId =
+    Number(userMemberId);
+
+    if (
+      Number.isInteger(validMemberId) &&
+      validMemberId > 0
+    ) {
+      localStorage.setItem(
+        "memberId",
+        String(validMemberId)
+      );
+
+      memberId.value =
+        validMemberId;
+    } else {
+      localStorage.removeItem(
+        "memberId"
+      );
+
+      memberId.value =
+        null;
     }
+    // -------------------------
+    // 更新 Pinia 狀態
+    // -------------------------
+    isLoggedIn.value = true;
 
-    // 登出時呼叫
-    function logout() {
-        // 清除 JWT
-        localStorage.removeItem("token");
-        // 清除角色 / 權限
-        localStorage.removeItem("authorities");
+    authorities.value =
+      authArray;
 
-        isLoggedIn.value = false
-        authorities.value = []
-        console.log("已登出，JWT 已清除");
-    }
+    console.log(
+      "Pinia 登入成功"
+    );
 
-    return { isLoggedIn, authorities, login, logout }
-})
+    console.log(
+      "權限：",
+      authorities.value
+    );
+
+    console.log(
+      "memberId：",
+      memberId.value
+    );
+  }
+
+  // =========================
+  // 登出
+  // =========================
+  function logout() {
+    // JWT
+    localStorage.removeItem(
+      "token"
+    );
+
+    // 權限
+    localStorage.removeItem(
+      "authorities"
+    );
+
+    // 會員 ID
+    localStorage.removeItem(
+      "memberId"
+    );
+
+    // 更新 Pinia
+    isLoggedIn.value = false;
+
+    authorities.value = [];
+
+    memberId.value = null;
+
+    console.log(
+      "已登出，JWT、權限、memberId 已清除"
+    );
+  }
+
+  return {
+    isLoggedIn,
+    authorities,
+    memberId,
+    login,
+    logout,
+  };
+});

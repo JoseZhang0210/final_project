@@ -21,11 +21,7 @@
              餐廳管理群組
              ========================= -->
         <div class="sidebar-group">
-          <button
-            type="button"
-            class="sidebar-group-title"
-            @click="restaurantOpen = !restaurantOpen"
-          >
+          <button type="button" class="sidebar-group-title" @click="restaurantOpen = !restaurantOpen">
             <span> 🍽 餐廳管理 </span>
 
             <span class="arrow">
@@ -42,6 +38,27 @@
           </div>
         </div>
 
+        <!-- ＝＝＝＝＝訂房管理＝＝＝＝＝ -->
+        <div class="sidebar-group">
+          <button type="button" class="sidebar-group-title" @click="roombookingOpen = !roombookingOpen">
+            <span> 🛏 訂房管理 </span>
+
+            <span class="arrow">
+              {{ roombookingOpen ? "▲" : "▼" }}
+            </span>
+          </button>
+
+          <div v-show="roombookingOpen" class="sidebar-submenu">
+            <RouterLink to="/admin/room-booking-order"> 預定訂房 </RouterLink>
+            <RouterLink to="/admin/room-booking">訂房明細</RouterLink>
+            <RouterLink to="/admin/room-status"> 房間狀態 </RouterLink>
+            <RouterLink to="/admin/room-task">房務工單</RouterLink>
+            <RouterLink to="/admin/room-types">房間類型</RouterLink>
+            <RouterLink to="/admin/room-images">房型圖片</RouterLink>
+          </div>
+        </div>
+        <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
+
         <!-- 會員管理 -->
         <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
 
@@ -52,8 +69,10 @@
         <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
 
         <!-- 場地管理 -->
-        <RouterLink to="/admin/venues"> 🧑‍💼 場地管理 </RouterLink>
+        <RouterLink to="/admin/venues"> 🏛️場地管理 </RouterLink>
 
+        <!-- 場地租借管理 -->
+        <RouterLink to="/admin/rental"> 📝場地租借管理 </RouterLink>
       </nav>
 
       <!-- =========================
@@ -95,6 +114,7 @@ import { ref } from "vue";
  * false = 預設收合
  */
 const restaurantOpen = ref(true);
+const roombookingOpen = ref(true);
 </script>
 
 <style></style>

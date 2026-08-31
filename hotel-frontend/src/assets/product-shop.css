@@ -1,0 +1,1340 @@
+/* =====================================================
+   整體
+   ===================================================== */
+
+.shop-page {
+  min-height: 100vh;
+
+  background: #f8f6f1;
+
+  color: #3f382f;
+}
+
+/* =====================================================
+   Hero
+   ===================================================== */
+
+.shop-hero {
+  position: relative;
+
+  min-height: 430px;
+
+  display: flex;
+
+  align-items: center;
+
+  overflow: hidden;
+
+  background: url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85")
+    center / cover no-repeat;
+}
+
+.hero-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background: linear-gradient(
+    90deg,
+    rgba(31, 25, 18, 0.88) 0%,
+    rgba(31, 25, 18, 0.68) 42%,
+    rgba(31, 25, 18, 0.22) 100%
+  );
+}
+
+.hero-container {
+  position: relative;
+
+  z-index: 1;
+
+  width: min(1180px, 90%);
+
+  margin: 0 auto;
+
+  padding: 72px 0 48px;
+}
+
+/* =====================================================
+   Hero 文字
+   ===================================================== */
+
+.hero-content {
+  width: 100%;
+
+  max-width: 680px;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+
+  margin-bottom: 13px;
+
+  color: #dfc58c;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  letter-spacing: 4px;
+}
+
+.hero-content h1 {
+  margin: 0 0 14px;
+
+  color: white;
+
+  font-size: clamp(36px, 5vw, 54px);
+
+  line-height: 1.2;
+
+  letter-spacing: 2px;
+}
+
+.hero-content p {
+  max-width: 560px;
+
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.82);
+
+  font-size: 16px;
+
+  line-height: 1.9;
+}
+
+/* =====================================================
+   搜尋
+   ===================================================== */
+
+.shop-search {
+  width: 100%;
+
+  max-width: 680px;
+
+  height: 54px;
+
+  margin-top: 30px;
+
+  display: flex;
+
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  border-radius: 8px;
+
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+}
+
+.shop-search input {
+  flex: 1;
+
+  min-width: 0;
+
+  padding: 0 20px;
+
+  border: none;
+
+  outline: none;
+
+  background: transparent;
+
+  color: #443a31;
+
+  font-size: 15px;
+}
+
+.shop-search input::placeholder {
+  color: #aaa39a;
+}
+
+.shop-search button {
+  width: 110px;
+
+  border: none;
+
+  background: #b58a46;
+
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.shop-search button:hover {
+  background: #9d7438;
+}
+
+/* =====================================================
+   分類
+   ===================================================== */
+
+.category-list {
+  width: 100%;
+
+  max-width: 680px;
+
+  margin-top: 20px;
+
+  display: flex;
+
+  gap: 9px;
+
+  overflow-x: auto;
+
+  padding-bottom: 3px;
+
+  scrollbar-width: none;
+}
+
+.category-list::-webkit-scrollbar {
+  display: none;
+}
+
+.category-button {
+  flex-shrink: 0;
+
+  padding: 9px 17px;
+
+  border: 1px solid rgba(255, 255, 255, 0.32);
+
+  border-radius: 30px;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  backdrop-filter: blur(6px);
+
+  color: rgba(255, 255, 255, 0.9);
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.category-button:hover {
+  border-color: #dabe82;
+
+  background: rgba(181, 138, 70, 0.35);
+
+  color: white;
+}
+
+.category-button.active {
+  border-color: #b58a46;
+
+  background: #b58a46;
+
+  color: white;
+}
+
+/* =====================================================
+   商品內容
+   ===================================================== */
+
+.product-section {
+  width: min(1180px, 90%);
+
+  margin: 0 auto;
+
+  padding: 60px 0 90px;
+}
+
+/* =====================================================
+   商品標題
+   ===================================================== */
+
+.product-section-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-end;
+
+  gap: 20px;
+
+  margin-bottom: 28px;
+
+  padding-bottom: 17px;
+
+  border-bottom: 1px solid #ded8cf;
+}
+
+.section-eyebrow {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #b58a46;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 3px;
+}
+
+.product-section-header h2 {
+  margin: 0;
+
+  color: #4a3b2a;
+
+  font-size: 28px;
+
+  font-weight: 700;
+}
+
+.product-count {
+  color: #92887d;
+
+  font-size: 14px;
+}
+
+.product-count strong {
+  color: #9b7435;
+
+  font-size: 17px;
+}
+
+/* =====================================================
+   商品 Grid
+   ===================================================== */
+
+.product-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 24px;
+}
+
+/* =====================================================
+   商品卡片
+   ===================================================== */
+
+.product-card {
+  overflow: hidden;
+
+  display: flex;
+
+  flex-direction: column;
+
+  background: white;
+
+  border: 1px solid rgba(94, 75, 52, 0.1);
+
+  border-radius: 12px;
+
+  box-shadow: 0 3px 14px rgba(70, 55, 38, 0.05);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-6px);
+
+  box-shadow: 0 14px 35px rgba(70, 55, 38, 0.13);
+}
+
+.product-card:focus-visible,
+.recent-product-card:focus-visible,
+.recommend-card:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.55);
+
+  outline-offset: 3px;
+}
+
+/* =====================================================
+   商品圖片
+   ===================================================== */
+
+.product-image-wrap {
+  position: relative;
+
+  width: 100%;
+
+  aspect-ratio: 4 / 3;
+
+  overflow: hidden;
+
+  background: #eeeae4;
+}
+
+.product-image {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: contain;
+
+  object-position: center;
+
+  transition: transform 0.45s ease;
+}
+
+.wishlist-button {
+  position: absolute;
+
+  z-index: 2;
+
+  top: 12px;
+
+  right: 12px;
+
+  width: 40px;
+
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.75);
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.9);
+
+  color: #806f5e;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 27px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 12px rgba(38, 30, 22, 0.16);
+
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.wishlist-button:hover {
+  transform: scale(1.08);
+
+  color: #b74f5e;
+}
+
+.wishlist-button:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.45);
+
+  outline-offset: 2px;
+}
+
+.wishlist-button.active {
+  background: #fff5f6;
+
+  color: #b74f5e;
+}
+
+/* =====================================================
+   Badge
+   ===================================================== */
+
+.product-badge {
+  position: absolute;
+
+  top: 12px;
+
+  left: 12px;
+
+  padding: 6px 11px;
+
+  border-radius: 30px;
+
+  color: white;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+}
+
+.sold-out {
+  background: rgba(69, 65, 60, 0.9);
+}
+
+.stock-low {
+  background: #a95647;
+}
+
+/* =====================================================
+   商品資訊
+   ===================================================== */
+
+.product-info {
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  padding: 19px 18px 18px;
+}
+
+.product-category {
+  margin-bottom: 8px;
+
+  color: #b58a46;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
+}
+
+.product-name {
+  min-height: 46px;
+
+  margin: 0 0 9px;
+
+  color: #40382f;
+
+  font-size: 17px;
+
+  line-height: 1.45;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+.product-description {
+  min-height: 42px;
+
+  margin: 0 0 18px;
+
+  color: #8a8178;
+
+  font-size: 13px;
+
+  line-height: 1.65;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+/* =====================================================
+   價格 / 庫存
+   ===================================================== */
+
+.product-meta {
+  margin-top: auto;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-end;
+
+  gap: 10px;
+
+  margin-bottom: 16px;
+}
+
+.price-area {
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 5px;
+
+  color: #9c6934;
+}
+
+.currency {
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.price-area strong {
+  font-size: 25px;
+
+  line-height: 1;
+
+  font-weight: 700;
+}
+
+.stock-text {
+  color: #a39b92;
+
+  font-size: 11px;
+}
+
+/* =====================================================
+   數量
+   ===================================================== */
+
+.quantity-area {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 14px;
+
+  padding-top: 12px;
+
+  border-top: 1px solid #eee7dd;
+}
+
+.quantity-label {
+  color: #7f756a;
+
+  font-size: 12px;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+
+  height: 32px;
+
+  border: 1px solid #d9d0c4;
+  border-radius: 6px;
+
+  overflow: hidden;
+}
+
+.quantity-button {
+  width: 32px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+  background: #f7f4ef;
+
+  color: #806438;
+
+  font-size: 16px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+.quantity-button:hover:not(:disabled) {
+  background: #eadfcf;
+}
+
+.quantity-button:disabled {
+  color: #c2bcb4;
+
+  cursor: not-allowed;
+}
+
+.quantity-number {
+  min-width: 38px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  color: #4a4036;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  line-height: 1;
+}
+
+/* =====================================================
+   購買按鈕
+   ===================================================== */
+
+.product-button {
+  width: 100%;
+
+  padding: 11px 14px;
+
+  border: 1px solid #b58a46;
+
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: #9b7435;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.product-button:hover:not(:disabled) {
+  background: #b58a46;
+
+  color: white;
+}
+
+.product-button:disabled {
+  border-color: #ddd7ce;
+
+  background: #efede9;
+
+  color: #aaa39a;
+
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   Loading / Empty / Error
+   ===================================================== */
+
+.state-message {
+  padding: 70px 20px;
+
+  border: 1px solid #e6e0d8;
+
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.65);
+
+  color: #91887e;
+
+  text-align: center;
+}
+
+.error-message {
+  border-color: #e9c5c0;
+
+  background: #fff4f2;
+
+  color: #a65349;
+}
+
+/* =====================================================
+   最近瀏覽
+   ===================================================== */
+
+.recently-viewed-section {
+  padding: 55px 0 70px;
+
+  background: #f1ede6;
+
+  border-top: 1px solid #e0d9cf;
+}
+
+.recently-viewed-container {
+  width: min(1180px, 90%);
+
+  margin: 0 auto;
+}
+
+.recently-viewed-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-end;
+
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+.recently-viewed-header h2 {
+  margin: 0;
+
+  color: #4a3b2a;
+
+  font-size: 26px;
+}
+
+.clear-recent-button {
+  padding: 8px 15px;
+
+  border: 1px solid #c7bba9;
+
+  border-radius: 6px;
+
+  background: transparent;
+
+  color: #82776a;
+
+  font-size: 12px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.clear-recent-button:hover {
+  border-color: #a95647;
+
+  background: white;
+
+  color: #a95647;
+}
+
+/* =====================================================
+   最近瀏覽列表
+   ===================================================== */
+
+.recently-viewed-list {
+  display: grid;
+
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+/* =====================================================
+   最近瀏覽卡片
+   ===================================================== */
+
+.recent-product-card {
+  overflow: hidden;
+
+  background: white;
+
+  border: 1px solid rgba(94, 75, 52, 0.1);
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.recent-product-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow: 0 10px 28px rgba(70, 55, 38, 0.12);
+}
+
+/* =====================================================
+   最近瀏覽圖片
+   ===================================================== */
+
+.recent-product-image-wrap {
+  width: 100%;
+
+  aspect-ratio: 4 / 3;
+
+  overflow: hidden;
+
+  background: #eeeae4;
+}
+
+.recent-product-image {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: contain;
+
+  object-position: center;
+
+  transition: transform 0.3s ease;
+}
+
+/* =====================================================
+   最近瀏覽商品資訊
+   ===================================================== */
+
+.recent-product-info {
+  padding: 14px;
+}
+
+.recent-product-category {
+  margin-bottom: 6px;
+
+  color: #b58a46;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.5px;
+}
+
+.recent-product-info h3 {
+  min-height: 40px;
+
+  margin: 0 0 12px;
+
+  color: #40382f;
+
+  font-size: 14px;
+
+  line-height: 1.45;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+.recent-product-bottom {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.recent-product-price {
+  color: #9c6934;
+
+  font-size: 15px;
+
+  font-weight: 700;
+}
+
+.recent-stock {
+  color: #9a9188;
+
+  font-size: 10px;
+}
+
+.recent-stock.sold {
+  color: #a95647;
+
+  font-weight: 700;
+}
+/* =====================================================
+   猜你喜歡
+   ===================================================== */
+
+.recommend-section {
+  padding: 60px 0 75px;
+
+  background: #f8f6f1;
+}
+
+.recommend-container {
+  width: min(1180px, 90%);
+
+  margin: 0 auto;
+}
+
+.recommend-header {
+  margin-bottom: 26px;
+}
+
+.recommend-header h2 {
+  margin: 0 0 8px;
+
+  color: #4a3b2a;
+
+  font-size: 28px;
+}
+
+.recommend-header p {
+  margin: 0;
+
+  color: #91887e;
+
+  font-size: 13px;
+}
+
+/* =====================================================
+   推薦 Grid
+   ===================================================== */
+
+.recommend-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 22px;
+}
+
+/* =====================================================
+   推薦卡片
+   ===================================================== */
+
+.recommend-card {
+  overflow: hidden;
+
+  background: white;
+
+  border: 1px solid rgba(94, 75, 52, 0.1);
+
+  border-radius: 12px;
+
+  box-shadow: 0 4px 16px rgba(70, 55, 38, 0.06);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.recommend-card:hover {
+  transform: translateY(-5px);
+
+  box-shadow: 0 14px 34px rgba(70, 55, 38, 0.13);
+}
+
+/* =====================================================
+   推薦圖片
+   ===================================================== */
+
+.recommend-image-wrap {
+  position: relative;
+
+  aspect-ratio: 4 / 3;
+
+  overflow: hidden;
+
+  background: #eeeae4;
+}
+
+.recommend-image {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: contain;
+
+  object-position: center;
+
+  transition: transform 0.35s ease;
+}
+
+.recommend-badge {
+  position: absolute;
+
+  top: 12px;
+
+  left: 12px;
+
+  padding: 6px 11px;
+
+  border-radius: 20px;
+
+  background: #b58a46;
+
+  color: white;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+/* =====================================================
+   推薦內容
+   ===================================================== */
+
+.recommend-info {
+  padding: 17px;
+}
+
+.recommend-category {
+  margin-bottom: 7px;
+
+  color: #b58a46;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+.recommend-info h3 {
+  min-height: 42px;
+
+  margin: 0 0 8px;
+
+  color: #40382f;
+
+  font-size: 16px;
+
+  line-height: 1.45;
+}
+
+.recommend-info p {
+  min-height: 42px;
+
+  margin: 0 0 16px;
+
+  color: #8a8178;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+.recommend-bottom {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 14px;
+}
+
+.recommend-price {
+  color: #9c6934;
+
+  font-size: 18px;
+
+  font-weight: 700;
+}
+
+.recommend-stock {
+  color: #9a9188;
+
+  font-size: 10px;
+}
+
+.recommend-button {
+  width: 100%;
+
+  padding: 10px;
+
+  border: none;
+
+  border-radius: 6px;
+
+  background: #b58a46;
+
+  color: white;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.recommend-button:hover {
+  background: #9d7438;
+}
+/* =====================================================
+   RWD
+   ===================================================== */
+
+@media (max-width: 1050px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .recently-viewed-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .shop-hero {
+    min-height: 400px;
+  }
+
+  .hero-container {
+    width: min(1180px, 90%);
+
+    padding: 72px 0 48px;
+  }
+
+  .hero-overlay {
+    background: rgba(31, 25, 18, 0.72);
+  }
+
+  .hero-content p {
+    font-size: 14px;
+  }
+
+  .shop-search {
+    max-width: none;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+  }
+
+  .product-section {
+    padding: 40px 0 65px;
+  }
+
+  .product-section-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .recently-viewed-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+  }
+
+  .recently-viewed-header {
+    align-items: center;
+  }
+
+  .recently-viewed-section {
+    padding: 45px 0 55px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 31px;
+  }
+
+  .shop-search {
+    height: 48px;
+  }
+
+  .shop-search button {
+    width: 78px;
+  }
+
+  .category-button {
+    padding: 8px 14px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+  }
+
+  .product-info {
+    padding: 13px;
+  }
+
+  .product-name {
+    min-height: 40px;
+
+    font-size: 14px;
+  }
+
+  .product-description {
+    display: none;
+  }
+
+  .price-area strong {
+    font-size: 20px;
+  }
+
+  .quantity-area {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .product-button {
+    padding: 9px;
+  }
+
+  .recently-viewed-section {
+    padding: 38px 0 45px;
+  }
+
+  .recently-viewed-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 12px;
+  }
+
+  .recently-viewed-header h2 {
+    font-size: 23px;
+  }
+
+  .recently-viewed-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+  }
+
+  .recent-product-info {
+    padding: 11px;
+  }
+
+  .recent-product-info h3 {
+    min-height: 36px;
+
+    font-size: 13px;
+  }
+
+  .recent-product-price {
+    font-size: 13px;
+  }
+
+  .recent-product-bottom {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 4px;
+  }
+
+  .clear-recent-button {
+    padding: 7px 12px;
+
+    font-size: 11px;
+  }
+}
