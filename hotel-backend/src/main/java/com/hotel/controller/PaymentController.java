@@ -138,6 +138,7 @@ public class PaymentController {
             return ResponseEntity
                     .notFound()
                     .build();
+            return ResponseEntity.ok(payment);
         }
 
         // -----------------------------
