@@ -1,13 +1,10 @@
 <script setup>
 import { onMounted, ref , computed } from "vue";
 import { roomApi } from "@/api/roomApi";
+import { roomTypeApi } from "@/api/roomTypeApi";
 
-// 暫時提供隱藏表單使用
-// 後續可改成 GET /api/room-types
-const roomTypes = ref([
-  { roomTypeId: 1, typeName: "豪華雙人房" },
-  { roomTypeId: 2, typeName: "家庭四人房" },
-]);
+// 從 API 載入真實房型清單
+const roomTypes = ref([]);
 
 const rooms = ref([]);
 const loading = ref(false);
@@ -46,16 +43,14 @@ function clearForm() {
   formTitle.value = "新增房間";
 }
 
+// 依 roomTypeId 從已載入的 roomTypes 清單查詢房型名稱
 function getRoomTypeName(room) {
-  if (room.roomType?.typeName) {
-    return room.roomType.typeName;
-  }
-
-  if (room.roomType?.roomTypeId) {
-    return `房型 ID：${room.roomType.roomTypeId}`;
-  }
-
-  return "未知房型";
+  const typeId = room.roomTypeId ?? room.room_type_id;
+  if (!typeId) return "未知房型";
+  const found = roomTypes.value.find(
+    (rt) => Number(rt.roomTypeId) === Number(typeId)
+  );
+  return found ? (found.typeName ?? found.type_name) : `房型 #${typeId}`;
 }
 
 // =====================================================
@@ -170,7 +165,14 @@ function getStatusClass(status) {
   };
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 先載入房型，再載入房間，確保名稱對應正確
+  try {
+    const data = await roomTypeApi.getAllRoomTypes();
+    roomTypes.value = Array.isArray(data) ? data : data.content || [];
+  } catch (e) {
+    console.error("載入房型失敗：", e);
+  }
   loadRooms();
 });
 

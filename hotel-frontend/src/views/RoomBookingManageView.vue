@@ -309,7 +309,19 @@ async function deleteBooking(id) {
   }
 }
 
+function getBookingStatusClass(status) {
+  const map = {
+    "待入住": "status-waiting",
+    "已入住": "status-checked-in",
+    "已退房": "status-checked-out",
+    "已完成": "status-checked-out",
+    "已取消": "status-cancelled",
+  };
+  return map[status] || "";
+}
+
 function formatPrice(price) {
+
   return new Intl.NumberFormat("zh-TW", {
     style: "currency",
     currency: "TWD",
@@ -503,7 +515,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <thead>
             <tr>
               <th>ID</th>
-              <th>訂單</th>
+              <th>會員ID</th>
               <th>房型</th>
               <th>房號</th>
               <th>入住</th>
@@ -511,26 +523,20 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <th>人數</th>
               <th>價格</th>
               <th>狀態</th>
-              <th>付款狀態</th>
+
               <th>操作</th>
             </tr>
           </thead>
 
           <tbody>
             <tr v-if="bookings.length === 0">
-              <td colspan="10" style="text-align: center">
+              <td colspan="9" style="text-align: center">
                 目前沒有訂房明細資料
               </td>
             </tr>
             <tr v-for="booking in paginatedData" :key="booking.bookingId">
               <td>{{ booking.bookingId }}</td>
-              <td>
-                {{
-                  getOrderLabel(
-                    booking.bookingOrderId ?? booking.booking_order_id,
-                  )
-                }}
-              </td>
+              <td>{{ booking.memberId ?? booking.member_id }}</td>
               <td>
                 {{
                   getRoomTypeName(booking.roomTypeId ?? booking.room_type_id)
@@ -543,17 +549,13 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>
                 {{ formatPrice(booking.bookingPrice ?? booking.booking_price) }}
               </td>
-              <td>{{ booking.bookingStatus ?? booking.booking_status }}</td>
               <td>
-                <span :class="{'success': getPaymentStatus(booking.bookingId) === '已付款', 'error': getPaymentStatus(booking.bookingId) === '無付款紀錄' || getPaymentStatus(booking.bookingId) === '未付款'}">
-                  {{ getPaymentStatus(booking.bookingId) }}
+                <span :class="['booking-status', getBookingStatusClass(booking.bookingStatus ?? booking.booking_status)]">
+                  {{ booking.bookingStatus ?? booking.booking_status }}
                 </span>
               </td>
 
               <td class="actions">
-                <button class="btn primary" @click="goToPayment(booking.bookingId)">
-                  付款
-                </button>
                 <button class="btn edit" @click="editBooking(booking)">
                   修改
                 </button>
@@ -709,4 +711,32 @@ th {
   }
 }
 .pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
+.booking-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.booking-status.status-waiting {
+  color: #1a56db;
+  background-color: #e8f0fe;
+}
+
+.booking-status.status-checked-in {
+  color: #087443;
+  background-color: #e7f8ef;
+}
+
+.booking-status.status-checked-out {
+  color: #475467;
+  background-color: #f2f4f7;
+}
+
+.booking-status.status-cancelled {
+  color: #b42318;
+  background-color: #feeceb;
+}
 </style>

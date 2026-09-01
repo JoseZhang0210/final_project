@@ -1,113 +1,84 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 
 const payments = ref([]);
 const loading = ref(false);
-
-const formTitle = ref("新增付款紀錄");
 const message = ref("");
 const messageType = ref("");
 
-const form = ref(createEmptyForm());
-
-const paymentMethods = ["信用卡", "現金", "轉帳", "LinePay"];
+// 搜尋條件
+const searchBookingId = ref("");
+const searchStatus = ref("");
 const paymentStatuses = ["未付款", "已付款", "已退款", "付款失敗"];
 
-function createEmptyForm() {
-  return {
-    paymentId: null,
-    bookingId: "",
-    amount: 0,
-    paymentMethod: "信用卡",
-    paymentStatus: "未付款",
-    transactionId: "",
-  };
-}
-
-function clearForm() {
-  form.value = createEmptyForm();
-  formTitle.value = "新增付款紀錄";
-}
+// 行內修改狀態
+const editingId = ref(null);
+const editingStatus = ref("");
 
 function showMessage(text, type) {
   message.value = text;
   messageType.value = type;
+  setTimeout(() => { message.value = ""; }, 3000);
 }
 
-// 載入付款資料
+// 讀取全部付款資料
 async function loadPayments() {
   currentPage.value = 1;
   loading.value = true;
   message.value = "";
-
   try {
     const data = await bookingPaymentApi.getAllPayments();
     payments.value = Array.isArray(data) ? data : data.content || [];
-    console.log("SQL payment 資料：", payments.value);
   } catch (error) {
-    console.error("讀取付款錯誤：", error);
     showMessage(error.message || "無法連線至付款 API", "error");
   } finally {
     loading.value = false;
   }
 }
 
-// 新增與修改付款
-async function savePayment() {
-  if (!form.value.bookingId) {
-    showMessage("請輸入關聯訂單 ID", "error");
-    return;
-  }
+// 前端篩選後的資料
+const filteredPayments = computed(() => {
+  return payments.value.filter((p) => {
+    const matchBookingId = searchBookingId.value
+      ? String(p.bookingId).includes(String(searchBookingId.value))
+      : true;
+    const matchStatus = searchStatus.value
+      ? p.paymentStatus === searchStatus.value
+      : true;
+    return matchBookingId && matchStatus;
+  });
+});
 
-  if (Number(form.value.amount) < 0) {
-    showMessage("金額不可小於 0", "error");
-    return;
-  }
-
-  const isEdit = form.value.paymentId !== null;
-  const payload = {
-    paymentId: form.value.paymentId,
-    bookingId: Number(form.value.bookingId),
-    amount: Number(form.value.amount),
-    paymentMethod: form.value.paymentMethod,
-    paymentStatus: form.value.paymentStatus,
-    transactionId: form.value.transactionId || "",
-  };
-
-  try {
-    if (isEdit) {
-      await bookingPaymentApi.updatePaymentStatus(form.value.paymentId, payload);
-      showMessage("付款紀錄修改成功", "success");
-    } else {
-      await bookingPaymentApi.createPayment(payload);
-      showMessage("付款紀錄新增成功", "success");
-    }
-    
-    clearForm();
-    await loadPayments();
-  } catch (error) {
-    console.error("savePayment Error:", error);
-    showMessage(error.message || "無法連線至付款 API", "error");
-  }
+function clearSearch() {
+  searchBookingId.value = "";
+  searchStatus.value = "";
+  currentPage.value = 1;
 }
 
-function editPayment(payment) {
-  form.value = {
-    paymentId: payment.paymentId ?? payment.payment_id,
-    bookingId: payment.bookingId ?? payment.booking_id ?? "",
-    amount: payment.amount ?? 0,
-    paymentMethod: payment.paymentMethod ?? payment.payment_method ?? "信用卡",
-    paymentStatus: payment.paymentStatus ?? payment.payment_status ?? "未付款",
-    transactionId: payment.transactionId ?? payment.transaction_id ?? "",
-  };
+// 開啟行內狀態修改
+function startEdit(payment) {
+  editingId.value = payment.paymentId;
+  editingStatus.value = payment.paymentStatus;
+}
 
-  formTitle.value = `修改付款紀錄 ID：${form.value.paymentId}`;
+function cancelEdit() {
+  editingId.value = null;
+  editingStatus.value = "";
+}
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
+// 儲存付款狀態修改（觸發後端自動記錄 paidAt）
+async function saveStatus(payment) {
+  try {
+    await bookingPaymentApi.updatePaymentStatus(payment.paymentId, {
+      paymentStatus: editingStatus.value,
+    });
+    showMessage(`付款紀錄 #${payment.paymentId} 狀態已更新`, "success");
+    cancelEdit();
+    await loadPayments();
+  } catch (error) {
+    showMessage(error.message || "更新失敗", "error");
+  }
 }
 
 function formatPrice(price) {
@@ -125,9 +96,9 @@ function formatDateTimeShort(dateTimeStr) {
 
 function getStatusClass(status) {
   return {
-    available: status === "已付款",
-    maintenance: status === "未付款" || status === "付款失敗",
-    disabled: status === "已退款",
+    paid: status === "已付款",
+    unpaid: status === "未付款" || status === "付款失敗",
+    refunded: status === "已退款",
   };
 }
 
@@ -135,16 +106,22 @@ onMounted(() => {
   loadPayments();
 });
 
+// 分頁（基於篩選後的資料）
 const currentPage = ref(1);
 const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(payments.value.length / itemsPerPage));
+const totalPages = computed(() =>
+  Math.ceil(filteredPayments.value.length / itemsPerPage)
+);
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return payments.value.slice(start, start + itemsPerPage);
+  return filteredPayments.value.slice(start, start + itemsPerPage);
 });
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
-
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+}
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
+}
 </script>
 
 <template>
@@ -152,7 +129,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
     <header class="page-header">
       <div>
         <h1>付款紀錄管理</h1>
-        <p>管理飯店各筆訂單的付款狀態與交易金額</p>
+        <p>查詢並管理各筆訂單的付款狀態。付款紀錄由系統於訂房時自動建立，不可手動新增。</p>
       </div>
       <button type="button" class="refresh-button" :disabled="loading" @click="loadPayments">
         {{ loading ? "讀取中…" : "重新整理" }}
@@ -163,87 +140,45 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       {{ message }}
     </div>
 
-    <!-- 表單區塊 -->
+    <!-- 搜尋區塊 -->
     <section class="admin-card">
-      <h2>{{ formTitle }}</h2>
-
-      <form @submit.prevent="savePayment">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="bookingId">關聯訂單 ID *</label>
-            <input
-              id="bookingId"
-              v-model.number="form.bookingId"
-              type="number"
-              placeholder="例如：1001"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="amount">付款金額 *</label>
-            <input
-              id="amount"
-              v-model.number="form.amount"
-              type="number"
-              min="0"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="paymentMethod">付款方式 *</label>
-            <select id="paymentMethod" v-model="form.paymentMethod">
-              <option v-for="method in paymentMethods" :key="method" :value="method">
-                {{ method }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="paymentStatus">付款狀態 *</label>
-            <select id="paymentStatus" v-model="form.paymentStatus">
-              <option v-for="status in paymentStatuses" :key="status" :value="status">
-                {{ status }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group full-width">
-            <label for="transactionId">交易序號 (Transaction ID)</label>
-            <input
-              id="transactionId"
-              v-model.trim="form.transactionId"
-              type="text"
-              placeholder="例如：TXN123456789"
-            />
-          </div>
+      <h2>搜尋付款紀錄</h2>
+      <div class="search-grid">
+        <div class="form-group">
+          <label for="searchBookingId">訂單 ID</label>
+          <input
+            id="searchBookingId"
+            v-model="searchBookingId"
+            type="number"
+            placeholder="輸入訂單 ID"
+            @input="currentPage = 1"
+          />
         </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn primary">
-            {{ form.paymentId === null ? "新增紀錄" : "儲存修改" }}
-          </button>
-
-          <button type="button" class="btn secondary" @click="clearForm">
-            清除表單
-          </button>
+        <div class="form-group">
+          <label for="searchStatus">付款狀態</label>
+          <select id="searchStatus" v-model="searchStatus" @change="currentPage = 1">
+            <option value="">全部狀態</option>
+            <option v-for="s in paymentStatuses" :key="s" :value="s">{{ s }}</option>
+          </select>
         </div>
-      </form>
+        <div class="form-group align-end">
+          <button type="button" class="btn secondary" @click="clearSearch">清除搜尋</button>
+        </div>
+      </div>
     </section>
 
     <!-- 列表區塊 -->
     <section class="admin-card">
       <div class="table-header">
         <h2>付款列表</h2>
-        <span>共 {{ payments.length }} 筆紀錄</span>
+        <span>共 {{ filteredPayments.length }} 筆紀錄</span>
       </div>
 
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>付款 ID</th>
               <th>訂單 ID</th>
               <th>金額</th>
               <th>付款方式</th>
@@ -259,43 +194,50 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <tr v-if="loading">
               <td colspan="9" class="empty">資料讀取中……</td>
             </tr>
-            <tr v-for="payment in paginatedData" :key="payment.paymentId" v-else>
-              <td>{{ payment.paymentId }}</td>
-              <td>{{ payment.bookingId }}</td>
-              <td>{{ formatPrice(payment.amount) }}</td>
-              <td>{{ payment.paymentMethod }}</td>
-              <td>
-                <span class="status" :class="getStatusClass(payment.paymentStatus)">
-                  {{ payment.paymentStatus }}
-                </span>
-              </td>
-              <td>{{ payment.transactionId || "—" }}</td>
-              <td>{{ formatDateTimeShort(payment.createdAt) }}</td>
-              <td>{{ formatDateTimeShort(payment.paidAt) }}</td>
-              <td class="action-cell">
-                <button
-                  type="button"
-                  class="btn edit"
-                  @click="editPayment(payment)"
-                >
-                  修改
-                </button>
-              </td>
-            </tr>
-
-            <tr v-if="!loading && payments.length === 0">
-              <td colspan="9" class="empty">目前沒有付款紀錄</td>
-            </tr>
+            <template v-else>
+              <tr v-if="paginatedData.length === 0">
+                <td colspan="9" class="empty">查無符合條件的付款紀錄</td>
+              </tr>
+              <tr v-for="payment in paginatedData" :key="payment.paymentId">
+                <td>{{ payment.paymentId }}</td>
+                <td>{{ payment.bookingId }}</td>
+                <td>{{ formatPrice(payment.amount) }}</td>
+                <td>{{ payment.paymentMethod }}</td>
+                <td>
+                  <!-- 行內狀態修改 -->
+                  <template v-if="editingId === payment.paymentId">
+                    <select v-model="editingStatus" class="inline-select">
+                      <option v-for="s in paymentStatuses" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                  </template>
+                  <template v-else>
+                    <span class="status" :class="getStatusClass(payment.paymentStatus)">
+                      {{ payment.paymentStatus }}
+                    </span>
+                  </template>
+                </td>
+                <td>{{ payment.transactionId || "—" }}</td>
+                <td>{{ formatDateTimeShort(payment.createdAt) }}</td>
+                <td>{{ formatDateTimeShort(payment.paidAt) }}</td>
+                <td class="action-cell">
+                  <template v-if="editingId === payment.paymentId">
+                    <button type="button" class="btn save" @click="saveStatus(payment)">儲存</button>
+                    <button type="button" class="btn secondary-sm" @click="cancelEdit">取消</button>
+                  </template>
+                  <template v-else>
+                    <button type="button" class="btn edit" @click="startEdit(payment)">改狀態</button>
+                  </template>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
+      </div>
 
       <div class="pagination-container" v-if="totalPages > 1">
         <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
         <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
         <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
-      </div>
-  
-
       </div>
     </section>
   </main>
@@ -370,10 +312,11 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
   background: #feeceb;
 }
 
-.form-grid {
+.search-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr auto;
   gap: 18px;
+  align-items: end;
 }
 
 .form-group {
@@ -382,8 +325,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
   gap: 7px;
 }
 
-.full-width {
-  grid-column: 1 / -1;
+.align-end {
+  align-self: flex-end;
 }
 
 label {
@@ -391,8 +334,7 @@ label {
 }
 
 input,
-select,
-textarea {
+select {
   padding: 11px 12px;
   font: inherit;
   border: 1px solid #cfd4dc;
@@ -400,51 +342,22 @@ textarea {
 }
 
 input:focus,
-select:focus,
-textarea:focus {
+select:focus {
   border-color: #315b7d;
   outline: none;
 }
 
-.form-actions,
-.action-cell {
-  display: flex;
-  gap: 10px;
-}
-
-.form-actions {
-  margin-top: 20px;
-}
-
-.btn {
-  padding: 9px 15px;
-  color: white;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-}
-
-.primary {
-  background: #315b7d;
-}
-
-.secondary {
-  color: #344054;
-  background: #e4e7ec;
-}
-
-.edit {
-  background: #d59032;
-}
-
-.delete {
-  background: #c84040;
+.inline-select {
+  padding: 6px 8px;
+  font-size: 13px;
+  border-radius: 6px;
 }
 
 .table-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .table-wrapper {
@@ -491,27 +404,100 @@ tbody tr:hover td {
 .status {
   display: inline-block;
   min-width: 64px;
-  padding: 6px 12px;
-  color: #475467;
+  padding: 5px 12px;
   text-align: center;
   white-space: nowrap;
-  background-color: #f2f4f7;
   border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475467;
+  background-color: #f2f4f7;
 }
 
-.status.available {
+.status.paid {
   color: #087443;
   background-color: #e7f8ef;
 }
 
-.status.maintenance {
+.status.unpaid {
   color: #b42318;
   background-color: #feeceb;
 }
 
-.status.disabled {
+.status.refunded {
   color: #475467;
   background-color: #e4e7ec;
+}
+
+.action-cell {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  padding: 7px 12px;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.save {
+  background: #2e7d32;
+}
+
+.edit {
+  background: #d59032;
+}
+
+.secondary {
+  color: #344054;
+  background: #e4e7ec;
+}
+
+.secondary-sm {
+  padding: 7px 10px;
+  color: #344054;
+  background: #e4e7ec;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 15px;
+}
+
+.page-btn {
+  padding: 8px 16px;
+  background-color: #315b7d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: #264a63;
+}
+
+.page-btn:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-weight: 500;
+  color: #374151;
 }
 
 @media (max-width: 768px) {
@@ -519,13 +505,8 @@ tbody tr:hover td {
     padding: 16px;
   }
 
-  .form-grid {
+  .search-grid {
     grid-template-columns: 1fr;
   }
-
-  .full-width {
-    grid-column: auto;
-  }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 </style>

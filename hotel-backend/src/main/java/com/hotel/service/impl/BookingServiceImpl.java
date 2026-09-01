@@ -11,8 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hotel.model.dto.BookingDTO;
 import com.hotel.model.entity.Booking;
 import com.hotel.model.entity.Room;
+import com.hotel.model.entity.RoomType;
 import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomRepository;
+import com.hotel.repository.RoomTypeRepository;
 import com.hotel.repository.specification.BookingSpecification;
 import com.hotel.service.BookingService;
 
@@ -24,10 +26,13 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
+    private final RoomTypeRepository roomTypeRepository;
 
-    public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository) {
+    public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository,
+            RoomTypeRepository roomTypeRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
+        this.roomTypeRepository = roomTypeRepository;
     }
 
     @Override
@@ -61,6 +66,10 @@ public class BookingServiceImpl implements BookingService {
                 null
         );
         bookingDTO.setRoomId(assignedRoomId);
+
+        // 後端自動計算訂單金額：房型每晚單價 × 住宿天數，防止前端傳入不正確的金額
+        bookingDTO.setBookingPrice(calculateBookingPrice(bookingDTO.getRoomTypeId(),
+                bookingDTO.getCheckInDate(), bookingDTO.getCheckOutDate()));
 
         Booking booking = convertToEntity(bookingDTO);
         Booking savedBooking = bookingRepository.save(booking);
@@ -107,6 +116,12 @@ public class BookingServiceImpl implements BookingService {
         }
         if (newBookingData.getBookingStatus() != null) {
             existingBooking.setBookingStatus(newBookingData.getBookingStatus());
+        }
+
+        // 若日期或房型有變動，重新計算實際訂單金額
+        if (needReassign) {
+            existingBooking.setBookingPrice(
+                    calculateBookingPrice(targetRoomTypeId, targetCheckIn, targetCheckOut));
         }
 
         return convertToDTO(existingBooking);
@@ -160,6 +175,18 @@ public class BookingServiceImpl implements BookingService {
 
         // 4. 自動分發第一間空房
         return availableRooms.get(0).getRoomId();
+    }
+
+    /**
+     * 計算訂單金額 = 房型每晚單價 × 住宿天數
+     */
+    private Integer calculateBookingPrice(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate) {
+        if (roomTypeId == null || checkInDate == null || checkOutDate == null) return 0;
+        long nights = java.time.temporal.ChronoUnit.DAYS.between(checkInDate, checkOutDate);
+        if (nights <= 0) return 0;
+        RoomType roomType = roomTypeRepository.findById(roomTypeId).orElse(null);
+        if (roomType == null || roomType.getPricePerNight() == null) return 0;
+        return roomType.getPricePerNight() * (int) nights;
     }
 
     private BookingDTO convertToDTO(Booking booking) {
