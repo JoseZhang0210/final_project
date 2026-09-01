@@ -1,5 +1,7 @@
 package com.hotel.model.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,16 +12,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "room")
+@Table(name = "booking_payment")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Room {
+public class BookingPayment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer roomId;
-    private String roomNumber;
-    private Integer roomTypeId;
-    private Integer floor;
-    private String roomStatus;
+    private Integer paymentId;
+    private Integer bookingId;
+    private Integer amount;
+    private String paymentMethod;
+    private String paymentStatus;
+    private String transactionId;
+    private LocalDateTime createdAt;
+    private LocalDateTime paidAt;
 }

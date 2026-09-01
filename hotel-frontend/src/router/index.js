@@ -26,12 +26,12 @@ import AdminOrdersView from "../views/AdminOrdersView.vue";
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
 //---------------------------------------------------
-import RoomBookingOrderView from "../views/RoomBookingOrderView.vue";
 import RoomTypeManageView from "../views/RoomTypeManageView.vue";
 import RoomManageView from "../views/RoomManageView.vue";
 import RoomImageManageView from "../views/RoomImageManageView.vue";
 import RoomTaskManageView from "../views/RoomTaskManageView.vue";
 import RoomBookingManageView from "../views/RoomBookingManageView.vue";
+import BookingPaymentManageView from "../views/BookingPaymentManageView.vue";
 
 // ---------------購物車-------------------
 import CartView from "../views/CartView.vue";
@@ -102,11 +102,7 @@ const router = createRouter({
           component: ReservationManageView,
         },
         // ==========訂房==========
-        {
-          path: "room-booking-order",
-          name: "admin-roombookingorder",
-          component: RoomBookingOrderView,
-        },
+
         {
           path: "room-status",
           name: "admin-room-status",
@@ -131,6 +127,11 @@ const router = createRouter({
           path: "room-booking",
           name: "admin-room-booking",
           component: RoomBookingManageView,
+        },
+        {
+          path: "booking-payments",
+          name: "admin-booking-payments",
+          component: BookingPaymentManageView,
         },
         //===============================
         {
