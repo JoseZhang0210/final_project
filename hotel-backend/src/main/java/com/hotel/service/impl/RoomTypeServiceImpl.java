@@ -43,6 +43,14 @@ public class RoomTypeServiceImpl implements RoomTypeService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<RoomTypeDTO> findAllWithAvailability(LocalDate checkIn, LocalDate checkOut) {
+        return roomTypeRepository.findAll().stream()
+                .map(rt -> convertToDTOWithDates(rt, checkIn, checkOut))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<RoomTypeDTO> findOptionalById(Integer id) {
         return roomTypeRepository.findById(id).map(this::convertToDTO);
     }
@@ -86,9 +94,9 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         roomTypeRepository.deleteById(id);
     }
 
-    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
-        LocalDate today = LocalDate.now();
-        List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, today, today.plusDays(1));
+    // 查詢指定日期區間可用房間數
+    private Integer calculateAvailableRooms(Integer roomTypeId, LocalDate checkIn, LocalDate checkOut) {
+        List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, checkIn, checkOut);
         List<Room> allRooms = roomRepository.findByRoomTypeId(roomTypeId);
         return (int) allRooms.stream()
                 .filter(room -> !bookedRoomIds.contains(room.getRoomId()))
@@ -96,7 +104,18 @@ public class RoomTypeServiceImpl implements RoomTypeService {
                 .count();
     }
 
+    // 目前日可用數（給後台用）
+    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
+        LocalDate today = LocalDate.now();
+        return calculateAvailableRooms(roomTypeId, today, today.plusDays(1));
+    }
+
     private RoomTypeDTO convertToDTO(RoomType roomType) {
+        LocalDate today = LocalDate.now();
+        return convertToDTOWithDates(roomType, today, today.plusDays(1));
+    }
+
+    private RoomTypeDTO convertToDTOWithDates(RoomType roomType, LocalDate checkIn, LocalDate checkOut) {
         RoomTypeDTO dto = new RoomTypeDTO();
         dto.setRoomTypeId(roomType.getRoomTypeId());
         dto.setTypeName(roomType.getTypeName());
@@ -104,7 +123,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setCapacity(roomType.getCapacity());
         dto.setRoomDescription(roomType.getRoomDescription());
         dto.setPricePerNight(roomType.getPricePerNight());
-        dto.setAvailableRooms(calculateAvailableRoomsToday(roomType.getRoomTypeId()));
+        dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
         return dto;
     }
 

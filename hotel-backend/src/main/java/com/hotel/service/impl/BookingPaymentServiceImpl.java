@@ -43,6 +43,26 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
     public BookingPaymentDTO createPayment(BookingPaymentDTO bookingPaymentDTO) {
         BookingPayment payment = convertToEntity(bookingPaymentDTO);
         payment.setCreatedAt(LocalDateTime.now());
+
+        String method = payment.getPaymentMethod();
+        boolean isCash = "現金".equals(method);
+
+        if (isCash) {
+            // 現金付款：
+            // 1. 不可有交易序號（現金沒有經過金流閘道）
+            // 2. 預設狀態為「未付款」，等顧客到現場結帳後手動改狀態
+            payment.setTransactionId(null);
+            if (payment.getPaymentStatus() == null) {
+                payment.setPaymentStatus("未付款");
+            }
+        } else if (method != null) {
+            // 非現金（信用卡、LINE PAY、Apple PAY、銀行轉帳）：
+            // 代表已透過金流閘道完成付款，自動設為「已付款」並記錄付款時間
+            // transactionId 由前端從金流回呼 (callback) 傳入，或日後由綠界 webhook 寫入
+            payment.setPaymentStatus("已付款");
+            payment.setPaidAt(LocalDateTime.now());
+        }
+
         BookingPayment saved = bookingPaymentRepository.save(payment);
         return convertToDTO(saved);
     }
