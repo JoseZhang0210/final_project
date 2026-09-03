@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -58,7 +59,36 @@ public class MemberController {
     }
 
     // =========================================
-    // 3. 依 ID 查詢單一會員詳細資料
+    // 3. 會員讀取自己的個人資料（使用 JWT 識別）
+    // GET /api/members/me
+    // =========================================
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        MemberDTO dto = memberService.findByUsername(authentication.getName());
+        if (dto == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(dto);
+    }
+
+    // =========================================
+    // 4. 會員更新自己的個人資料（使用 JWT 識別）
+    // PUT /api/members/me
+    // =========================================
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMyProfile(
+            @RequestBody MemberDTO memberDTO,
+            Authentication authentication) {
+
+        MemberDTO updated = memberService.updateMemberByUsername(authentication.getName(), memberDTO);
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(updated);
+    }
+
+    // =========================================
+    // 5. 依 ID 查詢單一會員詳細資料
     // GET /api/members/{id}
     // 例如：GET /api/members/1
     // =========================================
