@@ -3,7 +3,7 @@
     <!-- Hero Section -->
     <div class="hero-section">
       <div class="hero-overlay"></div>
-      <img src="https://images.unsplash.com/photo-1542314831-c6a4d14ce8a1?q=80&w=2070&auto=format&fit=crop" alt="Hotel Exterior" class="hero-bg" />
+      <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945" alt="Hotel Exterior" class="hero-bg" />
       
       <div class="hero-content">
         <h4 class="subtitle">EXPERIENCE LUXURY</h4>
