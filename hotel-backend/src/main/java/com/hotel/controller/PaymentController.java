@@ -75,6 +75,7 @@ public class PaymentController {
                     .notFound()
                     .build();
         }
+        return ResponseEntity.ok(payment);
     }
 
     // =====================================================
