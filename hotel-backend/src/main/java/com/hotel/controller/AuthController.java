@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Account;
-import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
 import com.hotel.repository.ProfileRepository;
 import com.hotel.util.JwtUtils; // 確保有匯入您的 JwtUtils
