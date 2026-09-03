@@ -6845,3 +6845,66 @@ VALUES (2, NULL, NULL, 12000, N'待付款', 1)
 GO
 SET IDENTITY_INSERT [dbo].[rental_payment] OFF >> >> >> > a1a75996ad225216fcf2795e933e2c45374de82f
 GO
+   /* =========================================================
+    25. coupon 一些優惠券
+    ========================================================= */
+INSERT INTO dbo.coupon (
+      coupon_code,
+      coupon_name,
+      discount_type,
+      discount_value,
+      minimum_amount,
+      start_date,
+      end_date,
+      status
+   )
+VALUES (
+      N 'ANNIVERSARY90',
+      N'飯店滿周歲活動',
+      N 'PERCENT',
+      10,
+      0,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N'ACTIVE'
+   );
+INSERT INTO dbo.coupon (
+      coupon_code,
+      coupon_name,
+      discount_type,
+      discount_value,
+      minimum_amount,
+      start_date,
+      end_date,
+      status
+   )
+VALUES (
+      N'SAVE200',
+      N'滿兩千現折兩百',
+      N'FIXED',
+      200,
+      2000,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N'ACTIVE'
+   );
+INSERT INTO dbo.coupon (
+      coupon_code,
+      coupon_name,
+      discount_type,
+      discount_value,
+      minimum_amount,
+      start_date,
+      end_date,
+      status
+   )
+VALUES (
+      N'SUMMER100',
+      N'夏季優惠－百元折價券',
+      N'FIXED',
+      100,
+      0,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N 'INACTIVE'
+   );

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.CreateOrderRequest;
+import com.hotel.model.dto.MonthlyOrderStatisticsDTO;
+import com.hotel.model.dto.MonthlyProductSalesDTO;
 import com.hotel.model.dto.OrderDTO;
 import com.hotel.model.entity.CustomerOrder;
 import com.hotel.service.OrderService;
@@ -219,5 +221,35 @@ public class OrderApiController {
                 return ResponseEntity
                                 .noContent()
                                 .build();
+        }
+
+        // 9. 每月圖表統計
+        @GetMapping("/statistics/monthly")
+        public ResponseEntity<List<MonthlyOrderStatisticsDTO>> getMonthlyOrderStatistics() {
+
+                return ResponseEntity.ok(
+                                orderService
+                                                .getMonthlyOrderStatistics());
+
+        }
+        // =====================================================
+        // 10. 查詢指定月份商品銷售統計
+        //
+        // GET
+        // /api/orders/statistics/products?year=2026&month=9
+        // =====================================================
+
+        @GetMapping("/statistics/products")
+        public ResponseEntity<List<MonthlyProductSalesDTO>> getMonthlyProductSales(
+                        @RequestParam Integer year,
+                        @RequestParam Integer month) {
+
+                List<MonthlyProductSalesDTO> result = orderService
+                                .getMonthlyProductSales(
+                                                year,
+                                                month);
+
+                return ResponseEntity.ok(
+                                result);
         }
 }

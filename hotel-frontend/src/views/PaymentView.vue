@@ -355,7 +355,13 @@
               </span>
             </template>
           </button>
-
+          <div class="payment-warning">
+            <strong>付款前請再次確認</strong>
+            <p>
+              訂單付款完成後將進入備貨流程，
+              無法取消或修改訂單。
+            </p>
+          </div>
           <div class="payment-footer">
             <span>
               🔒

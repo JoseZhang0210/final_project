@@ -37,7 +37,8 @@ import RoomBookingManageView from "../views/RoomBookingManageView.vue";
 import CartView from "../views/CartView.vue";
 import CheckoutView from "../views/CheckoutView.vue";
 import PaymentView from "../views/PaymentView.vue";
-
+// ---------------優惠券-------------------
+import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 
 //--------------- 會員訂單管理 -----------------
 import MyOrdersView from "../views/MyOrdersView.vue";
@@ -92,7 +93,11 @@ const router = createRouter({
           name: "admin-orders",
           component: AdminOrdersView,
         },
-
+        {
+          path: "coupons",
+          name: "admin-coupons",
+          component: AdminCouponsView,
+        },
         {
           path: "restaurant-times",
           name: "admin-restaurant-times",
@@ -192,11 +197,6 @@ const router = createRouter({
           path: "payment/:orderId",
           name: "payment",
           component: PaymentView,
-        },
-        {
-          path: "/cart",
-          name: "cart",
-          component: CartView,
         },
         {
           path: "restaurant-menu",

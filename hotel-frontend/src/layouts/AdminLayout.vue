@@ -68,6 +68,9 @@
         <!-- 訂單管理 -->
         <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
 
+        <!-- 優惠券管理 -->
+        <RouterLink to="/admin/coupons"> 🎟 優惠券管理 </RouterLink>
+
         <!-- 場地管理 -->
         <RouterLink to="/admin/venues"> 🏛️場地管理 </RouterLink>
 

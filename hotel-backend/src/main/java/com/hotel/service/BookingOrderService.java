@@ -56,9 +56,9 @@ public class BookingOrderService {
         }
 
         // 2. 更新支付關聯 (對應 payment_id)
-        if (updatedOrder.getPayments() != null) {
-            existingOrder.setPayments(updatedOrder.getPayments());
-        }
+        // if (updatedOrder.getPayments() != null) {
+        // existingOrder.setPayments(updatedOrder.getPayments());
+        // }
 
         // 交易結束時 JPA 會自動進行比對並發送 UPDATE SQL，無須呼叫 save()
         return existingOrder;

@@ -58,7 +58,7 @@
           <p class="summary-note">
             實際優惠金額將由後端建立訂單時計算。
           </p>
-
+          
           <button
             type="button"
             class="checkout-button"

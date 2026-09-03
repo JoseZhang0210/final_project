@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.dto.CreateOrderItemRequest;
+import com.hotel.model.dto.MonthlyOrderStatisticsDTO;
 import com.hotel.model.dto.OrderDTO;
 import com.hotel.model.dto.OrderItemDTO;
 import com.hotel.model.entity.Coupon;
@@ -15,16 +16,17 @@ import com.hotel.model.entity.CustomerOrder;
 import com.hotel.model.entity.Member;
 import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.OrderItemId;
+import com.hotel.model.entity.Payment;
 import com.hotel.model.entity.Product;
 import com.hotel.model.entity.Profile;
-import com.hotel.model.entity.Payment;
-import com.hotel.repository.PaymentRepository;
 import com.hotel.repository.CouponRepository;
 import com.hotel.repository.CustomerOrderRepository;
 import com.hotel.repository.MemberRepository;
 import com.hotel.repository.OrderItemRepository;
+import com.hotel.repository.PaymentRepository;
 import com.hotel.repository.ProductRepository;
 import com.hotel.repository.ProfileRepository;
+import com.hotel.model.dto.MonthlyProductSalesDTO;
 
 @Service
 public class OrderService {
@@ -51,11 +53,17 @@ public class OrderService {
                         PaymentRepository paymentRepository) {
 
                 this.customerOrderRepository = customerOrderRepository;
+
                 this.orderItemRepository = orderItemRepository;
+
                 this.productRepository = productRepository;
+
                 this.memberRepository = memberRepository;
+
                 this.profileRepository = profileRepository;
+
                 this.couponRepository = couponRepository;
+
                 this.paymentRepository = paymentRepository;
         }
 
@@ -101,7 +109,8 @@ public class OrderService {
                         return null;
                 }
 
-                return convertToDTO(order);
+                return convertToDTO(
+                                order);
         }
 
         // =====================================================
@@ -112,7 +121,8 @@ public class OrderService {
                         Integer orderId) {
 
                 return orderItemRepository
-                                .findByOrderId(orderId);
+                                .findByOrderId(
+                                                orderId);
         }
 
         // =====================================================
@@ -145,14 +155,16 @@ public class OrderService {
                 // 會員檢查
                 // ==============================
 
-                if (memberId == null
-                                || memberId <= 0) {
+                if (memberId == null ||
+                                memberId <= 0) {
 
                         throw new IllegalArgumentException(
                                         "會員資料不能為空");
                 }
 
-                if (!memberRepository.existsById(memberId)) {
+                if (!memberRepository
+                                .existsById(
+                                                memberId)) {
 
                         throw new IllegalArgumentException(
                                         "找不到會員");
@@ -162,8 +174,8 @@ public class OrderService {
                 // 商品檢查
                 // ==============================
 
-                if (items == null
-                                || items.isEmpty()) {
+                if (items == null ||
+                                items.isEmpty()) {
 
                         throw new IllegalArgumentException(
                                         "訂單不能沒有商品");
@@ -184,7 +196,8 @@ public class OrderService {
                         }
 
                         if (requestItem.getQuantity() == null
-                                        || requestItem.getQuantity() < 1) {
+                                        ||
+                                        requestItem.getQuantity() < 1) {
 
                                 throw new IllegalArgumentException(
                                                 "購買數量至少為 1");
@@ -192,12 +205,14 @@ public class OrderService {
 
                         Product product = productRepository
                                         .findById(
-                                                        requestItem.getProductId())
+                                                        requestItem
+                                                                        .getProductId())
                                         .orElseThrow(
                                                         () -> new IllegalArgumentException(
                                                                         "找不到商品"));
 
-                        if (!isProductActive(product)) {
+                        if (!isProductActive(
+                                        product)) {
 
                                 throw new IllegalArgumentException(
                                                 product.getProductName()
@@ -205,7 +220,8 @@ public class OrderService {
                         }
 
                         if (product.getStock() == null
-                                        || product.getStock() < requestItem.getQuantity()) {
+                                        ||
+                                        product.getStock() < requestItem.getQuantity()) {
 
                                 throw new IllegalArgumentException(
                                                 product.getProductName()
@@ -213,7 +229,9 @@ public class OrderService {
                         }
 
                         originalAmount += product.getPrice()
-                                        * requestItem.getQuantity();
+                                        *
+                                        requestItem
+                                                        .getQuantity();
                 }
 
                 // ==============================
@@ -225,11 +243,16 @@ public class OrderService {
                 int discountAmount = 0;
 
                 if (couponCode != null
-                                && !couponCode.isBlank()) {
+                                &&
+                                !couponCode.isBlank()) {
+
+                        String normalizedCouponCode = couponCode
+                                        .trim()
+                                        .toUpperCase();
 
                         Coupon coupon = couponRepository
                                         .findByCouponCode(
-                                                        couponCode.trim())
+                                                        normalizedCouponCode)
                                         .orElseThrow(
                                                         () -> new IllegalArgumentException(
                                                                         "優惠券不存在"));
@@ -252,7 +275,8 @@ public class OrderService {
                 int finalAmount = Math.max(
                                 0,
                                 originalAmount
-                                                - discountAmount);
+                                                -
+                                                discountAmount);
 
                 // ==============================
                 // 建立 Order
@@ -278,7 +302,7 @@ public class OrderService {
                 order.setCouponId(
                                 couponId);
 
-                // 尚未付款
+                // 尚未建立付款資料
                 order.setPaymentId(
                                 null);
 
@@ -286,7 +310,8 @@ public class OrderService {
                                 "PENDING");
 
                 order = customerOrderRepository
-                                .save(order);
+                                .save(
+                                                order);
 
                 // ==============================
                 // 建立 OrderItem + 扣庫存
@@ -296,16 +321,20 @@ public class OrderService {
 
                         Product product = productRepository
                                         .findById(
-                                                        requestItem.getProductId())
+                                                        requestItem
+                                                                        .getProductId())
                                         .orElseThrow(
                                                         () -> new IllegalArgumentException(
                                                                         "找不到商品"));
 
-                        Integer quantity = requestItem.getQuantity();
+                        Integer quantity = requestItem
+                                        .getQuantity();
 
                         Integer unitPrice = product.getPrice();
 
-                        Integer subtotal = unitPrice * quantity;
+                        Integer subtotal = unitPrice
+                                        *
+                                        quantity;
 
                         OrderItem item = new OrderItem();
 
@@ -318,7 +347,7 @@ public class OrderService {
                         item.setQuantity(
                                         quantity);
 
-                        // 記錄下單當時價格
+                        // 記錄下單時價格
                         item.setUnitPrice(
                                         unitPrice);
 
@@ -326,18 +355,21 @@ public class OrderService {
                                         subtotal);
 
                         orderItemRepository
-                                        .save(item);
+                                        .save(
+                                                        item);
 
                         // 扣庫存
                         product.setStock(
                                         product.getStock()
-                                                        - quantity);
+                                                        -
+                                                        quantity);
 
                         updateProductStockStatus(
                                         product);
 
                         productRepository
-                                        .save(product);
+                                        .save(
+                                                        product);
                 }
 
                 return order;
@@ -345,8 +377,6 @@ public class OrderService {
 
         // =====================================================
         // 6. 查詢全部訂單 DTO
-        //
-        // 後台訂單管理
         // =====================================================
 
         public List<OrderDTO> getAllOrderDTOs() {
@@ -359,7 +389,8 @@ public class OrderService {
                 for (CustomerOrder order : orders) {
 
                         result.add(
-                                        convertToDTO(order));
+                                        convertToDTO(
+                                                        order));
                 }
 
                 return result;
@@ -367,21 +398,21 @@ public class OrderService {
 
         // =====================================================
         // 7. 查詢會員自己的訂單
-        //
-        // MyOrdersView 使用
         // =====================================================
 
         public List<OrderDTO> getOrdersByMemberId(
                         Integer memberId) {
 
-                if (memberId == null
-                                || memberId <= 0) {
+                if (memberId == null ||
+                                memberId <= 0) {
 
                         throw new IllegalArgumentException(
                                         "會員編號錯誤");
                 }
 
-                if (!memberRepository.existsById(memberId)) {
+                if (!memberRepository
+                                .existsById(
+                                                memberId)) {
 
                         throw new IllegalArgumentException(
                                         "找不到會員");
@@ -396,7 +427,8 @@ public class OrderService {
                 for (CustomerOrder order : orders) {
 
                         result.add(
-                                        convertToDTO(order));
+                                        convertToDTO(
+                                                        order));
                 }
 
                 return result;
@@ -405,7 +437,9 @@ public class OrderService {
         // =====================================================
         // 8. 修改訂單商品數量
         //
-        // 僅 PENDING 可修改
+        // 僅：
+        // Order = PENDING
+        // Payment != PAID
         // =====================================================
 
         @Transactional
@@ -414,22 +448,49 @@ public class OrderService {
                         Integer productId,
                         Integer quantity) {
 
-                if (quantity == null
-                                || quantity < 1) {
+                // ==============================
+                // 數量檢查
+                // ==============================
+
+                if (quantity == null ||
+                                quantity < 1) {
 
                         throw new IllegalArgumentException(
                                         "數量至少為 1");
                 }
 
+                // ==============================
+                // 訂單
+                // ==============================
+
                 CustomerOrder order = getOrderById(
                                 orderId);
+
+                // ==============================
+                // 狀態檢查
+                // ==============================
 
                 if (!"PENDING".equals(
                                 order.getOrderStatus())) {
 
                         throw new IllegalArgumentException(
-                                        "只有待處理訂單可以修改商品");
+                                        "只有待付款訂單可以修改商品");
                 }
+
+                // ==============================
+                // 已付款不可修改
+                // ==============================
+
+                if (isOrderPaid(
+                                order)) {
+
+                        throw new IllegalArgumentException(
+                                        "訂單已付款，無法修改商品");
+                }
+
+                // ==============================
+                // 訂單商品
+                // ==============================
 
                 OrderItemId id = new OrderItemId(
                                 orderId,
@@ -441,8 +502,13 @@ public class OrderService {
                                                 () -> new IllegalArgumentException(
                                                                 "找不到訂單商品"));
 
+                // ==============================
+                // 商品
+                // ==============================
+
                 Product product = productRepository
-                                .findById(productId)
+                                .findById(
+                                                productId)
                                 .orElseThrow(
                                                 () -> new IllegalArgumentException(
                                                                 "找不到商品"));
@@ -450,16 +516,23 @@ public class OrderService {
                 int oldQuantity = item.getQuantity();
 
                 int difference = quantity
-                                - oldQuantity;
+                                -
+                                oldQuantity;
+
+                // 沒有變更
+                if (difference == 0) {
+                        return;
+                }
 
                 // ==============================
-                // 數量增加
+                // 增加數量
                 // ==============================
 
                 if (difference > 0) {
 
                         if (product.getStock() == null
-                                        || product.getStock() < difference) {
+                                        ||
+                                        product.getStock() < difference) {
 
                                 throw new IllegalArgumentException(
                                                 "商品庫存不足");
@@ -467,18 +540,24 @@ public class OrderService {
 
                         product.setStock(
                                         product.getStock()
-                                                        - difference);
+                                                        -
+                                                        difference);
                 }
 
                 // ==============================
-                // 數量減少
+                // 減少數量
                 // ==============================
 
                 if (difference < 0) {
 
+                        int currentStock = product.getStock() == null
+                                        ? 0
+                                        : product.getStock();
+
                         product.setStock(
-                                        product.getStock()
-                                                        + Math.abs(
+                                        currentStock
+                                                        +
+                                                        Math.abs(
                                                                         difference));
                 }
 
@@ -494,16 +573,19 @@ public class OrderService {
 
                 item.setSubtotal(
                                 item.getUnitPrice()
-                                                * quantity);
+                                                *
+                                                quantity);
 
                 orderItemRepository
-                                .save(item);
+                                .save(
+                                                item);
 
                 productRepository
-                                .save(product);
+                                .save(
+                                                product);
 
                 // ==============================
-                // 重新計算訂單金額
+                // 重算訂單金額
                 // ==============================
 
                 recalculateOrderAmount(
@@ -513,7 +595,11 @@ public class OrderService {
         // =====================================================
         // 9. 刪除訂單商品
         //
-        // 僅 PENDING 可修改
+        // 僅：
+        // Order = PENDING
+        // Payment != PAID
+        //
+        // 訂單至少保留一個商品
         // =====================================================
 
         @Transactional
@@ -524,12 +610,45 @@ public class OrderService {
                 CustomerOrder order = getOrderById(
                                 orderId);
 
+                // ==============================
+                // 狀態
+                // ==============================
+
                 if (!"PENDING".equals(
                                 order.getOrderStatus())) {
 
                         throw new IllegalArgumentException(
-                                        "只有待處理訂單可以修改商品");
+                                        "只有待付款訂單可以修改商品");
                 }
+
+                // ==============================
+                // 已付款
+                // ==============================
+
+                if (isOrderPaid(
+                                order)) {
+
+                        throw new IllegalArgumentException(
+                                        "訂單已付款，無法刪除商品");
+                }
+
+                // ==============================
+                // 至少保留一項商品
+                // ==============================
+
+                List<OrderItem> currentItems = orderItemRepository
+                                .findByOrderId(
+                                                orderId);
+
+                if (currentItems.size() <= 1) {
+
+                        throw new IllegalArgumentException(
+                                        "訂單至少需要保留一項商品，如不需要此訂單請取消訂單");
+                }
+
+                // ==============================
+                // 找訂單商品
+                // ==============================
 
                 OrderItemId id = new OrderItemId(
                                 orderId,
@@ -541,8 +660,13 @@ public class OrderService {
                                                 () -> new IllegalArgumentException(
                                                                 "找不到訂單商品"));
 
+                // ==============================
+                // 找商品
+                // ==============================
+
                 Product product = productRepository
-                                .findById(productId)
+                                .findById(
+                                                productId)
                                 .orElseThrow(
                                                 () -> new IllegalArgumentException(
                                                                 "找不到商品"));
@@ -551,46 +675,36 @@ public class OrderService {
                 // 庫存補回
                 // ==============================
 
+                int currentStock = product.getStock() == null
+                                ? 0
+                                : product.getStock();
+
                 product.setStock(
-                                product.getStock()
-                                                + item.getQuantity());
+                                currentStock
+                                                +
+                                                item.getQuantity());
 
                 updateProductStockStatus(
                                 product);
 
                 productRepository
-                                .save(product);
+                                .save(
+                                                product);
+
+                // ==============================
+                // 刪除訂單商品
+                // ==============================
 
                 orderItemRepository
-                                .delete(item);
+                                .delete(
+                                                item);
+
+                orderItemRepository
+                                .flush();
 
                 // ==============================
-                // 是否已無商品
+                // 重算訂單
                 // ==============================
-
-                List<OrderItem> remainingItems = orderItemRepository
-                                .findByOrderId(
-                                                orderId);
-
-                if (remainingItems.isEmpty()) {
-
-                        order.setOriginalAmount(
-                                        0);
-
-                        order.setDiscountAmount(
-                                        0);
-
-                        order.setFinalAmount(
-                                        0);
-
-                        order.setCouponId(
-                                        null);
-
-                        customerOrderRepository
-                                        .save(order);
-
-                        return;
-                }
 
                 recalculateOrderAmount(
                                 order);
@@ -598,6 +712,10 @@ public class OrderService {
 
         // =====================================================
         // 10. 取消訂單
+        //
+        // 僅：
+        // Order = PENDING
+        // Payment != PAID
         //
         // 取消後補回庫存
         // =====================================================
@@ -609,12 +727,20 @@ public class OrderService {
                 CustomerOrder order = getOrderById(
                                 orderId);
 
+                // ==============================
+                // 已完成
+                // ==============================
+
                 if ("COMPLETED".equals(
                                 order.getOrderStatus())) {
 
                         throw new IllegalArgumentException(
                                         "已完成訂單不能取消");
                 }
+
+                // ==============================
+                // 已取消
+                // ==============================
 
                 if ("CANCELLED".equals(
                                 order.getOrderStatus())) {
@@ -623,22 +749,62 @@ public class OrderService {
                                         "訂單已經取消");
                 }
 
+                // ==============================
+                // 只有 PENDING
+                // ==============================
+
+                if (!"PENDING".equals(
+                                order.getOrderStatus())) {
+
+                        throw new IllegalArgumentException(
+                                        "此訂單目前無法取消");
+                }
+
+                // ==============================
+                // 已付款不可取消
+                // ==============================
+
+                if (isOrderPaid(
+                                order)) {
+
+                        throw new IllegalArgumentException(
+                                        "訂單已完成付款，無法取消");
+                }
+
+                // ==============================
+                // 補回庫存
+                // ==============================
+
                 restoreOrderStock(
                                 orderId);
+
+                // ==============================
+                // 改狀態
+                // ==============================
 
                 order.setOrderStatus(
                                 "CANCELLED");
 
                 customerOrderRepository
-                                .save(order);
+                                .save(
+                                                order);
         }
 
         // =====================================================
         // 11. 後台修改訂單狀態
         //
-        // PENDING
+        // 正常流程：
+        //
+        // PENDING + PAID
+        // ↓
         // COMPLETED
+        //
+        // PENDING + 未付款
+        // ↓
         // CANCELLED
+        //
+        // COMPLETED / CANCELLED
+        // 都視為終態
         // =====================================================
 
         @Transactional
@@ -649,25 +815,39 @@ public class OrderService {
                 CustomerOrder order = getOrderById(
                                 orderId);
 
-                if (status == null
-                                || status.isBlank()) {
+                // ==============================
+                // status 基本檢查
+                // ==============================
+
+                if (status == null ||
+                                status.isBlank()) {
 
                         throw new IllegalArgumentException(
                                         "訂單狀態不能為空");
                 }
 
-                String newStatus = status.trim()
+                String newStatus = status
+                                .trim()
                                 .toUpperCase();
 
-                if (!"PENDING".equals(newStatus)
-                                && !"COMPLETED".equals(newStatus)
-                                && !"CANCELLED".equals(newStatus)) {
+                if (!"PENDING".equals(
+                                newStatus)
+                                &&
+                                !"COMPLETED".equals(
+                                                newStatus)
+                                &&
+                                !"CANCELLED".equals(
+                                                newStatus)) {
 
                         throw new IllegalArgumentException(
                                         "不支援的訂單狀態");
                 }
 
                 String oldStatus = order.getOrderStatus();
+
+                // ==============================
+                // 無變更
+                // ==============================
 
                 if (newStatus.equals(
                                 oldStatus)) {
@@ -676,40 +856,92 @@ public class OrderService {
                 }
 
                 // ==============================
-                // 非取消 → 取消
-                // 補回庫存
+                // 已完成不能改
                 // ==============================
 
-                if ("CANCELLED".equals(newStatus)
-                                && !"CANCELLED".equals(oldStatus)) {
+                if ("COMPLETED".equals(
+                                oldStatus)) {
+
+                        throw new IllegalArgumentException(
+                                        "已完成訂單不能再變更狀態");
+                }
+
+                // ==============================
+                // 已取消不能恢復
+                // ==============================
+
+                if ("CANCELLED".equals(
+                                oldStatus)) {
+
+                        throw new IllegalArgumentException(
+                                        "已取消訂單不能恢復");
+                }
+
+                // ==============================
+                // PENDING → COMPLETED
+                // 必須已付款
+                // ==============================
+
+                if ("COMPLETED".equals(
+                                newStatus)) {
+
+                        if (!isOrderPaid(
+                                        order)) {
+
+                                throw new IllegalArgumentException(
+                                                "訂單尚未付款，不能完成訂單");
+                        }
+
+                        order.setOrderStatus(
+                                        "COMPLETED");
+
+                        customerOrderRepository
+                                        .save(
+                                                        order);
+
+                        return;
+                }
+
+                // ==============================
+                // PENDING → CANCELLED
+                // 已付款不可取消
+                // ==============================
+
+                if ("CANCELLED".equals(
+                                newStatus)) {
+
+                        if (isOrderPaid(
+                                        order)) {
+
+                                throw new IllegalArgumentException(
+                                                "訂單已付款，無法取消");
+                        }
 
                         restoreOrderStock(
                                         orderId);
+
+                        order.setOrderStatus(
+                                        "CANCELLED");
+
+                        customerOrderRepository
+                                        .save(
+                                                        order);
+
+                        return;
                 }
 
                 // ==============================
-                // 取消 → 其他
-                // 重新扣庫存
+                // 其他轉換不允許
                 // ==============================
 
-                if ("CANCELLED".equals(oldStatus)
-                                && !"CANCELLED".equals(newStatus)) {
-
-                        deductOrderStock(
-                                        orderId);
-                }
-
-                order.setOrderStatus(
-                                newStatus);
-
-                customerOrderRepository
-                                .save(order);
+                throw new IllegalArgumentException(
+                                "不允許的訂單狀態變更");
         }
 
         // =====================================================
         // 12. 清除測試訂單
         //
-        // 僅測試用
+        // 僅測試使用
         // =====================================================
 
         @Transactional
@@ -775,8 +1007,10 @@ public class OrderService {
                                 coupon.getDiscountType())) {
 
                         discountAmount = originalAmount
-                                        * coupon.getDiscountValue()
-                                        / 100;
+                                        *
+                                        coupon.getDiscountValue()
+                                        /
+                                        100;
                 }
 
                 // 固定金額
@@ -828,15 +1062,18 @@ public class OrderService {
 
                         if (coupon != null) {
 
+                                LocalDateTime now = LocalDateTime.now();
+
                                 boolean couponStillValid = "ACTIVE".equals(
                                                 coupon.getStatus())
-                                                && !LocalDateTime.now()
-                                                                .isBefore(
-                                                                                coupon.getStartDate())
-                                                && !LocalDateTime.now()
-                                                                .isAfter(
-                                                                                coupon.getEndDate())
-                                                && originalAmount >= coupon.getMinimumAmount();
+                                                &&
+                                                !now.isBefore(
+                                                                coupon.getStartDate())
+                                                &&
+                                                !now.isAfter(
+                                                                coupon.getEndDate())
+                                                &&
+                                                originalAmount >= coupon.getMinimumAmount();
 
                                 if (couponStillValid) {
 
@@ -846,6 +1083,7 @@ public class OrderService {
 
                                 } else {
 
+                                        // 修改訂單後不再符合優惠券
                                         order.setCouponId(
                                                         null);
                                 }
@@ -867,10 +1105,12 @@ public class OrderService {
                                 Math.max(
                                                 0,
                                                 originalAmount
-                                                                - discountAmount));
+                                                                -
+                                                                discountAmount));
 
                 customerOrderRepository
-                                .save(order);
+                                .save(
+                                                order);
         }
 
         // =====================================================
@@ -901,74 +1141,47 @@ public class OrderService {
 
                         product.setStock(
                                         currentStock
-                                                        + item.getQuantity());
+                                                        +
+                                                        item.getQuantity());
 
                         updateProductStockStatus(
                                         product);
 
                         productRepository
-                                        .save(product);
+                                        .save(
+                                                        product);
                 }
         }
 
         // =====================================================
-        // 17. CANCELLED → 其他狀態
-        //
-        // 重新扣庫存
+        // 17. 是否已付款
         // =====================================================
 
-        private void deductOrderStock(
-                        Integer orderId) {
+        private boolean isOrderPaid(
+                        CustomerOrder order) {
 
-                List<OrderItem> items = orderItemRepository
-                                .findByOrderId(
-                                                orderId);
+                if (order == null) {
 
-                // ==============================
-                // 先檢查全部商品庫存
-                // ==============================
-
-                for (OrderItem item : items) {
-
-                        Product product = productRepository
-                                        .findById(
-                                                        item.getProductId())
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "找不到商品"));
-
-                        if (product.getStock() == null
-                                        || product.getStock() < item.getQuantity()) {
-
-                                throw new IllegalArgumentException(
-                                                product.getProductName()
-                                                                + "庫存不足，無法恢復訂單");
-                        }
+                        return false;
                 }
 
-                // ==============================
-                // 確認後再扣庫存
-                // ==============================
+                if (order.getPaymentId() == null) {
 
-                for (OrderItem item : items) {
-
-                        Product product = productRepository
-                                        .findById(
-                                                        item.getProductId())
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "找不到商品"));
-
-                        product.setStock(
-                                        product.getStock()
-                                                        - item.getQuantity());
-
-                        updateProductStockStatus(
-                                        product);
-
-                        productRepository
-                                        .save(product);
+                        return false;
                 }
+
+                Payment payment = paymentRepository
+                                .findById(
+                                                order.getPaymentId())
+                                .orElse(null);
+
+                if (payment == null) {
+
+                        return false;
+                }
+
+                return "PAID".equals(
+                                payment.getPaymentStatus());
         }
 
         // =====================================================
@@ -979,7 +1192,8 @@ public class OrderService {
                         Product product) {
 
                 if (product.getStock() != null
-                                && product.getStock() <= 0) {
+                                &&
+                                product.getStock() <= 0) {
 
                         product.setStatus(
                                         "OUT_OF_STOCK");
@@ -1001,18 +1215,18 @@ public class OrderService {
 
                 String status = product.getStatus();
 
-                return "ACTIVE".equals(status)
-                                || "上架".equals(status)
-                                || "上架中".equals(status);
+                return "ACTIVE".equals(
+                                status)
+                                ||
+                                "上架".equals(
+                                                status)
+                                ||
+                                "上架中".equals(
+                                                status);
         }
 
         // =====================================================
         // 20. CustomerOrder → OrderDTO
-        //
-        // GET 全部訂單
-        // GET 單筆訂單
-        // GET 我的訂單
-        // 全部共用這個方法
         // =====================================================
 
         private OrderDTO convertToDTO(
@@ -1081,10 +1295,15 @@ public class OrderService {
                         Integer subtotal = item.getSubtotal();
 
                         OrderItemDTO itemDTO = new OrderItemDTO(
+
                                         item.getProductId(),
+
                                         product.getProductName(),
+
                                         unitPrice,
+
                                         quantity,
+
                                         subtotal);
 
                         itemDTOs.add(
@@ -1111,7 +1330,7 @@ public class OrderService {
                 }
 
                 // =====================================================
-                // 4. 建立 OrderDTO
+                // 4. OrderDTO
                 // =====================================================
 
                 return new OrderDTO(
@@ -1119,11 +1338,15 @@ public class OrderService {
                                 order.getOrderId(),
 
                                 memberName,
+
                                 memberPhone,
+
                                 memberEmail,
 
                                 order.getOriginalAmount(),
+
                                 order.getDiscountAmount(),
+
                                 order.getFinalAmount(),
 
                                 order.getOrderStatus(),
@@ -1135,4 +1358,86 @@ public class OrderService {
                                 itemDTOs);
         }
 
+        public List<MonthlyOrderStatisticsDTO> getMonthlyOrderStatistics() {
+
+                List<Object[]> rows = customerOrderRepository
+                                .findMonthlyOrderStatistics();
+
+                List<MonthlyOrderStatisticsDTO> result = new ArrayList<>();
+
+                for (Object[] row : rows) {
+
+                        Integer year = ((Number) row[0])
+                                        .intValue();
+
+                        Integer month = ((Number) row[1])
+                                        .intValue();
+
+                        Long orderCount = ((Number) row[2])
+                                        .longValue();
+
+                        Long totalRevenue = ((Number) row[3])
+                                        .longValue();
+
+                        result.add(
+                                        new MonthlyOrderStatisticsDTO(
+                                                        year,
+                                                        month,
+                                                        orderCount,
+                                                        totalRevenue));
+                }
+
+                return result;
+        }
+
+        public List<MonthlyProductSalesDTO> getMonthlyProductSales(
+                        Integer year,
+                        Integer month) {
+
+                if (year == null ||
+                                year < 2000) {
+
+                        throw new IllegalArgumentException(
+                                        "年份格式錯誤");
+                }
+
+                if (month == null ||
+                                month < 1 ||
+                                month > 12) {
+
+                        throw new IllegalArgumentException(
+                                        "月份必須介於 1 到 12");
+                }
+
+                List<Object[]> rows = customerOrderRepository
+                                .findMonthlyProductSales(
+                                                year,
+                                                month);
+
+                List<MonthlyProductSalesDTO> result = new ArrayList<>();
+
+                for (Object[] row : rows) {
+
+                        Integer productId = ((Number) row[0])
+                                        .intValue();
+
+                        String productName = String.valueOf(
+                                        row[1]);
+
+                        Long quantitySold = ((Number) row[2])
+                                        .longValue();
+
+                        Long salesAmount = ((Number) row[3])
+                                        .longValue();
+
+                        result.add(
+                                        new MonthlyProductSalesDTO(
+                                                        productId,
+                                                        productName,
+                                                        quantitySold,
+                                                        salesAmount));
+                }
+
+                return result;
+        }
 }

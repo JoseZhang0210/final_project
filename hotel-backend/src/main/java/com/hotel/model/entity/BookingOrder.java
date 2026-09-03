@@ -69,9 +69,9 @@ public class BookingOrder {
 
     // ====================多關聯性Payment,Booking
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "bookingOrder")
-    private List<Payment> payments = new ArrayList<>();
+    // @JsonIgnore
+    // @OneToMany(mappedBy = "bookingOrder")
+    // private List<Payment> payments = new ArrayList<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "bookingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
