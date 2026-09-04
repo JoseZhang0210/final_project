@@ -10,4 +10,6 @@ public interface BookingPaymentService {
     Optional<BookingPaymentDTO> findById(Integer paymentId);
     BookingPaymentDTO createPayment(BookingPaymentDTO bookingPaymentDTO);
     BookingPaymentDTO updatePaymentStatus(Integer id, String status);
+    BookingPaymentDTO findByBookingId(Integer bookingId);
+    BookingPaymentDTO update(Integer id, BookingPaymentDTO dto);
 }

@@ -16,8 +16,10 @@ const formTitle = ref("新增房間");
 const form = ref(createEmptyForm());
 
 const roomStatuses = [
-  "可入住",
+  "可預訂",
+  "已預訂",
   "已入住",
+  "退房待清潔",
   "清潔中",
   "維修中",
   "停用",
@@ -29,7 +31,7 @@ function createEmptyForm() {
     roomNumber: "",
     roomTypeId: "",
     floor: 1,
-    roomStatus: "可入住",
+    roomStatus: "可預訂",
   };
 }
 
@@ -155,7 +157,7 @@ async function deleteRoom(id) {
 
 function getStatusClass(status) {
   return {
-    available: status === "可入住",
+    available: status === "可預訂",
     reserved: status === "已預訂",
     occupied: status === "已入住",
     "checkout-cleaning": status === "退房待清潔",

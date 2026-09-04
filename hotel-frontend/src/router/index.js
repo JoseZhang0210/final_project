@@ -213,14 +213,19 @@ const router = createRouter({
           component: () => import("../views/AboutView.vue"),
         },
         {
-          path: "/room-booking",
-          name: "hotel-booking",
-          component: () => import("../views/HotelBookingView.vue"),
+          path: '/room-booking',
+          name: 'room-booking',
+          component: () => import('../views/HotelBookingView.vue')
         },
         {
-          path: "/room-booking/select",
-          name: "room-selection",
-          component: () => import("../views/RoomSelectionView.vue"),
+          path: '/room-selection',
+          name: 'room-selection',
+          component: () => import('../views/RoomSelectionView.vue')
+        },
+        {
+          path: '/checkout',
+          name: 'checkout',
+          component: () => import('../views/CheckoutView.vue')
         },
         {
           path: "my-orders",

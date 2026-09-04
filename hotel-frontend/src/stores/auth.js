@@ -9,9 +9,10 @@ export const useAuthStore = defineStore('auth', () => {
             : []
     )
     const name = ref(localStorage.getItem('name') || '')
+    const memberId = ref(localStorage.getItem('memberId') ? Number(localStorage.getItem('memberId')) : null)
 
     // 登入成功時呼叫
-    function login(token, userAuthorities, userName) {
+    function login(token, userAuthorities, userName, userMemberId) {
         // 確保傳進來的 userAuthorities 是一組陣列（防呆）
         const authArray = Array.isArray(userAuthorities) ? userAuthorities : [userAuthorities];
 
@@ -24,6 +25,12 @@ export const useAuthStore = defineStore('auth', () => {
         // 儲存使用者姓名
         const displayName = userName || ''
         localStorage.setItem('name', displayName)
+        
+        // 儲存 memberId (如果有)
+        if (userMemberId != null) {
+            localStorage.setItem('memberId', String(userMemberId))
+            memberId.value = userMemberId
+        }
         
         // 更新 Pinia 狀態
         isLoggedIn.value = true
@@ -41,12 +48,15 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem("authorities");
         // 清除姓名
         localStorage.removeItem("name");
+        // 清除 memberId
+        localStorage.removeItem("memberId");
 
         isLoggedIn.value = false
         authorities.value = []
         name.value = ''
+        memberId.value = null
         console.log("已登出，JWT 已清除");
     }
 
-    return { isLoggedIn, authorities, name, login, logout }
+    return { isLoggedIn, authorities, name, memberId, login, logout }
 })

@@ -32,7 +32,7 @@
         <div class="search-field">
           <label>人數 / Guests</label>
           <select v-model="searchData.guests">
-            <option v-for="n in 6" :key="n" :value="n">{{ n }} 位貴賓</option>
+            <option v-for="n in 4" :key="n" :value="n">{{ n }} 位貴賓</option>
           </select>
         </div>
         
@@ -59,7 +59,7 @@ const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 const searchData = ref({
   checkIn: today,
   checkOut: tomorrow,
-  guests: 2
+  guests: 1
 });
 
 const minCheckOut = computed(() => {

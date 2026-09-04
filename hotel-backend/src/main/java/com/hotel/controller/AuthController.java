@@ -19,6 +19,7 @@ import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
 import com.hotel.repository.ProfileRepository;
+import com.hotel.repository.MemberRepository;
 import com.hotel.util.JwtUtils; // 確保有匯入您的 JwtUtils
 
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class AuthController {
     private final UserDetailsService userDetailsService; // 1. 注入 Spring Security 的 UserDetailsService
     private final JwtUtils jwtUtils; // 2. 注入您的 JWT 工具類別
     private final ProfileRepository profileRepository;
+    private final MemberRepository memberRepository;
 
     @PostMapping("/register")
     public ResponseEntity<Account> createAccount(@RequestBody Account account) {
@@ -82,6 +84,15 @@ public class AuthController {
         response.put("token", token);
         response.put("authorities", authorities);
         response.put("name", name);
+        
+        // 查詢當前登入帳號對應的 member_id
+        Profile profile = profileRepository.findByUsername(user.getUsername()).orElse(null);
+        if (profile != null) {
+            memberRepository.findByAccountId(profile.getAccountId()).ifPresent(member -> {
+                response.put("memberId", member.getMemberId());
+            });
+        }
+        
         return ResponseEntity.ok(response);
     }
 }

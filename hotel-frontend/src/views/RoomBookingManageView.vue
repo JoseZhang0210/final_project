@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { bookingApi } from "@/api/bookingApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
@@ -329,10 +329,28 @@ function formatPrice(price) {
   }).format(price || 0);
 }
 
+let refreshInterval = null;
+
 onMounted(async () => {
   await loadSelectOptions();
   await loadBookings();
+
+  // 每分鐘自動重新拉取資料
+  refreshInterval = setInterval(() => {
+    loadBookings();
+  }, 60000);
 });
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
+
+function setTabStatus(status) {
+  searchCriteria.value.bookingStatus = status;
+  loadBookings();
+}
 
 const currentPage = ref(1);
 const itemsPerPage = 20;
@@ -508,6 +526,15 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       <div class="table-header">
         <h2>訂房明細列表</h2>
         <span>共 {{ bookings.length }} 筆</span>
+      </div>
+
+      <!-- 快速狀態切換 -->
+      <div class="status-tabs">
+        <button type="button" :class="{ active: searchCriteria.bookingStatus === '' }" @click="setTabStatus('')">全部</button>
+        <button type="button" :class="{ active: searchCriteria.bookingStatus === '待入住' }" @click="setTabStatus('待入住')">待入住</button>
+        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已入住' }" @click="setTabStatus('已入住')">已入住</button>
+        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已完成' }" @click="setTabStatus('已完成')">已完成</button>
+        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已取消' }" @click="setTabStatus('已取消')">已取消</button>
       </div>
 
       <div class="table-wrapper">
@@ -702,7 +729,32 @@ td {
 }
 
 th {
+  color: #344054;
+  background: #f2f4f7;
+}
+
+.status-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.status-tabs button {
+  padding: 8px 16px;
+  border: 1px solid #cfd4dc;
   background: #f8fafc;
+  color: #475467;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.status-tabs button:hover {
+  background: #f1f5f9;
+}
+.status-tabs button.active {
+  background: #315b7d;
+  color: white;
+  border-color: #315b7d;
 }
 
 @media (max-width: 768px) {

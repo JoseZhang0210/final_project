@@ -7,9 +7,7 @@
       <div class="step-line"></div>
       <div class="step active">❷ 選房</div>
       <div class="step-line"></div>
-      <div class="step">❸ 確認</div>
-      <div class="step-line"></div>
-      <div class="step">❹ 結帳</div>
+      <div class="step">❸ 確認 & 結帳</div>
     </div>
     
     <!-- Header Title -->
@@ -27,6 +25,11 @@
           <h3>星澄飯店 • {{ rooms.length }} TYPES OF ROOMS</h3>
         </div>
 
+        <div v-if="isSameDayBooking" class="same-day-notice">
+          <span class="icon">⚠️</span> 
+          <span>今日入住請留意：部分房間可能仍在清潔中，統一於 <strong>下午 3 點</strong> 後方可辦理入住，敬請見諒。</span>
+        </div>
+
         <div v-if="loading" class="loading-state">
           正在查詢可用房型...
         </div>
@@ -36,8 +39,7 @@
         
         <div v-for="room in rooms" :key="room.roomTypeId" class="room-card">
           <div class="room-image-area">
-            <!-- 假設之後有圖，先放佔位 -->
-            <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop" :alt="room.typeName" />
+            <img :src="room.mainImageUrl ? `http://localhost:8081${room.mainImageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop'" :alt="room.typeName" />
             <div class="image-count">☐ 照片</div>
           </div>
           
@@ -45,11 +47,9 @@
             <h4 class="room-name">{{ room.typeName }}</h4>
             <div class="features">
               <span class="feature"><i class="icon">🛏️</i> {{ room.bedType }}</span>
-              <span class="feature"><i class="icon">👥</i> 最多 {{ room.capacity }} 人</span>
-              <span class="feature"><i class="icon">🏠</i> 剩餘 {{ room.availableRooms }} 間</span>
+              <span class="feature"><i class="icon">👥</i> {{ guests }} 人入住</span>
             </div>
             <p class="room-desc">{{ room.roomDescription }}</p>
-            <a href="#" class="details-link">Room details</a>
           </div>
           
           <div class="room-price-area">
@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { roomTypeApi } from '../api/roomTypeApi';
 
@@ -116,6 +116,15 @@ const guests = ref(Number(route.query.guests) || 2);
 const rooms = ref([]);
 const loading = ref(true);
 
+const isSameDayBooking = computed(() => {
+  if (!checkIn.value) return false;
+  // Use local date string format for accurate today comparison
+  const today = new Date();
+  const tzOffset = today.getTimezoneOffset() * 60000;
+  const localToday = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+  return checkIn.value === localToday;
+});
+
 onMounted(async () => {
   if (!checkIn.value || !checkOut.value) {
     router.push('/room-booking');
@@ -128,8 +137,8 @@ async function fetchRooms() {
   loading.value = true;
   try {
     const data = await roomTypeApi.getAvailableRoomTypes(checkIn.value, checkOut.value);
-    // 只顯示容量足夠的房型
-    rooms.value = data.filter(r => r.capacity >= guests.value);
+    // 隱藏客滿房型，且只顯示容量足夠的房型
+    rooms.value = data.filter(r => r.capacity >= guests.value && r.availableRooms > 0);
   } catch (error) {
     console.error("無法取得房型資料", error);
   } finally {
@@ -138,8 +147,17 @@ async function fetchRooms() {
 }
 
 function selectRoom(room) {
-  // TODO: 跳出確認視窗，然後呼叫 POST /api/bookings 建立訂單，接著導向綠界付款
-  alert(`您選擇了：${room.typeName}，即將進入確認與結帳流程...`);
+  router.push({
+    path: '/checkout',
+    query: {
+      roomTypeId: room.roomTypeId,
+      roomName: room.typeName,
+      checkIn: checkIn.value,
+      checkOut: checkOut.value,
+      guests: guests.value,
+      price: room.pricePerNight // 簡化：先用單晚價格當總價，實務上應乘以天數
+    }
+  });
 }
 </script>
 
@@ -153,6 +171,19 @@ function selectRoom(room) {
   font-family: 'Inter', sans-serif;
   color: #2C1810;
   background-color: #fcfcfc;
+}
+
+.same-day-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fff4e5;
+  color: #b54708;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #f79009;
+  font-size: 0.95rem;
 }
 
 /* Step Bar */

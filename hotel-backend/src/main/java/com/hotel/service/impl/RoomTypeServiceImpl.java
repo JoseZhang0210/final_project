@@ -25,12 +25,14 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
+    private final com.hotel.repository.RoomImageRepository roomImageRepository;
 
     public RoomTypeServiceImpl(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository, com.hotel.repository.RoomImageRepository roomImageRepository) {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
+        this.roomImageRepository = roomImageRepository;
     }
 
     @Override
@@ -82,6 +84,9 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         if (updatedRoomTypeDTO.getPricePerNight() != null) {
             existingRoomType.setPricePerNight(updatedRoomTypeDTO.getPricePerNight());
         }
+        if (updatedRoomTypeDTO.getAvailableRooms() != null) {
+            existingRoomType.setAvailableRooms(updatedRoomTypeDTO.getAvailableRooms());
+        }
 
         return convertToDTO(existingRoomType);
     }
@@ -98,6 +103,7 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     private Integer calculateAvailableRooms(Integer roomTypeId, LocalDate checkIn, LocalDate checkOut) {
         List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, checkIn, checkOut);
         List<Room> allRooms = roomRepository.findByRoomTypeId(roomTypeId);
+        
         return (int) allRooms.stream()
                 .filter(room -> !bookedRoomIds.contains(room.getRoomId()))
                 .filter(room -> !"停用".equals(room.getRoomStatus()) && !"維修中".equals(room.getRoomStatus()))
@@ -105,14 +111,32 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     // 目前日可用數（給後台用）
+    // 目前日可用數（給內部備用，若有需要）
     private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
         LocalDate today = LocalDate.now();
         return calculateAvailableRooms(roomTypeId, today, today.plusDays(1));
     }
 
     private RoomTypeDTO convertToDTO(RoomType roomType) {
-        LocalDate today = LocalDate.now();
-        return convertToDTOWithDates(roomType, today, today.plusDays(1));
+        RoomTypeDTO dto = new RoomTypeDTO();
+        dto.setRoomTypeId(roomType.getRoomTypeId());
+        dto.setTypeName(roomType.getTypeName());
+        dto.setBedType(roomType.getBedType());
+        dto.setCapacity(roomType.getCapacity());
+        dto.setRoomDescription(roomType.getRoomDescription());
+        dto.setPricePerNight(roomType.getPricePerNight());
+        // 後台管理列表：直接顯示資料庫中的原始設定數量
+        dto.setAvailableRooms(roomType.getAvailableRooms());
+        // 動態計算今日可用數 (從今日到明日)
+        dto.setTodayAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), LocalDate.now(), LocalDate.now().plusDays(1)));
+        
+        // 載入主圖
+        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        if (!images.isEmpty()) {
+            dto.setMainImageUrl(images.get(0).getPath());
+        }
+        
+        return dto;
     }
 
     private RoomTypeDTO convertToDTOWithDates(RoomType roomType, LocalDate checkIn, LocalDate checkOut) {
@@ -124,6 +148,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setRoomDescription(roomType.getRoomDescription());
         dto.setPricePerNight(roomType.getPricePerNight());
         dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
+        
+        // 載入主圖
+        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        if (!images.isEmpty()) {
+            dto.setMainImageUrl(images.get(0).getPath());
+        }
+        
         return dto;
     }
 

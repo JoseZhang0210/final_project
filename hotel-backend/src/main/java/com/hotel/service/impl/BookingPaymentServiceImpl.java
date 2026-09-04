@@ -78,6 +78,28 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
         return convertToDTO(payment);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public BookingPaymentDTO findByBookingId(Integer bookingId) {
+        return bookingPaymentRepository.findByBookingId(bookingId)
+                .map(this::convertToDTO)
+                .orElse(null);
+    }
+
+    @Override
+    public BookingPaymentDTO update(Integer id, BookingPaymentDTO dto) {
+        BookingPayment payment = bookingPaymentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到付款紀錄 ID: " + id));
+        
+        payment.setAmount(dto.getAmount());
+        payment.setPaymentMethod(dto.getPaymentMethod());
+        payment.setPaymentStatus(dto.getPaymentStatus());
+        payment.setTransactionId(dto.getTransactionId());
+        payment.setPaidAt(dto.getPaidAt());
+        
+        return convertToDTO(payment);
+    }
+
     private BookingPaymentDTO convertToDTO(BookingPayment payment) {
         BookingPaymentDTO dto = new BookingPaymentDTO();
         dto.setPaymentId(payment.getPaymentId());

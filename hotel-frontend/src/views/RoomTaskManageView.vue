@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
 import { fetchClient } from "@/api/apiClient"; // for employees API
@@ -10,6 +10,7 @@ const employees = ref([]);
 
 // 核心資料列表
 const roomTasks = ref([]);
+const currentTime = ref(new Date());
 
 // 下拉選單選項（與資料庫值對應）
 const priorities = ["一般", "重要", "緊急"];
@@ -303,8 +304,34 @@ function getStatusClass(status) {
   };
 }
 
+function isTaskLate(task) {
+  const status = task.taskStatus ?? task.task_status;
+  if (status === "已完成" || status === "已取消") return false;
+
+  const hours = currentTime.value.getHours();
+  const minutes = currentTime.value.getMinutes();
+
+  if (hours > 13 || (hours === 13 && minutes >= 30)) {
+    return true;
+  }
+  return false;
+}
+
+let refreshInterval = null;
+
 onMounted(async () => {
   await Promise.all([loadRoomTasks(), loadRooms(), loadEmployees()]);
+
+  refreshInterval = setInterval(() => {
+    currentTime.value = new Date();
+    loadRoomTasks();
+  }, 60000);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
 const currentPage = ref(1);
@@ -552,7 +579,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               </td>
             </tr>
 
-            <tr v-for="task in paginatedData" :key="task.taskId ?? task.task_id">
+            <tr v-for="task in paginatedData" :key="task.taskId ?? task.task_id" :class="{'late-warning': isTaskLate(task)}">
               <td>{{ task.taskId ?? task.task_id }}</td>
               <td>{{ getRoomNumber(task.roomId ?? task.room_id) }}</td>
               <td>
@@ -786,6 +813,14 @@ th {
 .cancelled {
   color: #b42318;
   background: #feeceb;
+}
+
+tr.late-warning td {
+  background-color: #fff1f0 !important;
+  border-bottom: 1px solid #ffa39e;
+}
+tr.late-warning:hover td {
+  background-color: #ffccc7 !important;
 }
 
 @media (max-width: 768px) {
