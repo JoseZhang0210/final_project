@@ -148,7 +148,7 @@ async function fetchRooms() {
 
 function selectRoom(room) {
   router.push({
-    name: 'checkout',
+    name: 'room-checkout',
     query: {
       roomTypeId: room.roomTypeId,
       roomName: room.typeName,
