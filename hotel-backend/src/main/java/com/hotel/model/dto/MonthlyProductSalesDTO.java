@@ -1,6 +1,5 @@
-package com.hotel.model.entity;
+package com.hotel.model.dto;
 
-import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,8 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemId implements Serializable {
+public class MonthlyProductSalesDTO {
 
-    private Integer orderId;
     private Integer productId;
+
+    private String productName;
+
+    private Long quantitySold;
+
+    private Long salesAmount;
 }

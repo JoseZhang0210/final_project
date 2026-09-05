@@ -223,8 +223,6 @@ GO
    目前你的 FK 是 employee.account_id
    所以下面的 employee_id 使用 1、2、3、4
    ========================================================= */
-  SET IDENTITY_INSERT [dbo].[employee_permission] ON;
-GO
 INSERT INTO employee_permission (permission_id, employee_id)
 VALUES
     -- Emp 1: 總經理 / 管理員 (擁有全部 5 項權限)
@@ -462,8 +460,6 @@ GO
    =========================================================
    =========================================================
    ========================================================= */
-TRUNCATE TABLE room;
-GO
 
 INSERT INTO room (room_number, room_type_id, floor, room_status) VALUES
 (N'10501', 1, 5, N'退房待清潔'),
@@ -650,21 +646,6 @@ GO
 SET IDENTITY_INSERT [dbo].[Product] OFF
 GO
 
-
-/* =========================================================
-   13. payment (已廢棄，後端不再使用獨立的 payment 表格)
-   =========================================================
-   =========================================================
-   ========================================================= */
--- INSERT INTO payment
---     ( payment_method)
--- VALUES
--- ( N'Apple PAY'),
--- ( N'LINE PAY'),
--- ( N'信用卡'),
--- ( N'現金'),
--- ( N'銀行轉帳');
--- GO
 
 
 /* =========================================================
@@ -1768,73 +1749,238 @@ GO
 
 
 /* =========================================================
-   20. rental
+   20. rental_payment 供 rental 使用的 payment
    =========================================================
    =========================================================
    ========================================================= */
-SET IDENTITY_INSERT [dbo].[employee_permission] OFF;
+SET IDENTITY_INSERT [dbo].[rental_payment] ON;
 GO
+INSERT INTO [dbo].[rental_payment] ([payment_id], [payment_method], [payment_time], [total_price], [payment_status], [member_id])
+VALUES
+(1, NULL, NULL, 50000, N'待付款', 1),
+(2, NULL, NULL, 12000, N'待付款', 1);
+GO
+SET IDENTITY_INSERT [dbo].[rental_payment] OFF;
+GO
+
+
+/* =========================================================
+   21. rental
+   =========================================================
+   =========================================================
+   ========================================================= */
 SET IDENTITY_INSERT [dbo].[rental] ON;
 GO
 INSERT INTO rental
     (rental_id, venue_id, member_id, event_name,
      rental_date, guest_count, payment_id, rental_status)
 VALUES
-(1, 1, 1, N'公司尾牙',
- '2026-12-20 18:00:00', 200, 1, N'已確認'),
-
-(2, 2, 2, N'公司會議',
- '2026-09-15 09:00:00', 40, 2, N'已確認');
+(1, 1, 1, N'公司尾牙', '2026-12-20 18:00:00', 200, 1, N'已確認'),
+(2, 2, 2, N'公司會議', '2026-09-15 09:00:00', 40, 2, N'已確認');
 GO
-
-
-/* =========================================================
-   21. order
-   =========================================================
-   =========================================================
-   ========================================================= */
 SET IDENTITY_INSERT [dbo].[rental] OFF;
 GO
+
+
+/* =========================================================
+   22. payment (商城訂單金流紀錄)
+   =========================================================
+   =========================================================
+   ========================================================= */
+SET IDENTITY_INSERT [dbo].[payment] ON;
+GO
+INSERT INTO dbo.payment (
+      payment_id,
+      member_id,
+      payment_method,
+      transaction_id,
+      total_price,
+      payment_status,
+      payment_time,
+      created_at
+   )
+VALUES (
+      1,
+      1,
+      N'信用卡',
+      N'TEST-PAY-001',
+      7600,
+      N'PAID',
+      '2026-08-10 15:30:00',
+      '2026-08-10 15:20:00'
+   ),
+   (
+      2,
+      2,
+      N'LINE PAY',
+      N'TEST-PAY-002',
+      3200,
+      N'PAID',
+      '2026-08-11 12:20:00',
+      '2026-08-11 12:10:00'
+   ),
+   (
+      3,
+      3,
+      N'信用卡',
+      N'TEST-PAY-003',
+      5200,
+      N'PENDING',
+      NULL,
+      '2026-08-12 10:00:00'
+   ),
+   (
+      4,
+      1,
+      N'現金',
+      N'TEST-PAY-004',
+      450,
+      N'PAID',
+      '2026-08-13 19:00:00',
+      '2026-08-13 18:50:00'
+   ),
+   (
+      5,
+      4,
+      N'信用卡',
+      N'TEST-PAY-005',
+      14600,
+      N'PAID',
+      '2026-08-18 13:45:00',
+      '2026-08-18 13:30:00'
+   );
+GO
+SET IDENTITY_INSERT [dbo].[payment] OFF;
+GO
+
+
+/* =========================================================
+   23. coupon (商城優惠券)
+   =========================================================
+   =========================================================
+   ========================================================= */
+SET IDENTITY_INSERT [dbo].[coupon] ON;
+GO
+INSERT INTO dbo.coupon (
+      coupon_id,
+      coupon_code,
+      coupon_name,
+      discount_type,
+      discount_value,
+      minimum_amount,
+      start_date,
+      end_date,
+      status
+   )
+VALUES (
+      1,
+      N'ANNIVERSARY90',
+      N'飯店滿周歲活動',
+      N'PERCENT',
+      10,
+      0,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N'ACTIVE'
+   ),
+   (
+      2,
+      N'SAVE200',
+      N'滿兩千現折兩百',
+      N'FIXED',
+      200,
+      2000,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N'ACTIVE'
+   ),
+   (
+      3,
+      N'SUMMER100',
+      N'夏季優惠－百元折價券',
+      N'FIXED',
+      100,
+      0,
+      '2026-09-01T00:00:00',
+      '2026-12-31T23:59:59',
+      N'INACTIVE'
+   );
+GO
+SET IDENTITY_INSERT [dbo].[coupon] OFF;
+GO
+
+
+/* =========================================================
+   24. order (商城訂單)
+   =========================================================
+   =========================================================
+   ========================================================= */
 SET IDENTITY_INSERT [dbo].[order] ON;
 GO
-INSERT INTO [order]
-    (order_id, member_id, order_date, is_ordered, payment_id)
-VALUES
-(1, 1, '2026-08-10 15:20:00', 1, 1),
-(2, 2, '2026-08-11 12:10:00', 1, 2),
-(3, 1, '2026-08-13 18:50:00', 1, 4);
+INSERT INTO dbo.[order] (
+      order_id,
+      member_id,
+      order_date,
+      original_amount,
+      discount_amount,
+      final_amount,
+      coupon_id,
+      payment_id,
+      order_status
+   )
+VALUES (
+      1,
+      1,
+      '2026-08-10 15:20:00',
+      1999,
+      199,
+      1800,
+      1,
+      1,
+      N'COMPLETED'
+   ),
+   (
+      2,
+      2,
+      '2026-08-11 12:10:00',
+      700,
+      0,
+      700,
+      NULL,
+      2,
+      N'PENDING'
+   ),
+   (
+      3,
+      1,
+      '2026-08-13 18:50:00',
+      350,
+      50,
+      300,
+      NULL,
+      4,
+      N'CANCELLED'
+   );
 GO
-
-
-/* =========================================================
-   22. order_item
-   =========================================================
-   =========================================================
-   ========================================================= */
 SET IDENTITY_INSERT [dbo].[order] OFF;
 GO
-SET IDENTITY_INSERT [dbo].[order_item] ON;
-GO
-INSERT INTO order_item
-    (order_id, product_id, quantity)
-VALUES
-(1, 1, 4),
-(1, 2, 1),
-(2, 1, 2),
-(3, 1, 1);
-GO
 
 
 /* =========================================================
-   24. rental_payment 供 rental 使用的 payment
+   25. order_item (商城訂單明細)
    =========================================================
    =========================================================
    ========================================================= */
-SET IDENTITY_INSERT [dbo].[rental_payment] ON 
-GO
-INSERT [dbo].[rental_payment] ([payment_id], [payment_method], [payment_time], [total_price], [payment_status], [member_id]) VALUES (1, NULL, NULL, 50000, N'待付款', 1)
-GO
-INSERT [dbo].[rental_payment] ([payment_id], [payment_method], [payment_time], [total_price], [payment_status], [member_id]) VALUES (2, NULL, NULL, 12000, N'待付款', 1)
-GO
-SET IDENTITY_INSERT [dbo].[rental_payment] OFF
+INSERT INTO dbo.order_item (
+      order_id,
+      product_id,
+      quantity,
+      unit_price,
+      subtotal
+   )
+VALUES
+   (1, 1, 4, 350, 1400),
+   (1, 2, 1, 599, 599),
+   (2, 1, 2, 350, 700),
+   (3, 1, 1, 350, 350);
 GO
