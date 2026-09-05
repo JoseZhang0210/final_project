@@ -417,30 +417,20 @@ async function loadOrders() {
 
   try {
 
-    const savedMemberId =
+    const token =
       localStorage.getItem(
-        "memberId"
+        "token"
       );
 
-    const memberId =
-      savedMemberId
-        ? Number(savedMemberId)
-        : null;
-
-
-    if (
-      !memberId ||
-      memberId <= 0
-    ) {
+    if (!token) {
       throw new Error(
-        "找不到登入會員資料，請使用會員帳號登入"
+        "請使用會員帳號登入後再查看訂單"
       );
     }
 
-
     const response =
       await fetch(
-        `/api/orders/member/${memberId}`,
+        "/api/orders/mine",
         {
           method: "GET",
           headers:

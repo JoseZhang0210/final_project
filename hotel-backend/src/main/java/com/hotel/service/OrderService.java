@@ -17,8 +17,10 @@ import com.hotel.model.entity.Member;
 import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.OrderItemId;
 import com.hotel.model.entity.Payment;
+import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Product;
 import com.hotel.model.entity.Profile;
+import com.hotel.repository.AccountRepository;
 import com.hotel.repository.CouponRepository;
 import com.hotel.repository.CustomerOrderRepository;
 import com.hotel.repository.MemberRepository;
@@ -26,9 +28,13 @@ import com.hotel.repository.OrderItemRepository;
 import com.hotel.repository.PaymentRepository;
 import com.hotel.repository.ProductRepository;
 import com.hotel.repository.ProfileRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import com.hotel.model.dto.MonthlyProductSalesDTO;
 
 @Service
+@RequiredArgsConstructor
 public class OrderService {
 
         private final CustomerOrderRepository customerOrderRepository;
@@ -38,39 +44,11 @@ public class OrderService {
         private final ProfileRepository profileRepository;
         private final CouponRepository couponRepository;
         private final PaymentRepository paymentRepository;
-
-        // =====================================================
-        // Constructor
-        // =====================================================
-
-        public OrderService(
-                        CustomerOrderRepository customerOrderRepository,
-                        OrderItemRepository orderItemRepository,
-                        ProductRepository productRepository,
-                        MemberRepository memberRepository,
-                        ProfileRepository profileRepository,
-                        CouponRepository couponRepository,
-                        PaymentRepository paymentRepository) {
-
-                this.customerOrderRepository = customerOrderRepository;
-
-                this.orderItemRepository = orderItemRepository;
-
-                this.productRepository = productRepository;
-
-                this.memberRepository = memberRepository;
-
-                this.profileRepository = profileRepository;
-
-                this.couponRepository = couponRepository;
-
-                this.paymentRepository = paymentRepository;
-        }
+        private final AccountRepository accountRepository;
 
         // =====================================================
         // 1. 查詢全部訂單 Entity
         // =====================================================
-
         public List<CustomerOrder> getAllOrders() {
 
                 return customerOrderRepository
@@ -432,6 +410,48 @@ public class OrderService {
                 }
 
                 return result;
+        }
+
+        // =====================================================
+        // 7-1. 透過帳號解析 memberId (供 Controller JWT 使用)
+        // =====================================================
+
+        public Integer resolveMemberId(String username) {
+                if (username == null || username.isBlank()) {
+                        throw new IllegalArgumentException("無法取得目前登入帳號");
+                }
+
+                Account account = accountRepository.findByUsername(username.trim());
+                if (account == null) {
+                        throw new IllegalArgumentException("找不到使用者帳號：" + username);
+                }
+
+                Member member = memberRepository.findByAccountId(account.getAccountId())
+                                .orElseThrow(() -> new IllegalArgumentException("此登入帳號尚未建立會員資料，無法進行訂單操作"));
+
+                return member.getMemberId();
+        }
+
+        // =====================================================
+        // 7-2. 透過登入帳號查詢會員訂單
+        // =====================================================
+
+        public List<OrderDTO> getOrdersByUsername(String username) {
+                Integer memberId = resolveMemberId(username);
+                return getOrdersByMemberId(memberId);
+        }
+
+        // =====================================================
+        // 7-3. 透過登入帳號建立訂單
+        // =====================================================
+
+        @Transactional
+        public CustomerOrder createOrderForUser(
+                        String username,
+                        String couponCode,
+                        List<CreateOrderItemRequest> items) {
+                Integer memberId = resolveMemberId(username);
+                return createOrder(memberId, couponCode, items);
         }
 
         // =====================================================

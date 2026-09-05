@@ -117,17 +117,15 @@ async function createOrder() {
     return;
   }
 
-  const memberId = Number(
-    localStorage.getItem("memberId"),
-  );
+  const token = localStorage.getItem("token");
 
-  if (!memberId) {
-    alert("找不到登入會員資料，請重新登入");
+  if (!token) {
+    alert("請使用會員帳號登入後再結帳");
+    router.push("/login");
     return;
   }
 
   const requestBody = {
-    memberId,
 
     couponCode:
       couponCode.value.trim() === ""

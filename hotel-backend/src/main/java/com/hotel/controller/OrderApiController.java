@@ -1,8 +1,11 @@
 package com.hotel.controller;
 
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -77,54 +80,89 @@ public class OrderApiController {
         // POST /api/orders
         //
         // 購物車按下「確認結帳」時使用
-        //
-        // Request：
-        //
-        // {
-        // "memberId": 1,
-        // "couponCode": null,
-        // "items": [
-        // {
-        // "productId": 1,
-        // "quantity": 2
-        // }
-        // ]
-        // }
-        //
-        // 建立完成：
-        //
-        // order_status = PENDING
+        // 若 request.memberId 為空，會自動由 JWT Authentication 解析
         // =====================================================
 
         @PostMapping
-        public ResponseEntity<CustomerOrder> createOrder(
-                        @RequestBody CreateOrderRequest request) {
+        public ResponseEntity<?> createOrder(
+                        @RequestBody CreateOrderRequest request,
+                        Authentication authentication) {
 
-                CustomerOrder order = orderService.createOrder(
-                                request.getMemberId(),
-                                request.getCouponCode(),
-                                request.getItems());
+                Integer memberId = request.getMemberId();
+                if (memberId == null || memberId <= 0) {
+                        if (authentication == null || authentication.getName() == null) {
+                                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                                .body(Map.of("message", "尚未登入或登入已失效，請重新登入"));
+                        }
+                        try {
+                                memberId = orderService.resolveMemberId(authentication.getName());
+                        } catch (IllegalArgumentException e) {
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("message", e.getMessage()));
+                        }
+                }
 
-                return ResponseEntity.ok(order);
+                try {
+                        CustomerOrder order = orderService.createOrder(
+                                        memberId,
+                                        request.getCouponCode(),
+                                        request.getItems());
+
+                        return ResponseEntity.ok(order);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", e.getMessage()));
+                }
         }
 
         // =====================================================
-        // 4. 查詢會員自己的訂單
+        // 4-1. 查詢目前登入會員自己的訂單 (依 JWT Token)
         //
-        // GET /api/orders/member/1
+        // GET /api/orders/mine
         //
         // MyOrdersView 使用
         // =====================================================
 
+        @GetMapping("/mine")
+        public ResponseEntity<?> getMyOrders(Authentication authentication) {
+                if (authentication == null || authentication.getName() == null) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                        .body(Map.of("message", "尚未登入或登入已失效，請重新登入"));
+                }
+                try {
+                        List<OrderDTO> orders = orderService.getOrdersByUsername(authentication.getName());
+                        return ResponseEntity.ok(orders);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", e.getMessage()));
+                }
+        }
+
+        // =====================================================
+        // 4-2. 查詢特定會員自己的訂單
+        //
+        // GET /api/orders/member/1 或 GET /api/orders/member/me
+        // =====================================================
+
         @GetMapping("/member/{memberId}")
-        public ResponseEntity<List<OrderDTO>> getMemberOrders(
-                        @PathVariable Integer memberId) {
+        public ResponseEntity<?> getMemberOrders(
+                        @PathVariable String memberId,
+                        Authentication authentication) {
 
-                List<OrderDTO> orders = orderService
-                                .getOrdersByMemberId(
-                                                memberId);
+                if ("me".equalsIgnoreCase(memberId)) {
+                        return getMyOrders(authentication);
+                }
 
-                return ResponseEntity.ok(orders);
+                try {
+                        Integer id = Integer.parseInt(memberId);
+                        List<OrderDTO> orders = orderService
+                                        .getOrdersByMemberId(id);
+
+                        return ResponseEntity.ok(orders);
+                } catch (NumberFormatException e) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", "無效的會員編號"));
+                }
         }
 
         // =====================================================

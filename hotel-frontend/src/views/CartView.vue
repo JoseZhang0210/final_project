@@ -930,38 +930,20 @@ async function submitOrder() {
 
 
   // ==============================
-  // 2. 登入會員
+  // 2. 登入檢查 (memberId 由後端 JWT 解析)
   // ==============================
 
-  const savedMemberId =
+  const token =
     localStorage.getItem(
-      "memberId"
+      "token"
     );
 
-
-  const memberId =
-    savedMemberId
-      ? Number(
-          savedMemberId
-        )
-      : null;
-
-
-  console.log(
-    "目前登入會員 memberId：",
-    memberId
-  );
-
-
-  if (
-    !memberId ||
-    memberId <= 0
-  ) {
-
+  if (!token) {
     alert(
-      "此帳號沒有會員資料，請使用會員帳號登入後再結帳"
+      "請使用會員帳號登入後再結帳"
     );
 
+    router.push("/login");
     return;
   }
 
@@ -1014,8 +996,6 @@ async function submitOrder() {
     // ==============================
 
     const requestBody = {
-
-      memberId,
 
       couponCode:
         appliedCouponCode.value ||
