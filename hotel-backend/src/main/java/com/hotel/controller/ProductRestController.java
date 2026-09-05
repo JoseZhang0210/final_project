@@ -158,6 +158,9 @@ public class ProductRestController {
                                 formProduct
                                                 .getImageUrl());
 
+                /*
+                 * 更新商品狀態ㄋ
+                 */
                 existingProduct.setStatus(
                                 formProduct
                                                 .getStatus());
