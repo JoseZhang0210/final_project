@@ -41,9 +41,17 @@
           <div class="field-content">
             <label>What are your dates?</label>
             <div class="date-inputs">
-              <input type="date" v-model="searchData.checkIn" :min="today" @change="validateDates" />
-              <span class="arrow">→</span>
-              <input type="date" v-model="searchData.checkOut" :min="minCheckOut" />
+              <VueDatePicker 
+                v-model="dateRange" 
+                range 
+                multi-calendars 
+                :max-range="30" 
+                :min-date="today" 
+                :enable-time-picker="false"
+                dark
+                hide-input-icon
+                placeholder="Select dates"
+              />
             </div>
           </div>
         </div>
@@ -62,42 +70,33 @@
           CHECK RATES
         </button>
       </div>
-      <div class="special-rates">
-        Special Rates & Accessibility <span class="arrow-down">⌄</span>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Date validation
-const today = new Date().toISOString().split('T')[0];
-const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+// Date validation - fix timezone issue
+const now = new Date();
+const offset = now.getTimezoneOffset() * 60000;
+const localNow = new Date(now.getTime() - offset);
+const today = localNow;
+
+const tomorrowDate = new Date(localNow.getTime() + 86400000);
+
+const dateRange = ref([today, tomorrowDate]);
 
 const searchData = ref({
-  checkIn: today,
-  checkOut: tomorrow,
   guests: 1
 });
-
-const minCheckOut = computed(() => {
-  if (!searchData.value.checkIn) return tomorrow;
-  const inDate = new Date(searchData.value.checkIn);
-  return new Date(inDate.getTime() + 86400000).toISOString().split('T')[0];
-});
-
-function validateDates() {
-  if (searchData.value.checkIn >= searchData.value.checkOut) {
-    searchData.value.checkOut = minCheckOut.value;
-  }
-}
 
 function handleSearch() {
   if (!authStore.isLoggedIn) {
@@ -106,11 +105,19 @@ function handleSearch() {
     return;
   }
 
+  if (!dateRange.value || !dateRange.value[0] || !dateRange.value[1]) {
+    alert("請選擇完整的入住與退房日期");
+    return;
+  }
+
+  const checkIn = new Date(dateRange.value[0].getTime() - offset).toISOString().split('T')[0];
+  const checkOut = new Date(dateRange.value[1].getTime() - offset).toISOString().split('T')[0];
+
   router.push({
     name: 'room-selection',
     query: {
-      checkIn: searchData.value.checkIn,
-      checkOut: searchData.value.checkOut,
+      checkIn: checkIn,
+      checkOut: checkOut,
       guests: searchData.value.guests
     }
   });
@@ -297,18 +304,29 @@ function handleSearch() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
-.date-inputs .arrow {
-  color: #888;
-  font-size: 0.9rem;
+/* Custom VueDatePicker styling to match dark theme */
+:deep(.dp__theme_dark) {
+  --dp-background-color: transparent;
+  --dp-text-color: #ffffff;
+  --dp-hover-color: #484848;
+  --dp-hover-text-color: #ffffff;
+  --dp-primary-color: #C9A96E;
+  --dp-primary-text-color: #000;
+  --dp-border-color: transparent;
+  --dp-menu-border-color: #333;
 }
-
-.search-field input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  cursor: pointer;
-  opacity: 0.6;
-  display: none; /* Hide default icon to match design */
+:deep(.dp__input) {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  padding: 0;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+:deep(.dp__main) {
+  width: 100%;
 }
 
 .search-field select option {
@@ -334,19 +352,7 @@ function handleSearch() {
   background: #f0f0f0;
 }
 
-.special-rates {
-  margin-top: 1rem;
-  color: #ccc;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
-.special-rates:hover {
-  color: #fff;
-}
 
 @media (max-width: 900px) {
   .search-bar {
