@@ -6,6 +6,8 @@ import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -102,7 +104,22 @@ public class EmployeeController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateEmployee(
             @PathVariable Integer id,
-            @RequestBody EmployeeDTO employeeDTO) {
+            @RequestBody EmployeeDTO employeeDTO,
+            Authentication authentication) {
+
+        EmployeeDTO existingEmployee = employeeService.findById(id);
+        if (existingEmployee == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 阻止登入中的帳號將自己的狀態變更為停用
+        String currentUsername = getAuthenticatedUsername(authentication);
+        if (currentUsername != null && existingEmployee.getUsername() != null
+                && currentUsername.equalsIgnoreCase(existingEmployee.getUsername())) {
+            if (employeeDTO.getStatus() != null && !"1".equals(employeeDTO.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "無法停用目前登入中的帳號"));
+            }
+        }
 
         EmployeeDTO updatedEmployee = employeeService.updateEmployee(id, employeeDTO);
 
@@ -121,7 +138,22 @@ public class EmployeeController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateEmployeeStatus(
             @PathVariable Integer id,
-            @RequestParam String status) {
+            @RequestParam String status,
+            Authentication authentication) {
+
+        EmployeeDTO existingEmployee = employeeService.findById(id);
+        if (existingEmployee == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 阻止登入中的帳號停用自己的帳號
+        String currentUsername = getAuthenticatedUsername(authentication);
+        if (currentUsername != null && existingEmployee.getUsername() != null
+                && currentUsername.equalsIgnoreCase(existingEmployee.getUsername())) {
+            if (!"1".equals(status)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "無法停用目前登入中的帳號"));
+            }
+        }
 
         EmployeeDTO updatedEmployee = employeeService.updateEmployeeStatus(id, status);
 
@@ -132,17 +164,37 @@ public class EmployeeController {
         return ResponseEntity.ok(updatedEmployee);
     }
 
+    private String getAuthenticatedUsername(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null) {
+            return authentication.getName();
+        }
+        Authentication contextAuth = SecurityContextHolder.getContext().getAuthentication();
+        if (contextAuth != null && contextAuth.getName() != null) {
+            return contextAuth.getName();
+        }
+        return null;
+    }
+
     // =========================================
     // 7. 刪除員工
     // DELETE /api/employees/{id}
     // 例如：DELETE /api/employees/1
     // =========================================
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEmployee(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteEmployee(
+            @PathVariable Integer id,
+            Authentication authentication) {
         EmployeeDTO existingEmployee = employeeService.findById(id);
 
         if (existingEmployee == null) {
             return ResponseEntity.notFound().build();
+        }
+
+        // 阻止登入中的帳號刪除自己的帳號
+        String currentUsername = getAuthenticatedUsername(authentication);
+        if (currentUsername != null && existingEmployee.getUsername() != null
+                && currentUsername.equalsIgnoreCase(existingEmployee.getUsername())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "無法刪除目前登入中的帳號"));
         }
 
         try {
