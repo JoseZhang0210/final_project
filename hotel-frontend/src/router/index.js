@@ -33,9 +33,12 @@ import RoomTaskManageView from "../views/RoomTaskManageView.vue";
 import RoomBookingManageView from "../views/RoomBookingManageView.vue";
 import BookingPaymentManageView from "../views/BookingPaymentManageView.vue";
 
-// ---------------購物車-------------------
+// ---------------購物車 / 結帳 / 付款-------------------
 import CartView from "../views/CartView.vue";
-
+import CheckoutView from "../views/CheckoutView.vue";
+import PaymentView from "../views/PaymentView.vue";
+// ---------------優惠券-------------------
+import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 
 //--------------- 會員中心 -----------------
 import MemberLayout from "../layouts/MemberLayout.vue";
@@ -90,7 +93,11 @@ const router = createRouter({
           name: "admin-orders",
           component: AdminOrdersView,
         },
-
+        {
+          path: "coupons",
+          name: "admin-coupons",
+          component: AdminCouponsView,
+        },
         {
           path: "restaurant-times",
           name: "admin-restaurant-times",
@@ -178,9 +185,19 @@ const router = createRouter({
           component: ProductShopView,
         },
         {
-          path: "/cart",
+          path: "cart",
           name: "cart",
           component: CartView,
+        },
+        {
+          path: "checkout",
+          name: "checkout",
+          component: CheckoutView,
+        },
+        {
+          path: "payment/:orderId",
+          name: "payment",
+          component: PaymentView,
         },
         {
           path: "restaurant-menu",

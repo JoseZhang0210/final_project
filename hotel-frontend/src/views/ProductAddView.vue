@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="product-form-page product-add-page">
     <!-- =========================
          頁面標題
          ========================= -->
@@ -151,6 +151,7 @@
                   📁 選擇圖片
 
                   <input
+                    ref="imageInput"
                     type="file"
                     accept="image/*"
                     hidden
@@ -237,6 +238,7 @@
           <button
             type="button"
             class="admin-btn admin-btn-secondary"
+            :disabled="saving"
             @click="backToList"
           >
             返回商品列表
@@ -266,6 +268,13 @@ const PRODUCT_API = "/api/products";
 
 const IMAGE_UPLOAD_API = "/api/products/upload-image";
 
+const PRODUCT_STATUSES = new Set([
+  "ACTIVE",
+  "INACTIVE",
+  "OUT_OF_STOCK",
+  "DISCONTINUED",
+]);
+
 // =====================================================
 // 狀態
 // =====================================================
@@ -287,6 +296,8 @@ const imagePreview = ref("");
 const selectedImageFile = ref(null);
 
 const imageError = ref(false);
+
+const imageInput = ref(null);
 
 let objectUrl = null;
 
@@ -351,7 +362,13 @@ async function loadCategories() {
       throw new Error("分類讀取失敗");
     }
 
-    categories.value = await response.json();
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("分類資料格式錯誤");
+    }
+
+    categories.value = data;
   } catch (error) {
     console.error("分類讀取失敗：", error);
 
@@ -456,6 +473,10 @@ function clearImage() {
 
   imageError.value = false;
 
+  if (imageInput.value) {
+    imageInput.value.value = "";
+  }
+
   revokeObjectUrl();
 }
 
@@ -503,13 +524,9 @@ async function uploadImage() {
   // 要讓瀏覽器自己建立
   // ==========================
 
-  const headers = {};
+  const headers = getAuthHeaders();
 
-  const token = localStorage.getItem("token");
-
-  if (token) {
-    headers.Authorization = "Bearer " + token;
-  }
+  delete headers["Content-Type"];
 
   const response = await fetch(IMAGE_UPLOAD_API, {
     method: "POST",
@@ -546,6 +563,10 @@ async function uploadImage() {
 // =====================================================
 
 async function addProduct() {
+  if (saving.value) {
+    return;
+  }
+
   message.value = "";
 
   // ==========================
@@ -558,20 +579,32 @@ async function addProduct() {
     return;
   }
 
-  if (!product.categoryId) {
-    showError("請選擇商品分類");
+  const categoryId = Number(product.categoryId);
+
+  if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+    showError("請選擇有效的商品分類");
 
     return;
   }
 
-  if (Number(product.price) < 0) {
-    showError("商品價格不能小於 0");
+  const price = Number(product.price);
+
+  if (!Number.isSafeInteger(price) || price < 0) {
+    showError("商品價格必須是大於或等於 0 的整數");
 
     return;
   }
 
-  if (Number(product.stock) < 0) {
-    showError("商品庫存不能小於 0");
+  const stock = Number(product.stock);
+
+  if (!Number.isSafeInteger(stock) || stock < 0) {
+    showError("商品庫存必須是大於或等於 0 的整數");
+
+    return;
+  }
+
+  if (!PRODUCT_STATUSES.has(product.status)) {
+    showError("商品狀態不正確");
 
     return;
   }
@@ -594,14 +627,14 @@ async function addProduct() {
       productName: product.productName.trim(),
 
       category: {
-        categoryId: Number(product.categoryId),
+        categoryId,
       },
 
       description: product.description?.trim() || "",
 
-      price: Number(product.price),
+      price,
 
-      stock: Number(product.stock),
+      stock,
 
       imageUrl: finalImageUrl,
 
@@ -678,242 +711,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
-.product-form-card {
-  max-width: 850px;
-}
-
-/* =========================
-   Form
-   ========================= */
-
-.admin-form-actions {
-  margin-top: 28px;
-}
-
-.admin-btn:disabled {
-  opacity: 0.65;
-
-  cursor: not-allowed;
-
-  transform: none;
-}
-
-/* =========================
-   圖片區
-   ========================= */
-
-.image-section {
-  padding: 18px;
-
-  border: 1px solid #e3ddd4;
-
-  border-radius: 12px;
-
-  background-color: #faf8f4;
-}
-
-.url-section {
-  display: flex;
-
-  flex-direction: column;
-
-  gap: 8px;
-}
-
-.image-label {
-  color: #6f5328;
-
-  font-size: 14px;
-
-  font-weight: bold;
-}
-
-.url-section small {
-  color: #888;
-
-  font-size: 12px;
-}
-
-/* =========================
-   圖片按鈕
-   ========================= */
-
-.image-actions {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  margin-top: 15px;
-}
-
-.image-btn {
-  display: inline-flex;
-
-  justify-content: center;
-
-  align-items: center;
-
-  padding: 10px 18px;
-
-  border: none;
-
-  border-radius: 8px;
-
-  font-size: 14px;
-
-  font-weight: bold;
-
-  cursor: pointer;
-
-  transition: 0.2s;
-}
-
-.upload-image-btn {
-  background-color: #b58a46;
-
-  color: white;
-}
-
-.upload-image-btn:hover {
-  background-color: #8f692f;
-}
-
-.clear-image-btn {
-  background-color: #eee9e1;
-
-  color: #5c4d3d;
-}
-
-.clear-image-btn:hover {
-  background-color: #dfd5c7;
-}
-
-/* =========================
-   已選圖片
-   ========================= */
-
-.selected-file {
-  margin-top: 12px;
-
-  padding: 10px;
-
-  border-radius: 7px;
-
-  background-color: #f0eadf;
-
-  color: #665744;
-
-  font-size: 13px;
-}
-
-/* =========================
-   圖片預覽
-   ========================= */
-
-.image-preview-area {
-  margin-top: 20px;
-}
-
-.preview-card {
-  width: 260px;
-
-  height: 220px;
-
-  margin-top: 10px;
-
-  overflow: hidden;
-
-  border: 1px solid #ddd5c9;
-
-  border-radius: 12px;
-
-  background-color: white;
-
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-}
-
-.preview-card img {
-  width: 100%;
-
-  height: 100%;
-
-  display: block;
-
-  object-fit: cover;
-}
-
-/* =========================
-   圖片錯誤
-   ========================= */
-
-.image-error {
-  margin-top: 10px;
-
-  padding: 10px 12px;
-
-  border-radius: 7px;
-
-  background-color: #fde9e7;
-
-  color: #b3443c;
-
-  font-size: 13px;
-}
-
-/* =========================
-   Textarea
-   ========================= */
-
-textarea {
-  width: 100%;
-
-  min-height: 120px;
-
-  padding: 12px 14px;
-
-  border: 1px solid #d8d0c5;
-
-  border-radius: 8px;
-
-  resize: vertical;
-
-  font-family: inherit;
-
-  font-size: 15px;
-}
-
-textarea:focus {
-  outline: none;
-
-  border-color: #b58a46;
-
-  box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.14);
-}
-
-/* =========================
-   RWD
-   ========================= */
-
-@media (max-width: 700px) {
-  .product-form-card {
-    max-width: 100%;
-  }
-
-  .image-actions {
-    flex-direction: column;
-
-    align-items: stretch;
-  }
-
-  .image-btn {
-    width: 100%;
-  }
-
-  .preview-card {
-    width: 100%;
-  }
-}
-</style>
+<style scoped src="@/assets/product-form.css"></style>

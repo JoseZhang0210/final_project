@@ -59,4 +59,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     return { isLoggedIn, authorities, name, memberId, login, logout }
+    // 更新使用者姓名（修改個人資料後即時更新）
+    function updateName(newName) {
+        const displayName = newName || ''
+        localStorage.setItem('name', displayName)
+        name.value = displayName
+    }
+
+    return { isLoggedIn, authorities, name, login, logout, updateName }
 })
+

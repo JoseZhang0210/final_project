@@ -8,8 +8,7 @@ import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.OrderItemId;
 
 public interface OrderItemRepository
-        extends JpaRepository<OrderItem, OrderItemId> {
+                extends JpaRepository<OrderItem, OrderItemId> {
 
-    List<OrderItem> findByOrderId(
-            Integer orderId);
+        List<OrderItem> findByOrderId(Integer orderId);
 }

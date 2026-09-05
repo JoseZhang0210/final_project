@@ -133,6 +133,51 @@ function getDepartmentName(deptId, deptName) {
 }
 
 // =====================================================
+// 當前登入者資訊（防止停用自身帳號）
+// =====================================================
+
+const currentUsername = computed(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return "";
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return "";
+    const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(jsonPayload);
+    return payload.sub || payload.username || "";
+  } catch (err) {
+    return "";
+  }
+});
+
+function isSelf(employee) {
+  if (!employee || !currentUsername.value) return false;
+  return (
+    String(employee.username || "").toLowerCase() ===
+    String(currentUsername.value).toLowerCase()
+  );
+}
+
+const isEditingSelf = computed(() => {
+  if (editingEmployeeId.value === null) return false;
+  const editingEmp = employees.value.find(
+    (e) => (e.employeeId ?? e.id) === editingEmployeeId.value
+  );
+  if (editingEmp && isSelf(editingEmp)) return true;
+  return (
+    !!form.username &&
+    !!currentUsername.value &&
+    form.username.trim().toLowerCase() === currentUsername.value.toLowerCase()
+  );
+});
+
+// =====================================================
 // 部門動態載入與自動建立邏輯
 // =====================================================
 
@@ -458,9 +503,15 @@ async function saveEmployee() {
     finalDepartmentName = deptObj ? deptObj.name : "";
   }
 
-  saving.value = true;
-
   const isEditing = editingEmployeeId.value !== null;
+
+  // 阻止登入帳號將自己設為停用
+  if (isEditing && isEditingSelf.value && form.status !== "1") {
+    showMessage("無法停用目前登入中的帳號", "error");
+    return;
+  }
+
+  saving.value = true;
 
   const payload = {
     username: username,
@@ -542,6 +593,12 @@ async function toggleStatus(employee) {
 
   const nextStatus = isActiveStatus(employee.status) ? "0" : "1";
 
+  // 阻止登入帳號停用自己的帳號
+  if (isSelf(employee) && nextStatus === "0") {
+    showMessage("無法停用目前登入中的帳號", "error");
+    return;
+  }
+
   try {
     const response = await fetch(
       `${API_URL}/${employeeId}/status?status=${nextStatus}`,
@@ -557,7 +614,8 @@ async function toggleStatus(employee) {
     }
 
     if (!response.ok) {
-      showMessage("更新員工狀態失敗", "error");
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "更新員工狀態失敗", "error");
       return;
     }
 
@@ -582,6 +640,17 @@ async function deleteEmployee(employeeOrId) {
 
   if (!employeeId) {
     showMessage("無法取得員工 ID", "error");
+    return;
+  }
+
+  const targetEmployee =
+    typeof employeeOrId === "object" && employeeOrId !== null
+      ? employeeOrId
+      : employees.value.find((e) => (e.employeeId ?? e.id) === employeeId);
+
+  // 阻止登入帳號刪除自己的帳號
+  if (targetEmployee && isSelf(targetEmployee)) {
+    showMessage("無法刪除目前登入中的帳號", "error");
     return;
   }
 
@@ -610,7 +679,8 @@ async function deleteEmployee(employeeOrId) {
     }
 
     if (!response.ok) {
-      showMessage("刪除員工失敗", "error");
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "刪除員工失敗", "error");
       return;
     }
 
@@ -765,7 +835,10 @@ onMounted(async () => {
 
               <td>
                 <div class="employee-name-cell">
-                  <span class="employee-name">{{ employee.name || "未填姓名" }}</span>
+                  <span class="employee-name">
+                    {{ employee.name || "未填姓名" }}
+                    <span v-if="isSelf(employee)" class="self-badge">您</span>
+                  </span>
                   <span class="employee-username">(@{{ employee.username }})</span>
                 </div>
               </td>
@@ -817,7 +890,12 @@ onMounted(async () => {
                   <button
                     type="button"
                     class="admin-btn"
-                    :class="isActiveStatus(employee.status) ? 'status-disable-btn' : 'status-enable-btn'"
+                    :class="[
+                      isActiveStatus(employee.status) ? 'status-disable-btn' : 'status-enable-btn',
+                      { 'btn-disabled': isSelf(employee) && isActiveStatus(employee.status) }
+                    ]"
+                    :disabled="isSelf(employee) && isActiveStatus(employee.status)"
+                    :title="isSelf(employee) && isActiveStatus(employee.status) ? '無法停用目前登入中的帳號' : (isActiveStatus(employee.status) ? '停用' : '啟用')"
                     @click="toggleStatus(employee)"
                   >
                     {{ isActiveStatus(employee.status) ? "停用" : "啟用" }}
@@ -826,6 +904,9 @@ onMounted(async () => {
                   <button
                     type="button"
                     class="admin-btn admin-btn-delete"
+                    :class="{ 'btn-disabled': isSelf(employee) }"
+                    :disabled="isSelf(employee)"
+                    :title="isSelf(employee) ? '無法刪除目前登入中的帳號' : '刪除員工'"
                     @click="deleteEmployee(employee)"
                   >
                     刪除
@@ -902,10 +983,13 @@ onMounted(async () => {
 
             <div class="admin-form-group">
               <label> 帳號狀態 </label>
-              <select v-model="form.status">
+              <select v-model="form.status" :disabled="isEditingSelf">
                 <option value="1">啟用</option>
-                <option value="0">停用</option>
+                <option value="0" :disabled="isEditingSelf">停用</option>
               </select>
+              <span v-if="isEditingSelf" class="self-status-hint">
+                ⚠️ 目前登入中的帳號不可變更為停用
+              </span>
             </div>
 
           </div>
@@ -1259,6 +1343,31 @@ onMounted(async () => {
 .status-enable-btn:hover {
   background-color: #257641;
   color: white;
+}
+
+.self-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #f3ede2;
+  color: #6f5328;
+  vertical-align: middle;
+}
+
+.self-status-hint {
+  font-size: 12px;
+  color: #b25e02;
+  margin-top: 3px;
+}
+
+.admin-btn:disabled,
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: auto;
 }
 
 /* =========================
