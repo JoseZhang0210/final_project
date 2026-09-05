@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.springframework.stereotype.Service;
 
 import com.hotel.model.dto.BookingDTO;
@@ -93,7 +94,21 @@ public class EcpayService {
         String encoded = urlEncode(raw).toLowerCase();
 
         // 4. SHA256 加密後轉大寫
-        return DigestUtils.sha256Hex(encoded).toUpperCase();
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(encoded.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString().toUpperCase();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
     }
 
     private String urlEncode(String data) {

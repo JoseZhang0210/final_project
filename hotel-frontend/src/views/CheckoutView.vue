@@ -1,9 +1,9 @@
 <template>
   <div class="checkout-container">
     <div class="step-bar">
-      <div class="step completed">❶ 搜尋</div>
+      <div class="step completed clickable" @click="goToSearch">❶ 搜尋</div>
       <div class="step-line"></div>
-      <div class="step completed">❷ 選房</div>
+      <div class="step completed clickable" @click="goToSelection">❷ 選房</div>
       <div class="step-line"></div>
       <div class="step active">❸ 確認 & 結帳</div>
     </div>
@@ -102,6 +102,21 @@ const checkOut = ref(route.query.checkOut);
 const guests = ref(Number(route.query.guests));
 const totalPrice = ref(Number(route.query.price) || 0);
 
+function goToSearch() {
+  router.push('/room-booking');
+}
+
+function goToSelection() {
+  router.push({
+    name: 'room-selection',
+    query: {
+      checkIn: checkIn.value,
+      checkOut: checkOut.value,
+      guests: guests.value
+    }
+  });
+}
+
 const isProcessing = ref(false);
 
 const form = ref({
@@ -191,7 +206,20 @@ async function submitCheckout() {
 
 .step { padding: 0 1rem; }
 .step.completed { color: #2C1810; }
-.step.active { color: #2C1810; font-weight: 700; }
+.step.active {
+  color: #2C1810;
+  font-weight: 700;
+}
+
+.step.clickable {
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.step.clickable:hover {
+  opacity: 0.6;
+}
+
 .step-line { width: 30px; height: 1px; background: #ccc; }
 
 .header-title {

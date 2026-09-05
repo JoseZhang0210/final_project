@@ -133,7 +133,26 @@ async function loadBookings() {
       data = await bookingApi.getAllBookings();
     }
 
-    bookings.value = Array.isArray(data) ? data : data ? [data] : [];
+    let rawBookings = Array.isArray(data) ? data : data ? [data] : [];
+    
+    // 自動將已過退房日期的訂單改為「已完成」
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    
+    rawBookings.forEach(b => {
+      const cout = b.checkOutDate ?? b.check_out_date;
+      const status = b.bookingStatus ?? b.booking_status;
+      
+      if (cout < todayStr && status !== '已取消' && status !== '已完成') {
+        b.bookingStatus = '已完成';
+        if (b.booking_status !== undefined) b.booking_status = '已完成';
+        // 同步更新至資料庫
+        bookingApi.updateBooking(b.bookingId ?? b.booking_id, b).catch(e => console.error("自動更新已完成狀態失敗", e));
+      }
+    });
+
+    bookings.value = rawBookings;
   } catch (error) {
     console.error("loadBookings Error:", error);
     showMessage(error.message || "無法連線至預訂 API", "error");
@@ -347,17 +366,71 @@ onUnmounted(() => {
   }
 });
 
+const currentFilter = ref("today"); // 預設顯示今日有入住的訂單
+
 function setTabStatus(status) {
-  searchCriteria.value.bookingStatus = status;
-  loadBookings();
+  currentFilter.value = status;
+  currentPage.value = 1;
 }
+
+const filteredBookings = computed(() => {
+  let result = bookings.value;
+  
+  if (currentFilter.value === "today") {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+
+    result = result.filter(b => {
+      const cin = b.checkInDate ?? b.check_in_date;
+      const cout = b.checkOutDate ?? b.check_out_date;
+      // 當天的入住與退房期間有碰到的邏輯
+      return cin <= todayStr && cout >= todayStr;
+    });
+  } else if (currentFilter.value !== "all") {
+    result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
+  }
+  
+  return result;
+});
 
 const currentPage = ref(1);
 const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(bookings.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(filteredBookings.value.length / itemsPerPage));
+const sortKey = ref("bookingId");
+const sortOrder = ref("desc"); // 預設從新到舊
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortKey.value = key;
+    sortOrder.value = "desc";
+  }
+}
+
+const sortedBookings = computed(() => {
+  return [...filteredBookings.value].sort((a, b) => {
+    let valA, valB;
+    if (sortKey.value === 'bookingId') {
+      valA = Number(a.bookingId);
+      valB = Number(b.bookingId);
+    } else if (sortKey.value === 'memberId') {
+      valA = Number(a.memberId ?? a.member_id);
+      valB = Number(b.memberId ?? b.member_id);
+    } else {
+      return 0;
+    }
+    
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
+
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return bookings.value.slice(start, start + itemsPerPage);
+  return sortedBookings.value.slice(start, start + itemsPerPage);
 });
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
@@ -530,19 +603,24 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
       <!-- 快速狀態切換 -->
       <div class="status-tabs">
-        <button type="button" :class="{ active: searchCriteria.bookingStatus === '' }" @click="setTabStatus('')">全部</button>
-        <button type="button" :class="{ active: searchCriteria.bookingStatus === '待入住' }" @click="setTabStatus('待入住')">待入住</button>
-        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已入住' }" @click="setTabStatus('已入住')">已入住</button>
-        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已完成' }" @click="setTabStatus('已完成')">已完成</button>
-        <button type="button" :class="{ active: searchCriteria.bookingStatus === '已取消' }" @click="setTabStatus('已取消')">已取消</button>
+        <button type="button" :class="{ active: currentFilter === 'today' }" @click="setTabStatus('today')">今日預訂</button>
+        <button type="button" :class="{ active: currentFilter === 'all' }" @click="setTabStatus('all')">全部</button>
+        <button type="button" :class="{ active: currentFilter === '待入住' }" @click="setTabStatus('待入住')">待入住</button>
+        <button type="button" :class="{ active: currentFilter === '已入住' }" @click="setTabStatus('已入住')">已入住</button>
+        <button type="button" :class="{ active: currentFilter === '已完成' }" @click="setTabStatus('已完成')">已完成</button>
+        <button type="button" :class="{ active: currentFilter === '已取消' }" @click="setTabStatus('已取消')">已取消</button>
       </div>
 
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>會員ID</th>
+              <th @click="toggleSort('bookingId')" class="sortable">
+                ID <span v-if="sortKey === 'bookingId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th @click="toggleSort('memberId')" class="sortable">
+                會員ID <span v-if="sortKey === 'memberId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
               <th>房型</th>
               <th>房號</th>
               <th>入住</th>
@@ -556,9 +634,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </thead>
 
           <tbody>
-            <tr v-if="bookings.length === 0">
-              <td colspan="9" style="text-align: center">
-                目前沒有訂房明細資料
+            <tr v-if="filteredBookings.length === 0">
+              <td colspan="10" style="text-align: center">
+                目前沒有符合條件的訂房明細
               </td>
             </tr>
             <tr v-for="booking in paginatedData" :key="booking.bookingId">

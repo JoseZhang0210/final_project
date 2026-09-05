@@ -3,7 +3,7 @@
     
     <!-- Top Step Bar -->
     <div class="step-bar">
-      <div class="step completed">❶ 搜尋</div>
+      <div class="step completed clickable" @click="goToSearch">❶ 搜尋</div>
       <div class="step-line"></div>
       <div class="step active">❷ 選房</div>
       <div class="step-line"></div>
@@ -148,16 +148,20 @@ async function fetchRooms() {
 
 function selectRoom(room) {
   router.push({
-    path: '/checkout',
+    name: 'checkout',
     query: {
       roomTypeId: room.roomTypeId,
       roomName: room.typeName,
       checkIn: checkIn.value,
       checkOut: checkOut.value,
       guests: guests.value,
-      price: room.pricePerNight // 簡化：先用單晚價格當總價，實務上應乘以天數
+      price: room.pricePerNight
     }
   });
+}
+
+function goToSearch() {
+  router.push('/room-booking');
 }
 </script>
 
@@ -209,6 +213,15 @@ function selectRoom(room) {
 .step.active {
   color: #2C1810;
   font-weight: 700;
+}
+
+.step.clickable {
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.step.clickable:hover {
+  opacity: 0.6;
 }
 
 .step-line {

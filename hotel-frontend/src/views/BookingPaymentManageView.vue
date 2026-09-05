@@ -112,9 +112,40 @@ const itemsPerPage = 20;
 const totalPages = computed(() =>
   Math.ceil(filteredPayments.value.length / itemsPerPage)
 );
+const sortKey = ref("paymentId");
+const sortOrder = ref("desc");
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortKey.value = key;
+    sortOrder.value = "desc";
+  }
+}
+
+const sortedFilteredPayments = computed(() => {
+  return [...filteredPayments.value].sort((a, b) => {
+    let valA, valB;
+    if (sortKey.value === 'paymentId') {
+      valA = Number(a.paymentId);
+      valB = Number(b.paymentId);
+    } else if (sortKey.value === 'bookingId') {
+      valA = Number(a.bookingId);
+      valB = Number(b.bookingId);
+    } else {
+      return 0;
+    }
+    
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
+
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredPayments.value.slice(start, start + itemsPerPage);
+  return sortedFilteredPayments.value.slice(start, start + itemsPerPage);
 });
 function nextPage() {
   if (currentPage.value < totalPages.value) currentPage.value++;
@@ -178,8 +209,12 @@ function prevPage() {
         <table>
           <thead>
             <tr>
-              <th>付款 ID</th>
-              <th>訂單 ID</th>
+              <th @click="toggleSort('paymentId')" class="sortable">
+                付款 ID <span v-if="sortKey === 'paymentId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th @click="toggleSort('bookingId')" class="sortable">
+                訂單 ID <span v-if="sortKey === 'bookingId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
               <th>金額</th>
               <th>付款方式</th>
               <th>狀態</th>
@@ -342,9 +377,17 @@ select {
 }
 
 input:focus,
-select:focus {
-  border-color: #315b7d;
-  outline: none;
+.inline-select:focus {
+  border-color: #243447;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: rgba(0,0,0,0.05);
 }
 
 .inline-select {

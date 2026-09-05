@@ -1,5 +1,17 @@
 <template>
   <div class="hotel-booking-container">
+    
+    <!-- Top Step Bar -->
+    <div class="step-bar-container">
+      <div class="step-bar">
+        <div class="step active">❶ 搜尋</div>
+        <div class="step-line"></div>
+        <div class="step">❷ 選房</div>
+        <div class="step-line"></div>
+        <div class="step">❸ 確認 & 結帳</div>
+      </div>
+    </div>
+
     <!-- Hero Section -->
     <div class="hero-section">
       <div class="hero-overlay"></div>
@@ -12,33 +24,46 @@
       </div>
     </div>
 
-    <!-- Booking Search Bar (Liquid Glass Style) -->
+    <!-- Booking Search Bar (Fairmont Style) -->
     <div class="search-bar-wrapper">
-      <div class="search-bar glass-panel">
+      <div class="search-bar">
+        
         <div class="search-field">
-          <label>入住日期 / Check-in</label>
-          <input type="date" v-model="searchData.checkIn" :min="today" @change="validateDates" />
+          <span class="icon">📍</span>
+          <div class="field-content">
+            <label>Where to?</label>
+            <input type="text" value="星澄飯店" readonly class="readonly-input" />
+          </div>
         </div>
         
-        <div class="divider"></div>
-        
-        <div class="search-field">
-          <label>退房日期 / Check-out</label>
-          <input type="date" v-model="searchData.checkOut" :min="minCheckOut" />
+        <div class="search-field dates-field">
+          <span class="icon">📅</span>
+          <div class="field-content">
+            <label>What are your dates?</label>
+            <div class="date-inputs">
+              <input type="date" v-model="searchData.checkIn" :min="today" @change="validateDates" />
+              <span class="arrow">→</span>
+              <input type="date" v-model="searchData.checkOut" :min="minCheckOut" />
+            </div>
+          </div>
         </div>
         
-        <div class="divider"></div>
-        
         <div class="search-field">
-          <label>人數 / Guests</label>
-          <select v-model="searchData.guests">
-            <option v-for="n in 4" :key="n" :value="n">{{ n }} 位貴賓</option>
-          </select>
+          <span class="icon">🛏️</span>
+          <div class="field-content">
+            <label>Rooms & Guests</label>
+            <select v-model="searchData.guests">
+              <option v-for="n in 4" :key="n" :value="n">1 Room - {{ n }} Guest(s)</option>
+            </select>
+          </div>
         </div>
         
         <button class="btn-check-rates" @click="handleSearch">
-          查看房型 <br/><small>CHECK RATES</small>
+          CHECK RATES
         </button>
+      </div>
+      <div class="special-rates">
+        Special Rates & Accessibility <span class="arrow-down">⌄</span>
       </div>
     </div>
   </div>
@@ -100,6 +125,41 @@ function handleSearch() {
   position: relative;
   font-family: 'Inter', sans-serif;
   background-color: #fcfcfc;
+}
+
+/* Step Bar */
+.step-bar-container {
+  background-color: #fcfcfc;
+  padding: 2rem 0;
+}
+
+.step-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.step {
+  padding: 0 1rem;
+}
+
+.step.completed {
+  color: #2C1810;
+}
+
+.step.active {
+  color: #2C1810;
+  font-weight: 700;
+}
+
+.step-line {
+  width: 30px;
+  height: 1px;
+  background: #ccc;
 }
 
 .hero-section {
@@ -165,45 +225,55 @@ function handleSearch() {
   letter-spacing: 0.05em;
 }
 
-/* Liquid Glass Search Bar */
+/* Fairmont Style Search Bar */
 .search-bar-wrapper {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   z-index: 10;
-  transform: translateY(50%);
+  background: linear-gradient(to right, rgba(60, 60, 60, 0.95), rgba(80, 80, 80, 0.95));
+  padding: 1.5rem 0 1rem 0;
 }
 
-.glass-panel {
+.search-bar {
   display: flex;
   align-items: center;
-  background: rgba(44, 24, 16, 0.85); /* Dark Brown */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1.5rem 2.5rem;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  justify-content: space-between;
   width: 90%;
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .search-field {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   padding: 0 1.5rem;
+  color: #fff;
+}
+
+.search-field .icon {
+  font-size: 1.2rem;
+  margin-right: 1rem;
+  margin-top: 0.2rem;
+  opacity: 0.8;
+  filter: grayscale(1) brightness(2);
+}
+
+.field-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .search-field label {
-  color: #C9A96E;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  color: #ccc;
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+  font-weight: 400;
 }
 
 .search-field input,
@@ -211,75 +281,83 @@ function handleSearch() {
   background: transparent;
   border: none;
   color: #FFFFFF;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-family: 'Inter', sans-serif;
   outline: none;
   cursor: pointer;
-  padding: 0.2rem 0;
+  padding: 0;
+}
+
+.readonly-input {
+  cursor: default !important;
+  opacity: 0.9;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-inputs .arrow {
+  color: #888;
+  font-size: 0.9rem;
 }
 
 .search-field input::-webkit-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
   opacity: 0.6;
+  display: none; /* Hide default icon to match design */
 }
 
 .search-field select option {
-  background: #2C1810;
+  background: #444;
   color: #FFFFFF;
-}
-
-.divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255,255,255,0.2);
 }
 
 .btn-check-rates {
   background: #FFFFFF;
-  color: #2C1810;
+  color: #000000;
   border: none;
-  padding: 1rem 2rem;
-  font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-left: 1.5rem;
-  line-height: 1.2;
-}
-
-.btn-check-rates small {
+  padding: 1rem 2.5rem;
   font-family: 'Inter', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   letter-spacing: 0.1em;
-  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin-left: 1rem;
 }
 
 .btn-check-rates:hover {
-  background: #C9A96E;
-  color: #FFFFFF;
+  background: #f0f0f0;
+}
+
+.special-rates {
+  margin-top: 1rem;
+  color: #ccc;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.special-rates:hover {
+  color: #fff;
 }
 
 @media (max-width: 900px) {
-  .glass-panel {
+  .search-bar {
     flex-direction: column;
     width: 90%;
-    padding: 1.5rem;
-    transform: translateY(10%);
-    border-radius: 8px;
   }
   
   .search-field {
     width: 100%;
     margin-bottom: 1rem;
     padding: 0;
-  }
-  
-  .divider {
-    width: 100%;
-    height: 1px;
-    margin: 0.5rem 0 1.5rem 0;
   }
   
   .btn-check-rates {

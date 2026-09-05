@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from "vue";
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
 import { fetchClient } from "@/api/apiClient"; // for employees API
@@ -337,9 +337,37 @@ onUnmounted(() => {
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const totalPages = computed(() => Math.ceil(roomTasks.value.length / itemsPerPage));
+const sortKey = ref("taskId");
+const sortOrder = ref("desc");
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortKey.value = key;
+    sortOrder.value = "desc";
+  }
+}
+
+const sortedTasks = computed(() => {
+  return [...roomTasks.value].sort((a, b) => {
+    let valA, valB;
+    if (sortKey.value === 'taskId') {
+      valA = Number(a.taskId ?? a.task_id);
+      valB = Number(b.taskId ?? b.task_id);
+    } else {
+      return 0;
+    }
+    
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
+
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return roomTasks.value.slice(start, start + itemsPerPage);
+  return sortedTasks.value.slice(start, start + itemsPerPage);
 });
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
@@ -525,6 +553,11 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             </select>
           </div>
 
+          <div class="form-group">
+            <label>建立時間</label>
+            <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
+          </div>
+
           <div class="form-group full-width">
             <label>備註</label>
 
@@ -559,7 +592,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th @click="toggleSort('taskId')" class="sortable">
+                ID <span v-if="sortKey === 'taskId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
               <th>房號</th>
               <th>負責員工</th>
               <th>類型</th>
@@ -754,6 +789,20 @@ textarea {
 
 .delete {
   background: #c84040;
+}
+
+.table-wrapper td::before {
+    display: none;
+  }
+
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: rgba(0,0,0,0.05);
 }
 
 .table-header {

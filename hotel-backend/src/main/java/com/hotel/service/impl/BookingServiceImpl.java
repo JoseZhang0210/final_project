@@ -147,7 +147,14 @@ public class BookingServiceImpl implements BookingService {
                     task.setPriority("重要");
                     task.setTaskType("退房清潔");
                     task.setTaskStatus("待處理");
-                    task.setCreatedAt(java.time.LocalDateTime.now());
+                    
+                    java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
+                    if (java.time.LocalDateTime.now().isBefore(targetTime)) {
+                        task.setCreatedAt(java.time.LocalDateTime.now());
+                    } else {
+                        task.setCreatedAt(targetTime);
+                    }
+                    
                     task.setEmployeeId(null); // 指派給空，避免無此員工時發生 FK 錯誤
                     task.setRemark("由系統自動產生：退房清潔");
                     roomTaskRepository.save(task);
