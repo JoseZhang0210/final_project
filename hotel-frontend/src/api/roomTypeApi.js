@@ -7,6 +7,10 @@ export const roomTypeApi = {
     return fetchClient(BASE_URL, { method: "GET" });
   },
   
+  getAvailableRoomTypes(checkIn, checkOut) {
+    return fetchClient(`${BASE_URL}/available?checkIn=${checkIn}&checkOut=${checkOut}`, { method: "GET" });
+  },
+  
   getRoomTypeById(id) {
     return fetchClient(`${BASE_URL}/${id}`, { method: "GET" });
   },

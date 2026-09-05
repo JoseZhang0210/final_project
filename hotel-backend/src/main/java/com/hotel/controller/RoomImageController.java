@@ -63,7 +63,7 @@ public class RoomImageController {
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            dbPath = "/images/room/" + fileName;
+            dbPath = "/uploads/images/room/" + fileName;
 
         } else if (StringUtils.hasText(staticPath)) {
             dbPath = staticPath.trim();
@@ -109,8 +109,8 @@ public class RoomImageController {
 
         imageService.deleteById(id);
 
-        if (imageDTO.getPath() != null && imageDTO.getPath().startsWith("/images/room/")) {
-            String fileName = imageDTO.getPath().replace("/images/room/", "");
+        if (imageDTO.getPath() != null && imageDTO.getPath().startsWith("/uploads/images/room/")) {
+            String fileName = imageDTO.getPath().replace("/uploads/images/room/", "");
             Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
             try {
                 Files.deleteIfExists(filePath);

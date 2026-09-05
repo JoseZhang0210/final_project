@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
 import { fetchClient } from "@/api/apiClient"; // for employees API
@@ -10,6 +10,7 @@ const employees = ref([]);
 
 // 核心資料列表
 const roomTasks = ref([]);
+const currentTime = ref(new Date());
 
 // 下拉選單選項（與資料庫值對應）
 const priorities = ["一般", "重要", "緊急"];
@@ -303,16 +304,70 @@ function getStatusClass(status) {
   };
 }
 
+function isTaskLate(task) {
+  const status = task.taskStatus ?? task.task_status;
+  if (status === "已完成" || status === "已取消") return false;
+
+  const hours = currentTime.value.getHours();
+  const minutes = currentTime.value.getMinutes();
+
+  if (hours > 13 || (hours === 13 && minutes >= 30)) {
+    return true;
+  }
+  return false;
+}
+
+let refreshInterval = null;
+
 onMounted(async () => {
   await Promise.all([loadRoomTasks(), loadRooms(), loadEmployees()]);
+
+  refreshInterval = setInterval(() => {
+    currentTime.value = new Date();
+    loadRoomTasks();
+  }, 60000);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const totalPages = computed(() => Math.ceil(roomTasks.value.length / itemsPerPage));
+const sortKey = ref("taskId");
+const sortOrder = ref("desc");
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortKey.value = key;
+    sortOrder.value = "desc";
+  }
+}
+
+const sortedTasks = computed(() => {
+  return [...roomTasks.value].sort((a, b) => {
+    let valA, valB;
+    if (sortKey.value === 'taskId') {
+      valA = Number(a.taskId ?? a.task_id);
+      valB = Number(b.taskId ?? b.task_id);
+    } else {
+      return 0;
+    }
+    
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
+
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return roomTasks.value.slice(start, start + itemsPerPage);
+  return sortedTasks.value.slice(start, start + itemsPerPage);
 });
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
@@ -498,6 +553,11 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             </select>
           </div>
 
+          <div class="form-group">
+            <label>建立時間</label>
+            <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
+          </div>
+
           <div class="form-group full-width">
             <label>備註</label>
 
@@ -532,7 +592,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th @click="toggleSort('taskId')" class="sortable">
+                ID <span v-if="sortKey === 'taskId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
               <th>房號</th>
               <th>負責員工</th>
               <th>類型</th>
@@ -552,7 +614,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               </td>
             </tr>
 
-            <tr v-for="task in paginatedData" :key="task.taskId ?? task.task_id">
+            <tr v-for="task in paginatedData" :key="task.taskId ?? task.task_id" :class="{'late-warning': isTaskLate(task)}">
               <td>{{ task.taskId ?? task.task_id }}</td>
               <td>{{ getRoomNumber(task.roomId ?? task.room_id) }}</td>
               <td>
@@ -729,6 +791,20 @@ textarea {
   background: #c84040;
 }
 
+.table-wrapper td::before {
+    display: none;
+  }
+
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
 .table-header {
   display: flex;
   align-items: center;
@@ -786,6 +862,14 @@ th {
 .cancelled {
   color: #b42318;
   background: #feeceb;
+}
+
+tr.late-warning td {
+  background-color: #fff1f0 !important;
+  border-bottom: 1px solid #ffa39e;
+}
+tr.late-warning:hover td {
+  background-color: #ffccc7 !important;
 }
 
 @media (max-width: 768px) {

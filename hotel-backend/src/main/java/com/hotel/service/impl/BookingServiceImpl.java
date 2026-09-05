@@ -14,7 +14,9 @@ import com.hotel.model.entity.Room;
 import com.hotel.model.entity.RoomType;
 import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomRepository;
+import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
+import com.hotel.model.entity.RoomTask;
 import com.hotel.repository.specification.BookingSpecification;
 import com.hotel.service.BookingService;
 
@@ -27,12 +29,14 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
     private final RoomTypeRepository roomTypeRepository;
+    private final RoomTaskRepository roomTaskRepository;
 
     public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository,
-            RoomTypeRepository roomTypeRepository) {
+            RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.roomTypeRepository = roomTypeRepository;
+        this.roomTaskRepository = roomTaskRepository;
     }
 
     @Override
@@ -114,8 +118,54 @@ public class BookingServiceImpl implements BookingService {
         if (newBookingData.getGuestNum() != null) {
             existingBooking.setGuestNum(newBookingData.getGuestNum());
         }
-        if (newBookingData.getBookingStatus() != null) {
-            existingBooking.setBookingStatus(newBookingData.getBookingStatus());
+        if (newBookingData.getBookingPrice() != null) {
+            existingBooking.setBookingPrice(newBookingData.getBookingPrice());
+        }
+        if (newBookingData.getBookingStatus() != null && !newBookingData.getBookingStatus().equals(existingBooking.getBookingStatus())) {
+            String oldStatus = existingBooking.getBookingStatus();
+            String newStatus = newBookingData.getBookingStatus();
+            existingBooking.setBookingStatus(newStatus);
+            
+            // =========================
+            // 狀態連動：訂單狀態 ↔ 房間狀態 ↔ 房務工單
+            // =========================
+            if ("已入住".equals(newStatus)) {
+                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+                if (room != null) {
+                    room.setRoomStatus("已入住");
+                    roomRepository.save(room);
+                }
+            } else if (("已退房".equals(newStatus) || "已完成".equals(newStatus)) && !oldStatus.equals(newStatus)) {
+                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+                if (room != null) {
+                    room.setRoomStatus("退房待清潔");
+                    roomRepository.save(room);
+                    
+                    // 自動產生清潔工單
+                    RoomTask task = new RoomTask();
+                    task.setRoomId(room.getRoomId());
+                    task.setPriority("重要");
+                    task.setTaskType("退房清潔");
+                    task.setTaskStatus("待處理");
+                    
+                    java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
+                    if (java.time.LocalDateTime.now().isBefore(targetTime)) {
+                        task.setCreatedAt(java.time.LocalDateTime.now());
+                    } else {
+                        task.setCreatedAt(targetTime);
+                    }
+                    
+                    task.setEmployeeId(null); // 指派給空，避免無此員工時發生 FK 錯誤
+                    task.setRemark("由系統自動產生：退房清潔");
+                    roomTaskRepository.save(task);
+                }
+            } else if ("已取消".equals(newStatus) && !oldStatus.equals(newStatus)) {
+                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+                if (room != null) {
+                    room.setRoomStatus("可預訂");
+                    roomRepository.save(room);
+                }
+            }
         }
 
         // 若日期或房型有變動，重新計算實際訂單金額
@@ -123,6 +173,8 @@ public class BookingServiceImpl implements BookingService {
             existingBooking.setBookingPrice(
                     calculateBookingPrice(targetRoomTypeId, targetCheckIn, targetCheckOut));
         }
+
+        existingBooking = bookingRepository.save(existingBooking);
 
         return convertToDTO(existingBooking);
     }
@@ -180,7 +232,8 @@ public class BookingServiceImpl implements BookingService {
     /**
      * 計算訂單金額 = 房型每晚單價 × 住宿天數
      */
-    private Integer calculateBookingPrice(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate) {
+    @Override
+    public Integer calculateBookingPrice(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate) {
         if (roomTypeId == null || checkInDate == null || checkOutDate == null) return 0;
         long nights = java.time.temporal.ChronoUnit.DAYS.between(checkInDate, checkOutDate);
         if (nights <= 0) return 0;
