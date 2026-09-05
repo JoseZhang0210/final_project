@@ -267,6 +267,39 @@ public class MemberService {
     }
 
     // =========================================
+    // 7. 透過 username 查詢自己的資料（供 /me 端點使用）
+    // =========================================
+    @Transactional(readOnly = true)
+    public MemberDTO findByUsername(String username) {
+        Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            return null;
+        }
+
+        Member member = memberRepository.findByAccountId(account.getAccountId()).orElse(null);
+        Profile profile = profileRepository.findByAccountId(account.getAccountId()).orElse(null);
+
+        return toDTO(member, account, profile);
+    }
+
+    // =========================================
+    // 8. 透過 username 更新自己的資料（供 /me 端點使用）
+    // =========================================
+    public MemberDTO updateMemberByUsername(String username, MemberDTO dto) {
+        Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            return null;
+        }
+
+        Member member = memberRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (member == null) {
+            return null;
+        }
+
+        return updateMember(member.getMemberId(), dto);
+    }
+
+    // =========================================
     // 輔助方法：Entity -> DTO 轉換
     // =========================================
     private MemberDTO toDTO(Member member, Account account, Profile profile) {

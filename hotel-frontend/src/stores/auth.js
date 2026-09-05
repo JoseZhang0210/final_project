@@ -48,5 +48,13 @@ export const useAuthStore = defineStore('auth', () => {
         console.log("已登出，JWT 已清除");
     }
 
-    return { isLoggedIn, authorities, name, login, logout }
+    // 更新使用者姓名（修改個人資料後即時更新）
+    function updateName(newName) {
+        const displayName = newName || ''
+        localStorage.setItem('name', displayName)
+        name.value = displayName
+    }
+
+    return { isLoggedIn, authorities, name, login, logout, updateName }
 })
+
