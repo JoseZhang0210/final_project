@@ -1,0 +1,121 @@
+package com.hotel.service.impl;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.hotel.model.dto.RoomTypeDTO;
+import com.hotel.model.entity.Room;
+import com.hotel.model.entity.RoomType;
+import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomRepository;
+import com.hotel.repository.RoomTypeRepository;
+import com.hotel.service.RoomTypeService;
+
+import jakarta.persistence.EntityNotFoundException;
+
+@Service
+@Transactional
+public class RoomTypeServiceImpl implements RoomTypeService {
+
+    private final RoomTypeRepository roomTypeRepository;
+    private final RoomRepository roomRepository;
+    private final BookingRepository bookingRepository;
+
+    public RoomTypeServiceImpl(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
+            BookingRepository bookingRepository) {
+        this.roomTypeRepository = roomTypeRepository;
+        this.roomRepository = roomRepository;
+        this.bookingRepository = bookingRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoomTypeDTO> findAll() {
+        return roomTypeRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<RoomTypeDTO> findOptionalById(Integer id) {
+        return roomTypeRepository.findById(id).map(this::convertToDTO);
+    }
+
+    @Override
+    public RoomTypeDTO insert(RoomTypeDTO roomTypeDTO) {
+        RoomType roomType = convertToEntity(roomTypeDTO);
+        RoomType saved = roomTypeRepository.save(roomType);
+        return convertToDTO(saved);
+    }
+
+    @Override
+    public RoomTypeDTO update(Integer id, RoomTypeDTO updatedRoomTypeDTO) {
+        RoomType existingRoomType = roomTypeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料"));
+
+        if (updatedRoomTypeDTO.getTypeName() != null) {
+            existingRoomType.setTypeName(updatedRoomTypeDTO.getTypeName());
+        }
+        if (updatedRoomTypeDTO.getBedType() != null) {
+            existingRoomType.setBedType(updatedRoomTypeDTO.getBedType());
+        }
+        if (updatedRoomTypeDTO.getCapacity() != null) {
+            existingRoomType.setCapacity(updatedRoomTypeDTO.getCapacity());
+        }
+        if (updatedRoomTypeDTO.getRoomDescription() != null) {
+            existingRoomType.setRoomDescription(updatedRoomTypeDTO.getRoomDescription());
+        }
+        if (updatedRoomTypeDTO.getPricePerNight() != null) {
+            existingRoomType.setPricePerNight(updatedRoomTypeDTO.getPricePerNight());
+        }
+
+        return convertToDTO(existingRoomType);
+    }
+
+    @Override
+    public void deleteById(Integer id) {
+        if (!roomTypeRepository.existsById(id)) {
+            throw new EntityNotFoundException("欲刪除的房型 ID: " + id + " 不存在");
+        }
+        roomTypeRepository.deleteById(id);
+    }
+
+    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
+        LocalDate today = LocalDate.now();
+        List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, today, today.plusDays(1));
+        List<Room> allRooms = roomRepository.findByRoomTypeId(roomTypeId);
+        return (int) allRooms.stream()
+                .filter(room -> !bookedRoomIds.contains(room.getRoomId()))
+                .filter(room -> !"停用".equals(room.getRoomStatus()) && !"維修中".equals(room.getRoomStatus()))
+                .count();
+    }
+
+    private RoomTypeDTO convertToDTO(RoomType roomType) {
+        RoomTypeDTO dto = new RoomTypeDTO();
+        dto.setRoomTypeId(roomType.getRoomTypeId());
+        dto.setTypeName(roomType.getTypeName());
+        dto.setBedType(roomType.getBedType());
+        dto.setCapacity(roomType.getCapacity());
+        dto.setRoomDescription(roomType.getRoomDescription());
+        dto.setPricePerNight(roomType.getPricePerNight());
+        dto.setAvailableRooms(calculateAvailableRoomsToday(roomType.getRoomTypeId()));
+        return dto;
+    }
+
+    private RoomType convertToEntity(RoomTypeDTO dto) {
+        RoomType roomType = new RoomType();
+        roomType.setTypeName(dto.getTypeName());
+        roomType.setBedType(dto.getBedType());
+        roomType.setCapacity(dto.getCapacity());
+        roomType.setRoomDescription(dto.getRoomDescription());
+        roomType.setPricePerNight(dto.getPricePerNight());
+        roomType.setAvailableRooms(dto.getAvailableRooms());
+        return roomType;
+    }
+}

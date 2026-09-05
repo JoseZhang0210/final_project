@@ -26,10 +26,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hotel.model.entity.RoomImage;
+import com.hotel.model.dto.RoomImageDTO;
 import com.hotel.service.RoomImageService;
-
-import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/images")
@@ -37,7 +35,6 @@ public class RoomImageController {
 
     private final RoomImageService imageService;
 
-    // 可從 application.properties 讀取自訂路徑，若未設定則自動備用至專案 uploads 目錄
     @Value("${file.upload-dir:#{null}}")
     private String customUploadDir;
 
@@ -45,134 +42,86 @@ public class RoomImageController {
         this.imageService = imageService;
     }
 
-    // 1. 新增 / 上傳圖片 (支援：上傳實體檔案 OR 選擇靜態預設圖片)
     @PostMapping
-    public ResponseEntity<?> createImage(
+    public ResponseEntity<RoomImageDTO> createImage(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "staticPath", required = false) String staticPath,
-            @RequestParam(value = "imageDescription", required = false) String imageDescription) {
-        try {
-            String dbPath = "";
+            @RequestParam(value = "imageDescription", required = false) String imageDescription) throws IOException {
+        
+        String dbPath = "";
 
-            // 情境 A: 有上傳新實體檔案
-            if (file != null && !file.isEmpty()) {
-                String uploadDirPath = getUploadDirPath();
-                File dir = new File(uploadDirPath);
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-
-                // 清理檔案名稱以防路徑穿越攻擊 (Path Traversal)
-                String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-                String fileName = UUID.randomUUID().toString() + "_" + originalFilename;
-                Path targetPath = Paths.get(uploadDirPath).resolve(fileName);
-
-                // 寫入檔案
-                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-                // Web 端讀取路徑
-                dbPath = "/images/room/" + fileName;
-
-                // 情境 B: 選擇系統內建的靜態圖片
-            } else if (StringUtils.hasText(staticPath)) {
-                dbPath = staticPath.trim();
-
-                // 情境 C: 兩者皆未提供
-            } else {
-                return ResponseEntity.badRequest().body(Map.of("message", "請上傳圖片檔案或選擇預設圖片！"));
+        if (file != null && !file.isEmpty()) {
+            String uploadDirPath = getUploadDirPath();
+            File dir = new File(uploadDirPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
             }
 
-            // 寫入資料庫
-            RoomImage image = new RoomImage();
-            image.setPath(dbPath);
-            image.setImageDescription(imageDescription != null ? imageDescription : "");
+            String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+            String fileName = UUID.randomUUID().toString() + "_" + originalFilename;
+            Path targetPath = Paths.get(uploadDirPath).resolve(fileName);
 
-            RoomImage savedImage = imageService.insert(image);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedImage);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "圖片處理失敗：" + e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "新增圖片失敗：" + e.getMessage()));
+            dbPath = "/images/room/" + fileName;
+
+        } else if (StringUtils.hasText(staticPath)) {
+            dbPath = staticPath.trim();
+        } else {
+            throw new IllegalArgumentException("請上傳圖片檔案或選擇預設圖片！");
         }
+
+        RoomImageDTO imageDTO = new RoomImageDTO();
+        imageDTO.setPath(dbPath);
+        imageDTO.setImageDescription(imageDescription != null ? imageDescription : "");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(imageService.insert(imageDTO));
     }
 
-    // 2. 舊版特定上傳端點別名
     @PostMapping("/uploadimagesroompic")
-    public ResponseEntity<?> uploadimagesroompic(
+    public ResponseEntity<RoomImageDTO> uploadimagesroompic(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "imageDescription", required = false) String imageDescription) {
+            @RequestParam(value = "imageDescription", required = false) String imageDescription) throws IOException {
         return createImage(file, null, imageDescription);
     }
 
-    // 3. 查詢所有圖片
     @GetMapping
-    public ResponseEntity<List<RoomImage>> getAllImages() {
+    public ResponseEntity<List<RoomImageDTO>> getAllImages() {
         return ResponseEntity.ok(imageService.findAll());
     }
 
-    // 4. 依 ID 查詢單一圖片
     @GetMapping("/{id}")
-    public ResponseEntity<?> getImageById(@PathVariable Integer id) {
-        try {
-            RoomImage image = imageService.findById(id);
-            return ResponseEntity.ok(image);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        }
+    public ResponseEntity<RoomImageDTO> getImageById(@PathVariable Integer id) {
+        return imageService.findOptionalById(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("找不到 ID 為 " + id + " 的圖片資料"));
     }
 
-    // 5. 修改圖片資訊
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateImage(@PathVariable Integer id, @RequestBody RoomImage updatedImage) {
-        try {
-            RoomImage image = imageService.update(id, updatedImage);
-            return ResponseEntity.ok(image);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "更新失敗：" + e.getMessage()));
-        }
+    public ResponseEntity<RoomImageDTO> updateImage(@PathVariable Integer id, @RequestBody RoomImageDTO updatedImageDTO) {
+        return ResponseEntity.ok(imageService.update(id, updatedImageDTO));
     }
 
-    // 6. 刪除圖片 (包含資料庫紀錄與實體檔案)
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteImage(@PathVariable Integer id) {
-        try {
-            // 先查出圖片實體路徑，以便後續刪除檔案
-            RoomImage image = imageService.findById(id);
+    public ResponseEntity<Map<String, String>> deleteImage(@PathVariable Integer id) {
+        RoomImageDTO imageDTO = imageService.findOptionalById(id)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("找不到 ID 為 " + id + " 的圖片資料"));
 
-            // 執行 Service 刪除（若不存在會丟出 EntityNotFoundException）
-            imageService.deleteById(id);
+        imageService.deleteById(id);
 
-            // 同步刪除本地實體檔案 (僅針對上傳檔案，避免誤刪靜態資源)
-            if (image.getPath() != null && image.getPath().startsWith("/images/room/")) {
-                String fileName = image.getPath().replace("/images/room/", "");
-                Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
-                try {
-                    Files.deleteIfExists(filePath);
-                } catch (IOException e) {
-                    System.err.println("資料庫已刪除，但實體檔案刪除失敗: " + e.getMessage());
-                }
+        if (imageDTO.getPath() != null && imageDTO.getPath().startsWith("/images/room/")) {
+            String fileName = imageDTO.getPath().replace("/images/room/", "");
+            Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
+            try {
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                System.err.println("資料庫已刪除，但實體檔案刪除失敗: " + e.getMessage());
             }
-
-            return ResponseEntity.ok(Map.of("message", "圖片刪除成功！"));
-
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("message", "刪除失敗：該圖片可能已被其他資料關聯！"));
         }
+
+        return ResponseEntity.ok(Map.of("message", "圖片刪除成功！"));
     }
 
-    // 取得圖片上傳實體路徑 Helper
     private String getUploadDirPath() {
         if (StringUtils.hasText(customUploadDir)) {
             return customUploadDir;

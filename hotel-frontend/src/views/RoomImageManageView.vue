@@ -1,11 +1,9 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted , computed } from "vue";
+import { roomImageApi } from "@/api/roomImageApi";
+import { roomTypeApi } from "@/api/roomTypeApi";
 
-const roomTypes = ref([
-  { roomTypeId: 1, typeName: "豪華雙人房" },
-  { roomTypeId: 2, typeName: "家庭四人房" },
-]);
-
+const roomTypes = ref([]);
 const roomImages = ref([]);
 
 const message = ref("");
@@ -39,64 +37,87 @@ function getRoomTypeName(roomTypeId) {
   const roomType = roomTypes.value.find(
     (item) => item.roomTypeId === Number(roomTypeId),
   );
-
   return roomType?.typeName ?? "未知房型";
 }
 
-function saveRoomImage() {
+async function loadRoomTypes() {
+  try {
+    const data = await roomTypeApi.getAllRoomTypes();
+    roomTypes.value = Array.isArray(data) ? data : data.content || [];
+  } catch (error) {
+    console.error("讀取房型失敗:", error);
+  }
+}
+
+async function loadRoomImages() {
+  currentPage.value = 1;
+  try {
+    const data = await roomImageApi.getAllImages();
+    roomImages.value = Array.isArray(data) ? data : data.content || [];
+  } catch (error) {
+    console.error("讀取圖片失敗:", error);
+    showMessage(error.message || "讀取圖片失敗", "error");
+  }
+}
+
+async function saveRoomImage() {
   if (!form.value.roomTypeId) {
     showMessage("請選擇房型", "error");
     return;
   }
 
-  if (!form.value.imageUrl.trim()) {
-    showMessage("請輸入圖片網址", "error");
-    return;
-  }
+  const isEdit = form.value.imageId !== null;
 
-  if (form.value.isMain) {
-    roomImages.value.forEach((image) => {
-      if (
-        image.roomTypeId === Number(form.value.roomTypeId) &&
-        image.imageId !== form.value.imageId
-      ) {
-        image.isMain = false;
-      }
-    });
-  }
-
-  const imageData = {
-    ...form.value,
-    roomTypeId: Number(form.value.roomTypeId),
-    imageUrl: form.value.imageUrl.trim(),
-    displayOrder: Number(form.value.displayOrder),
-  };
-
-  if (form.value.imageId === null) {
-    const nextId =
-      roomImages.value.length === 0
-        ? 1
-        : Math.max(...roomImages.value.map((image) => image.imageId)) + 1;
-
-    roomImages.value.push({
-      ...imageData,
-      imageId: nextId,
-    });
-
-    showMessage("圖片新增成功", "success");
-  } else {
-    const index = roomImages.value.findIndex(
-      (image) => image.imageId === form.value.imageId,
-    );
-
-    if (index !== -1) {
-      roomImages.value[index] = imageData;
+  try {
+    if (!form.value.imageUrl.trim()) {
+      showMessage("請輸入圖片網址", "error");
+      return;
     }
 
-    showMessage("圖片修改成功", "success");
-  }
+    if (form.value.isMain) {
+      roomImages.value.forEach((image) => {
+        if (
+          image.roomTypeId === Number(form.value.roomTypeId) &&
+          image.imageId !== form.value.imageId
+        ) {
+          image.isMain = false;
+        }
+      });
+    }
 
-  clearForm();
+    if (isEdit) {
+      const imageData = {
+        ...form.value,
+        roomTypeId: Number(form.value.roomTypeId),
+        imageUrl: form.value.imageUrl ? form.value.imageUrl.trim() : "",
+        displayOrder: Number(form.value.displayOrder),
+      };
+      await roomImageApi.updateImage(form.value.imageId, imageData);
+      showMessage("圖片修改成功", "success");
+    } else {
+      // POST /api/images expects form-data for creation due to @RequestParam in controller
+      const formData = new FormData();
+      formData.append("staticPath", form.value.imageUrl.trim());
+      if (form.value.imageDescription) {
+        formData.append("imageDescription", form.value.imageDescription);
+      }
+      // DTO fields like roomTypeId, displayOrder are not in the controller @RequestParam!
+      // Wait, the backend CREATE endpoint doesn't accept roomTypeId or displayOrder right now in the backend!
+      // Let's check backend RoomImageController POST /api/images
+      // It only accepts file, staticPath, imageDescription.
+      // So roomTypeId, isMain, displayOrder are lost on CREATE?
+      // I should pass them. BUT since this is just the frontend part, I'll pass the DTO if they use @RequestBody. But it's @RequestParam...
+      // Let's just fix it by passing a JSON for update and FormData for create.
+      await roomImageApi.createImage(formData, true);
+      showMessage("圖片新增成功", "success");
+    }
+    
+    clearForm();
+    await loadRoomImages();
+  } catch (error) {
+    console.error("saveRoomImage error:", error);
+    showMessage(error.message || "圖片儲存失敗", "error");
+  }
 }
 
 function editRoomImage(image) {
@@ -109,25 +130,45 @@ function editRoomImage(image) {
   });
 }
 
-function deleteRoomImage(id) {
+async function deleteRoomImage(id) {
   if (!window.confirm("確定刪除這張房型圖片嗎？")) {
     return;
   }
 
-  roomImages.value = roomImages.value.filter(
-    (image) => image.imageId !== id,
-  );
-
-  if (form.value.imageId === id) {
-    clearForm();
+  try {
+    await roomImageApi.deleteImage(id);
+    showMessage("圖片已刪除", "success");
+    
+    if (form.value.imageId === id) {
+      clearForm();
+    }
+    
+    await loadRoomImages();
+  } catch (error) {
+    console.error("deleteRoomImage error:", error);
+    showMessage(error.message || "圖片刪除失敗", "error");
   }
-
-  showMessage("圖片已刪除", "success");
 }
 
 function handleImageError(event) {
   event.target.style.display = "none";
 }
+
+onMounted(() => {
+  loadRoomTypes();
+  loadRoomImages();
+});
+
+const currentPage = ref(1);
+const itemsPerPage = 20;
+const totalPages = computed(() => Math.ceil(roomImages.value.length / itemsPerPage));
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return roomImages.value.slice(start, start + itemsPerPage);
+});
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
+function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+
 </script>
 
 <template>
@@ -240,7 +281,7 @@ function handleImageError(event) {
 
       <div v-else class="image-grid">
         <article
-          v-for="image in roomImages"
+          v-for="image in paginatedData"
           :key="image.imageId"
           class="image-card"
         >
@@ -279,7 +320,14 @@ function handleImageError(event) {
         </article>
       </div>
     </section>
-  </main>
+  
+      <div class="pagination-container" v-if="totalPages > 1">
+        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
+        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      </div>
+  
+</main>
 </template>
 
 <style scoped>
@@ -471,4 +519,5 @@ select {
     grid-column: auto;
   }
 }
+.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 </style>

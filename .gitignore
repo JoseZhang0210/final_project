@@ -227,3 +227,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Agents ###
+.agents/
+
