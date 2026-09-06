@@ -1165,7 +1165,7 @@ onMounted(() => {
           </div>
 
           <div class="export-notice">
-            💡 系統將調用後端 <code>/api/members/export</code> API，產出格式化的 <code>members.json</code> 檔案並自動下載。
+            💡 系統將調用後端 <code>/api/members/export</code> API，匯出包含 <code>password</code> 且排除驗證碼的格式化 <code>members.json</code> 檔案並自動下載。
           </div>
         </div>
 
@@ -1240,7 +1240,7 @@ onMounted(() => {
               v-model="importJsonText"
               class="import-textarea"
               rows="9"
-              placeholder='請在此貼上 JSON 格式的會員資料，例如：&#10;[&#10;  {&#10;    "username": "hotel_guest",&#10;    "name": "陳大名",&#10;    "email": "guest@example.com",&#10;    "phone": "0988123456",&#10;    "gender": "男",&#10;    "status": "1"&#10;  }&#10;]'
+              placeholder='請在此貼上 JSON 格式的會員資料，例如：&#10;[&#10;  {&#10;    "username": "hotel_guest",&#10;    "password": "user123",&#10;    "name": "陳大名",&#10;    "email": "guest@example.com",&#10;    "phone": "0988123456",&#10;    "gender": "男",&#10;    "status": "1"&#10;  }&#10;]'
             ></textarea>
           </div>
 
@@ -1249,8 +1249,10 @@ onMounted(() => {
             <div class="guide-title">📌 匯入規則：</div>
             <ul>
               <li>支援多筆陣列 <code>[...]</code> 或單筆物件 <code>{...}</code>。</li>
+              <li>支援 <code>password</code> 密碼匯入（支援明文或已雜湊密碼；未填則預設為 <code>123456</code>）。</li>
               <li>若帳號已存在，系統將自動<strong>更新</strong>該會員詳細資料。</li>
-              <li>若帳號不存在，系統將<strong>新增</strong>會員（密碼預設為 <code>123456</code>）。</li>
+              <li>若帳號不存在，系統將<strong>新增</strong>會員。</li>
+              <li><code>verificationCode</code> 欄位無須匯入。</li>
             </ul>
           </div>
 

@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.MemberDTO;
+import com.hotel.model.entity.Account;
+import com.hotel.repository.AccountRepository;
 import com.hotel.service.MemberService;
 import com.hotel.util.JsonUtils;
 
@@ -35,9 +37,11 @@ import com.hotel.util.JsonUtils;
 public class MemberController {
 
     private final MemberService memberService;
+    private final AccountRepository accountRepository;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService, AccountRepository accountRepository) {
         this.memberService = memberService;
+        this.accountRepository = accountRepository;
     }
 
     // =========================================
@@ -265,8 +269,49 @@ public class MemberController {
                     .collect(Collectors.toList());
         }
 
+        // 依 accountId 批次查詢 Account 密碼
+        List<Integer> accountIds = members.stream()
+                .map(MemberDTO::getAccountId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Integer, String> passwordMap = new java.util.HashMap<>();
+        if (!accountIds.isEmpty()) {
+            List<Account> accounts = accountRepository.findAllById(accountIds);
+            for (Account acc : accounts) {
+                if (acc != null && acc.getAccountId() != null) {
+                    passwordMap.put(acc.getAccountId(), acc.getPassword());
+                }
+            }
+        }
+
+        // 整理匯出資料：填入 password，並排除 verificationCode
+        List<Map<String, Object>> exportDataList = new ArrayList<>();
+        for (MemberDTO m : members) {
+            String pwd = null;
+            if (m.getAccountId() != null) {
+                pwd = passwordMap.get(m.getAccountId());
+            }
+            if (pwd == null && m.getUsername() != null) {
+                Account acc = accountRepository.findByUsername(m.getUsername().trim());
+                if (acc != null) {
+                    pwd = acc.getPassword();
+                }
+            }
+            m.setPassword(pwd);
+
+            // 轉成 Map 並移除 verificationCode（無需匯出）
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = JsonUtils.convert(m, Map.class);
+            if (map != null) {
+                map.remove("verificationCode");
+                exportDataList.add(map);
+            }
+        }
+
         // 調用 JsonUtils 將會員列表序列化為美化格式 JSON 字串
-        String json = JsonUtils.toPrettyJson(members);
+        String json = JsonUtils.toPrettyJson(exportDataList);
         byte[] jsonBytes = (json != null ? json : "[]").getBytes(StandardCharsets.UTF_8);
 
         HttpHeaders headers = new HttpHeaders();
@@ -360,12 +405,41 @@ public class MemberController {
                     existing = memberService.findById(dto.getMemberId());
                 }
 
+                String rawOrHashedPassword = dto.getPassword();
+                boolean isAlreadyEncoded = rawOrHashedPassword != null &&
+                        (rawOrHashedPassword.startsWith("$2a$") ||
+                         rawOrHashedPassword.startsWith("$2b$") ||
+                         rawOrHashedPassword.startsWith("$2y$"));
+
                 if (existing != null) {
-                    // 已存在則更新會員資料
+                    // 若密碼已是 BCrypt 雜湊，先清空 dto 密碼避免被 memberService 二次編碼
+                    if (isAlreadyEncoded) {
+                        dto.setPassword(null);
+                    }
                     memberService.updateMember(existing.getMemberId(), dto);
+
+                    // 覆寫回原本的 BCrypt 雜湊密碼
+                    if (isAlreadyEncoded && existing.getAccountId() != null) {
+                        Account acc = accountRepository.findById(existing.getAccountId()).orElse(null);
+                        if (acc != null) {
+                            acc.setPassword(rawOrHashedPassword);
+                            accountRepository.save(acc);
+                        }
+                    }
                 } else {
-                    // 不存在則新增會員
-                    memberService.createMember(dto);
+                    if (isAlreadyEncoded) {
+                        dto.setPassword(null); // 先建立帳號（預設密碼）
+                    }
+                    MemberDTO created = memberService.createMember(dto);
+
+                    // 覆寫回原本的 BCrypt 雜湊密碼
+                    if (isAlreadyEncoded && created != null && created.getAccountId() != null) {
+                        Account acc = accountRepository.findById(created.getAccountId()).orElse(null);
+                        if (acc != null) {
+                            acc.setPassword(rawOrHashedPassword);
+                            accountRepository.save(acc);
+                        }
+                    }
                 }
                 successCount++;
             } catch (Exception e) {
