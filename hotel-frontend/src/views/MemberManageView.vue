@@ -454,6 +454,253 @@ function changePage(step) {
 }
 
 // =====================================================
+// 表格勾選選取
+// =====================================================
+
+const selectedMemberIds = ref([]);
+
+const isAllSelected = computed(() => {
+  if (pagedMembers.value.length === 0) return false;
+  return pagedMembers.value.every((m) =>
+    selectedMemberIds.value.includes(m.memberId ?? m.id)
+  );
+});
+
+function toggleSelectAll(event) {
+  const checked = event.target.checked;
+  const pageIds = pagedMembers.value.map((m) => m.memberId ?? m.id);
+  if (checked) {
+    const newSet = new Set([...selectedMemberIds.value, ...pageIds]);
+    selectedMemberIds.value = Array.from(newSet);
+  } else {
+    selectedMemberIds.value = selectedMemberIds.value.filter(
+      (id) => !pageIds.includes(id)
+    );
+  }
+}
+
+function clearSelection() {
+  selectedMemberIds.value = [];
+}
+
+// =====================================================
+// JSON 匯出 (Export)
+// =====================================================
+
+const exportModalOpen = ref(false);
+const exporting = ref(false);
+const exportScope = ref("filtered"); // 'filtered', 'all', 'selected', 'custom'
+const exportCustom = reactive({
+  minId: "",
+  maxId: "",
+  limit: "",
+  offset: "",
+});
+
+function openExportModal() {
+  if (selectedMemberIds.value.length > 0) {
+    exportScope.value = "selected";
+  } else if (keyword.value || selectedStatus.value) {
+    exportScope.value = "filtered";
+  } else {
+    exportScope.value = "all";
+  }
+  exportModalOpen.value = true;
+}
+
+function closeExportModal() {
+  exportModalOpen.value = false;
+}
+
+async function handleExport() {
+  exporting.value = true;
+  try {
+    const params = new URLSearchParams();
+
+    if (exportScope.value === "filtered") {
+      if (keyword.value.trim()) params.append("keyword", keyword.value.trim());
+      if (selectedStatus.value) params.append("status", selectedStatus.value);
+    } else if (exportScope.value === "selected") {
+      if (selectedMemberIds.value.length === 0) {
+        showMessage("請先勾選要匯出的會員", "error");
+        exporting.value = false;
+        return;
+      }
+      params.append("ids", selectedMemberIds.value.join(","));
+    } else if (exportScope.value === "custom") {
+      if (exportCustom.minId) params.append("minId", exportCustom.minId);
+      if (exportCustom.maxId) params.append("maxId", exportCustom.maxId);
+      if (exportCustom.limit) params.append("limit", exportCustom.limit);
+      if (exportCustom.offset) params.append("offset", exportCustom.offset);
+      if (keyword.value.trim()) params.append("keyword", keyword.value.trim());
+      if (selectedStatus.value) params.append("status", selectedStatus.value);
+    }
+    // 'all' 不帶篩選條件，匯出全部
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    const url = `${API_URL}/export${queryString}`;
+
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers,
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      showMessage("登入狀態失效或沒有會員管理權限", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      showMessage(err.message || "匯出會員失敗", "error");
+      return;
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+    link.download = `members_${dateStr}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    closeExportModal();
+    showMessage("會員資料 JSON 匯出成功！", "success");
+  } catch (error) {
+    console.error("匯出錯誤：", error);
+    showMessage("匯出會員資料失敗", "error");
+  } finally {
+    exporting.value = false;
+  }
+}
+
+// =====================================================
+// JSON 匯入 (Import)
+// =====================================================
+
+const importModalOpen = ref(false);
+const importing = ref(false);
+const importMode = ref("file"); // 'file' or 'text'
+const importFile = ref(null);
+const importJsonText = ref("");
+const importResult = ref(null);
+const fileInputRef = ref(null);
+
+function openImportModal() {
+  importFile.value = null;
+  importJsonText.value = "";
+  importResult.value = null;
+  importMode.value = "file";
+  importModalOpen.value = true;
+}
+
+function closeImportModal() {
+  importModalOpen.value = false;
+  importResult.value = null;
+}
+
+function onFileChange(event) {
+  const file = event.target.files?.[0];
+  if (file) {
+    if (!file.name.endsWith(".json")) {
+      showMessage("請選擇 .json 格式的檔案", "error");
+      event.target.value = "";
+      return;
+    }
+    importFile.value = file;
+  }
+}
+
+async function handleImport() {
+  importResult.value = null;
+  const token = localStorage.getItem("token");
+
+  try {
+    importing.value = true;
+    let response;
+
+    if (importMode.value === "file") {
+      if (!importFile.value) {
+        showMessage("請先選擇要匯入的 JSON 檔案", "error");
+        importing.value = false;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", importFile.value);
+
+      const headers = {};
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+
+      response = await fetch(`${API_URL}/import`, {
+        method: "POST",
+        headers: headers,
+        body: formData,
+      });
+    } else {
+      if (!importJsonText.value.trim()) {
+        showMessage("請輸入要匯入的 JSON 內容", "error");
+        importing.value = false;
+        return;
+      }
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = "Bearer " + token;
+      }
+
+      response = await fetch(`${API_URL}/import`, {
+        method: "POST",
+        headers: headers,
+        body: importJsonText.value.trim(),
+      });
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      showMessage("登入狀態失效或沒有會員管理權限", "error");
+      return;
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      showMessage(data.message || "匯入失敗", "error");
+      importResult.value = data;
+      return;
+    }
+
+    importResult.value = data;
+    const isSuccess = (data.failureCount ?? 0) === 0;
+    showMessage(
+      `匯入完成！成功 ${data.successCount ?? 0} 筆，失敗 ${data.failureCount ?? 0} 筆`,
+      isSuccess ? "success" : "error"
+    );
+
+    // 重新載入列表
+    await loadMembers();
+  } catch (error) {
+    console.error("匯入錯誤：", error);
+    showMessage("匯入失敗：" + error.message, "error");
+  } finally {
+    importing.value = false;
+  }
+}
+
+// =====================================================
 // 初始化
 // =====================================================
 
@@ -516,6 +763,22 @@ onMounted(() => {
           <button
             type="button"
             class="admin-btn admin-btn-secondary"
+            @click="openImportModal"
+          >
+            📥 匯入 JSON
+          </button>
+
+          <button
+            type="button"
+            class="admin-btn admin-btn-secondary"
+            @click="openExportModal"
+          >
+            📤 匯出 JSON
+          </button>
+
+          <button
+            type="button"
+            class="admin-btn admin-btn-secondary"
             @click="loadMembers"
           >
             重新整理
@@ -536,6 +799,10 @@ onMounted(() => {
         <span v-if="filteredMembers.length !== members.length" class="total-hint">
           （全體共 {{ members.length }} 位）
         </span>
+        <span v-if="selectedMemberIds.length > 0" class="selected-hint">
+          已選取 <strong>{{ selectedMemberIds.length }}</strong> 位會員
+          <button type="button" class="link-btn" @click="clearSelection">清除選取</button>
+        </span>
       </div>
 
       <!-- Loading -->
@@ -546,6 +813,14 @@ onMounted(() => {
         <table class="admin-table">
           <thead>
             <tr>
+              <th style="width: 44px; text-align: center;">
+                <input
+                  type="checkbox"
+                  :checked="isAllSelected"
+                  @change="toggleSelectAll"
+                  title="全選 / 取消全選本頁"
+                />
+              </th>
               <th>ID</th>
               <th>帳號 / 姓名</th>
               <th>聯絡方式</th>
@@ -557,13 +832,21 @@ onMounted(() => {
 
           <tbody>
             <tr v-if="pagedMembers.length === 0">
-              <td colspan="6" class="empty-row">目前沒有符合條件的會員資料</td>
+              <td colspan="7" class="empty-row">目前沒有符合條件的會員資料</td>
             </tr>
 
             <tr
               v-for="member in pagedMembers"
               :key="member.memberId ?? member.id"
+              :class="{ 'row-selected': selectedMemberIds.includes(member.memberId ?? member.id) }"
             >
+              <td style="text-align: center;">
+                <input
+                  type="checkbox"
+                  :value="member.memberId ?? member.id"
+                  v-model="selectedMemberIds"
+                />
+              </td>
               <td>{{ member.memberId ?? member.id }}</td>
 
               <td>
@@ -805,6 +1088,197 @@ onMounted(() => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- =========================
+         匯出 Modal
+         ========================= -->
+    <div v-if="exportModalOpen" class="member-modal" @click.self="closeExportModal">
+      <div class="member-modal-card export-modal-card">
+        <div class="member-modal-header">
+          <h2>📤 匯出會員資料 (JSON)</h2>
+          <button type="button" class="modal-close" @click="closeExportModal">×</button>
+        </div>
+
+        <div class="member-modal-body">
+          <div class="form-section-title">選擇匯出資料範圍</div>
+
+          <div class="export-scope-options">
+            <!-- 選項 1: 目前篩選結果 -->
+            <label class="scope-option">
+              <input type="radio" v-model="exportScope" value="filtered" />
+              <div class="scope-info">
+                <strong>目前搜尋與篩選結果</strong>
+                <span>符合關鍵字 ({{ keyword || '無' }}) 與狀態篩選，共 <b>{{ filteredMembers.length }}</b> 筆</span>
+              </div>
+            </label>
+
+            <!-- 選項 2: 全部會員 -->
+            <label class="scope-option">
+              <input type="radio" v-model="exportScope" value="all" />
+              <div class="scope-info">
+                <strong>全體會員資料</strong>
+                <span>匯出系統內所有會員，共 <b>{{ members.length }}</b> 筆</span>
+              </div>
+            </label>
+
+            <!-- 選項 3: 已勾選項目 -->
+            <label class="scope-option" :class="{ disabled: selectedMemberIds.length === 0 }">
+              <input type="radio" v-model="exportScope" value="selected" :disabled="selectedMemberIds.length === 0" />
+              <div class="scope-info">
+                <strong>表格中已勾選的會員</strong>
+                <span>目前已選取 <b>{{ selectedMemberIds.length }}</b> 筆資料</span>
+              </div>
+            </label>
+
+            <!-- 選項 4: 自訂範圍 -->
+            <label class="scope-option">
+              <input type="radio" v-model="exportScope" value="custom" />
+              <div class="scope-info">
+                <strong>自訂數值範圍 / 筆數限制</strong>
+                <span>自訂 ID 區間或分頁偏移量進行精準匯出</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- 自訂範圍參數面板 -->
+          <div v-if="exportScope === 'custom'" class="custom-range-panel">
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label>最小 ID (minId)</label>
+                <input v-model.number="exportCustom.minId" type="number" placeholder="例如：1" />
+              </div>
+              <div class="admin-form-group">
+                <label>最大 ID (maxId)</label>
+                <input v-model.number="exportCustom.maxId" type="number" placeholder="例如：100" />
+              </div>
+              <div class="admin-form-group">
+                <label>筆數限制 (limit)</label>
+                <input v-model.number="exportCustom.limit" type="number" placeholder="例如：50" />
+              </div>
+              <div class="admin-form-group">
+                <label>位移筆數 (offset)</label>
+                <input v-model.number="exportCustom.offset" type="number" placeholder="例如：0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="export-notice">
+            💡 系統將調用後端 <code>/api/members/export</code> API，產出格式化的 <code>members.json</code> 檔案並自動下載。
+          </div>
+        </div>
+
+        <div class="admin-form-actions modal-footer">
+          <button type="button" class="admin-btn admin-btn-secondary" @click="closeExportModal">
+            取消
+          </button>
+          <button type="button" class="admin-btn admin-btn-primary" :disabled="exporting" @click="handleExport">
+            {{ exporting ? "匯出中..." : "確認匯出" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================
+         匯入 Modal
+         ========================= -->
+    <div v-if="importModalOpen" class="member-modal" @click.self="closeImportModal">
+      <div class="member-modal-card import-modal-card">
+        <div class="member-modal-header">
+          <h2>📥 匯入會員資料 (JSON)</h2>
+          <button type="button" class="modal-close" @click="closeImportModal">×</button>
+        </div>
+
+        <div class="member-modal-body">
+          <!-- 模式切換 Tabs -->
+          <div class="import-tabs">
+            <button
+              type="button"
+              class="import-tab-btn"
+              :class="{ active: importMode === 'file' }"
+              @click="importMode = 'file'"
+            >
+              📁 上傳 JSON 檔案
+            </button>
+            <button
+              type="button"
+              class="import-tab-btn"
+              :class="{ active: importMode === 'text' }"
+              @click="importMode = 'text'"
+            >
+              📝 貼上 JSON 內容
+            </button>
+          </div>
+
+          <!-- 檔案上傳模式 -->
+          <div v-if="importMode === 'file'" class="file-upload-area">
+            <label class="file-dropzone" for="import-file-input">
+              <div class="dropzone-content">
+                <span class="upload-icon">📄</span>
+                <span v-if="!importFile" class="dropzone-text">
+                  點擊此處選取 <strong>.json</strong> 檔案，或拖放檔案至此
+                </span>
+                <span v-else class="dropzone-filename">
+                  已選取：<strong>{{ importFile.name }}</strong> ({{ (importFile.size / 1024).toFixed(1) }} KB)
+                </span>
+              </div>
+              <input
+                id="import-file-input"
+                ref="fileInputRef"
+                type="file"
+                accept=".json,application/json"
+                style="display: none;"
+                @change="onFileChange"
+              />
+            </label>
+          </div>
+
+          <!-- 文字貼上模式 -->
+          <div v-else class="text-upload-area">
+            <textarea
+              v-model="importJsonText"
+              class="import-textarea"
+              rows="9"
+              placeholder='請在此貼上 JSON 格式的會員資料，例如：&#10;[&#10;  {&#10;    "username": "hotel_guest",&#10;    "name": "陳大名",&#10;    "email": "guest@example.com",&#10;    "phone": "0988123456",&#10;    "gender": "男",&#10;    "status": "1"&#10;  }&#10;]'
+            ></textarea>
+          </div>
+
+          <!-- 匯入規則說明 -->
+          <div class="import-guide">
+            <div class="guide-title">📌 匯入規則：</div>
+            <ul>
+              <li>支援多筆陣列 <code>[...]</code> 或單筆物件 <code>{...}</code>。</li>
+              <li>若帳號已存在，系統將自動<strong>更新</strong>該會員詳細資料。</li>
+              <li>若帳號不存在，系統將<strong>新增</strong>會員（密碼預設為 <code>123456</code>）。</li>
+            </ul>
+          </div>
+
+          <!-- 匯入結果提示 -->
+          <div v-if="importResult" class="import-result-box" :class="importResult.failureCount > 0 ? 'has-error' : 'success'">
+            <div class="result-header">
+              <strong>匯入結果：</strong>
+              <span>總計 {{ importResult.total ?? 0 }} 筆 ｜ 成功 {{ importResult.successCount ?? 0 }} 筆 ｜ 失敗 {{ importResult.failureCount ?? 0 }} 筆</span>
+            </div>
+            <ul v-if="importResult.errors && importResult.errors.length > 0" class="error-list">
+              <li v-for="(err, idx) in importResult.errors" :key="idx">{{ err }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="admin-form-actions modal-footer">
+          <button type="button" class="admin-btn admin-btn-secondary" @click="closeImportModal">
+            關閉
+          </button>
+          <button
+            type="button"
+            class="admin-btn admin-btn-primary"
+            :disabled="importing || (importMode === 'file' && !importFile) || (importMode === 'text' && !importJsonText.trim())"
+            @click="handleImport"
+          >
+            {{ importing ? "處理中..." : "開始匯入" }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1174,5 +1648,305 @@ onMounted(() => {
   .admin-form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* =========================
+   選取與選中狀態
+   ========================= */
+
+.row-selected {
+  background-color: #fdf8ef !important;
+}
+
+.selected-hint {
+  margin-left: 12px;
+  color: #9b7435;
+  font-size: 13px;
+  background-color: #fdf8ef;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid #f2e3cb;
+}
+
+.link-btn {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  color: #8c7b6d;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.link-btn:hover {
+  color: #b3443c;
+}
+
+/* =========================
+   匯出 / 匯入 Modal 共用樣式
+   ========================= */
+
+.export-modal-card,
+.import-modal-card {
+  width: min(620px, 94vw);
+}
+
+.member-modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  max-height: calc(85vh - 140px);
+}
+
+.modal-footer {
+  margin-top: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+  background-color: #faf8f5;
+}
+
+/* =========================
+   匯出資料範圍選項
+   ========================= */
+
+.export-scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.scope-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #e8e2d7;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #fdfcfb;
+}
+
+.scope-option:hover {
+  border-color: #b58a46;
+  background-color: #fbf8f2;
+}
+
+.scope-option input[type="radio"] {
+  margin-top: 3px;
+  accent-color: #b58a46;
+}
+
+.scope-option.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: #eee;
+  background-color: #f7f7f7;
+}
+
+.scope-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scope-info strong {
+  font-size: 14px;
+  color: #4a3b2a;
+}
+
+.scope-info span {
+  font-size: 12px;
+  color: #777;
+}
+
+.scope-info b {
+  color: #9b7435;
+}
+
+.custom-range-panel {
+  background-color: #fbf9f5;
+  border: 1px solid #eee5d8;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.export-notice {
+  font-size: 12px;
+  color: #6d6258;
+  background-color: #f5f1eb;
+  padding: 10px 14px;
+  border-radius: 8px;
+  line-height: 1.6;
+}
+
+.export-notice code {
+  background-color: #e8e0d4;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* =========================
+   匯入 Modal 專用樣式
+   ========================= */
+
+.import-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.import-tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  background-color: #fbf9f5;
+  color: #666;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-tab-btn:hover {
+  border-color: #b58a46;
+  color: #4a3b2a;
+}
+
+.import-tab-btn.active {
+  border-color: #b58a46;
+  background-color: #b58a46;
+  color: white;
+}
+
+.file-upload-area {
+  margin-bottom: 16px;
+}
+
+.file-dropzone {
+  display: block;
+  border: 2px dashed #caa96e;
+  border-radius: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background-color: #fdfbf7;
+  transition: all 0.2s;
+}
+
+.file-dropzone:hover {
+  border-color: #95691f;
+  background-color: #fbf4e6;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-icon {
+  font-size: 38px;
+}
+
+.dropzone-text {
+  font-size: 14px;
+  color: #6f5328;
+}
+
+.dropzone-filename {
+  font-size: 14px;
+  color: #257641;
+}
+
+.text-upload-area {
+  margin-bottom: 16px;
+}
+
+.import-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.import-textarea:focus {
+  border-color: #b58a46;
+}
+
+.import-guide {
+  background-color: #f9f7f3;
+  border-left: 4px solid #b58a46;
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.guide-title {
+  font-weight: bold;
+  font-size: 13px;
+  color: #5b4632;
+  margin-bottom: 4px;
+}
+
+.import-guide ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.import-guide code {
+  background-color: #eee7dc;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.import-result-box {
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+.import-result-box.success {
+  background-color: #e5f6eb;
+  border: 1px solid #c0e7cc;
+  color: #257641;
+}
+
+.import-result-box.has-error {
+  background-color: #fde9e7;
+  border: 1px solid #f9c7c2;
+  color: #b3443c;
+}
+
+.result-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.error-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  font-size: 12px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 </style>
