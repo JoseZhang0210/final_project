@@ -7,6 +7,38 @@
       </div>
 
       <div class="product-header-actions">
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary product-json-button"
+          :disabled="exporting || importing"
+          @click="exportProductsJson"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" />
+          </svg>
+          {{ exporting ? "匯出中..." : "匯出 JSON" }}
+        </button>
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary product-json-button"
+          :disabled="exporting || importing"
+          @click="openImportFilePicker"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21V9m0 0 4 4m-4-4-4 4M5 3h14a2 2 0 0 1 2 2v3M3 8V5a2 2 0 0 1 2-2" />
+          </svg>
+          {{ importing ? "匯入中..." : "匯入 JSON" }}
+        </button>
+
+        <input
+          ref="importFileInput"
+          class="product-import-input"
+          type="file"
+          accept=".json,application/json"
+          @change="handleImportFile"
+        />
+
         <RouterLink
           to="/admin/products/add"
           class="admin-btn admin-btn-primary"
@@ -554,6 +586,12 @@ const message = ref("");
 
 const messageType = ref("");
 
+const exporting = ref(false);
+
+const importing = ref(false);
+
+const importFileInput = ref(null);
+
 // =====================================================
 // 排序
 // =====================================================
@@ -590,14 +628,14 @@ const categoryUpdating = ref(false);
 // 訊息
 // =====================================================
 
-function showMessage(text, type) {
+function showMessage(text, type, duration = 3000) {
   message.value = text;
 
   messageType.value = type;
 
   setTimeout(() => {
     message.value = "";
-  }, 3000);
+  }, duration);
 }
 
 // =====================================================
@@ -632,6 +670,170 @@ async function loadProducts() {
     showMessage("無法連接後端伺服器", "error");
   } finally {
     loading.value = false;
+  }
+}
+
+// =====================================================
+// 商品 JSON 匯出 / 匯入
+// =====================================================
+
+async function exportProductsJson() {
+  exporting.value = true;
+
+  try {
+    const response = await fetch("/api/products/export", {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || "匯出商品失敗");
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+    const filename = filenameMatch
+      ? decodeURIComponent(filenameMatch[1])
+      : `products-${new Date().toISOString().slice(0, 10)}.json`;
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(downloadUrl);
+
+    showMessage(`已匯出 ${products.value.length} 筆商品`, "success");
+  } catch (error) {
+    console.error("匯出商品 JSON 失敗：", error);
+    showMessage(error.message || "匯出商品失敗", "error", 5000);
+  } finally {
+    exporting.value = false;
+  }
+}
+
+function openImportFilePicker() {
+  if (!importFileInput.value) {
+    return;
+  }
+
+  importFileInput.value.value = "";
+  importFileInput.value.click();
+}
+
+function parseImportedInteger(value, fieldName, rowNumber, allowEmpty = false) {
+  if (allowEmpty && (value === undefined || value === null || value === "")) {
+    return null;
+  }
+
+  const numberValue = Number(value);
+  const minimum = fieldName === "price" || fieldName === "stock" ? 0 : 1;
+
+  if (!Number.isInteger(numberValue) || numberValue < minimum) {
+    throw new Error(`第 ${rowNumber} 筆的 ${fieldName} 格式不正確`);
+  }
+
+  return numberValue;
+}
+
+function normalizeImportedProduct(row, index) {
+  const rowNumber = index + 1;
+
+  if (typeof row.productName !== "string" || !row.productName.trim()) {
+    throw new Error(`第 ${rowNumber} 筆的 productName 不可為空`);
+  }
+
+  return {
+    productId: parseImportedInteger(row.productId, "productId", rowNumber, true),
+    productName: row.productName.trim(),
+    categoryId: parseImportedInteger(
+      row.categoryId ?? row.category?.categoryId,
+      "categoryId",
+      rowNumber,
+    ),
+    categoryName: row.categoryName ?? row.category?.categoryName ?? null,
+    description: row.description ?? null,
+    price: parseImportedInteger(row.price, "price", rowNumber),
+    stock: parseImportedInteger(row.stock, "stock", rowNumber),
+    imageUrl: row.imageUrl ?? row.ImageURL ?? row.imageURL ?? null,
+    status: row.status ?? "ACTIVE",
+  };
+}
+
+async function handleImportFile(event) {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".json")) {
+    showMessage("請選擇副檔名為 .json 的檔案", "error", 5000);
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showMessage("JSON 檔案不可超過 5 MB", "error", 5000);
+    event.target.value = "";
+    return;
+  }
+
+  importing.value = true;
+
+  try {
+    const parsedJson = JSON.parse(await file.text());
+    const rows = Array.isArray(parsedJson) ? parsedJson : parsedJson?.products;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new Error("JSON 必須是包含商品資料的陣列");
+    }
+
+    if (rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))) {
+      throw new Error("JSON 內含格式不正確的商品資料");
+    }
+
+    const normalizedRows = rows.map(normalizeImportedProduct);
+
+    const shouldImport = window.confirm(
+      `將匯入 ${rows.length} 筆商品。相同 productId 會更新，其餘會新增，確定繼續嗎？`,
+    );
+
+    if (!shouldImport) {
+      return;
+    }
+
+    const response = await fetch("/api/products/import", {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(normalizedRows),
+    });
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const errorDetails = result?.errors?.slice(0, 2).join("；");
+      throw new Error(errorDetails || result?.message || "匯入商品失敗");
+    }
+
+    await loadProducts();
+    showMessage(
+      `匯入完成：新增 ${result.createdCount} 筆、更新 ${result.updatedCount} 筆`,
+      "success",
+      6000,
+    );
+  } catch (error) {
+    console.error("匯入商品 JSON 失敗：", error);
+    const messageText = error instanceof SyntaxError
+      ? "JSON 格式錯誤，請檢查檔案內容"
+      : error.message || "匯入商品失敗";
+    showMessage(messageText, "error", 7000);
+  } finally {
+    importing.value = false;
+    event.target.value = "";
   }
 }
 

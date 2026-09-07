@@ -10,7 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.dto.RoomTaskDTO;
 import com.hotel.model.entity.RoomTask;
+import com.hotel.model.entity.Room;
 import com.hotel.repository.RoomTaskRepository;
+import com.hotel.repository.RoomRepository;
 import com.hotel.service.RoomTaskService;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -20,9 +22,11 @@ import jakarta.persistence.EntityNotFoundException;
 public class RoomTaskServiceImpl implements RoomTaskService {
 
     private final RoomTaskRepository roomTaskRepository;
+    private final RoomRepository roomRepository;
 
-    public RoomTaskServiceImpl(RoomTaskRepository roomTaskRepository) {
+    public RoomTaskServiceImpl(RoomTaskRepository roomTaskRepository, RoomRepository roomRepository) {
         this.roomTaskRepository = roomTaskRepository;
+        this.roomRepository = roomRepository;
     }
 
     @Override
@@ -88,15 +92,36 @@ public class RoomTaskServiceImpl implements RoomTaskService {
             existingTask.setRemark(updatedTaskDTO.getRemark());
         }
 
-        if (updatedTaskDTO.getTaskStatus() != null) {
-            existingTask.setTaskStatus(updatedTaskDTO.getTaskStatus());
+        if (updatedTaskDTO.getTaskStatus() != null && !updatedTaskDTO.getTaskStatus().equals(existingTask.getTaskStatus())) {
+            String newStatus = updatedTaskDTO.getTaskStatus();
+            existingTask.setTaskStatus(newStatus);
 
-            if ("已完成".equals(updatedTaskDTO.getTaskStatus())) {
+            if ("已完成".equals(newStatus)) {
                 existingTask.setCompletedAt(updatedTaskDTO.getCompletedAt() != null
                         ? updatedTaskDTO.getCompletedAt()
                         : LocalDateTime.now());
+                
+                // 連動房間：可預訂
+                if (existingTask.getRoomId() != null) {
+                    Room room = roomRepository.findById(existingTask.getRoomId()).orElse(null);
+                    if (room != null) {
+                        room.setRoomStatus("可預訂");
+                        roomRepository.save(room);
+                    }
+                }
             } else {
                 existingTask.setCompletedAt(null);
+                
+                // 連動房間：清潔中
+                if ("清潔中".equals(newStatus) || "處理中".equals(newStatus) || "進行中".equals(newStatus)) {
+                    if (existingTask.getRoomId() != null) {
+                        Room room = roomRepository.findById(existingTask.getRoomId()).orElse(null);
+                        if (room != null) {
+                            room.setRoomStatus("清潔中");
+                            roomRepository.save(room);
+                        }
+                    }
+                }
             }
         }
 
