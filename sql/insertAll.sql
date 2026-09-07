@@ -1684,53 +1684,150 @@ INSERT INTO room_task (room_id, employee_id, priority, task_type, task_status, r
    =========================================================
    =========================================================
    ========================================================= */
-INSERT INTO restaurant
-    (restaurant_name, address, phone, capacity, description)
-VALUES
-(N'雲澄自助餐廳', N'桃園市中壢區中央西路100號',
- '03-1234567', 120, N'提供中西式自助餐'),
+-- 1. 餐廳資料
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant
+    WHERE restaurant_name = N'雲饗中式自助餐廳'
+)
+BEGIN
+    INSERT INTO restaurant
+        (restaurant_name, address, phone, capacity, description)
+    VALUES
+        (N'雲饗中式自助餐廳', N'星澄飯店 1 樓', '02-1234-5678', 120,
+         N'提供中式料理、海鮮與季節自助餐點。');
+END;
 
-(N'景觀咖啡廳', N'桃園市中壢區中央西路100號',
- '03-1234568', 60, N'提供咖啡及下午茶');
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant
+    WHERE restaurant_name = N'晨光西式餐廳'
+)
+BEGIN
+    INSERT INTO restaurant
+        (restaurant_name, address, phone, capacity, description)
+    VALUES
+        (N'晨光西式餐廳', N'星澄飯店 2 樓', '02-1234-5679', 60,
+         N'提供精緻西式料理與主廚套餐。');
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant
+    WHERE restaurant_name = N'托斯卡尼義式餐廳'
+)
+BEGIN
+    INSERT INTO restaurant
+        (restaurant_name, address, phone, capacity, description)
+    VALUES
+        (N'托斯卡尼義式餐廳', N'星澄飯店 2 樓', '02-1234-5680', 50,
+         N'提供現做義大利麵、披薩與義式料理。');
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant
+    WHERE restaurant_name = N'星夜駐唱酒吧'
+)
+BEGIN
+    INSERT INTO restaurant
+        (restaurant_name, address, phone, capacity, description)
+    VALUES
+        (N'星夜駐唱酒吧', N'星澄飯店頂樓', '02-1234-5681', 80,
+         N'提供調酒、輕食與現場駐唱表演。');
+END;
 GO
 
+-- 2. 取得各餐廳 ID
+DECLARE @ChineseId INT;
+DECLARE @WesternId INT;
+DECLARE @ItalianId INT;
+DECLARE @BarId INT;
 
-/* =========================================================
-   17. restaurant_time
-   =========================================================
-   =========================================================
-   ========================================================= */
+SELECT @ChineseId = restaurant_id
+FROM restaurant
+WHERE restaurant_name = N'雲饗中式自助餐廳';
+
+SELECT @WesternId = restaurant_id
+FROM restaurant
+WHERE restaurant_name = N'晨光西式餐廳';
+
+SELECT @ItalianId = restaurant_id
+FROM restaurant
+WHERE restaurant_name = N'托斯卡尼義式餐廳';
+
+SELECT @BarId = restaurant_id
+FROM restaurant
+WHERE restaurant_name = N'星夜駐唱酒吧';
+
+-- 3. 餐廳時段
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @ChineseId AND meal_type = N'早餐'
+)
 INSERT INTO restaurant_time
     (restaurant_id, meal_type, open_time, close_time)
 VALUES
-(1, N'早餐', '07:00', '10:00'),
-(1, N'午餐', '11:30', '14:00'),
-(1, N'晚餐', '17:30', '21:00'),
-(2, N'下午茶', '14:00', '17:00');
-GO
+    (@ChineseId, N'早餐', '06:30', '10:00');
 
-
-/* =========================================================
-   18. reservation
-   =========================================================
-   =========================================================
-   ========================================================= */
-INSERT INTO reservation
-    (member_id, contact_name, contact_phone,
-     restaurant_id, reservation_date, time_id,
-     people_count, status, create_time)
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @ChineseId AND meal_type = N'午餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
 VALUES
-(1, N'王小明', '0912345678',
- 1, '2026-08-21', 3,
- 2, N'已訂位', '2026-08-15 10:00:00'),
+    (@ChineseId, N'午餐', '11:30', '14:00');
 
-(2, N'陳小華', '0923456789',
- 1, '2026-08-22', 1,
- 3, N'已訂位', '2026-08-16 11:30:00'),
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @ChineseId AND meal_type = N'晚餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@ChineseId, N'晚餐', '17:30', '21:00');
 
-(NULL, N'張先生', '0945678901',
- 2, '2026-08-23', 4,
- 2, N'已訂位', '2026-08-17 15:00:00');
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @WesternId AND meal_type = N'午餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@WesternId, N'午餐', '11:30', '14:00');
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @WesternId AND meal_type = N'晚餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@WesternId, N'晚餐', '17:30', '21:30');
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @ItalianId AND meal_type = N'午餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@ItalianId, N'午餐', '11:30', '14:00');
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @ItalianId AND meal_type = N'晚餐'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@ItalianId, N'晚餐', '17:30', '21:30');
+
+IF NOT EXISTS (
+    SELECT 1 FROM restaurant_time
+    WHERE restaurant_id = @BarId AND meal_type = N'晚間時段'
+)
+INSERT INTO restaurant_time
+    (restaurant_id, meal_type, open_time, close_time)
+VALUES
+    (@BarId, N'晚間時段', '19:00', '00:30');
 GO
 
 
