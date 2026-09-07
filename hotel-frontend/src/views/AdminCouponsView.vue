@@ -401,6 +401,13 @@
                     啟用
                   </button>
 
+                  <button
+                    type="button"
+                    class="delete-button"
+                    @click="removeCoupon(coupon)"
+                  >
+                    刪除
+                  </button>
                 </div>
               </td>
 
@@ -990,6 +997,37 @@ async function saveCoupon() {
   }
 }
 
+// -------------------------------------------------
+// 刪除優惠券
+// -------------------------------------------------
+async function removeCoupon(coupon) {
+  const confirmed = window.confirm(
+    `確定要刪除優惠券 ${coupon.couponCode} 嗎？此操作無法復原。`
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(
+      `/api/coupons/${coupon.couponId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err || `刪除失敗 (${response.status})`);
+    }
+
+    alert(`優惠券 ${coupon.couponCode} 已成功刪除`);
+    await loadCoupons(); // 重新載入表格資料
+  } catch (error) {
+    console.error("刪除優惠券錯誤：", error);
+    alert(error.message || "刪除失敗，請稍後再試");
+  }
+}
+
 
 // =====================================================
 // 狀態切換
@@ -1502,6 +1540,16 @@ onMounted(() => {
 .form-group label {
   font-weight: bold;
   color: #555555;
+}
+
+.delete-button {
+  background-color: #e53935;
+  /* 鮮紅 */
+  color: #fff;
+}
+
+.delete-button:hover {
+  background-color: #c62828;
 }
 
 .form-group input,
