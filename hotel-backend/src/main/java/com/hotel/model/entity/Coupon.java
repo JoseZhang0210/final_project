@@ -21,20 +21,28 @@ public class Coupon {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "coupon_id")
     private Integer couponId;
-    @Column(name = "coupon_code", nullable = false, unique = true, length = 50)
+
+    @Column(name = "coupon_code", nullable = false)
     private String couponCode;
-    @Column(name = "coupon_name", nullable = false, length = 100)
+
+    @Column(name = "coupon_name", nullable = false)
     private String couponName;
-    @Column(name = "discount_type", nullable = false, length = 20)
+
+    @Column(name = "discount_type", nullable = false)
     private String discountType;
+
     @Column(name = "discount_value", nullable = false)
     private Integer discountValue;
+
     @Column(name = "minimum_amount", nullable = false)
-    private Integer minimumAmount = 0;
+    private Integer minimumAmount;
+
     @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
+
     @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
-    @Column(name = "status", nullable = false, length = 20)
-    private String status = "ACTIVE";
+
+    @Column(name = "status", nullable = false)
+    private String status;
 }

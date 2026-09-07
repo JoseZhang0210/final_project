@@ -12,6 +12,4 @@ public interface PaymentRepository
     List<Payment> findByMemberId(Integer memberId);
 
     List<Payment> findByPaymentStatus(String paymentStatus);
-
-    java.util.Optional<Payment> findByTransactionId(String transactionId);
 }
