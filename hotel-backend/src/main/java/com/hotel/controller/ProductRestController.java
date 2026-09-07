@@ -1,9 +1,15 @@
 package com.hotel.controller;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +22,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hotel.model.dto.ProductImportResultDTO;
+import com.hotel.model.dto.ProductJsonDTO;
 import com.hotel.model.entity.Product;
 import com.hotel.service.ProductService;
+import com.hotel.util.JsonUtils;
 
 @RestController
 @RequestMapping("/api/products")
@@ -44,6 +53,48 @@ public class ProductRestController {
 
                 return ResponseEntity
                                 .ok(products);
+        }
+
+        // =========================================
+        // 匯出全部商品 JSON
+        // GET /api/products/export
+        // =========================================
+
+        @GetMapping(value = "/export", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<byte[]> exportProducts() {
+
+                List<ProductJsonDTO> exportData = productService.getProductsForExport();
+                byte[] jsonBytes = JsonUtils.toPrettyJson(exportData)
+                                .getBytes(StandardCharsets.UTF_8);
+                String filename = "products-"
+                                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+                                + ".json";
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.setContentDisposition(ContentDisposition.attachment()
+                                .filename(filename, StandardCharsets.UTF_8)
+                                .build());
+
+                return new ResponseEntity<>(jsonBytes, headers, HttpStatus.OK);
+        }
+
+        // =========================================
+        // 匯入商品 JSON
+        // POST /api/products/import
+        // =========================================
+
+        @PostMapping(value = "/import", consumes = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<ProductImportResultDTO> importProducts(
+                        @RequestBody List<ProductJsonDTO> importRows) {
+
+                ProductImportResultDTO result = productService.importProducts(importRows);
+
+                if (result.getFailedCount() > 0) {
+                        return ResponseEntity.badRequest().body(result);
+                }
+
+                return ResponseEntity.ok(result);
         }
 
         // =========================================
