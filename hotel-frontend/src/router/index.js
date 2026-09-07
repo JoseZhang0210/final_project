@@ -22,6 +22,7 @@ import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
 import ProductAddView from "../views/ProductAddView.vue";
 import ProductShopView from "../views/ProductShopView.vue";
+import ProductDetailView from "../views/ProductDetailView.vue";
 //---------------------- 訂單後台管理 -----------------
 import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
@@ -185,6 +186,11 @@ const router = createRouter({
           path: "products",
           name: "product-shop",
           component: ProductShopView,
+        },
+        {
+          path: "products/:id",
+          name: "product-detail",
+          component: ProductDetailView,
         },
         {
           path: "cart",
