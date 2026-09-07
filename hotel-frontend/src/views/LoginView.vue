@@ -110,7 +110,7 @@ async function login() {
     console.log("登入結果：", data);
 
 
-    authStore.login(data.token, data.authorities, data.name, data.memberId);
+    authStore.login(data.token, data.authorities, data.name);
 
     message.value = "登入成功";
     messageType.value = "success";
