@@ -21,18 +21,25 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_id")
     private Integer paymentId;
+
     @Column(name = "member_id")
     private Integer memberId;
-    @Column(name = "payment_method", length = 50)
+
+    @Column(name = "payment_method")
     private String paymentMethod;
-    @Column(name = "transaction_id", length = 100)
+
+    @Column(name = "transaction_id")
     private String transactionId;
+
     @Column(name = "total_price", nullable = false)
     private Integer totalPrice;
-    @Column(name = "payment_status", nullable = false, length = 20)
-    private String paymentStatus = "PENDING";
+
+    @Column(name = "payment_status", nullable = false)
+    private String paymentStatus;
+
     @Column(name = "payment_time")
     private LocalDateTime paymentTime;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
