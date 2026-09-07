@@ -595,6 +595,7 @@ const importFile = ref(null);
 const importJsonText = ref("");
 const importResult = ref(null);
 const fileInputRef = ref(null);
+const isDragging = ref(false);
 
 function openImportModal() {
   importFile.value = null;
@@ -615,6 +616,26 @@ function onFileChange(event) {
     if (!file.name.endsWith(".json")) {
       showMessage("請選擇 .json 格式的檔案", "error");
       event.target.value = "";
+      return;
+    }
+    importFile.value = file;
+  }
+}
+
+function onDragOver(event) {
+  isDragging.value = true;
+}
+
+function onDragLeave(event) {
+  isDragging.value = false;
+}
+
+function onDrop(event) {
+  isDragging.value = false;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    if (!file.name.endsWith(".json")) {
+      showMessage("請選擇 .json 格式的檔案", "error");
       return;
     }
     importFile.value = file;
@@ -1213,7 +1234,14 @@ onMounted(() => {
 
           <!-- 檔案上傳模式 -->
           <div v-if="importMode === 'file'" class="file-upload-area">
-            <label class="file-dropzone" for="import-file-input">
+            <label
+              class="file-dropzone"
+              :class="{ 'dropzone-active': isDragging }"
+              for="import-file-input"
+              @dragover.prevent="onDragOver"
+              @dragleave.prevent="onDragLeave"
+              @drop.prevent="onDrop"
+            >
               <div class="dropzone-content">
                 <span class="upload-icon">📄</span>
                 <span v-if="!importFile" class="dropzone-text">
@@ -1840,7 +1868,8 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.file-dropzone:hover {
+.file-dropzone:hover,
+.file-dropzone.dropzone-active {
   border-color: #95691f;
   background-color: #fbf4e6;
 }
