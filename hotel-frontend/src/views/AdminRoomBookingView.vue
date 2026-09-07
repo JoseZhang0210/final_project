@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { bookingApi } from "@/api/bookingApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
@@ -24,17 +24,45 @@ const formTitle = ref("新增/編輯訂房明細");
 
 // 查詢條件
 const searchCriteria = ref({
+  memberId: "",
   checkInDate: "",
-  status: "",
+  checkOutDate: "",
+  bookingStatus: "",
+});
+
+watch(() => searchCriteria.value.checkInDate, (newVal) => {
+  if (newVal) {
+    const nextDay = new Date(newVal);
+    nextDay.setDate(nextDay.getDate() + 1);
+    searchCriteria.value.checkOutDate = nextDay.toISOString().split('T')[0];
+  }
 });
 
 const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
 
 const form = ref(createEmptyForm());
+const showPaymentModal = ref(false);
+const currentNewBooking = ref(null);
+const paymentForm = ref({
+  amount: 0,
+  paymentMethod: '現金',
+  paymentStatus: '已付款',
+  transactionId: ''
+});
+
+watch(() => form.value.checkInDate, (newVal) => {
+  if (newVal) {
+    const nextDay = new Date(newVal);
+    nextDay.setDate(nextDay.getDate() + 1);
+    form.value.checkOutDate = nextDay.toISOString().split('T')[0];
+    calculatePrice();
+  }
+});
 
 function createEmptyForm() {
   return {
     bookingId: "",
+    memberId: "",
     bookingOrderId: "",
     roomTypeId: "",
     roomId: "",
@@ -54,14 +82,43 @@ const availableRooms = computed(() => {
 
   const selectedRoomTypeId = Number(form.value.roomTypeId);
 
-  return rooms.value.filter((room) => {
+  // 1. 過濾出該房型的所有房間，並排除停用與維修中
+  let matchedRooms = rooms.value.filter((room) => {
     const roomTypeId =
       room.roomTypeId ??
       room.room_type_id ??
       room.roomType?.roomTypeId;
+    
+    const status = room.roomStatus ?? room.room_status;
+    if (status === '停用' || status === '維修中') return false;
 
     return Number(roomTypeId) === selectedRoomTypeId;
   });
+
+  // 2. 根據目前選擇的入住與退房日期，過濾掉在該時段已被預訂的房間
+  if (form.value.checkInDate && form.value.checkOutDate) {
+    const checkIn = new Date(form.value.checkInDate);
+    const checkOut = new Date(form.value.checkOutDate);
+
+    const overlappingBookings = bookings.value.filter(b => {
+      // 排除自己這筆訂單 (修改時)
+      if (form.value.bookingId && (b.bookingId ?? b.booking_id) === form.value.bookingId) return false;
+      
+      const status = b.bookingStatus ?? b.booking_status;
+      if (status === '已取消' || status === '已完成' || status === '已退房') return false;
+
+      const bCheckIn = new Date(b.checkInDate ?? b.check_in_date);
+      const bCheckOut = new Date(b.checkOutDate ?? b.check_out_date);
+
+      // 日期重疊判斷 (新訂單入住時間 < 舊訂單退房時間 AND 新訂單退房時間 > 舊訂單入住時間)
+      return checkIn < bCheckOut && checkOut > bCheckIn;
+    });
+
+    const occupiedRoomIds = overlappingBookings.map(b => b.roomId ?? b.room_id).filter(id => id);
+    matchedRooms = matchedRooms.filter(room => !occupiedRoomIds.includes(room.roomId ?? room.room_id));
+  }
+
+  return matchedRooms;
 });
 
 const stayNights = computed(() => {
@@ -147,8 +204,15 @@ async function loadBookings() {
       if (cout < todayStr && status !== '已取消' && status !== '已完成') {
         b.bookingStatus = '已完成';
         if (b.booking_status !== undefined) b.booking_status = '已完成';
+        
+        // 只傳送需要的欄位，避免後端反序列化錯誤
+        const updatePayload = {
+          bookingId: b.bookingId ?? b.booking_id,
+          bookingStatus: '已完成'
+        };
+        
         // 同步更新至資料庫
-        bookingApi.updateBooking(b.bookingId ?? b.booking_id, b).catch(e => console.error("自動更新已完成狀態失敗", e));
+        bookingApi.updateBooking(updatePayload.bookingId, updatePayload).catch(e => console.error("自動更新已完成狀態失敗", e));
       }
     });
 
@@ -161,7 +225,7 @@ async function loadBookings() {
 
 function clearSearch() {
   currentPage.value = 1;
-  searchCriteria.value = { memberId: "", roomTypeId: "", roomId: "", checkInDate: "", checkOutDate: "", bookingStatus: "" };
+  searchCriteria.value = { memberId: "", checkInDate: "", checkOutDate: "", bookingStatus: "" };
   loadBookings();
 }
 
@@ -238,14 +302,29 @@ function calculatePrice() {
     return;
   }
   form.value.bookingPrice = selectedRoomType.pricePerNight * stayNights.value;
+
+  // 3. 若為新增訂單，根據入住日期自動判斷狀態
+  if (!form.value.bookingId && form.value.checkInDate) {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    
+    if (form.value.checkInDate === todayStr) {
+      form.value.bookingStatus = '已入住';
+    } else if (form.value.checkInDate > todayStr) {
+      form.value.bookingStatus = '待入住';
+    }
+  }
 }
 
 // 2. 儲存/更新預訂 (對應 PUT /api/bookings/{id})
 async function saveBooking() {
   
 
-  if (!form.value.bookingOrderId) {
-    showMessage("請選擇訂房訂單", "error");
+
+
+  if (!form.value.memberId) {
+    showMessage("請填寫會員 ID", "error");
     return;
   }
 
@@ -266,7 +345,7 @@ async function saveBooking() {
 
   const payload = {
     bookingId: form.value.bookingId,
-    bookingOrderId: Number(form.value.bookingOrderId),
+    memberId: Number(form.value.memberId),
     roomTypeId: Number(form.value.roomTypeId),
     roomId: form.value.roomId ? Number(form.value.roomId) : null,
     checkInDate: form.value.checkInDate,
@@ -277,10 +356,29 @@ async function saveBooking() {
   };
 
   try {
-    await bookingApi.updateBooking(form.value.bookingId, payload);
-    showMessage("訂房明細修改成功", "success");
-    clearForm();
-    await loadBookings();
+    if (form.value.bookingId) {
+      await bookingApi.updateBooking(form.value.bookingId, payload);
+      showMessage("訂房明細修改成功", "success");
+      clearForm();
+      await loadBookings();
+    } else {
+      const createdBooking = await bookingApi.createBooking(payload);
+      showMessage("訂房明細新增成功", "success");
+      
+      // 開啟付款視窗
+      currentNewBooking.value = createdBooking.data || createdBooking; 
+      paymentForm.value = {
+        amount: payload.bookingPrice,
+        paymentMethod: '信用卡',
+        paymentStatus: '已付款',
+        transactionId: ''
+      };
+      generateTxnId(); // 自動產生一個模擬的綠界序號
+      showPaymentModal.value = true;
+      
+      clearForm();
+      await loadBookings();
+    }
   } catch (error) {
     showMessage(error.message || "無法連線至預訂 API", "error");
   }
@@ -289,6 +387,7 @@ async function saveBooking() {
 function editBooking(booking) {
   form.value = {
     bookingId: booking.bookingId,
+    memberId: booking.memberId ?? booking.member_id ?? "",
     bookingOrderId: booking.bookingOrderId ?? booking.booking_order_id ?? "",
     roomTypeId: booking.roomTypeId ?? booking.room_type_id ?? "",
     roomId: booking.roomId ?? booking.room_id ?? "",
@@ -325,6 +424,57 @@ async function deleteBooking(id) {
     await loadBookings();
   } catch (error) {
     showMessage(error.message || "刪除失敗", "error");
+  }
+}
+
+function generateTxnId() {
+  // 為了保證不與資料庫重複，使用時間戳 (YYYYMMDDHHMMSS) 加上 4 碼隨機數
+  const now = new Date();
+  const timestamp = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0') +
+    String(now.getHours()).padStart(2, '0') +
+    String(now.getMinutes()).padStart(2, '0') +
+    String(now.getSeconds()).padStart(2, '0');
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  paymentForm.value.transactionId = `TXN${timestamp}${randomNum}`;
+}
+
+function skipPayment() {
+  showPaymentModal.value = false;
+  currentNewBooking.value = null;
+}
+
+function openPaymentModal(booking) {
+  currentNewBooking.value = booking;
+  paymentForm.value = {
+    amount: booking.bookingPrice ?? booking.booking_price ?? 0,
+    paymentMethod: '信用卡',
+    paymentStatus: '已付款',
+    transactionId: ''
+  };
+  generateTxnId();
+  showPaymentModal.value = true;
+}
+
+async function submitPayment() {
+  try {
+    const bookingId = currentNewBooking.value.bookingId ?? currentNewBooking.value.booking_id;
+    const paymentPayload = {
+      bookingId: bookingId,
+      amount: paymentForm.value.amount,
+      paymentMethod: paymentForm.value.paymentMethod,
+      paymentStatus: paymentForm.value.paymentStatus,
+      transactionId: paymentForm.value.transactionId || null,
+    };
+    
+    await bookingPaymentApi.createPayment(paymentPayload);
+    showMessage("付款紀錄建立成功", "success");
+    showPaymentModal.value = false;
+    currentNewBooking.value = null;
+    await loadBookings(); // 重新拉取包含付款狀態的清單
+  } catch (error) {
+    showMessage(error.message || "建立付款失敗", "error");
   }
 }
 
@@ -366,7 +516,7 @@ onUnmounted(() => {
   }
 });
 
-const currentFilter = ref("today"); // 預設顯示今日有入住的訂單
+const currentFilter = ref("待入住"); // 預設顯示待入住的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
@@ -376,7 +526,17 @@ function setTabStatus(status) {
 const filteredBookings = computed(() => {
   let result = bookings.value;
   
-  if (currentFilter.value === "today") {
+  if (currentFilter.value === "order_today") {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+
+    result = result.filter(b => {
+      const createdAt = b.createdAt ?? b.created_at;
+      if (!createdAt) return false;
+      return String(createdAt).startsWith(todayStr);
+    });
+  } else if (currentFilter.value === "stay_today") {
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
@@ -384,7 +544,6 @@ const filteredBookings = computed(() => {
     result = result.filter(b => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
-      // 當天的入住與退房期間有碰到的邏輯
       return cin <= todayStr && cout >= todayStr;
     });
   } else if (currentFilter.value !== "all") {
@@ -454,26 +613,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       <div class="form-grid">
         <div class="form-group">
           <label>會員 ID</label>
-          <input v-model="searchCriteria.memberId" type="number" placeholder="輸入會員 ID" />
+          <input v-model="searchCriteria.memberId" type="text" placeholder="輸入會員 ID" />
         </div>
-        <div class="form-group">
-          <label>房型</label>
-          <select v-model="searchCriteria.roomTypeId">
-            <option value="">全部房型</option>
-            <option v-for="roomType in roomTypes" :key="roomType.roomTypeId" :value="roomType.roomTypeId">
-              {{ roomType.typeName }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>房號</label>
-          <select v-model="searchCriteria.roomId">
-            <option value="">全部房號</option>
-            <option v-for="room in rooms" :key="room.roomId" :value="room.roomId">
-              {{ room.roomNumber }}
-            </option>
-          </select>
-        </div>
+
         <div class="form-group">
           <label>入住日期</label>
           <input v-model="searchCriteria.checkInDate" type="date" />
@@ -482,15 +624,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <label>退房日期</label>
           <input v-model="searchCriteria.checkOutDate" type="date" />
         </div>
-        <div class="form-group">
-          <label>預訂狀態</label>
-          <select v-model="searchCriteria.bookingStatus">
-            <option value="">全部狀態</option>
-            <option v-for="status in bookingStatuses" :key="status" :value="status">
-              {{ status }}
-            </option>
-          </select>
-        </div>
+
       </div>
       <div class="form-actions" style="margin-top: 15px">
         <button type="button" class="btn primary" @click="loadBookings">
@@ -509,13 +643,23 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       <form @submit.prevent="saveBooking">
         <div class="form-grid">
           <div class="form-group">
-            <label>訂房訂單 *</label>
-            <select v-model="form.bookingOrderId" required>
-              <option value="" disabled>請選擇訂單</option>
-              <option v-for="order in bookingOrders" :key="order.bookingOrderId" :value="order.bookingOrderId">
-                訂單 {{ order.bookingOrderId }}
-              </option>
-            </select>
+            <label>會員 ID *</label>
+            <input v-model.number="form.memberId" type="number" required />
+          </div>
+
+          <div class="form-group">
+            <label>入住日期 *</label>
+            <input v-model="form.checkInDate" type="date" required @change="calculatePrice" />
+          </div>
+
+          <div class="form-group">
+            <label>退房日期 *</label>
+            <input v-model="form.checkOutDate" type="date" required @change="calculatePrice" />
+          </div>
+
+          <div class="form-group">
+            <label>入住人數 *</label>
+            <input v-model.number="form.guestNum" type="number" min="1" max="6" required />
           </div>
 
           <div class="form-group">
@@ -539,28 +683,13 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </div>
 
           <div class="form-group">
-            <label>入住人數 *</label>
-            <input v-model.number="form.guestNum" type="number" min="1" required />
-          </div>
-
-          <div class="form-group">
-            <label>入住日期 *</label>
-            <input v-model="form.checkInDate" type="date" required @change="calculatePrice" />
-          </div>
-
-          <div class="form-group">
-            <label>退房日期 *</label>
-            <input v-model="form.checkOutDate" type="date" required @change="calculatePrice" />
-          </div>
-
-          <div class="form-group">
             <label>住宿晚數</label>
             <input :value="stayNights" type="number" disabled />
           </div>
 
           <div class="form-group">
             <label>訂房價格</label>
-            <input v-model.number="form.bookingPrice" type="number" min="0" />
+            <input v-model.number="form.bookingPrice" type="number" min="0" disabled />
           </div>
 
           <div class="form-group">
@@ -585,7 +714,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
         <div class="form-actions">
           <button type="submit" class="btn primary">
-            {{ form.bookingId === null ? "新增明細" : "儲存修改" }}
+            新增/修改
           </button>
           <button type="button" class="btn secondary" @click="clearForm">
             清除表單
@@ -598,12 +727,13 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
     <section class="admin-card">
       <div class="table-header">
         <h2>訂房明細列表</h2>
-        <span>共 {{ bookings.length }} 筆</span>
+        <span>共 {{ filteredBookings.length }} 筆</span>
       </div>
 
       <!-- 快速狀態切換 -->
       <div class="status-tabs">
-        <button type="button" :class="{ active: currentFilter === 'today' }" @click="setTabStatus('today')">今日預訂</button>
+        <button type="button" :class="{ active: currentFilter === 'order_today' }" @click="setTabStatus('order_today')">今日新增訂單</button>
+        <button type="button" :class="{ active: currentFilter === 'stay_today' }" @click="setTabStatus('stay_today')">今日住房</button>
         <button type="button" :class="{ active: currentFilter === 'all' }" @click="setTabStatus('all')">全部</button>
         <button type="button" :class="{ active: currentFilter === '待入住' }" @click="setTabStatus('待入住')">待入住</button>
         <button type="button" :class="{ active: currentFilter === '已入住' }" @click="setTabStatus('已入住')">已入住</button>
@@ -664,6 +794,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                 <button class="btn edit" @click="editBooking(booking)">
                   修改
                 </button>
+                <button class="btn payment" v-if="!getPaymentForBooking(booking.bookingId)" @click="openPaymentModal(booking)">
+                  新增付款
+                </button>
                 <button class="btn delete" @click="deleteBooking(booking.bookingId)">
                   刪除
                 </button>
@@ -681,6 +814,53 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
       </div>
     </section>
+
+    <!-- 付款紀錄小視窗 (Modal) -->
+    <div v-if="showPaymentModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3 style="margin-top: 0;">建立付款紀錄</h3>
+        <p>訂單 <strong>{{ currentNewBooking?.bookingId }}</strong> 已建立！是否要一併新增付款紀錄？</p>
+
+        <form @submit.prevent="submitPayment">
+          <div class="form-group">
+            <label>應付金額</label>
+            <input v-model.number="paymentForm.amount" type="number" required />
+          </div>
+
+          <div class="form-group">
+            <label>付款方式</label>
+            <select v-model="paymentForm.paymentMethod" required>
+              <option value="現金">現金</option>
+              <option value="信用卡">信用卡</option>
+              <option value="銀行轉帳">銀行轉帳</option>
+              <option value="LINE PAY">LINE PAY</option>
+              <option value="Apple PAY">Apple PAY</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>付款狀態</label>
+            <select v-model="paymentForm.paymentStatus" required>
+              <option value="已付款">已付款</option>
+              <option value="待付款">待付款</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>交易序號</label>
+            <div style="display: flex; gap: 8px;">
+              <input v-model="paymentForm.transactionId" type="text" placeholder="留空或點擊產生" style="flex: 1;" />
+              <button type="button" class="btn secondary" @click="generateTxnId" style="white-space: nowrap; padding: 0.5rem 1rem;">自動產生</button>
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" class="btn secondary" @click="skipPayment">跳過，不建立</button>
+            <button type="submit" class="btn primary">確認建立付款</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </main>
 </template>
 <style scoped>
@@ -769,6 +949,19 @@ select {
 .secondary {
   color: #344054;
   background: #e4e7ec;
+}
+
+.btn.edit:hover {
+  background-color: #d97706;
+}
+
+.btn.payment {
+  background-color: #10b981;
+  color: #fff;
+}
+
+.btn.payment:hover {
+  background-color: #059669;
 }
 
 .edit {
@@ -868,5 +1061,32 @@ th {
 .booking-status.status-cancelled {
   color: #b42318;
   background-color: #feeceb;
+}
+
+/* Modal 樣式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions button {
+  min-width: 100px;
 }
 </style>
