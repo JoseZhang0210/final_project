@@ -43,6 +43,38 @@
           重新整理
         </button>
 
+        <button
+          type="button"
+          class="export-button"
+          @click="exportOrdersJson"
+        >
+          備份匯出 JSON
+        </button>
+
+        <button
+          type="button"
+          class="import-button"
+          @click="triggerJsonImport"
+        >
+          還原備份 JSON
+        </button>
+
+        <input
+          ref="jsonFileInput"
+          type="file"
+          accept=".json"
+          style="display: none"
+          @change="handleJsonUpload"
+        />
+
+        <button
+          type="button"
+          class="seed-button"
+          @click="triggerSeedData"
+        >
+          重灌種子資料
+        </button>
+
       </div>
     </div>
 
@@ -485,6 +517,9 @@ const selectedStatus =
 const editingOrderId =
   ref(null);
 
+const jsonFileInput =
+  ref(null);
+
 
 // =====================================================
 // 篩選
@@ -616,6 +651,222 @@ async function loadOrders() {
   } finally {
 
     loading.value = false;
+  }
+}
+
+
+// =====================================================
+// 匯出訂單備份 JSON
+// =====================================================
+
+async function exportOrdersJson() {
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/orders/exchange/export/json",
+        {
+          headers:
+            getAuthHeaders(),
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `匯出備份失敗 (${response.status})`
+      );
+    }
+
+    const blob =
+      await response.blob();
+
+    const downloadUrl =
+      window.URL.createObjectURL(blob);
+
+    const a =
+      document.createElement("a");
+
+    a.href = downloadUrl;
+
+    a.download = "order_system_backup.json";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    document.body.removeChild(a);
+
+    window.URL.revokeObjectURL(downloadUrl);
+
+  } catch (error) {
+
+    console.error(
+      "匯出 JSON 失敗：",
+      error
+    );
+
+    alert(
+      error.message ||
+      "匯出備份失敗"
+    );
+  }
+}
+
+
+// =====================================================
+// 還原備份 JSON
+// =====================================================
+
+function triggerJsonImport() {
+
+  if (jsonFileInput.value) {
+
+    jsonFileInput.value.value = "";
+
+    jsonFileInput.value.click();
+  }
+}
+
+
+async function handleJsonUpload(event) {
+
+  const file =
+    event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `確定要由備份檔「${file.name}」匯入還原訂單系統資料嗎？`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    "file",
+    file
+  );
+
+  try {
+
+    const token =
+      localStorage.getItem("token");
+
+    const headers = {};
+
+    if (token) {
+      headers.Authorization =
+        "Bearer " + token;
+    }
+
+    const response =
+      await fetch(
+        "/api/orders/exchange/import/json",
+        {
+          method: "POST",
+          headers,
+          body: formData,
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (!response.ok || !result.success) {
+
+      throw new Error(
+        result.message ||
+        "還原匯入失敗"
+      );
+    }
+
+    alert(
+      result.message ||
+      "資料還原匯入成功！"
+    );
+
+    await loadOrders();
+
+  } catch (error) {
+
+    console.error(
+      "還原備份失敗：",
+      error
+    );
+
+    alert(
+      "還原備份失敗：" +
+      (error.message || "請檢查檔案內容格式")
+    );
+  }
+}
+
+
+// =====================================================
+// 重灌種子資料
+// =====================================================
+
+async function triggerSeedData() {
+
+  const confirmed =
+    window.confirm(
+      "確定要手動執行種子資料注入嗎？系統將補齊預設的訂單、優惠券與付款示範資料。"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/orders/exchange/seed",
+        {
+          method: "POST",
+          headers:
+            getAuthHeaders(),
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (!response.ok || !result.success) {
+
+      throw new Error(
+        result.message ||
+        "種子資料注入失敗"
+      );
+    }
+
+    alert(
+      result.message ||
+      "種子資料處理完成！"
+    );
+
+    await loadOrders();
+
+  } catch (error) {
+
+    console.error(
+      "注入種子資料失敗：",
+      error
+    );
+
+    alert(
+      "注入種子資料失敗：" +
+      error.message
+    );
   }
 }
 
@@ -1228,6 +1479,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .filter-select {
@@ -1248,6 +1500,56 @@ onMounted(() => {
   color: white;
   font-weight: bold;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-button:hover {
+  background-color: #9a7437;
+}
+
+.export-button {
+  padding: 9px 14px;
+  border: 1px solid #2f5f9f;
+  border-radius: 6px;
+  background-color: #2f5f9f;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-button:hover {
+  background-color: #244979;
+}
+
+.import-button {
+  padding: 9px 14px;
+  border: 1px solid #3f7d56;
+  border-radius: 6px;
+  background-color: #3f7d56;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-button:hover {
+  background-color: #306345;
+}
+
+.seed-button {
+  padding: 9px 14px;
+  border: 1px solid #6c757d;
+  border-radius: 6px;
+  background-color: #6c757d;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.seed-button:hover {
+  background-color: #565e64;
 }
 
 
