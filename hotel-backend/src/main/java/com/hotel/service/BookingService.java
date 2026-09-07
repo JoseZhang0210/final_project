@@ -12,4 +12,5 @@ public interface BookingService {
     BookingDTO updateBooking(Integer id, BookingDTO newBookingData);
     void deleteById(Integer id);
     BookingDTO insert(BookingDTO bookingDTO);
+    Integer calculateBookingPrice(Integer roomTypeId, java.time.LocalDate checkInDate, java.time.LocalDate checkOutDate);
 }

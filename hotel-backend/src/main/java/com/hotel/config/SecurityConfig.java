@@ -60,7 +60,11 @@ public class SecurityConfig {
                                                                 // 登入 / 註冊
                                                                 // 不需要 JWT
                                                                 // -------------------------
-                                                                .requestMatchers("/api/auth/**").permitAll()
+                                                                .requestMatchers("/api/auth/**", "/api/test/**").permitAll()
+                                                                // -------------------------
+                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼
+                                                                // -------------------------
+                                                                .requestMatchers("/api/roomtypes/**", "/uploads/**", "/api/payments/ecpay/**").permitAll()
                                                                 // -------------------------
                                                                 // Spring Boot error
                                                                 // -------------------------

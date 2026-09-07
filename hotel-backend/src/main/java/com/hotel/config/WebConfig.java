@@ -13,9 +13,12 @@ public class WebConfig
             ResourceHandlerRegistry registry) {
 
         registry
-                .addResourceHandler(
-                        "/upload/**")
-                .addResourceLocations(
-                        "file:upload/");
+                .addResourceHandler("/upload/**")
+                .addResourceLocations("file:upload/");
+
+        // 讓前台與後台可以直接讀取 final_project/uploads/ 資料夾底下的圖片
+        registry
+                .addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/");
     }
 }
