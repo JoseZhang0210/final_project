@@ -174,4 +174,53 @@ public class AuthController {
         response.put("name", name);
         return ResponseEntity.ok(response);
     }
+
+    // =====================================================
+    // 刷新 Token
+    // POST /api/auth/refresh
+    // =====================================================
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(jakarta.servlet.http.HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "未提供有效的 Authorization Header"));
+        }
+
+        String token = authHeader.substring(7);
+        if (!jwtUtils.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token 已失效或過期，請重新登入"));
+        }
+
+        try {
+            String username = jwtUtils.extractUsername(token);
+            UserDetails user = userDetailsService.loadUserByUsername(username);
+
+            if (!user.isEnabled()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "該帳號已被停用"));
+            }
+
+            String newToken = jwtUtils.generateToken(user);
+
+            java.util.List<String> authorities = user.getAuthorities().stream()
+                    .map(auth -> auth != null ? auth.getAuthority() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+            String name = profileRepository.findByUsername(user.getUsername())
+                    .map(Profile::getName)
+                    .orElse(user.getUsername());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", newToken);
+            response.put("authorities", authorities);
+            response.put("name", name);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token 刷新失敗：" + e.getMessage()));
+        }
+    }
 }
