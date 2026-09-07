@@ -10,13 +10,39 @@
           </p>
         </div>
 
-        <button
-          type="button"
-          class="create-button"
-          @click="openCreateForm"
-        >
-          新增優惠券
-        </button>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="export-button"
+            @click="exportCouponsCsv"
+          >
+            匯出 CSV
+          </button>
+
+          <button
+            type="button"
+            class="import-button"
+            @click="triggerCsvImport"
+          >
+            批次匯入 CSV
+          </button>
+
+          <input
+            ref="csvFileInput"
+            type="file"
+            accept=".csv"
+            style="display: none"
+            @change="handleCsvUpload"
+          />
+
+          <button
+            type="button"
+            class="create-button"
+            @click="openCreateForm"
+          >
+            新增優惠券
+          </button>
+        </div>
       </div>
 
 
@@ -44,9 +70,11 @@
             </label>
 
             <input
-              v-model="form.couponCode"
+              v-model.trim="form.couponCode"
               type="text"
+              maxlength="50"
               placeholder="例如 SAVE200"
+              @input="form.couponCode = form.couponCode.toUpperCase()"
             />
           </div>
 
@@ -57,8 +85,9 @@
             </label>
 
             <input
-              v-model="form.couponName"
+              v-model.trim="form.couponName"
               type="text"
+              maxlength="100"
               placeholder="例如 滿兩千現折兩百"
             />
           </div>
@@ -372,6 +401,13 @@
                     啟用
                   </button>
 
+                  <button
+                    type="button"
+                    class="delete-button"
+                    @click="removeCoupon(coupon)"
+                  >
+                    刪除
+                  </button>
                 </div>
               </td>
 
@@ -427,6 +463,9 @@ const showForm =
   ref(false);
 
 const editingCouponId =
+  ref(null);
+
+const csvFileInput =
   ref(null);
 
 
@@ -536,6 +575,163 @@ async function loadCoupons() {
   } finally {
 
     loading.value = false;
+  }
+}
+
+
+// =====================================================
+// 匯出優惠券 CSV (相容 Excel)
+// =====================================================
+
+async function exportCouponsCsv() {
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/orders/exchange/export/coupons/csv",
+        {
+          headers:
+            getAuthHeaders(),
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `匯出 CSV 失敗 (${response.status})`
+      );
+    }
+
+    const blob =
+      await response.blob();
+
+    const downloadUrl =
+      window.URL.createObjectURL(blob);
+
+    const a =
+      document.createElement("a");
+
+    a.href = downloadUrl;
+
+    a.download = "coupons.csv";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    document.body.removeChild(a);
+
+    window.URL.revokeObjectURL(downloadUrl);
+
+  } catch (error) {
+
+    console.error(
+      "匯出 CSV 錯誤：",
+      error
+    );
+
+    alert(
+      error.message ||
+      "匯出 CSV 失敗"
+    );
+  }
+}
+
+
+// =====================================================
+// 批次匯入 CSV
+// =====================================================
+
+function triggerCsvImport() {
+
+  if (csvFileInput.value) {
+
+    csvFileInput.value.value = "";
+
+    csvFileInput.value.click();
+  }
+}
+
+
+async function handleCsvUpload(event) {
+
+  const file =
+    event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `確定要由 CSV「${file.name}」批次匯入/更新優惠券嗎？`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    "file",
+    file
+  );
+
+  try {
+
+    
+      const token = localStorage.getItem("token");
+
+      const headers = {
+        Accept: "application/json",
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+    const response =
+      await fetch(
+        "/api/orders/exchange/import/coupons/csv",
+        {
+          method: "POST",
+          headers,
+          body: formData,
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (!response.ok || !result.success) {
+
+      throw new Error(
+        result.message ||
+        "批次匯入失敗"
+      );
+    }
+
+    alert(
+      result.message ||
+      "優惠券批次匯入成功！"
+    );
+
+    await loadCoupons();
+
+  } catch (error) {
+
+    console.error(
+      "批次匯入 CSV 錯誤：",
+      error
+    );
+
+    alert(
+      "批次匯入 CSV 失敗：" +
+      (error.message || "請檢查 CSV 格式")
+    );
   }
 }
 
@@ -798,6 +994,37 @@ async function saveCoupon() {
 
     saving.value =
       false;
+  }
+}
+
+// -------------------------------------------------
+// 刪除優惠券
+// -------------------------------------------------
+async function removeCoupon(coupon) {
+  const confirmed = window.confirm(
+    `確定要刪除優惠券 ${coupon.couponCode} 嗎？此操作無法復原。`
+  );
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(
+      `/api/coupons/${coupon.couponId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err || `刪除失敗 (${response.status})`);
+    }
+
+    alert(`優惠券 ${coupon.couponCode} 已成功刪除`);
+    await loadCoupons(); // 重新載入表格資料
+  } catch (error) {
+    console.error("刪除優惠券錯誤：", error);
+    alert(error.message || "刪除失敗，請稍後再試");
   }
 }
 
@@ -1145,19 +1372,41 @@ function extractErrorMessage(
     return "";
   }
 
+  const lower =
+    text.toLowerCase();
+
+  if (
+    lower.includes("unique") ||
+    text.includes("重複") ||
+    lower.includes("duplicate") ||
+    lower.includes("already exists")
+  ) {
+    return "該優惠券代碼已存在，請更換其他代碼！";
+  }
 
   try {
 
     const data =
       JSON.parse(text);
 
-
-    return (
+    const msg =
       data.message ||
       data.error ||
-      ""
-    );
+      "";
 
+    const msgLower =
+      msg.toLowerCase();
+
+    if (
+      msgLower.includes("unique") ||
+      msg.includes("重複") ||
+      msgLower.includes("duplicate") ||
+      msgLower.includes("already exists")
+    ) {
+      return "該優惠券代碼已存在，請更換其他代碼！";
+    }
+
+    return msg;
 
   } catch {
 
@@ -1207,6 +1456,43 @@ onMounted(() => {
   color: #888888;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.export-button {
+  padding: 11px 18px;
+  border: 1px solid #2f5f9f;
+  border-radius: 6px;
+  background-color: #2f5f9f;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-button:hover {
+  background-color: #244979;
+}
+
+.import-button {
+  padding: 11px 18px;
+  border: 1px solid #3f7d56;
+  border-radius: 6px;
+  background-color: #3f7d56;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-button:hover {
+  background-color: #306345;
+}
+
 .create-button {
   padding: 11px 20px;
   border: none;
@@ -1215,6 +1501,11 @@ onMounted(() => {
   color: white;
   font-weight: bold;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-button:hover {
+  background-color: #9a7437;
 }
 
 .coupon-form-card {
@@ -1249,6 +1540,16 @@ onMounted(() => {
 .form-group label {
   font-weight: bold;
   color: #555555;
+}
+
+.delete-button {
+  background-color: #e53935;
+  /* 鮮紅 */
+  color: #fff;
+}
+
+.delete-button:hover {
+  background-color: #c62828;
 }
 
 .form-group input,
