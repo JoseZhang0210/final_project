@@ -11,6 +11,8 @@ import RestaurantMenuView from "../views/RestaurantMenuView.vue";
 import RestaurantManageView from "../views/RestaurantManageView.vue";
 import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
+//--------------------餐廳前台管理-----------------------------------
+import RestaurantReservationView from "../views/RestaurantReservationView.vue";
 //--------------------登入登出註冊管理--------------------------------
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
@@ -210,6 +212,11 @@ const router = createRouter({
           component: RestaurantManageView,
         },
         {
+              path: "restaurant-reservation",
+              name: "restaurant-reservation",
+              component: RestaurantReservationView,
+            },
+        {
           path: "restaurant-times",
           name: "restaurant-times",
           component: RestaurantTimeManageView,
@@ -273,6 +280,10 @@ const router = createRouter({
       ],
     },
   ],
+  //==========跳傳至最上方=====================
+  scrollBehavior() {
+    return { top: 0 };
+  },
 });
 
 export default router;
