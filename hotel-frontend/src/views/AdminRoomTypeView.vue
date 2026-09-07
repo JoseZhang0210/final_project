@@ -289,7 +289,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <th>床型</th>
               <th>人數</th>
               <th>每晚價格</th>
-              <th>剩餘數量</th>
+              <th>預設房間數</th>
+              <th>今日可用數</th>
               <th>房型說明</th>
               <!--v-if="false" 隱藏-->
               <th v-if="false">操作</th>
@@ -306,7 +307,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>{{ roomType.bedType }}</td>
               <td>{{ roomType.capacity }} 人</td>
               <td>{{ formatPrice(roomType.pricePerNight) }}</td>
-              <td><span class="status" :class="getAvailableRoomsClass(roomType.availableRooms ?? 0)">{{ roomType.availableRooms ?? 0 }} 間</span></td>
+              <td>{{ roomType.availableRooms ?? 0 }} 間</td>
+              <td><span class="status" :class="getAvailableRoomsClass(roomType.todayAvailableRooms ?? 0)">{{ roomType.todayAvailableRooms ?? 0 }} 間</span></td>
               <td>{{ roomType.roomDescription || "—" }}</td>
               <!--v-if="false" 隱藏-->
               <td v-if="false" class="action-cell">

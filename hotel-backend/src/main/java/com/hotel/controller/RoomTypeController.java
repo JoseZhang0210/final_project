@@ -1,5 +1,6 @@
 package com.hotel.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.RoomTypeDTO;
@@ -30,6 +32,16 @@ public class RoomTypeController {
     @GetMapping
     public ResponseEntity<List<RoomTypeDTO>> getAllRoomTypes() {
         return ResponseEntity.ok(roomTypeService.findAll());
+    }
+
+    // 前台訂房專用：依日期區間查詢各房型剩餘可用數量
+    @GetMapping("/available")
+    public ResponseEntity<List<RoomTypeDTO>> getAvailableRoomTypes(
+            @RequestParam String checkIn,
+            @RequestParam String checkOut) {
+        LocalDate checkInDate = LocalDate.parse(checkIn);
+        LocalDate checkOutDate = LocalDate.parse(checkOut);
+        return ResponseEntity.ok(roomTypeService.findAllWithAvailability(checkInDate, checkOutDate));
     }
 
     @GetMapping("/{id}")

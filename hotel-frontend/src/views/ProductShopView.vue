@@ -18,7 +18,12 @@
 
         <!-- 搜尋 -->
         <div class="shop-search">
-          <input v-model="keyword" type="text" placeholder="搜尋商品名稱..." @keyup.enter="searchProducts" />
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜尋商品名稱..."
+            @keyup.enter="searchProducts"
+          />
 
           <button type="button" @click="searchProducts">搜尋</button>
         </div>
@@ -106,8 +111,33 @@
         >
           <!-- 商品圖片 -->
           <div class="product-image-wrap">
-            <img :src="getProductImage(product)" :alt="product.productName" class="product-image"
-              @error="handleImageError" />
+            <img
+              :src="getProductImage(product)"
+              :alt="product.productName"
+              class="product-image"
+              @error="handleImageError"
+            />
+
+            <button
+              type="button"
+              class="wishlist-button"
+              :class="{ active: isProductInWishlist(product.productId) }"
+              :aria-label="
+                isProductInWishlist(product.productId)
+                  ? `將 ${product.productName} 移出願望清單`
+                  : `將 ${product.productName} 加入願望清單`
+              "
+              :title="
+                isProductInWishlist(product.productId)
+                  ? '移出願望清單'
+                  : '加入願望清單'
+              "
+              @click.stop="handleToggleWishlist(product.productId)"
+            >
+              <span aria-hidden="true">
+                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
+              </span>
+            </button>
 
             <button
               type="button"
@@ -131,14 +161,20 @@
             </button>
 
             <!-- 缺貨 -->
-            <span v-if="
-              product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
-            " class="product-badge sold-out">
+            <span
+              v-if="
+                product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
+              "
+              class="product-badge sold-out"
+            >
               缺貨
             </span>
 
             <!-- 庫存少 -->
-            <span v-else-if="Number(product.stock) <= 5" class="product-badge stock-low">
+            <span
+              v-else-if="Number(product.stock) <= 5"
+              class="product-badge stock-low"
+            >
               即將售完
             </span>
           </div>
@@ -690,6 +726,7 @@ function selectCategory(categoryId) {
 // =====================================================
 // 商品圖片
 // =====================================================
+
 function getProductImage(product) {
   const imageUrl = product.imageUrl?.trim();
 

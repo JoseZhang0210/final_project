@@ -17,6 +17,8 @@ function createEmptyForm() {
     imageId: null,
     roomTypeId: "",
     imageUrl: "",
+    imageFile: null,
+    imageSource: "upload", // "upload" or "url"
     imageDescription: "",
     isMain: false,
     displayOrder: 0,
@@ -89,25 +91,26 @@ async function saveRoomImage() {
       const imageData = {
         ...form.value,
         roomTypeId: Number(form.value.roomTypeId),
-        imageUrl: form.value.imageUrl ? form.value.imageUrl.trim() : "",
+        imageUrl: form.value.imageSource === "url" ? form.value.imageUrl.trim() : form.value.imageUrl,
         displayOrder: Number(form.value.displayOrder),
       };
       await roomImageApi.updateImage(form.value.imageId, imageData);
       showMessage("圖片修改成功", "success");
     } else {
-      // POST /api/images expects form-data for creation due to @RequestParam in controller
       const formData = new FormData();
-      formData.append("staticPath", form.value.imageUrl.trim());
+      if (form.value.imageSource === "upload" && form.value.imageFile) {
+        formData.append("file", form.value.imageFile);
+      } else if (form.value.imageSource === "url" && form.value.imageUrl) {
+        formData.append("staticPath", form.value.imageUrl.trim());
+      } else {
+        showMessage("請上傳圖片或填寫網址", "error");
+        return;
+      }
+      
       if (form.value.imageDescription) {
         formData.append("imageDescription", form.value.imageDescription);
       }
-      // DTO fields like roomTypeId, displayOrder are not in the controller @RequestParam!
-      // Wait, the backend CREATE endpoint doesn't accept roomTypeId or displayOrder right now in the backend!
-      // Let's check backend RoomImageController POST /api/images
-      // It only accepts file, staticPath, imageDescription.
-      // So roomTypeId, isMain, displayOrder are lost on CREATE?
-      // I should pass them. BUT since this is just the frontend part, I'll pass the DTO if they use @RequestBody. But it's @RequestParam...
-      // Let's just fix it by passing a JSON for update and FormData for create.
+      // Note: roomTypeId, isMain, displayOrder are currently not supported by backend POST /api/images
       await roomImageApi.createImage(formData, true);
       showMessage("圖片新增成功", "success");
     }
@@ -121,13 +124,30 @@ async function saveRoomImage() {
 }
 
 function editRoomImage(image) {
-  form.value = { ...image };
+  form.value = { 
+    ...image,
+    imageUrl: image.path, // Maps DB path to form URL field
+    imageSource: "url", // Editing uses URL by default because backend only saves the path
+    imageFile: null
+  };
   formTitle.value = `修改圖片 ID：${image.imageId}`;
 
   window.scrollTo({
     top: 0,
     behavior: "smooth",
   });
+}
+
+function handleFileChange(event) {
+  const file = event.target.files[0];
+  if (file) {
+    form.value.imageFile = file;
+    // 建立本地預覽網址
+    form.value.imageUrl = URL.createObjectURL(file);
+  } else {
+    form.value.imageFile = null;
+    form.value.imageUrl = "";
+  }
 }
 
 async function deleteRoomImage(id) {
@@ -219,15 +239,42 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </div>
 
           <div class="form-group full-width">
-            <label for="imageUrl">圖片網址 *</label>
+            <label>圖片來源 *</label>
+            <div class="radio-group" style="display: flex; gap: 15px; margin-bottom: 8px;">
+              <label class="radio-label">
+                <input type="radio" v-model="form.imageSource" value="upload" :disabled="form.imageId !== null" />
+                從電腦上傳 (推薦)
+              </label>
+              <label class="radio-label">
+                <input type="radio" v-model="form.imageSource" value="url" />
+                使用外部網址
+              </label>
+            </div>
 
-            <input
-              id="imageUrl"
-              v-model.trim="form.imageUrl"
-              type="url"
-              placeholder="https://example.com/room.jpg"
-              required
-            />
+            <div v-if="form.imageSource === 'url'">
+              <input
+                id="imageUrl"
+                v-model.trim="form.imageUrl"
+                type="url"
+                placeholder="例如：/images/room.jpg 或 https://example.com/room.jpg"
+                :required="form.imageSource === 'url'"
+                style="width: 100%"
+              />
+            </div>
+            
+            <div v-if="form.imageSource === 'upload'">
+              <input
+                id="imageFile"
+                type="file"
+                accept="image/*"
+                @change="handleFileChange"
+                :required="form.imageSource === 'upload' && form.imageId === null"
+                style="width: 100%"
+              />
+            </div>
+            <small v-if="form.imageId !== null && form.imageSource === 'upload'" style="color: #d59032;">
+              註：修改模式下不支援重新上傳檔案，若要更換檔案請先刪除後重新新增。
+            </small>
           </div>
 
           <div class="form-group full-width">
@@ -251,7 +298,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <p>圖片預覽</p>
 
           <img
-            :src="form.imageUrl"
+            :src="form.imageUrl.startsWith('/') ? `http://localhost:8081${form.imageUrl}` : form.imageUrl"
             alt="房型圖片預覽"
             @error="handleImageError"
           />
@@ -287,7 +334,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         >
           <div class="image-wrapper">
             <img
-              :src="image.imageUrl"
+              :src="image.path ? `http://localhost:8081${image.path}` : ''"
               :alt="image.imageDescription || '房型圖片'"
               @error="handleImageError"
             />
