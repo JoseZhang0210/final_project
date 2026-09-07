@@ -1,25 +1,20 @@
 package com.hotel.model.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
-@Table(name = "payment")
-@Getter
-@Setter
+@Table(name = "payment", schema = "dbo")
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class Payment {
 
     @Id
@@ -27,11 +22,24 @@ public class Payment {
     @Column(name = "payment_id")
     private Integer paymentId;
 
+    @Column(name = "member_id")
+    private Integer memberId;
+
     @Column(name = "payment_method")
     private String paymentMethod;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_order_id") // 修正：指向 BookingOrder 在 DB
-    // @JsonIgnoreProperties({ "payments", "hibernateLazyInitializer", "handler" })
-    private BookingOrder bookingOrder;
+    @Column(name = "transaction_id")
+    private String transactionId;
+
+    @Column(name = "total_price", nullable = false)
+    private Integer totalPrice;
+
+    @Column(name = "payment_status", nullable = false)
+    private String paymentStatus;
+
+    @Column(name = "payment_time")
+    private LocalDateTime paymentTime;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

@@ -139,6 +139,27 @@
               </span>
             </button>
 
+            <button
+              type="button"
+              class="wishlist-button"
+              :class="{ active: isProductInWishlist(product.productId) }"
+              :aria-label="
+                isProductInWishlist(product.productId)
+                  ? `將 ${product.productName} 移出願望清單`
+                  : `將 ${product.productName} 加入願望清單`
+              "
+              :title="
+                isProductInWishlist(product.productId)
+                  ? '移出願望清單'
+                  : '加入願望清單'
+              "
+              @click.stop="handleToggleWishlist(product.productId)"
+            >
+              <span aria-hidden="true">
+                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
+              </span>
+            </button>
+
             <!-- 缺貨 -->
             <span
               v-if="

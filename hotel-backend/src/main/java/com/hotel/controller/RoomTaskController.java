@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hotel.model.entity.RoomTask;
+import com.hotel.model.dto.RoomTaskDTO;
 import com.hotel.service.RoomTaskService;
-
-import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/roomtask")
@@ -30,100 +28,52 @@ public class RoomTaskController {
         this.roomTaskService = roomTaskService;
     }
 
-    // 1. 新增房務任務 (POST /api/roomtask)
     @PostMapping
-    public ResponseEntity<?> createRoomTask(@RequestBody RoomTask roomTask) {
-        try {
-            // 確保新增時主鍵為 null，由資料庫自動遞增
-            roomTask.setTaskId(null);
-            RoomTask savedTask = roomTaskService.insert(roomTask);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedTask);
-        } catch (Exception e) {
-            String errorMsg = e.getMessage();
-            if (errorMsg != null && errorMsg.contains("FK_")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "外鍵約束錯誤：請確認關聯的房間 ID 或員工 ID 是否存在！"));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "新增任務失敗：" + e.getMessage()));
-        }
+    public ResponseEntity<RoomTaskDTO> createRoomTask(@RequestBody RoomTaskDTO roomTaskDTO) {
+        roomTaskDTO.setTaskId(null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(roomTaskService.insert(roomTaskDTO));
     }
 
-    // 2. 查詢任務與條件過濾 (GET /api/roomtask)
     @GetMapping
-    public ResponseEntity<?> getTasks(
+    public ResponseEntity<List<RoomTaskDTO>> getTasks(
             @RequestParam(required = false) Integer taskId,
             @RequestParam(required = false) Integer roomId,
             @RequestParam(required = false) Integer employeeId,
             @RequestParam(required = false) String priority) {
 
-        try {
-            // 帶入 taskId 時執行單筆查詢 (以 List 包裝回傳)
-            if (taskId != null) {
-                return roomTaskService.findOptionalById(taskId)
-                        .map(task -> ResponseEntity.ok(List.of(task)))
-                        .orElseGet(() -> ResponseEntity.ok(List.of()));
-            }
-            if (roomId != null) {
-                return ResponseEntity.ok(roomTaskService.findByRoomId(roomId));
-            }
-            if (employeeId != null) {
-                return ResponseEntity.ok(roomTaskService.findByEmployeeId(employeeId));
-            }
-            if (priority != null && !priority.isBlank()) {
-                return ResponseEntity.ok(roomTaskService.findByPriority(priority));
-            }
-
-            // 預設取得全部任務
-            return ResponseEntity.ok(roomTaskService.findAll());
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "查詢任務失敗：" + e.getMessage()));
+        if (taskId != null) {
+            return roomTaskService.findOptionalById(taskId)
+                    .map(task -> ResponseEntity.ok(List.of(task)))
+                    .orElseGet(() -> ResponseEntity.ok(List.of()));
         }
+        if (roomId != null) {
+            return ResponseEntity.ok(roomTaskService.findByRoomId(roomId));
+        }
+        if (employeeId != null) {
+            return ResponseEntity.ok(roomTaskService.findByEmployeeId(employeeId));
+        }
+        if (priority != null && !priority.isBlank()) {
+            return ResponseEntity.ok(roomTaskService.findByPriority(priority));
+        }
+
+        return ResponseEntity.ok(roomTaskService.findAll());
     }
 
-    // 3. 依 ID 查詢單筆任務 (GET /api/roomtask/{id})
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTaskById(@PathVariable Integer id) {
-        try {
-            return roomTaskService.findOptionalById(id)
-                    .<ResponseEntity<?>>map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(Map.of("message", "找不到 ID 為 " + id + " 的任務資料")));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "系統錯誤：" + e.getMessage()));
-        }
+    public ResponseEntity<RoomTaskDTO> getTaskById(@PathVariable Integer id) {
+        return roomTaskService.findOptionalById(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("找不到 ID 為 " + id + " 的任務資料"));
     }
 
-    // 4. 更新任務 (PUT /api/roomtask/{id})
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateRoomTask(@PathVariable Integer id, @RequestBody RoomTask taskDetails) {
-        try {
-            RoomTask updatedTask = roomTaskService.update(id, taskDetails);
-            return ResponseEntity.ok(updatedTask);
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "更新失敗：" + e.getMessage()));
-        }
+    public ResponseEntity<RoomTaskDTO> updateRoomTask(@PathVariable Integer id, @RequestBody RoomTaskDTO taskDTO) {
+        return ResponseEntity.ok(roomTaskService.update(id, taskDTO));
     }
 
-    // 5. 刪除任務 (DELETE /api/roomtask/{id})
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRoomTask(@PathVariable Integer id) {
-        try {
-            roomTaskService.deleteById(id);
-            return ResponseEntity.ok(Map.of("message", "任務刪除成功！"));
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("message", "刪除失敗：該任務可能已被其他資料關聯！"));
-        }
+    public ResponseEntity<Map<String, String>> deleteRoomTask(@PathVariable Integer id) {
+        roomTaskService.deleteById(id);
+        return ResponseEntity.ok(Map.of("message", "任務刪除成功！"));
     }
 }

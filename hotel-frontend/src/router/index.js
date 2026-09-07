@@ -26,21 +26,24 @@ import AdminOrdersView from "../views/AdminOrdersView.vue";
 import RentalView from "../views/RentalView.vue";
 import VenueView from "../views/VenueView.vue";
 //---------------------------------------------------
-import RoomBookingOrderView from "../views/RoomBookingOrderView.vue";
-import RoomTypeManageView from "../views/RoomTypeManageView.vue";
-import RoomManageView from "../views/RoomManageView.vue";
-import RoomImageManageView from "../views/RoomImageManageView.vue";
-import RoomTaskManageView from "../views/RoomTaskManageView.vue";
-import RoomBookingManageView from "../views/RoomBookingManageView.vue";
+import AdminRoomTypeView from "../views/AdminRoomTypeView.vue";
+import AdminRoomView from "../views/AdminRoomView.vue";
+import AdminRoomImageView from "../views/AdminRoomImageView.vue";
+import AdminRoomTaskView from "../views/AdminRoomTaskView.vue";
+import AdminRoomBookingView from "../views/AdminRoomBookingView.vue";
+import AdminRoomBookingPaymentView from "../views/AdminRoomBookingPaymentView.vue";
 
-// ---------------購物車-------------------
+// ---------------購物車 / 結帳 / 付款-------------------
 import CartView from "../views/CartView.vue";
+import CheckoutView from "../views/CheckoutView.vue";
+import PaymentView from "../views/PaymentView.vue";
+// ---------------優惠券-------------------
+import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 
-
-//--------------- 會員訂單管理 -----------------
+//--------------- 會員中心 -----------------
+import MemberLayout from "../layouts/MemberLayout.vue";
+import MemberProfileView from "../views/MemberProfileView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
-
-
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -90,7 +93,11 @@ const router = createRouter({
           name: "admin-orders",
           component: AdminOrdersView,
         },
-
+        {
+          path: "coupons",
+          name: "admin-coupons",
+          component: AdminCouponsView,
+        },
         {
           path: "restaurant-times",
           name: "admin-restaurant-times",
@@ -102,35 +109,36 @@ const router = createRouter({
           component: ReservationManageView,
         },
         // ==========訂房==========
-        {
-          path: "room-booking-order",
-          name: "admin-roombookingorder",
-          component: RoomBookingOrderView,
-        },
+
         {
           path: "room-status",
           name: "admin-room-status",
-          component: RoomManageView,
+          component: AdminRoomView,
         },
         {
           path: "room-types",
           name: "admin-room-types",
-          component: RoomTypeManageView,
+          component: AdminRoomTypeView,
         },
         {
           path: "room-images",
           name: "admin-room-images",
-          component: RoomImageManageView,
+          component: AdminRoomImageView,
         },
         {
           path: "room-task",
           name: "admin-room-task",
-          component: RoomTaskManageView,
+          component: AdminRoomTaskView,
         },
         {
           path: "room-booking",
           name: "admin-room-booking",
-          component: RoomBookingManageView,
+          component: AdminRoomBookingView,
+        },
+        {
+          path: "booking-payments",
+          name: "admin-booking-payments",
+          component: AdminRoomBookingPaymentView,
         },
         //===============================
         {
@@ -177,9 +185,19 @@ const router = createRouter({
           component: ProductShopView,
         },
         {
-          path: "/cart",
+          path: "cart",
           name: "cart",
           component: CartView,
+        },
+        {
+          path: "checkout",
+          name: "checkout",
+          component: CheckoutView,
+        },
+        {
+          path: "payment/:orderId",
+          name: "payment",
+          component: PaymentView,
         },
         {
           path: "restaurant-menu",
@@ -212,9 +230,45 @@ const router = createRouter({
           component: () => import("../views/AboutView.vue"),
         },
         {
+          path: '/room-booking',
+          name: 'room-booking',
+          component: () => import('../views/RoomBookingView.vue')
+        },
+        {
+          path: '/room-selection',
+          name: 'room-selection',
+          component: () => import('../views/RoomSelectionView.vue')
+        },
+        {
+          path: '/room-checkout',
+          name: 'room-checkout',
+          component: () => import('../views/RoomCheckoutView.vue')
+        },
+        {
           path: "my-orders",
           name: "my-orders",
           component: MyOrdersView,
+        },
+        {
+          path: "member",
+          component: MemberLayout,
+          children: [
+            {
+              path: "",
+              name: "member-center",
+              component: MemberProfileView,
+            },
+            {
+              path: "profile",
+              name: "member-profile",
+              component: MemberProfileView,
+            },
+            {
+              path: "orders",
+              name: "member-orders",
+              component: MyOrdersView,
+            },
+          ],
         },
       ],
     },
