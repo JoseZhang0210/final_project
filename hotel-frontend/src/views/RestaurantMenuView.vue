@@ -78,6 +78,13 @@ const restaurants = [
             <span>🕒</span>
             <p>{{ restaurant.time }}</p>
           </div>
+
+          <RouterLink :to="{
+            name: 'restaurant-reservation',
+            query: { restaurant: restaurant.name },
+          }" class="reservation-link">
+            立即訂位
+          </RouterLink>
         </div>
       </article>
     </section>
@@ -85,7 +92,7 @@ const restaurants = [
     <section class="ending-section">
       <p class="section-label">A TASTE TO REMEMBER</p>
       <h2>讓每一餐，成為旅程中的回憶</h2>
-      <p>餐廳訂位服務即將開放，敬請期待。</p>
+      <p>選擇您喜愛的餐廳，立即預約專屬的用餐時光。</p>
     </section>
   </div>
 </template>
@@ -242,6 +249,23 @@ const restaurants = [
 
 .ending-section {
   padding-bottom: 100px;
+}
+
+.reservation-link {
+  display: block;
+  margin-top: 20px;
+  padding: 11px;
+  border: 1px solid #a77b3d;
+  color: #8d6229;
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.reservation-link:hover {
+  color: #fff;
+  background: #a77b3d;
 }
 
 @media (max-width: 750px) {
