@@ -11,9 +11,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.MemberDTO;
@@ -55,6 +57,19 @@ public class AuthController {
     }
 
     private final Map<String, VerificationCodeRecord> verificationCodes = new ConcurrentHashMap<>();
+
+    // =====================================================
+    // 檢查帳號是否重複
+    // GET /api/auth/check-username?username=xxx
+    // =====================================================
+    @GetMapping("/check-username")
+    public ResponseEntity<?> checkUsername(@RequestParam(name = "username", required = false) String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("exists", false, "message", "帳號不可為空"));
+        }
+        boolean exists = accountRepository.existsByUsername(username.trim());
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 
     // =====================================================
     // 發送信箱驗證碼
