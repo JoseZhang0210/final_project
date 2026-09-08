@@ -150,6 +150,40 @@ public class RoomTaskServiceImpl implements RoomTaskService {
         return dto;
     }
 
+    @Override
+    public int autoCreateTasksFromRooms() {
+        int createdCount = 0;
+        // 找出所有退房待清潔的房間
+        List<Room> roomsToClean = roomRepository.findAll().stream()
+                .filter(r -> "退房待清潔".equals(r.getRoomStatus()))
+                .collect(Collectors.toList());
+
+        for (Room room : roomsToClean) {
+            // 檢查是否已經有這個房間且還沒完成的退房清潔工單
+            boolean hasPendingTask = roomTaskRepository.findByRoomId(room.getRoomId()).stream()
+                    .anyMatch(t -> "退房清潔".equals(t.getTaskType()) && 
+                                  ("待處理".equals(t.getTaskStatus()) || "進行中".equals(t.getTaskStatus())));
+
+            if (!hasPendingTask) {
+                RoomTask task = new RoomTask();
+                task.setRoomId(room.getRoomId());
+                
+                // 自動指派給工作量最少的房務專員，若無則預設 13
+                Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
+                task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : 13);
+                
+                task.setPriority("一般");
+                task.setTaskType("退房清潔");
+                task.setTaskStatus("待處理");
+                task.setRemark("系統自動偵測房間狀態產生");
+                task.setCreatedAt(LocalDateTime.now());
+                roomTaskRepository.save(task);
+                createdCount++;
+            }
+        }
+        return createdCount;
+    }
+
     private RoomTask convertToEntity(RoomTaskDTO dto) {
         RoomTask task = new RoomTask();
         task.setRoomId(dto.getRoomId());

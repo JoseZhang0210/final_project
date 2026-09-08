@@ -7,7 +7,8 @@ import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
 import { useRouter } from "vue-router";
 
-const BOOKING_ORDER_API_URL = "/api/booking-orders";
+const BOOKING_API_URL = "/api/bookings";
+const BOOKING_ORDER_API_URL = "/api/orders";
 
 // 選單資料（初始化為空陣列）
 const bookingOrders = ref([]);
@@ -42,7 +43,19 @@ const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
 
 const form = ref(createEmptyForm());
 const showPaymentModal = ref(false);
+const showFormModal = ref(false);
+
+function openAddModal() {
+  clearForm();
+  showFormModal.value = true;
+}
+
+function closeFormModal() {
+  showFormModal.value = false;
+  clearForm();
+}
 const currentNewBooking = ref(null);
+const isSubmittingPayment = ref(false); // 防止重複提交
 const paymentForm = ref({
   amount: 0,
   paymentMethod: '現金',
@@ -138,6 +151,38 @@ function clearForm() {
   form.value = createEmptyForm();
   formTitle.value = "新增訂房明細";
   message.value = "";
+}
+
+function fillDummyData() {
+  const today = new Date();
+  const tzOffset = today.getTimezoneOffset() * 60000;
+  const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+  
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const tomorrowStr = new Date(tomorrow.getTime() - tzOffset).toISOString().split('T')[0];
+  
+  let firstMemberId = 1;
+  if (bookings.value && bookings.value.length > 0) {
+    firstMemberId = bookings.value[0].memberId ?? bookings.value[0].member_id ?? 1;
+  }
+  
+  form.value = {
+    ...createEmptyForm(),
+    memberId: firstMemberId,
+    checkInDate: todayStr,
+    checkOutDate: tomorrowStr,
+    guestNum: 1,
+    roomTypeId: 2, 
+    bookingStatus: "已入住"
+  };
+  
+  setTimeout(() => {
+    if (availableRooms.value.length > 0) {
+      form.value.roomId = availableRooms.value[0].roomId;
+    }
+    calculatePrice();
+    formTitle.value = "新增訂房明細 (一鍵填入)";
+  }, 50);
 }
 
 async function loadSelectOptions() {
@@ -360,6 +405,7 @@ async function saveBooking() {
       await bookingApi.updateBooking(form.value.bookingId, payload);
       showMessage("訂房明細修改成功", "success");
       clearForm();
+      showFormModal.value = false;
       await loadBookings();
     } else {
       const createdBooking = await bookingApi.createBooking(payload);
@@ -377,6 +423,7 @@ async function saveBooking() {
       showPaymentModal.value = true;
       
       clearForm();
+      showFormModal.value = false;
       await loadBookings();
     }
   } catch (error) {
@@ -405,6 +452,7 @@ function editBooking(booking) {
     form.value.transactionId = payment.transactionId ?? payment.transaction_id;
     form.value.paidAt = payment.paidAt ?? payment.paid_at;
   }
+  showFormModal.value = true;
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -458,8 +506,24 @@ function openPaymentModal(booking) {
 }
 
 async function submitPayment() {
+  if (isSubmittingPayment.value) return; // 防止重複連打
+
+  const bookingId = currentNewBooking.value?.bookingId ?? currentNewBooking.value?.booking_id;
+  if (!bookingId) {
+    showMessage("無效的訂房 ID", "error");
+    return;
+  }
+
+  // 檢查該訂房是否已有付款紀錄，防止重複建立
+  const existing = getPaymentForBooking(bookingId);
+  if (existing) {
+    showMessage(`訂房 ID ${bookingId} 已有付款紀錄（付款 ID: ${existing.paymentId ?? existing.payment_id}），請勿重複新增`, "error");
+    showPaymentModal.value = false;
+    return;
+  }
+
+  isSubmittingPayment.value = true;
   try {
-    const bookingId = currentNewBooking.value.bookingId ?? currentNewBooking.value.booking_id;
     const paymentPayload = {
       bookingId: bookingId,
       amount: paymentForm.value.amount,
@@ -467,7 +531,7 @@ async function submitPayment() {
       paymentStatus: paymentForm.value.paymentStatus,
       transactionId: paymentForm.value.transactionId || null,
     };
-    
+
     await bookingPaymentApi.createPayment(paymentPayload);
     showMessage("付款紀錄建立成功", "success");
     showPaymentModal.value = false;
@@ -475,6 +539,8 @@ async function submitPayment() {
     await loadBookings(); // 重新拉取包含付款狀態的清單
   } catch (error) {
     showMessage(error.message || "建立付款失敗", "error");
+  } finally {
+    isSubmittingPayment.value = false; // 不管成功失敗都解除鎖定
   }
 }
 
@@ -598,136 +664,45 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
 <template>
   <main class="booking-page">
-    <header class="page-header">
-      <h1>訂房明細管理</h1>
-      <p>管理入住日期、退房日期、房型、房號及訂房狀態</p>
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1>訂房明細管理</h1>
+        <p>管理入住日期、退房日期、房型、房號及訂房狀態</p>
+      </div>
+      <div>
+        <button class="btn primary" @click="openAddModal" style="background-color: #A67C52; border: none;">+ 新增訂單</button>
+      </div>
     </header>
 
     <div v-if="message" class="message" :class="messageType">
       {{ message }}
     </div>
 
-    <!-- 條件查詢區塊 -->
+    <!-- 條件查詢與列表整合區塊 -->
     <section class="admin-card">
-      <h2>條件查詢</h2>
-      <div class="form-grid">
-        <div class="form-group">
+      
+      <!-- 條件查詢 -->
+      <div style="display: flex; align-items: flex-end; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>會員 ID</label>
           <input v-model="searchCriteria.memberId" type="text" placeholder="輸入會員 ID" />
         </div>
-
-        <div class="form-group">
+        <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>入住日期</label>
           <input v-model="searchCriteria.checkInDate" type="date" />
         </div>
-        <div class="form-group">
+        <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>退房日期</label>
           <input v-model="searchCriteria.checkOutDate" type="date" />
         </div>
-
-      </div>
-      <div class="form-actions" style="margin-top: 15px">
-        <button type="button" class="btn primary" @click="loadBookings">
-          查詢
-        </button>
-        <button type="button" class="btn secondary" @click="clearSearch">
-          重設查詢
-        </button>
-      </div>
-    </section>
-
-    <!-- 表單區塊 -->
-    <section class="admin-card">
-      <h2>{{ formTitle }}</h2>
-
-      <form @submit.prevent="saveBooking">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>會員 ID *</label>
-            <input v-model.number="form.memberId" type="number" required />
-          </div>
-
-          <div class="form-group">
-            <label>入住日期 *</label>
-            <input v-model="form.checkInDate" type="date" required @change="calculatePrice" />
-          </div>
-
-          <div class="form-group">
-            <label>退房日期 *</label>
-            <input v-model="form.checkOutDate" type="date" required @change="calculatePrice" />
-          </div>
-
-          <div class="form-group">
-            <label>入住人數 *</label>
-            <input v-model.number="form.guestNum" type="number" min="1" max="6" required />
-          </div>
-
-          <div class="form-group">
-            <label>房型 *</label>
-            <select v-model="form.roomTypeId" required @change="changeRoomType">
-              <option value="" disabled>請選擇房型</option>
-              <option v-for="roomType in roomTypes" :key="roomType.roomTypeId" :value="roomType.roomTypeId">
-                {{ roomType.typeName }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>分配房號</label>
-            <select v-model.number="form.roomId">
-              <option value="">尚未分配</option>
-              <option v-for="room in availableRooms" :key="room.roomId" :value="room.roomId">
-                房號 {{ room.roomNumber }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>住宿晚數</label>
-            <input :value="stayNights" type="number" disabled />
-          </div>
-
-          <div class="form-group">
-            <label>訂房價格</label>
-            <input v-model.number="form.bookingPrice" type="number" min="0" disabled />
-          </div>
-
-          <div class="form-group">
-            <label>訂房狀態</label>
-            <select v-model="form.bookingStatus">
-              <option v-for="status in bookingStatuses" :key="status" :value="status">
-                {{ status }}
-              </option>
-            </select>
-          </div>
-          
-          <div class="form-group" v-if="form.bookingId && getPaymentForBooking(form.bookingId)">
-            <label>付款方式 (唯讀)</label>
-            <input :value="form.paymentMethod" type="text" disabled />
-          </div>
-          
-          <div class="form-group" v-if="form.bookingId && getPaymentForBooking(form.bookingId)">
-            <label>交易序號 (唯讀)</label>
-            <input :value="form.transactionId || '無'" type="text" disabled />
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn primary">
-            新增/修改
+        <div class="form-actions" style="margin-top: 0;">
+          <button type="button" class="btn primary" @click="loadBookings">
+            查詢
           </button>
-          <button type="button" class="btn secondary" @click="clearForm">
-            清除表單
+          <button type="button" class="btn secondary" @click="clearSearch">
+            重設
           </button>
         </div>
-      </form>
-    </section>
-
-    <!-- 列表區塊 -->
-    <section class="admin-card">
-      <div class="table-header">
-        <h2>訂房明細列表</h2>
-        <span>共 {{ filteredBookings.length }} 筆</span>
       </div>
 
       <!-- 快速狀態切換 -->
@@ -739,6 +714,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <button type="button" :class="{ active: currentFilter === '已入住' }" @click="setTabStatus('已入住')">已入住</button>
         <button type="button" :class="{ active: currentFilter === '已完成' }" @click="setTabStatus('已完成')">已完成</button>
         <button type="button" :class="{ active: currentFilter === '已取消' }" @click="setTabStatus('已取消')">已取消</button>
+      </div>
+
+      <div class="table-header" style="margin-bottom: 10px;">
+        <span style="font-weight: 500; color: #666;">共 {{ filteredBookings.length }} 筆</span>
       </div>
 
       <div class="table-wrapper">
@@ -857,8 +836,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </div>
 
           <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" class="btn secondary" @click="skipPayment">跳過，不建立</button>
-            <button type="submit" class="btn primary">確認建立付款</button>
+            <button type="button" class="btn secondary" @click="skipPayment" :disabled="isSubmittingPayment">跳過，不建立</button>
+            <button type="submit" class="btn primary" :disabled="isSubmittingPayment">
+              {{ isSubmittingPayment ? '建立中…' : '確認建立付款' }}
+            </button>
           </div>
         </form>
       </div>
@@ -871,7 +852,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
   color: #243447;
 }
 
-.page-header,
+.page-header {
+  margin-bottom: 24px;
+}
+
 .admin-card {
   margin-bottom: 24px;
   padding: 24px;
