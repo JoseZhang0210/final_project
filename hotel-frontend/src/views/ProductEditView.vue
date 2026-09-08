@@ -132,10 +132,6 @@ async function loadCategories() {
 
     showMessage(error.message || "分類讀取失敗", "error");
   }
-
-  const data = await response.json();
-
-  return data.imageUrl;
 }
 
 // =====================================================
