@@ -139,27 +139,6 @@
               </span>
             </button>
 
-            <button
-              type="button"
-              class="wishlist-button"
-              :class="{ active: isProductInWishlist(product.productId) }"
-              :aria-label="
-                isProductInWishlist(product.productId)
-                  ? `將 ${product.productName} 移出願望清單`
-                  : `將 ${product.productName} 加入願望清單`
-              "
-              :title="
-                isProductInWishlist(product.productId)
-                  ? '移出願望清單'
-                  : '加入願望清單'
-              "
-              @click.stop="handleToggleWishlist(product.productId)"
-            >
-              <span aria-hidden="true">
-                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
-              </span>
-            </button>
-
             <!-- 缺貨 -->
             <span
               v-if="
@@ -546,9 +525,7 @@ const recentlyViewedIds = ref([]);
 
 const wishlistIds = ref([]);
 
-const wishlistIdSet = computed(
-  () => new Set(wishlistIds.value.map(Number)),
-);
+const wishlistIdSet = computed(() => new Set(wishlistIds.value.map(Number)));
 
 // =====================================================
 // 讀取所有商品
@@ -730,23 +707,23 @@ function selectCategory(categoryId) {
 function getProductImage(product) {
   const imageUrl = product.imageUrl?.trim();
 
-  // 沒圖片
+  // 沒有圖片
   if (!imageUrl) {
     return DEFAULT_IMAGE;
   }
 
-  // 外部網址
+  // 外部圖片網址
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  // 已經是完整網站路徑
+  // 網站內部完整路徑
   if (imageUrl.startsWith("/")) {
     return imageUrl;
   }
 
   // DB 只有檔名
-  return "/upload/products/" + imageUrl;
+  return `/upload/products/${imageUrl}`;
 }
 
 // =====================================================

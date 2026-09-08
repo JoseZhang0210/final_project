@@ -11,9 +11,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.MemberDTO;
@@ -55,6 +57,19 @@ public class AuthController {
     }
 
     private final Map<String, VerificationCodeRecord> verificationCodes = new ConcurrentHashMap<>();
+
+    // =====================================================
+    // 檢查帳號是否重複
+    // GET /api/auth/check-username?username=xxx
+    // =====================================================
+    @GetMapping("/check-username")
+    public ResponseEntity<?> checkUsername(@RequestParam(name = "username", required = false) String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("exists", false, "message", "帳號不可為空"));
+        }
+        boolean exists = accountRepository.existsByUsername(username.trim());
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 
     // =====================================================
     // 發送信箱驗證碼
@@ -173,5 +188,54 @@ public class AuthController {
         response.put("authorities", authorities);
         response.put("name", name);
         return ResponseEntity.ok(response);
+    }
+
+    // =====================================================
+    // 刷新 Token
+    // POST /api/auth/refresh
+    // =====================================================
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(jakarta.servlet.http.HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "未提供有效的 Authorization Header"));
+        }
+
+        String token = authHeader.substring(7);
+        if (!jwtUtils.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token 已失效或過期，請重新登入"));
+        }
+
+        try {
+            String username = jwtUtils.extractUsername(token);
+            UserDetails user = userDetailsService.loadUserByUsername(username);
+
+            if (!user.isEnabled()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "該帳號已被停用"));
+            }
+
+            String newToken = jwtUtils.generateToken(user);
+
+            java.util.List<String> authorities = user.getAuthorities().stream()
+                    .map(auth -> auth != null ? auth.getAuthority() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+            String name = profileRepository.findByUsername(user.getUsername())
+                    .map(Profile::getName)
+                    .orElse(user.getUsername());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", newToken);
+            response.put("authorities", authorities);
+            response.put("name", name);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Token 刷新失敗：" + e.getMessage()));
+        }
     }
 }

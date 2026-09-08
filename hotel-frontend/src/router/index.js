@@ -22,6 +22,7 @@ import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
 import ProductAddView from "../views/ProductAddView.vue";
 import ProductShopView from "../views/ProductShopView.vue";
+import ProductDetailView from "../views/ProductDetailView.vue";
 //---------------------- 訂單後台管理 -----------------
 import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
@@ -187,6 +188,11 @@ const router = createRouter({
           component: ProductShopView,
         },
         {
+          path: "products/:id",
+          name: "product-detail",
+          component: ProductDetailView,
+        },
+        {
           path: "cart",
           name: "cart",
           component: CartView,
@@ -284,6 +290,22 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 };
   },
+});
+
+router.beforeEach((to, from, next) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // 延遲引用以避免 pinia 初始化前調用
+      import("@/stores/auth").then(({ useAuthStore }) => {
+        const authStore = useAuthStore();
+        authStore.checkAndRefreshToken();
+      });
+    }
+  } catch (e) {
+    console.error("Route auth check error:", e);
+  }
+  next();
 });
 
 export default router;
