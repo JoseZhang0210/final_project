@@ -42,16 +42,29 @@
             <label>What are your dates?</label>
             <div class="date-inputs">
               <VueDatePicker 
+                ref="datePickerRef"
                 v-model="dateRange" 
-                range 
+                :range="{ minRange: 1, maxRange: 30 }"
                 multi-calendars 
-                :max-range="30" 
                 :min-date="today" 
                 :enable-time-picker="false"
+                format="yyyy/MM/dd"
                 dark
                 hide-input-icon
                 placeholder="Select dates"
-              />
+                @internal-model-change="handleInternalModelChange"
+              >
+                <template #action-row="{ modelValue, closePicker }">
+                  <div class="custom-action-row">
+                    <button class="action-btn clear-btn" @click="dateRange = null; closePicker()">Clear</button>
+                    <div class="action-right">
+                      <span class="nights-text" v-if="modelValue && modelValue[0] && modelValue[1]">
+                        {{ calculateNights(modelValue) }} NIGHTS
+                      </span>
+                    </div>
+                  </div>
+                </template>
+              </VueDatePicker>
             </div>
           </div>
         </div>
@@ -88,15 +101,44 @@ const authStore = useAuthStore();
 const now = new Date();
 const offset = now.getTimezoneOffset() * 60000;
 const localNow = new Date(now.getTime() - offset);
+localNow.setHours(0, 0, 0, 0); // Strip time
 const today = localNow;
 
 const tomorrowDate = new Date(localNow.getTime() + 86400000);
+tomorrowDate.setHours(0, 0, 0, 0); // Strip time
 
 const dateRange = ref([today, tomorrowDate]);
 
 const searchData = ref({
   guests: 1
 });
+
+const datePickerRef = ref(null);
+const isSelecting = ref(false);
+
+function calculateNights(range) {
+  if (!range || !range[0] || !range[1]) return 0;
+  const diffTime = Math.abs(range[1] - range[0]);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function handleInternalModelChange(val) {
+  if (val && val[0] && !val[1]) {
+    isSelecting.value = true;
+  }
+  
+  if (val && val[0] && val[1]) {
+    if (isSelecting.value) {
+      isSelecting.value = false;
+      // 延遲 800 毫秒，讓使用者有足夠時間看到右下角顯示的入住天數
+      setTimeout(() => {
+        if (datePickerRef.value) {
+          datePickerRef.value.selectDate();
+        }
+      }, 800);
+    }
+  }
+}
 
 function handleSearch() {
   if (!authStore.isLoggedIn) {
@@ -328,6 +370,11 @@ function handleSearch() {
 :deep(.dp__main) {
   width: 100%;
 }
+/* 隱藏時間選擇的時鐘按鈕與預覽文字 */
+:deep([data-test-id="open-time-picker-btn"]),
+:deep(.dp__selection_preview) {
+  display: none !important;
+}
 
 .search-field select option {
   background: #444;
@@ -352,7 +399,45 @@ function handleSearch() {
   background: #f0f0f0;
 }
 
+.custom-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 20px;
+  background-color: transparent;
+  border-top: 1px solid #444;
+}
 
+.action-right {
+  display: flex;
+  align-items: center;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+}
+
+.clear-btn {
+  text-decoration: underline;
+  color: #fff;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.clear-btn:hover {
+  opacity: 0.7;
+}
+
+.nights-text {
+  font-size: 0.85rem;
+  color: #fff;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
 
 @media (max-width: 900px) {
   .search-bar {
