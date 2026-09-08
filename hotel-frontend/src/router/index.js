@@ -13,10 +13,10 @@ import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
 //--------------------餐廳前台管理-----------------------------------
 import RestaurantReservationView from "../views/RestaurantReservationView.vue";
-//--------------------登入登出註冊管理--------------------------------
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
 import RegisterView from "../views/RegisterView.vue";
+import ForgotPasswordView from "../views/ForgotPasswordView.vue";
 //---------------------- 商品後台管理-----------------
 import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
@@ -181,6 +181,11 @@ const router = createRouter({
           path: "/register",
           name: "register",
           component: RegisterView,
+        },
+        {
+          path: "/forgot-password",
+          name: "forgot-password",
+          component: ForgotPasswordView,
         },
         {
           path: "products",
