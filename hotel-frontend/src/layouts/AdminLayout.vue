@@ -5,47 +5,48 @@
          ========================= -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        星澄飯店
-
-        <span> 管理後台 </span>
+        <div class="logo-title">星澄飯店</div>
+        <span class="logo-sub">管理後台</span>
       </div>
 
       <nav class="sidebar-nav">
         <!-- Dashboard -->
-        <RouterLink to="/admin"> 📊 Dashboard </RouterLink>
+        <RouterLink to="/admin" class="nav-item">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </RouterLink>
 
         <!-- 商品管理 -->
-        <RouterLink to="/admin/products"> 🛍 商品管理 </RouterLink>
+        <RouterLink to="/admin/products" class="nav-item">
+          <span class="nav-icon">🛍️</span>
+          <span class="nav-text">商品管理</span>
+        </RouterLink>
 
-        <!-- =========================
-             餐廳管理群組
-             ========================= -->
-        <div class="sidebar-group">
+        <!-- 餐廳管理群組 -->
+        <div class="sidebar-group" :class="{ 'is-open': restaurantOpen }">
           <button type="button" class="sidebar-group-title" @click="restaurantOpen = !restaurantOpen">
-            <span> 🍽 餐廳管理 </span>
-
-            <span class="arrow">
-              {{ restaurantOpen ? "▲" : "▼" }}
+            <span class="group-title-content">
+              <span class="nav-icon">🍽️</span>
+              <span class="nav-text">餐廳管理</span>
             </span>
+            <span class="arrow-icon">▼</span>
           </button>
 
           <div v-show="restaurantOpen" class="sidebar-submenu">
-            <RouterLink to="/admin/restaurants"> 餐廳資料管理 </RouterLink>
-
-            <RouterLink to="/admin/restaurant-times"> 餐廳時段管理 </RouterLink>
-
-            <RouterLink to="/admin/reservations"> 餐廳訂位管理 </RouterLink>
+            <RouterLink to="/admin/restaurants">餐廳資料管理</RouterLink>
+            <RouterLink to="/admin/restaurant-times">餐廳時段管理</RouterLink>
+            <RouterLink to="/admin/reservations">餐廳訂位管理</RouterLink>
           </div>
         </div>
 
-        <!-- ＝＝＝＝＝訂房管理＝＝＝＝＝ -->
-        <div class="sidebar-group">
+        <!-- 訂房管理群組 -->
+        <div class="sidebar-group" :class="{ 'is-open': roombookingOpen }">
           <button type="button" class="sidebar-group-title" @click="roombookingOpen = !roombookingOpen">
-            <span> 🛏 訂房管理 </span>
-
-            <span class="arrow">
-              {{ roombookingOpen ? "▲" : "▼" }}
+            <span class="group-title-content">
+              <span class="nav-icon">🛏️</span>
+              <span class="nav-text">訂房管理</span>
             </span>
+            <span class="arrow-icon">▼</span>
           </button>
 
           <div v-show="roombookingOpen" class="sidebar-submenu">
@@ -57,32 +58,52 @@
             <RouterLink to="/admin/booking-payments">付款紀錄</RouterLink>
           </div>
         </div>
-        <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
 
         <!-- 會員管理 -->
-        <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
+        <RouterLink to="/admin/members" class="nav-item">
+          <span class="nav-icon">👤</span>
+          <span class="nav-text">會員管理</span>
+        </RouterLink>
 
         <!-- 員工管理 -->
-        <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
-        
+        <RouterLink to="/admin/employees" class="nav-item">
+          <span class="nav-icon">🧑‍💼</span>
+          <span class="nav-text">員工管理</span>
+        </RouterLink>
+
         <!-- 訂單管理 -->
-        <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
+        <RouterLink to="/admin/orders" class="nav-item">
+          <span class="nav-icon">📦</span>
+          <span class="nav-text">訂單管理</span>
+        </RouterLink>
 
         <!-- 優惠券管理 -->
-        <RouterLink to="/admin/coupons"> 🎟 優惠券管理 </RouterLink>
+        <RouterLink to="/admin/coupons" class="nav-item">
+          <span class="nav-icon">🎟️</span>
+          <span class="nav-text">優惠券管理</span>
+        </RouterLink>
 
         <!-- 場地管理 -->
-        <RouterLink to="/admin/venues"> 🏛️場地管理 </RouterLink>
+        <RouterLink to="/admin/venues" class="nav-item">
+          <span class="nav-icon">🏛️</span>
+          <span class="nav-text">場地管理</span>
+        </RouterLink>
 
         <!-- 場地租借管理 -->
-        <RouterLink to="/admin/rental"> 📝場地租借管理 </RouterLink>
+        <RouterLink to="/admin/rental" class="nav-item">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text">場地租借管理</span>
+        </RouterLink>
       </nav>
 
       <!-- =========================
            Sidebar 底部
            ========================= -->
       <div class="sidebar-bottom">
-        <RouterLink to="/"> ← 回前台首頁 </RouterLink>
+        <RouterLink to="/" class="back-home-btn">
+          <span class="nav-icon">←</span>
+          <span>回前台首頁</span>
+        </RouterLink>
       </div>
     </aside>
 
