@@ -19,6 +19,7 @@ import com.hotel.model.entity.RestaurantTime;
 import com.hotel.service.ReservationService;
 import com.hotel.service.RestaurantService;
 import com.hotel.service.RestaurantTimeService;
+import com.hotel.service.SmsService;
 
 @RestController
 @RequestMapping("/api/public")
@@ -27,15 +28,18 @@ public class PublicReservationController {
     private final RestaurantService restaurantService;
     private final RestaurantTimeService restaurantTimeService;
     private final ReservationService reservationService;
+    private final SmsService smsService;
 
     public PublicReservationController(
             RestaurantService restaurantService,
             RestaurantTimeService restaurantTimeService,
-            ReservationService reservationService) {
+            ReservationService reservationService,
+            SmsService smsService) {
 
         this.restaurantService = restaurantService;
         this.restaurantTimeService = restaurantTimeService;
         this.reservationService = reservationService;
+        this.smsService = smsService;
     }
 
     // 給前台讀取餐廳
@@ -86,7 +90,6 @@ public class PublicReservationController {
         }
 
         Restaurant restaurant = restaurantService.findById(reservation.getRestaurantId());
-
         RestaurantTime restaurantTime = restaurantTimeService.findById(reservation.getTimeId());
 
         if (restaurant == null || restaurantTime == null) {
@@ -94,21 +97,30 @@ public class PublicReservationController {
                     .body(Map.of("message", "餐廳或時段資料不存在。"));
         }
 
-        if (!restaurantTime.getRestaurantId()
-                .equals(reservation.getRestaurantId())) {
-
+        if (!restaurantTime.getRestaurantId().equals(reservation.getRestaurantId())) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "選擇的時段不屬於此餐廳。"));
         }
 
-        // 訪客訂位沒有 memberId
         reservation.setReservationId(null);
         reservation.setMemberId(null);
         reservation.setStatus("已訂位");
 
         Reservation savedReservation = reservationService.save(reservation);
+        sendReservationSms(savedReservation);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(savedReservation);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
+    }
+
+    // 訂位成功後通知訪客；簡訊失敗不影響訂位成立。
+    private void sendReservationSms(Reservation reservation) {
+        String message = "【星澄飯店】您的訂位已完成，訂位編號 #"
+                + reservation.getReservationId();
+
+        try {
+            smsService.send(reservation.getContactPhone(), message);
+        } catch (Exception e) {
+            System.out.println("訂位簡訊發送失敗：" + e.getMessage());
+        }
     }
 }

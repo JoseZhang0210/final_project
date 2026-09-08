@@ -13,10 +13,10 @@ import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
 //--------------------餐廳前台管理-----------------------------------
 import RestaurantReservationView from "../views/RestaurantReservationView.vue";
-//--------------------登入登出註冊管理--------------------------------
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
 import RegisterView from "../views/RegisterView.vue";
+import ForgotPasswordView from "../views/ForgotPasswordView.vue";
 //---------------------- 商品後台管理-----------------
 import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
@@ -183,6 +183,11 @@ const router = createRouter({
           component: RegisterView,
         },
         {
+          path: "/forgot-password",
+          name: "forgot-password",
+          component: ForgotPasswordView,
+        },
+        {
           path: "products",
           name: "product-shop",
           component: ProductShopView,
@@ -290,6 +295,22 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 };
   },
+});
+
+router.beforeEach((to, from, next) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // 延遲引用以避免 pinia 初始化前調用
+      import("@/stores/auth").then(({ useAuthStore }) => {
+        const authStore = useAuthStore();
+        authStore.checkAndRefreshToken();
+      });
+    }
+  } catch (e) {
+    console.error("Route auth check error:", e);
+  }
+  next();
 });
 
 export default router;
