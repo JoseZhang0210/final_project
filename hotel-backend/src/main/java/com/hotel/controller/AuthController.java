@@ -73,6 +73,19 @@ public class AuthController {
     }
 
     // =====================================================
+    // 檢查電子信箱是否重複
+    // GET /api/auth/check-email?email=xxx
+    // =====================================================
+    @GetMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestParam(name = "email", required = false) String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("exists", false, "message", "電子信箱不可為空"));
+        }
+        boolean exists = profileRepository.existsByEmailIgnoreCase(email.trim());
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
+    // =====================================================
     // 發送信箱驗證碼
     // POST /api/auth/send-code
     // =====================================================
@@ -121,6 +134,9 @@ public class AuthController {
 
             // 信箱驗證碼校驗
             String email = memberDTO.getEmail().trim().toLowerCase();
+            if (profileRepository.existsByEmailIgnoreCase(email)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "此電子信箱已被註冊"));
+            }
             String inputCode = memberDTO.getVerificationCode();
             if (inputCode == null || inputCode.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "請輸入信箱驗證碼"));

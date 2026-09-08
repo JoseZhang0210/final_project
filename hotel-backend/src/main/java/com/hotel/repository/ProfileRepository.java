@@ -19,6 +19,8 @@ public interface ProfileRepository extends JpaRepository<Profile, Integer> {
 
     Optional<Profile> findFirstByEmail(String email);
 
+    boolean existsByEmailIgnoreCase(String email);
+
     @Query(value = "SELECT p.* FROM profile p JOIN account a ON p.account_id = a.account_id WHERE a.username = :username AND p.email = :email", nativeQuery = true)
     Optional<Profile> findByUsernameAndEmail(@Param("username") String username, @Param("email") String email);
 }

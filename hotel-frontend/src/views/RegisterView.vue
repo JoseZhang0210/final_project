@@ -103,6 +103,8 @@
                     type="email"
                     placeholder="例：user@example.com"
                     autocomplete="email"
+                    :class="{ 'is-invalid': errors.email }"
+                    @blur="checkEmail"
                     required
                   />
                   <button
@@ -115,6 +117,9 @@
                     <span v-else-if="countdown > 0">{{ countdown }} 秒後重新發送</span>
                     <span v-else>發送驗證碼</span>
                   </button>
+                </div>
+                <div v-if="errors.email" class="field-error">
+                  {{ errors.email }}
                 </div>
                 <small class="field-hint">驗證信件將發送至此信箱，請留意收件匣或垃圾郵件。</small>
               </div>
@@ -299,6 +304,7 @@ const errors = reactive({
   username: "",
   password: "",
   confirmPassword: "",
+  email: "",
 });
 
 const loading = ref(false);
@@ -335,6 +341,36 @@ async function checkUsername() {
   } catch (error) {
     console.error("檢查帳號重複錯誤：", error);
     errors.username = "";
+    return true;
+  }
+}
+
+async function checkEmail() {
+  const email = form.email.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email) {
+    errors.email = "請輸入電子信箱";
+    return false;
+  }
+
+  if (!emailRegex.test(email)) {
+    errors.email = "請輸入正確格式的電子郵件信箱";
+    return false;
+  }
+
+  try {
+    const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+    const data = await response.json().catch(() => ({}));
+    if (data.exists) {
+      errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
+      return false;
+    } else {
+      errors.email = "";
+      return true;
+    }
+  } catch (error) {
+    console.error("檢查信箱重複錯誤：", error);
+    errors.email = "";
     return true;
   }
 }
@@ -376,14 +412,15 @@ function validateConfirmPassword() {
 // =====================================================
 
 async function sendVerificationCode() {
-  const email = form.email.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!email || !emailRegex.test(email)) {
-    toastStore.showToast("請輸入正確格式的電子郵件信箱", "error");
+  const isEmailValid = await checkEmail();
+  if (!isEmailValid) {
+    if (errors.email) {
+      toastStore.showToast(errors.email, "error");
+    }
     return;
   }
 
+  const email = form.email.trim();
   sendingCode.value = true;
 
   try {
@@ -430,10 +467,11 @@ async function sendVerificationCode() {
 async function register() {
   // 觸發前端欄位失焦校驗
   const isUsernameValid = await checkUsername();
+  const isEmailValid = await checkEmail();
   const isPasswordValid = validatePassword();
   const isConfirmPasswordValid = validateConfirmPassword();
 
-  if (!isUsernameValid || !isPasswordValid || !isConfirmPasswordValid) {
+  if (!isUsernameValid || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
     toastStore.showToast("請檢查表單輸入是否有誤", "error");
     return;
   }
@@ -484,8 +522,12 @@ async function register() {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 409) {
-      errors.username = "此帳號已被註冊，請更換其他帳號名稱";
-      toastStore.showToast("此帳號已被註冊，請更換其他帳號名稱", "error");
+      if (data.message && data.message.includes("信箱")) {
+        errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
+      } else {
+        errors.username = data.message || "此帳號已被註冊，請更換其他帳號名稱";
+      }
+      toastStore.showToast(data.message || "此帳號或信箱已被註冊", "error");
       return;
     }
 
