@@ -25,6 +25,7 @@ const formTitle = ref("新增訂位");
 const loading = ref(false);
 const saving = ref(false);
 const memberLoaded = ref(false);
+const testingSms = ref(null);
 
 const form = ref(createEmptyForm());
 
@@ -401,6 +402,38 @@ async function deleteReservation(id) {
   }
 }
 
+async function sendTestSms(reservation) {
+  if (!reservation.contactPhone) {
+    showMessage("此訂位沒有聯絡電話，無法測試簡訊", "error");
+    return;
+  }
+
+  testingSms.value = reservation.reservationId;
+
+  try {
+    const response = await fetch(
+      `${RESERVATION_API_URL}/${reservation.reservationId}/sms`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      },
+    );
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      showMessage(result.message || "測試簡訊發送失敗", "error");
+      return;
+    }
+
+    showMessage("測試簡訊已發送，請查看 Spring Boot Console", "success");
+  } catch (error) {
+    console.error(error);
+    showMessage("無法連線至測試簡訊 API", "error");
+  } finally {
+    testingSms.value = null;
+  }
+}
+
 // 匯入與匯出餐廳、時段、訂位資料。
 function openImportDialog() {
   importInput.value?.click();
@@ -738,6 +771,11 @@ onMounted(async () => {
                   <button type="button" class="admin-btn admin-btn-delete"
                     @click="deleteReservation(reservation.reservationId)">
                     刪除
+                  </button>
+
+                  <button type="button" class="admin-btn admin-btn-secondary"
+                    :disabled="testingSms === reservation.reservationId" @click="sendTestSms(reservation)">
+                    {{ testingSms === reservation.reservationId ? "發送中..." : "測試簡訊" }}
                   </button>
                 </div>
               </td>
