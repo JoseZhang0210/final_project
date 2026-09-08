@@ -261,7 +261,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = new Booking();
         booking.setMemberId(dto.getMemberId());
         booking.setRoomTypeId(dto.getRoomTypeId());
-        booking.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : java.time.LocalDateTime.now());
+        booking.setCreatedAt(dto.getCreatedAt());
         booking.setRoomId(dto.getRoomId());
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());
