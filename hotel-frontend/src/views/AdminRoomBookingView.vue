@@ -843,6 +843,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <select v-model="paymentForm.paymentStatus" required>
               <option value="已付款">已付款</option>
               <option value="待付款">待付款</option>
+              <option value="已退款">已退款</option>
+              <option value="已取消">已取消</option>
             </select>
           </div>
 
