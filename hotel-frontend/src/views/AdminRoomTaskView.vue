@@ -114,9 +114,9 @@ function getEmployeeName(employeeId) {
   return found ? found.employeeName : `員工 ID: ${employeeId}`;
 }
 
-// 傳給後端的時間格式：YYYY-MM-DD HH:mm:ss (長度 19)
+// 傳給後端的時間格式：ISO 8601 YYYY-MM-DDTHH:mm:ss（Java LocalDateTime 需要 T 分隔符）
 function getCurrentDateTime() {
-  return new Date().toLocaleString("sv-SE").slice(0, 19);
+  return new Date().toISOString().slice(0, 19); // e.g. "2026-09-08T10:24:11"
 }
 
 // 前端畫面顯示用的時間格式：只保留到幾點幾分 (長度 16)
@@ -125,10 +125,12 @@ function formatDateTimeShort(dateTimeStr) {
   return String(dateTimeStr).slice(0, 16);
 }
 
-// 確保傳給後端的時間格式包含秒數
+// 確保傳給後端的時間格式包含秒數，並將空格替換為 T（Java LocalDateTime 要求）
 function ensureSecondsFormat(dateTimeStr) {
   if (!dateTimeStr) return "";
-  const str = String(dateTimeStr);
+  let str = String(dateTimeStr);
+  // 把空格分隔符換成 T（"2026-09-08 10:24" → "2026-09-08T10:24"）
+  str = str.replace(' ', 'T');
   if (str.length === 16) {
     return str + ":00";
   }
