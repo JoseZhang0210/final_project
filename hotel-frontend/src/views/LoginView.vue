@@ -22,7 +22,10 @@
           </div>
 
           <div class="form-group">
-            <label for="password"> 密碼 </label>
+            <div class="label-row">
+              <label for="password"> 密碼 </label>
+              <RouterLink to="/forgot-password" class="forgot-link"> 忘記密碼？ </RouterLink>
+            </div>
 
             <input
               id="password"
@@ -208,16 +211,32 @@ h1 {
   margin-bottom: 20px;
 }
 
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 label {
   display: block;
-
-  margin-bottom: 8px;
-
+  margin-bottom: 0;
   color: #554536;
-
   font-size: 14px;
-
   font-weight: bold;
+}
+
+.forgot-link {
+  font-size: 12.5px;
+  color: #9b7435;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.forgot-link:hover {
+  color: #6e542c;
+  text-decoration: underline;
 }
 
 input {

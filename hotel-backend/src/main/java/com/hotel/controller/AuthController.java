@@ -57,6 +57,7 @@ public class AuthController {
     }
 
     private final Map<String, VerificationCodeRecord> verificationCodes = new ConcurrentHashMap<>();
+    private final Map<String, VerificationCodeRecord> resetPasswordCodes = new ConcurrentHashMap<>();
 
     // =====================================================
     // 檢查帳號是否重複
@@ -238,4 +239,120 @@ public class AuthController {
                     .body(Map.of("message", "Token 刷新失敗：" + e.getMessage()));
         }
     }
+
+    // =====================================================
+    // 忘記密碼 - 發送驗證碼
+    // POST /api/auth/forgot-password/send-code
+    // =====================================================
+    @PostMapping("/forgot-password/send-code")
+    public ResponseEntity<?> sendForgotPasswordCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String username = request.get("username");
+
+        if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "請輸入有效的電子信箱"));
+        }
+        email = email.trim().toLowerCase();
+
+        // 檢查信箱對應的使用者是否存在
+        Profile profile;
+        if (username != null && !username.trim().isEmpty()) {
+            profile = profileRepository.findByUsernameAndEmail(username.trim(), email).orElse(null);
+        } else {
+            profile = profileRepository.findFirstByEmail(email).orElse(null);
+        }
+
+        if (profile == null || profile.getAccountId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "查無此電子信箱註冊的會員帳號"));
+        }
+
+        Account account = accountRepository.findById(profile.getAccountId()).orElse(null);
+        if (account == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "查無對應的會員帳號資訊"));
+        }
+
+        if ("0".equals(account.getStatus())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "該帳號已被停用，請聯絡客服人員"));
+        }
+
+        // 產生 6 位數隨機驗證碼
+        int randomCode = 100000 + (int) (Math.random() * 900000);
+        String code = String.valueOf(randomCode);
+
+        // 有效期 5 分鐘
+        long expireTime = System.currentTimeMillis() + (5 * 60 * 1000);
+        resetPasswordCodes.put(email, new VerificationCodeRecord(code, expireTime));
+
+        try {
+            mailUtil.sendResetPasswordCode(email, code);
+            return ResponseEntity.ok(Map.of("message", "重設密碼驗證碼已發送至您的信箱，請於 5 分鐘內輸入"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "發送驗證碼失敗，請稍後再試"));
+        }
+    }
+
+    // =====================================================
+    // 忘記密碼 - 重設密碼
+    // POST /api/auth/forgot-password/reset
+    // =====================================================
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String username = request.get("username");
+        String code = request.get("code");
+        String newPassword = request.get("newPassword");
+
+        if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "請輸入有效的電子信箱"));
+        }
+        email = email.trim().toLowerCase();
+
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "請輸入 6 位數驗證碼"));
+        }
+
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "新密碼長度至少需為 6 個字元"));
+        }
+
+        // 檢查驗證碼
+        VerificationCodeRecord record = resetPasswordCodes.get(email);
+        if (record == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "尚未向該信箱發送重設驗證碼，請先點擊「發送驗證碼」"));
+        }
+        if (record.isExpired()) {
+            resetPasswordCodes.remove(email);
+            return ResponseEntity.badRequest().body(Map.of("message", "驗證碼已過期，請重新發送"));
+        }
+        if (!record.code.equalsIgnoreCase(code.trim())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "驗證碼不正確，請重新確認"));
+        }
+
+        // 查找使用者並更新密碼
+        Profile profile;
+        if (username != null && !username.trim().isEmpty()) {
+            profile = profileRepository.findByUsernameAndEmail(username.trim(), email).orElse(null);
+        } else {
+            profile = profileRepository.findFirstByEmail(email).orElse(null);
+        }
+
+        if (profile == null || profile.getAccountId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "查無此會員帳號"));
+        }
+
+        Account account = accountRepository.findById(profile.getAccountId()).orElse(null);
+        if (account == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "查無此會員帳號"));
+        }
+
+        account.setPassword(passwordEncoder.encode(newPassword.trim()));
+        accountRepository.save(account);
+
+        // 重設成功，移除快取驗證碼
+        resetPasswordCodes.remove(email);
+
+        return ResponseEntity.ok(Map.of("message", "密碼重設成功，請使用新密碼登入"));
+    }
 }
+
