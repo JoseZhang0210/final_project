@@ -1,6 +1,26 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+function parseJwtPayload(token) {
+    if (!token) return null;
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+        );
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.warn('解析 JWT 失敗:', e);
+        return null;
+    }
+}
+
 export const useAuthStore = defineStore('auth', () => {
     const isLoggedIn = ref(!!localStorage.getItem('token'))
     const authorities = ref(
@@ -9,6 +29,25 @@ export const useAuthStore = defineStore('auth', () => {
             : []
     )
     const name = ref(localStorage.getItem('name') || '')
+
+    let refreshTimer = null
+    let refreshPromise = null
+
+    // 自動續期定時器
+    function startAutoRefreshTimer() {
+        stopAutoRefreshTimer();
+        // 每 15 分鐘定期檢查一次 Token 有效期
+        refreshTimer = setInterval(() => {
+            checkAndRefreshToken();
+        }, 15 * 60 * 1000);
+    }
+
+    function stopAutoRefreshTimer() {
+        if (refreshTimer) {
+            clearInterval(refreshTimer);
+            refreshTimer = null;
+        }
+    }
 
     // 登入成功時呼叫
     function login(token, userAuthorities, userName) {
@@ -30,11 +69,13 @@ export const useAuthStore = defineStore('auth', () => {
         authorities.value = authArray // 直接賦值陣列，千萬不要用 JSON.parse()
         name.value = displayName
         
+        startAutoRefreshTimer();
         console.log("Pinia 權限與使用者資訊更新成功：", { authorities: authorities.value, name: name.value });
     }
 
     // 登出時呼叫
     function logout() {
+        stopAutoRefreshTimer();
         // 清除 JWT
         localStorage.removeItem("token");
         // 清除角色 / 權限
@@ -55,6 +96,85 @@ export const useAuthStore = defineStore('auth', () => {
         name.value = displayName
     }
 
-    return { isLoggedIn, authorities, name, login, logout, updateName }
+    // 主動向後端刷新 Token
+    async function refreshToken() {
+        const token = localStorage.getItem('token');
+        if (!token) return false;
+
+        if (refreshPromise) {
+            return refreshPromise;
+        }
+
+        refreshPromise = (async () => {
+            try {
+                const res = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.token) {
+                        login(data.token, data.authorities || authorities.value, data.name || name.value);
+                        console.log("Token 自動續期成功");
+                        return true;
+                    }
+                } else if (res.status === 401 || res.status === 403) {
+                    console.warn("Token 續期失效或已過期，自動登出");
+                    logout();
+                }
+                return false;
+            } catch (err) {
+                console.error("Token 刷新失敗:", err);
+                return false;
+            } finally {
+                refreshPromise = null;
+            }
+        })();
+
+        return refreshPromise;
+    }
+
+    // 檢查並在即將到期時自動續期 (預設剩餘時間小於 2 小時即續期)
+    async function checkAndRefreshToken(thresholdSeconds = 7200) {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const payload = parseJwtPayload(token);
+        if (!payload || !payload.exp) return;
+
+        const nowSec = Math.floor(Date.now() / 1000);
+        const remainingSec = payload.exp - nowSec;
+
+        if (remainingSec <= 0) {
+            console.warn("JWT 已過期");
+            logout();
+        } else if (remainingSec <= thresholdSeconds) {
+            console.log(`JWT 即將到期（剩餘約 ${Math.round(remainingSec / 60)} 分鐘），正在自動續期...`);
+            await refreshToken();
+        }
+    }
+
+    // 若啟動時已處於登入狀態，立即開啟定時器與有效性檢查
+    if (isLoggedIn.value) {
+        startAutoRefreshTimer();
+        checkAndRefreshToken();
+    }
+
+    return { 
+        isLoggedIn, 
+        authorities, 
+        name, 
+        login, 
+        logout, 
+        updateName, 
+        refreshToken, 
+        checkAndRefreshToken,
+        startAutoRefreshTimer,
+        stopAutoRefreshTimer
+    }
 })
 
