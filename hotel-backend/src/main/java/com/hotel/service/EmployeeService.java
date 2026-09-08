@@ -130,6 +130,31 @@ public class EmployeeService {
     }
 
     // =========================================
+    // 2-1. 依使用者帳號查詢員工詳細資料
+    // =========================================
+    @Transactional(readOnly = true)
+    public EmployeeDTO findByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        Account account = accountRepository.findByUsername(username.trim());
+        if (account == null || account.getAccountId() == null) {
+            return null;
+        }
+        Employee employee = employeeRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (employee == null) {
+            return null;
+        }
+        Profile profile = profileRepository.findByAccountId(account.getAccountId()).orElse(null);
+        Department department = null;
+        if (employee.getDepartmentId() != null) {
+            department = departmentRepository.findById(employee.getDepartmentId()).orElse(null);
+        }
+        return toDTO(employee, account, profile, department);
+    }
+
+
+    // =========================================
     // 3. 新增員工（同步建立 Account, Employee, Profile）
     // =========================================
     public EmployeeDTO createEmployee(EmployeeDTO dto) {
