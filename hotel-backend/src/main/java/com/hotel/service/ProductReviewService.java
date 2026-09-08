@@ -145,6 +145,7 @@ public class ProductReviewService {
     }
 
     private Member findMember(String username) {
+        if (username == null || username.isBlank()) return null;
         Account account = accountRepository.findByUsername(username);
         if (account == null) {
             return null;

@@ -177,14 +177,14 @@
               <button
                 type="button"
                 class="purchase-button"
-                :disabled="!canBuy"
+                :disabled="!canBuy || !isLoggedIn"
                 @click="addToCart"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6.5 8.5h11l1 12h-13l1-12Z" />
                   <path d="M9 9V6a3 3 0 0 1 6 0v3" />
                 </svg>
-                {{ canBuy ? "加入購物車" : "目前無法購買" }}
+                {{ !isLoggedIn ? "登入後加入購物車" : canBuy ? "加入購物車" : "目前無法購買" }}
               </button>
             </div>
 
@@ -203,9 +203,12 @@
                 type="button"
                 class="wishlist-action"
                 :class="{ active: inWishlist }"
+                :disabled="!isLoggedIn"
                 :aria-pressed="inWishlist"
                 :aria-label="
-                  inWishlist
+                  !isLoggedIn
+                    ? '請先登入會員後使用願望清單'
+                    : inWishlist
                     ? `將 ${product.productName} 移出願望清單`
                     : `將 ${product.productName} 加入願望清單`
                 "
@@ -216,7 +219,7 @@
                     d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"
                   />
                 </svg>
-                {{ inWishlist ? "已收藏" : "加入願望清單" }}
+                {{ !isLoggedIn ? "登入後加入願望清單" : inWishlist ? "已收藏" : "加入願望清單" }}
               </button>
 
               <RouterLink to="/products" class="shop-link">
@@ -292,7 +295,7 @@
                 </div>
               </div>
 
-              <form ref="reviewForm" class="review-form" @submit.prevent="submitReview">
+              <form v-if="isLoggedIn" ref="reviewForm" class="review-form" @submit.prevent="submitReview">
                 <div class="review-form-heading">
                   <div>
                     <h3>
@@ -377,6 +380,14 @@
                   </button>
                 </div>
               </form>
+
+              <div v-else class="review-login-notice">
+                <div>
+                  <h3>登入後即可發表評論</h3>
+                  <p>遊客可以閱讀會員評論，登入會員後才能評分與留言。</p>
+                </div>
+                <RouterLink to="/login">前往登入</RouterLink>
+              </div>
 
               <div class="review-list-section">
                 <h3>會員評論</h3>
@@ -588,7 +599,7 @@ import { getWishlistIds, toggleWishlist } from "@/utils/wishlist";
 
 const route = useRoute();
 const authStore = useAuthStore();
-const { authorities } = storeToRefs(authStore);
+const { authorities, isLoggedIn } = storeToRefs(authStore);
 
 const DEFAULT_IMAGE = "/upload/products/default-product.jpg";
 const PRODUCT_API = "/api/products";
@@ -701,6 +712,8 @@ const productImage = computed(() => {
 });
 
 const inWishlist = computed(() => {
+  if (!isLoggedIn.value) return false;
+
   const id = Number(product.value?.productId);
   return wishlistIds.value.some((itemId) => Number(itemId) === id);
 });
@@ -847,6 +860,8 @@ async function loadReviews() {
 }
 
 async function submitReview() {
+  if (!isLoggedIn.value) return;
+
   const productId = normalizeProductId(product.value?.productId);
   if (productId === null || submittingReview.value) return;
 
@@ -1031,6 +1046,8 @@ function handleImageError(event) {
 }
 
 function handleToggleWishlist() {
+  if (!isLoggedIn.value) return;
+
   const id = normalizeProductId(product.value?.productId);
   if (id === null) return;
 
@@ -1058,6 +1075,11 @@ function showPurchaseMessage(message, type = "success") {
 }
 
 function addToCart() {
+  if (!isLoggedIn.value) {
+    showPurchaseMessage("請先登入會員後再加入購物車。", "error");
+    return;
+  }
+
   if (!product.value || !canBuy.value) {
     showPurchaseMessage("此商品目前無法購買。", "error");
     return;

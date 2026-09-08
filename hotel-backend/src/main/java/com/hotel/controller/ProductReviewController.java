@@ -32,7 +32,8 @@ public class ProductReviewController {
             @PathVariable Integer productId,
             Authentication authentication) {
         return ResponseEntity.ok(
-                productReviewService.findByProduct(productId, authentication.getName()));
+                productReviewService.findByProduct(productId,
+                        authentication == null ? null : authentication.getName()));
     }
 
     @PostMapping
