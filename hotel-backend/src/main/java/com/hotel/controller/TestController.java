@@ -4,7 +4,6 @@
  */
 package com.hotel.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,10 +22,8 @@ import java.util.Collections;
 @RequestMapping("/api/test")
 public class TestController {
 
-    @Autowired
     private HotelScheduler hotelScheduler;
 
-    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @GetMapping("/cleanup-images")

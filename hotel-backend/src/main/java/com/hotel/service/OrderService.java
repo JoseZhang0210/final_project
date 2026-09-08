@@ -32,6 +32,8 @@ import com.hotel.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 
 import com.hotel.model.dto.MonthlyProductSalesDTO;
+import com.hotel.util.MailUtil;
+import com.hotel.model.dto.EmailDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,7 @@ public class OrderService {
         private final CouponRepository couponRepository;
         private final PaymentRepository paymentRepository;
         private final AccountRepository accountRepository;
+private final MailUtil mailUtil;
 
         // =====================================================
         // 1. 查詢全部訂單 Entity
@@ -290,6 +293,23 @@ public class OrderService {
                 order = customerOrderRepository
                                 .save(
                                                 order);
+
+        // 發送訂單確認信件（非同步）
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("找不到會員"));
+        String subject = "【星澄飯店】訂單確認 - 訂單編號 " + order.getOrderId();
+        String htmlContent = "<!DOCTYPE html><html><body style='font-family: \"Microsoft JhengHei\", Arial, sans-serif; background-color:#f4f1ea; padding:20px;'>"
+                + "<h2>感謝您的訂購！</h2>"
+                + "<p>訂單編號: " + order.getOrderId() + "</p>"
+                + "<p>金額: " + order.getFinalAmount() + " 元</p>"
+                + "<p>我們已收到您的訂單，將盡快為您處理。</p>"
+                + "</body></html>";
+        // 取得會員對應的 Profile 以取得 Email
+        String memberEmail = profileRepository.findByAccountId(member.getAccountId())
+                .map(Profile::getEmail)
+                .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
+        EmailDTO emailDto = new EmailDTO(memberEmail, subject, htmlContent, true);
+        mailUtil.sendEmail(emailDto);
 
                 // ==============================
                 // 建立 OrderItem + 扣庫存

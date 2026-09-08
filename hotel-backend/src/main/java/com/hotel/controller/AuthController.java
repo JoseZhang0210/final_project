@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hotel.model.dto.MemberDTO;
 import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Profile;
-import com.hotel.repository.AccountRepository;
 import com.hotel.repository.ProfileRepository;
 import com.hotel.service.MemberService;
 import com.hotel.util.JwtUtils;
@@ -32,7 +31,6 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final PasswordEncoder passwordEncoder;
-    private final AccountRepository accountRepository;
     private final UserDetailsService userDetailsService;
     private final JwtUtils jwtUtils;
     private final ProfileRepository profileRepository;
@@ -165,6 +163,10 @@ public class AuthController {
                 .collect(java.util.stream.Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
+        // 取得使用者的 email（如果 Profile 中有）
+        String email = profileRepository.findByUsername(user.getUsername())
+                .map(Profile::getEmail)
+                .orElse(null);
         String name = profileRepository.findByUsername(user.getUsername())
                 .map(Profile::getName)
                 .orElse(user.getUsername());
@@ -172,6 +174,7 @@ public class AuthController {
         response.put("token", token);
         response.put("authorities", authorities);
         response.put("name", name);
+        response.put("email", email);
         return ResponseEntity.ok(response);
     }
 }
