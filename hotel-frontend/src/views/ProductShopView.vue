@@ -18,7 +18,12 @@
 
         <!-- 搜尋 -->
         <div class="shop-search">
-          <input v-model="keyword" type="text" placeholder="搜尋商品名稱..." @keyup.enter="searchProducts" />
+          <input
+            v-model="keyword"
+            type="text"
+            placeholder="搜尋商品名稱..."
+            @keyup.enter="searchProducts"
+          />
 
           <button type="button" @click="searchProducts">搜尋</button>
         </div>
@@ -106,8 +111,12 @@
         >
           <!-- 商品圖片 -->
           <div class="product-image-wrap">
-            <img :src="getProductImage(product)" :alt="product.productName" class="product-image"
-              @error="handleImageError" />
+            <img
+              :src="getProductImage(product)"
+              :alt="product.productName"
+              class="product-image"
+              @error="handleImageError"
+            />
 
             <button
               type="button"
@@ -131,14 +140,20 @@
             </button>
 
             <!-- 缺貨 -->
-            <span v-if="
-              product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
-            " class="product-badge sold-out">
+            <span
+              v-if="
+                product.status === 'OUT_OF_STOCK' || Number(product.stock) <= 0
+              "
+              class="product-badge sold-out"
+            >
               缺貨
             </span>
 
             <!-- 庫存少 -->
-            <span v-else-if="Number(product.stock) <= 5" class="product-badge stock-low">
+            <span
+              v-else-if="Number(product.stock) <= 5"
+              class="product-badge stock-low"
+            >
               即將售完
             </span>
           </div>
@@ -510,9 +525,7 @@ const recentlyViewedIds = ref([]);
 
 const wishlistIds = ref([]);
 
-const wishlistIdSet = computed(
-  () => new Set(wishlistIds.value.map(Number)),
-);
+const wishlistIdSet = computed(() => new Set(wishlistIds.value.map(Number)));
 
 // =====================================================
 // 讀取所有商品
@@ -690,26 +703,27 @@ function selectCategory(categoryId) {
 // =====================================================
 // 商品圖片
 // =====================================================
+
 function getProductImage(product) {
   const imageUrl = product.imageUrl?.trim();
 
-  // 沒圖片
+  // 沒有圖片
   if (!imageUrl) {
     return DEFAULT_IMAGE;
   }
 
-  // 外部網址
+  // 外部圖片網址
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  // 已經是完整網站路徑
+  // 網站內部完整路徑
   if (imageUrl.startsWith("/")) {
     return imageUrl;
   }
 
   // DB 只有檔名
-  return "/upload/products/" + imageUrl;
+  return `/upload/products/${imageUrl}`;
 }
 
 // =====================================================

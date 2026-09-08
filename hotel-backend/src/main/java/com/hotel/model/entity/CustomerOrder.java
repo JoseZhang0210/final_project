@@ -29,13 +29,13 @@ public class CustomerOrder {
     private LocalDateTime orderDate;
 
     @Column(name = "original_amount", nullable = false)
-    private Integer originalAmount;
+    private Integer originalAmount = 0;
 
     @Column(name = "discount_amount", nullable = false)
-    private Integer discountAmount;
+    private Integer discountAmount = 0;
 
     @Column(name = "final_amount", nullable = false)
-    private Integer finalAmount;
+    private Integer finalAmount = 0;
 
     @Column(name = "coupon_id")
     private Integer couponId;
@@ -43,6 +43,6 @@ public class CustomerOrder {
     @Column(name = "payment_id")
     private Integer paymentId;
 
-    @Column(name = "order_status", nullable = false)
-    private String orderStatus;
+    @Column(name = "order_status", nullable = false, length = 20)
+    private String orderStatus = "PENDING";
 }

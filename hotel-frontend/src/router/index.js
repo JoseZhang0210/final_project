@@ -11,6 +11,8 @@ import RestaurantMenuView from "../views/RestaurantMenuView.vue";
 import RestaurantManageView from "../views/RestaurantManageView.vue";
 import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
+//--------------------餐廳前台管理-----------------------------------
+import RestaurantReservationView from "../views/RestaurantReservationView.vue";
 //--------------------登入登出註冊管理--------------------------------
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
@@ -20,6 +22,7 @@ import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
 import ProductAddView from "../views/ProductAddView.vue";
 import ProductShopView from "../views/ProductShopView.vue";
+import ProductDetailView from "../views/ProductDetailView.vue";
 //---------------------- 訂單後台管理 -----------------
 import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
@@ -185,6 +188,11 @@ const router = createRouter({
           component: ProductShopView,
         },
         {
+          path: "products/:id",
+          name: "product-detail",
+          component: ProductDetailView,
+        },
+        {
           path: "cart",
           name: "cart",
           component: CartView,
@@ -209,6 +217,11 @@ const router = createRouter({
           name: "restaurants",
           component: RestaurantManageView,
         },
+        {
+              path: "restaurant-reservation",
+              name: "restaurant-reservation",
+              component: RestaurantReservationView,
+            },
         {
           path: "restaurant-times",
           name: "restaurant-times",
@@ -273,6 +286,10 @@ const router = createRouter({
       ],
     },
   ],
+  //==========跳傳至最上方=====================
+  scrollBehavior() {
+    return { top: 0 };
+  },
 });
 
 router.beforeEach((to, from, next) => {
