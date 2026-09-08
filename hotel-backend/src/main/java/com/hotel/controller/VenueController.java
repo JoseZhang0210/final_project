@@ -37,6 +37,8 @@ public class VenueController {
                     Map.entry("停用", "DISABLED"));
 
     private final VenueService venueService;
+
+    /** 將場地存取例外轉為原始 HTTP 狀態。 */
     @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class) // 本模組自行保留權限錯誤，不修改共用例外處理。
     public ResponseEntity<?> accessError(org.springframework.web.server.ResponseStatusException exception) { // 場地維護拒絕需回傳禁止存取。
         return ResponseEntity.status(exception.getStatusCode()).body(Map.of("message", exception.getReason() == null ? "場地存取失敗" : exception.getReason())); // 不將權限拒絕變成五百錯誤。
@@ -62,6 +64,7 @@ public class VenueController {
                         ResponseEntity.notFound().build());
     }
 
+    /** 由管理員建立場地。 */
     @PostMapping
     public ResponseEntity<?> create(
             @RequestBody Venue venue, org.springframework.security.core.Authentication authentication) { // 場地維護需要管理權限。
@@ -93,6 +96,7 @@ public class VenueController {
                 .body(venueService.save(venue));
     }
 
+    /** 由管理員更新指定場地。 */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
@@ -123,6 +127,7 @@ public class VenueController {
                 venueService.updateExisting(venue));
     }
 
+    /** 由管理員刪除指定場地。 */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
             @PathVariable Integer id, org.springframework.security.core.Authentication authentication) { // 刪除場地需要管理權限。
@@ -160,6 +165,7 @@ public class VenueController {
         }
     }
 
+    /** 驗證並正規化場地輸入欄位。 */
     private String validateVenue(Venue venue) {
 
         if (venue.getVenueId() == null) {

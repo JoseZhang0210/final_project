@@ -32,6 +32,7 @@ class VenueServiceTest {
 
     private VenueService venueService;
 
+    /** 為每個測試建立乾淨的場地服務。 */
     @BeforeEach
     void setUp() {
         venueService = new VenueService(
@@ -39,6 +40,7 @@ class VenueServiceTest {
                 rentalRepository); // 每個測試使用乾淨的場地服務。
     }
 
+    /** 驗證本機上傳路徑可正常保存。 */
     @Test
     void saveAcceptsLocalUploadPathWithoutNullSchemeFailure() {
         Venue venue = venue(
@@ -58,6 +60,7 @@ class VenueServiceTest {
         verify(venueRepository).save(venue);
     }
 
+    /** 驗證更新僅複製允許修改的場地欄位。 */
     @Test
     void updateExistingCopiesAllowedFieldsToManagedVenue() {
         Venue managed = venue(
@@ -83,6 +86,7 @@ class VenueServiceTest {
         verify(venueRepository).findById(1);
     }
 
+    /** 驗證固定場地拒絕超過核定上限的容量。 */
     @Test
     void fixedVenueCapacitiesRejectValuesAboveConfiguredMaximum() {
         int[][] boundaryCases = {

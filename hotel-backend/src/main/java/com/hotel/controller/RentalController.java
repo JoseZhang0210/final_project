@@ -29,11 +29,14 @@ import com.hotel.service.RentalService;
 public class RentalController {
 
     private final RentalService rentalService;
+
+    /** 將租借存取例外轉為原始 HTTP 狀態。 */
     @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class) // 避免共用例外處理把權限錯誤改成伺服器錯誤。
     public ResponseEntity<?> accessError(org.springframework.web.server.ResponseStatusException exception) { // 僅處理本控制器的權限與不存在結果。
         return ResponseEntity.status(exception.getStatusCode()).body(Map.of("message", exception.getReason() == null ? "租借存取失敗" : exception.getReason())); // 保留指定的四零三或四零四。
     }
 
+    /** 建立使用指定租借服務的控制器。 */
     public RentalController(RentalService rentalService) {
         this.rentalService = rentalService;
     }
@@ -76,6 +79,7 @@ public class RentalController {
         }
     }
 
+    /** 依權限取得單筆租借。 */
     @GetMapping("/{id}")
     public ResponseEntity<Rental> findById(
             @PathVariable Integer id, Authentication authentication) { // 取得身分供單筆所有權驗證。
@@ -152,6 +156,7 @@ public class RentalController {
                             e.getMessage()));
         }
     }
+    /** 由管理員更新指定租借。 */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
@@ -187,6 +192,7 @@ public class RentalController {
         }
     }
 
+    /** 查詢指定日期範圍內的場地占用日期。 */
     @GetMapping("/occupied-dates") // 提供不含私人欄位的占用日期。
     public ResponseEntity<?> occupied(@RequestParam(required = false) Integer venueId, @RequestParam java.time.LocalDate from, @RequestParam java.time.LocalDate to) { // 日期範圍由服務層限制。
         try { // 將輸入錯誤轉成明確回應。
@@ -196,6 +202,7 @@ public class RentalController {
         }
     }
 
+    /** 由管理員刪除指定租借紀錄。 */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
             @PathVariable Integer id, Authentication authentication) { // 刪除需驗證管理權限。

@@ -29,6 +29,7 @@ public class SecurityConfig {
         // =====================================================
         // Spring Security
         // =====================================================
+        /** 建立 API 授權規則與 JWT 驗證鏈。 */
         @Bean
         public SecurityFilterChain securityFilterChain(
                         HttpSecurity httpSecurity,

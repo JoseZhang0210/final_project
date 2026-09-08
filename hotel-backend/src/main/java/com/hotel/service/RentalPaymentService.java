@@ -21,17 +21,21 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
     private final RentalPaymentRepository payments; // 付款資料列鎖與條件更新。
     private final RentalMailService mail; // 提交後寄送付款通知。
     private final Environment environment; // 不將金鑰寫入程式或前端。
+    /** 建立場地付款服務及其資料與通知依賴。 */
     public RentalPaymentService(RentalService rentals, RentalPaymentRepository payments, RentalMailService mail, Environment environment) { // 注入場地專用服務。
         this.rentals=rentals; this.payments=payments; this.mail=mail; this.environment=environment; // 保存既有依賴。
     }
+    /** 讀取必要的綠界環境設定。 */
     private String setting(String name) { // 缺設定時明確拒絕，不使用正式預設值。
         String value=environment.getProperty(name); // 僅讀取指定環境變數。
         if (value==null || value.isBlank()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"尚未設定綠界 Stage 環境"); // 不輸出秘密內容。
         return value; // 傳給後端簽章或網址驗證。
     }
+    /** 確認付款介接僅使用綠界 Stage 測試環境。 */
     private void stageOnly() { // 每次介接均檢查模式，避免環境誤設。
         if (!STAGE.equals(setting("ECPAY_PAYMENT_URL")) || !"3002607".equals(setting("ECPAY_MERCHANT_ID"))) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"僅允許綠界 Stage 測試商店"); // 綠界官方公開測試商店，只能使用於 Stage 測試環境。
     }
+    /** 驗證並取得付款結果回呼網址。 */
     private String returnUrl() { // 回呼需外部可達，不自行建立穿透通道。
         String value=setting("ECPAY_RETURN_URL"); // 使用操作者提供的公開網址。
         URI uri=URI.create(value); // 以結構化網址檢查而非字串前綴。
@@ -39,6 +43,7 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         if (!"https".equals(uri.getScheme()) || host==null || host.equalsIgnoreCase("localhost") || host.endsWith(".local") || host.matches("[0-9.]+") || host.contains(":") || uri.getUserInfo()!=null || (uri.getPort()!=-1 && uri.getPort()!=443) || !"/api/rental-payments/ecpay/return".equals(uri.getPath()) || uri.getQuery()!=null || value.length()>200) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"需要公開 HTTPS 的精確付款回呼網址"); // 拒絕本機與字面 IP，固定回呼路徑。
         return value; // 僅回傳驗證後網址。
     }
+    /** 依綠界規格計算付款參數檢查碼。 */
     public static String checksum(Map<String,String> parameters, String key, String iv) { // 依官方全方位金流規則計算檢查碼。
         try { // 標準 JDK 已支援 SHA256。
             var sorted=new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER); // 參數名稱不分大小寫排序。
@@ -50,12 +55,14 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
             return HexFormat.of().withUpperCase().formatHex(MessageDigest.getInstance("SHA-256").digest(encoded.getBytes(StandardCharsets.UTF_8))); // 最終使用大寫十六進位。
         } catch (java.security.NoSuchAlgorithmException exception) { throw new IllegalStateException("無法使用 SHA256",exception); } // 不降級成不安全簽章。
     }
+    /** 查詢使用者可存取租借的付款狀態。 */
     @Transactional(readOnly=true) // 歷史付款回應不寫入資料。
     public Map<String,Object> status(Integer rentalId, Authentication authentication) { // 先驗證本人或管理員。
         var rental=rentals.findAccessible(rentalId,authentication); // 不接受前端會員編號。
         var payment=payments.read(rental.getPaymentId()); // 金額來自建立當時保存值。
         return Map.of("rentalId",rentalId,"totalPrice",payment.get("total_price"),"paymentStatus",payment.get("payment_status")); // 不公開交易金鑰或其他會員資料。
     }
+    /** 建立可提交至綠界 Stage 的結帳參數。 */
     @Transactional // 交易編號配置與讀取在同一鎖定交易。
     public Map<String,Object> checkout(Integer rentalId, Authentication authentication) { // 付款只允許本人。
         var rental=rentals.findAccessible(rentalId,authentication); // 先拒絕他人租借。
@@ -92,6 +99,7 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         parameters.put("CheckMacValue",checksum(parameters,key,iv)); // 後端簽章後才交給前端表單。
         return Map.of("action",STAGE,"parameters",parameters); // 不回傳金鑰或向量。
     }
+    /** 驗證付款回呼並以冪等方式更新付款狀態。 */
     @Transactional // 回呼驗證及狀態更新必須原子完成。
     public void callback(Map<String,String> parameters) { // 接收表單原始參數值。
         stageOnly(); // 不接受正式環境設定。
@@ -118,6 +126,7 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         var at=LocalDateTime.parse(parameters.get("PaymentDate"),DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")); // 付款時間採驗證過的通知值。
         if (payments.paid(id,trade,at)!=1) throw new IllegalStateException("付款狀態更新失敗"); // 條件更新不成功則回滾。
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() { // 通知只在交易成功後觸發一次。
+            /** 在付款交易提交後寄送通知。 */
             @Override public void afterCommit() { mail.send(rental,amount,trade); } // 郵件服務自行攔截錯誤，不影響綠界回應。
         });
     }

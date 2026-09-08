@@ -37,6 +37,7 @@ public class VenueLocalImageController {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /** 建立使用指定資料庫連線的圖片控制器。 */
     public VenueLocalImageController(
             JdbcTemplate jdbcTemplate) {
 

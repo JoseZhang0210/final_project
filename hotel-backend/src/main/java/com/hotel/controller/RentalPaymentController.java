@@ -8,15 +8,20 @@ import org.springframework.util.MultiValueMap; // 防止重複參數造成驗證
 @RequestMapping("/api/rental-payments") // 只屬於場地模組。
 public class RentalPaymentController { // 控制器不處理付款狀態邏輯。
     private final RentalPaymentService service; // 注入專用服務。
+    /** 將付款存取例外轉為原始 HTTP 狀態。 */
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class) // 保留付款所有權與設定錯誤的正確狀態。
     public ResponseEntity<?> accessError(org.springframework.web.server.ResponseStatusException exception) { // 僅影響場地付款控制器。
         return ResponseEntity.status(exception.getStatusCode()).body(java.util.Map.of("message", exception.getReason()==null ? "付款暫時無法處理" : exception.getReason())); // 不依賴共用例外處理的五百回應。
     }
+    /** 建立使用指定付款服務的控制器。 */
     public RentalPaymentController(RentalPaymentService service) { this.service=service; } // 保存服務依賴。
+    /** 查詢指定租借的付款狀態。 */
     @GetMapping("/rentals/{id}") // 只有本人或管理員可查历史付款。
     public Object status(@PathVariable Integer id, Authentication authentication) { return service.status(id,authentication); } // 由服务验证所有權。
+    /** 建立指定租借的綠界 Stage 結帳參數。 */
     @PostMapping("/rentals/{id}/checkout") // 前端只傳租借編號，不接收價格。
     public Object checkout(@PathVariable Integer id, Authentication authentication) { return service.checkout(id,authentication); } // 返回後端簽章的 Stage 表單參數。
+    /** 驗證並處理綠界付款結果通知。 */
     @PostMapping(value="/ecpay/return",produces="text/plain") // 唯一不需要會員 JWT 的付款通知路徑。
     public ResponseEntity<String> callback(@RequestParam MultiValueMap<String,String> parameters) { // 綠界以表單傳遞資料。
         try { // 所有驗證失敗都不能回覆成功。

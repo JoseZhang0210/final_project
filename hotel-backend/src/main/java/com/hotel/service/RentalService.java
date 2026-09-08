@@ -259,6 +259,7 @@ public class RentalService {
 
         return rentalRepository.save(rental);
     }
+    /** 刪除尚未進入付款流程的租借。 */
     public boolean deleteById(Integer id) {
 
         if (!rentalRepository.existsById(id)) {
@@ -456,6 +457,7 @@ public class RentalService {
         return result != null && result == 1;
     }
 
+    /** 取得存在的場地，否則回報輸入錯誤。 */
     private Venue getVenue(Integer venueId) {
 
         return venueRepository.findById(venueId)
@@ -464,6 +466,7 @@ public class RentalService {
                                 "找不到場地 ID：" + venueId));
     }
 
+    /** 驗證會員建立租借時提供的欄位。 */
     private void validateCreateRequest(
             RentalCreateRequest request) {
 
@@ -555,6 +558,7 @@ public class RentalService {
         }
     }
 
+    /** 驗證場地狀態及租借人數限制。 */
     private void validateVenueAndGuestCount(
             Rental rental,
             Venue venue) {
@@ -592,14 +596,17 @@ public class RentalService {
                 || "可預約".equals(status);
     }
 
+    /** 判斷登入身分是否具備場地管理權限。 */
     public static boolean isManager(Authentication authentication) { // 僅使用既有員工及總經理權限。
         return authentication != null && authentication.isAuthenticated() && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_EMPLOYEE".equals(a.getAuthority())) && authentication.getAuthorities().stream().anyMatch(a -> "POSITION_總經理".equals(a.getAuthority())); // 同時具有兩項權限才可管理。
     }
+    /** 要求登入身分具備場地管理權限。 */
     public static void requireManager(Authentication authentication) { // 管理操作共用入口。
         if (!isManager(authentication)) { // 非管理員不可存取管理資料。
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "需要場地管理權限"); // 回傳禁止存取。
         }
     }
+    /** 依管理權限或會員所有權取得租借。 */
     @Transactional(readOnly = true) // 所有權查詢不寫入資料。
     public Rental findAccessible(Integer id, Authentication authentication) { // 單筆租借共用所有權檢查。
         Rental rental = rentalRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "找不到租借紀錄")); // 不存在回傳四零四。
@@ -608,13 +615,16 @@ public class RentalService {
         }
         return rental; // 授權通過才回傳實體。
     }
+    /** 鎖定場地資料列以序列化租借寫入。 */
     private void lockVenue(Integer venueId) { // 交易內以場地資料列序列化租借寫入。
         jdbcTemplate.queryForObject("SELECT venue_id FROM dbo.venue WITH (UPDLOCK,HOLDLOCK) WHERE venue_id = ?", Integer.class, venueId); // 鎖定持續至提交以防止同日雙訂。
     }
+    /** 判斷指定租借是否與既有整日預約衝突。 */
     private boolean hasCollision(Rental rental, Integer excludedId) { // 舊日期時間也以整天判斷。
         LocalDate day = rental.getRentalDate().toLocalDate(); // 取得飯店租借日期。
         return rentalRepository.findOccupied(rental.getVenueId(), day.atStartOfDay(), day.plusDays(1).atStartOfDay()).stream().anyMatch(r -> !r.getRentalId().equals(excludedId)); // 共用占用查詢並排除自己。
     }
+    /** 查詢日期範圍內的精簡場地占用資料。 */
     @Transactional(readOnly = true) // 占用查詢不更動資料。
     public List<com.hotel.dto.RentalAvailability> occupied(Integer venueId, LocalDate from, LocalDate to) { // 僅回傳場地與日期。
         if (from == null || to == null || to.isBefore(from) || java.time.temporal.ChronoUnit.DAYS.between(from, to) > 366) { // 限制查詢長度與順序。
@@ -622,6 +632,7 @@ public class RentalService {
         }
         return rentalRepository.findOccupied(venueId, from.atStartOfDay(), to.plusDays(1).atStartOfDay()).stream().map(r -> new com.hotel.dto.RentalAvailability(r.getVenueId(), r.getRentalDate().toLocalDate(), true)).distinct().toList(); // 去重並排除會員與付款欄位。
     }
+    /** 將租借狀態正規化為系統使用的值。 */
     private void normalizeRentalStatus(Rental rental) {
 
         if (rental.getRentalStatus() == null

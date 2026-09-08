@@ -13,9 +13,11 @@ public class RentalMailService { // 郵件失敗不傳回付款交易。
     private final MemberRepository members; // 只讀取既有會員。
     private final ProfileRepository profiles; // 只讀取既有個人資料。
     private final Environment environment; // 取得寄件人設定而不複製秘密。
+    /** 建立使用指定郵件與會員資料來源的通知服務。 */
     public RentalMailService(JavaMailSender sender, MemberRepository members, ProfileRepository profiles, Environment environment) { // 注入四個既有依賴。
         this.sender=sender; this.members=members; this.profiles=profiles; this.environment=environment; // 保存依賴供提交後寄信。
     }
+    /** 寄送場地租借付款成功通知。 */
     public void send(Map<String,Object> rental, int amount, String trade) { // 此方法只在付款成功提交後呼叫。
         try { // 所有寄信與查詢錯誤均不得影響付款回呼。
             var member=members.findById(((Number)rental.get("member_id")).intValue()).orElseThrow(); // 沿用會員到帳號關聯。

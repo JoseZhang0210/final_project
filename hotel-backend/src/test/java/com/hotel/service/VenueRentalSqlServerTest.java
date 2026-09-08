@@ -18,6 +18,7 @@ import com.hotel.repository.*; // 使用正式場地資料存取實作。
 import com.hotel.dto.RentalCreateRequest; // 使用正式新增租借請求。
 @EnabledIfEnvironmentVariable(named="VENUE_SQL_ACCEPTANCE", matches="true") // 預設測試不會碰資料庫。
 class VenueRentalSqlServerTest { // 不啟動 Spring Boot、初始化器、排程或郵件服務。
+    /** 驗證真實 SQL Server 流程並回滾所有測試資料。 */
     @Test void realDatabaseFlowRollsBack() { // 驗收真實資料庫交易與會員隔離。
         ((ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(JdbcTemplate.class)).setLevel(ch.qos.logback.classic.Level.DEBUG); // 在測試報告記錄實際 JDBC SQL 範本，不記錄參數或密碼。
         var ds = new DriverManagerDataSource("jdbc:sqlserver://localhost:1433;databaseName=finalproject_git_latest;encrypt=true;trustServerCertificate=true", "hotel_app", Objects.requireNonNull(System.getenv("VENUE_SQL_PASSWORD"))); // 固定唯一核准的測試庫與既有登入。

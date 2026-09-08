@@ -11,6 +11,7 @@ import org.springframework.mock.env.MockEnvironment; // 不讀取實際郵件秘
 import org.springframework.mail.javamail.JavaMailSender; // 模擬郵件傳送失敗。
 import org.springframework.mail.SimpleMailMessage; // 驗證純文字信件傳送入口。
 class RentalMailServiceTest { // 郵件錯誤不可讓已提交的付款回滾。
+    /** 驗證郵件傳送失敗不會回拋至付款流程。 */
     @Test void deliveryFailureDoesNotEscape() { // 信箱存在但 SMTP 失敗的情境。
         var members=mock(MemberRepository.class); var profiles=mock(ProfileRepository.class); var sender=mock(JavaMailSender.class); // 所有資料都只在記憶體中。
         var member=new Member(); member.setMemberId(1); member.setAccountId(46); // 沿用初始化會員關聯編號。
