@@ -292,4 +292,20 @@ const router = createRouter({
   },
 });
 
+router.beforeEach((to, from, next) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // 延遲引用以避免 pinia 初始化前調用
+      import("@/stores/auth").then(({ useAuthStore }) => {
+        const authStore = useAuthStore();
+        authStore.checkAndRefreshToken();
+      });
+    }
+  } catch (e) {
+    console.error("Route auth check error:", e);
+  }
+  next();
+});
+
 export default router;
