@@ -51,7 +51,7 @@ public class RestaurantBackupController {
         this.memberRepository = memberRepository;
     }
 
-    // GET /api/restaurant-backup/export?startDate=2026-09-01&endDate=2026-09-30
+    // 匯出餐廳、時段與訂位資料，可依訂位日期篩選。
     @GetMapping("/export")
     public BackupData exportData(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -112,7 +112,7 @@ public class RestaurantBackupController {
             Restaurant restaurant = restaurantService.findById(reservation.getRestaurantId());
             RestaurantTime time = restaurantTimeService.findById(reservation.getTimeId());
 
-            // 若舊資料關聯已遺失，略過該筆，避免產生無法再次匯入的 JSON。
+            // 關聯資料不存在時，不輸出這筆訂位。
             if (restaurant == null || time == null) {
                 continue;
             }
@@ -134,8 +134,7 @@ public class RestaurantBackupController {
         return data;
     }
 
-    // POST /api/restaurant-backup/import
-    // 只新增：不更新、不刪除；同名餐廳、相同時段、相同訂位會略過。
+    // 匯入時只新增，不更新或刪除原本資料。
     @PostMapping("/import")
     @Transactional
     public ResponseEntity<ImportResult> importData(@RequestBody BackupData data) {
@@ -154,27 +153,18 @@ public class RestaurantBackupController {
                 continue;
             }
 
-            String restaurantName = cleanText(source.getRestaurantName());
+            String restaurantName = text(source.getRestaurantName());
 
             if (restaurantName == null) {
                 result.setSkippedRestaurants(result.getSkippedRestaurants() + 1);
                 continue;
             }
 
-            source.setRestaurantName(restaurantName);
-            source.setAddress(cleanText(source.getAddress()));
-            source.setPhone(cleanPhone(source.getPhone()));
-            source.setDescription(cleanText(source.getDescription()));
-
-            if (source.getCapacity() != null && source.getCapacity() <= 0) {
-                source.setCapacity(null);
-            }
-
             Restaurant restaurant = findRestaurant(restaurants, restaurantName);
 
             if (restaurant == null) {
                 restaurant = new Restaurant();
-                restaurant.setRestaurantName(source.getRestaurantName().trim());
+                restaurant.setRestaurantName(restaurantName);
                 restaurant.setAddress(source.getAddress());
                 restaurant.setPhone(source.getPhone());
                 restaurant.setCapacity(source.getCapacity());
@@ -192,23 +182,21 @@ public class RestaurantBackupController {
                     continue;
                 }
 
-                String mealType = cleanText(sourceTime.getMealType());
+                String mealType = text(sourceTime.getMealType());
 
+                // 開始與結束相同視為無效；跨午夜時段可以保留。
                 if (mealType == null
                         || sourceTime.getOpenTime() == null
                         || sourceTime.getCloseTime() == null
-                        // 晚間時段可能跨午夜，例如 19:00 到 00:30；只有開始、結束完全相同才視為異常。
                         || Objects.equals(sourceTime.getOpenTime(), sourceTime.getCloseTime())) {
                     result.setSkippedTimes(result.getSkippedTimes() + 1);
                     continue;
                 }
 
-                sourceTime.setMealType(mealType);
-
                 RestaurantTime time = findTime(
                         times,
                         restaurant.getRestaurantId(),
-                        sourceTime.getMealType(),
+                        mealType,
                         sourceTime.getOpenTime(),
                         sourceTime.getCloseTime());
 
@@ -219,7 +207,7 @@ public class RestaurantBackupController {
 
                 time = new RestaurantTime();
                 time.setRestaurantId(restaurant.getRestaurantId());
-                time.setMealType(sourceTime.getMealType().trim());
+                time.setMealType(mealType);
                 time.setOpenTime(sourceTime.getOpenTime());
                 time.setCloseTime(sourceTime.getCloseTime());
                 time = restaurantTimeService.save(time);
@@ -234,10 +222,11 @@ public class RestaurantBackupController {
                 continue;
             }
 
-            String restaurantName = cleanText(source.getRestaurantName());
-            String mealType = cleanText(source.getMealType());
-            String contactName = cleanText(source.getContactName());
-            String contactPhone = cleanPhone(source.getContactPhone());
+            String restaurantName = text(source.getRestaurantName());
+            String mealType = text(source.getMealType());
+            String contactName = text(source.getContactName());
+            String contactPhone = text(source.getContactPhone());
+            String status = text(source.getStatus());
 
             if (restaurantName == null
                     || mealType == null
@@ -250,12 +239,6 @@ public class RestaurantBackupController {
                 result.setSkippedReservations(result.getSkippedReservations() + 1);
                 continue;
             }
-
-            source.setRestaurantName(restaurantName);
-            source.setMealType(mealType);
-            source.setContactName(contactName);
-            source.setContactPhone(contactPhone);
-            source.setStatus(normalizeStatus(source.getStatus()));
 
             Restaurant restaurant = findRestaurant(restaurants, restaurantName);
             RestaurantTime time = restaurant == null ? null
@@ -277,7 +260,7 @@ public class RestaurantBackupController {
                 memberId = null;
             }
 
-            // 匯入到另一個資料庫時，會員 ID 可能不存在；改為訪客訂位並保留聯絡資料。
+            // 會員不存在時，以訪客訂位處理。
             if (memberId != null && !memberRepository.existsById(memberId)) {
                 memberId = null;
                 result.setMemberConvertedToGuest(result.getMemberConvertedToGuest() + 1);
@@ -299,7 +282,7 @@ public class RestaurantBackupController {
             reservation.setTimeId(time.getTimeId());
             reservation.setReservationDate(source.getReservationDate());
             reservation.setPeopleCount(source.getPeopleCount());
-            reservation.setStatus(source.getStatus());
+            reservation.setStatus(status == null ? "已訂位" : status);
 
             if (hasSameReservation(reservations, reservation)) {
                 result.setSkippedReservations(result.getSkippedReservations() + 1);
@@ -314,6 +297,7 @@ public class RestaurantBackupController {
         return ResponseEntity.ok(result);
     }
 
+    // 依名稱找餐廳，名稱不分大小寫。
     private Restaurant findRestaurant(List<Restaurant> restaurants, String restaurantName) {
         String target = normalized(restaurantName);
         return restaurants.stream()
@@ -322,6 +306,7 @@ public class RestaurantBackupController {
                 .orElse(null);
     }
 
+    // 用餐廳、餐期與營業時間判斷是否為同一個時段。
     private RestaurantTime findTime(
             List<RestaurantTime> times,
             Integer restaurantId,
@@ -338,6 +323,7 @@ public class RestaurantBackupController {
                 .orElse(null);
     }
 
+    // 相同人、餐廳、時段、日期與人數視為重複訂位。
     private boolean hasSameReservation(List<Reservation> reservations, Reservation target) {
         return reservations.stream().anyMatch(item -> Objects.equals(item.getMemberId(), target.getMemberId())
                 && normalized(item.getContactPhone()).equals(normalized(target.getContactPhone()))
@@ -364,32 +350,13 @@ public class RestaurantBackupController {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
-    private String cleanText(String value) {
+    private String text(String value) {
         if (value == null) {
             return null;
         }
 
-        String cleaned = value.trim().replaceAll("\\s+", " ");
-        return cleaned.isEmpty() ? null : cleaned;
-    }
-
-    private String cleanPhone(String value) {
-        String cleaned = cleanText(value);
-        return cleaned == null ? null : cleaned.replaceAll("[\\s-]", "");
-    }
-
-    private String normalizeStatus(String value) {
-        String status = cleanText(value);
-
-        if ("已取消".equals(status) || "已完成".equals(status) || "已訂位".equals(status)) {
-            return status;
-        }
-
-        return "已訂位";
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+        String result = value.trim();
+        return result.isEmpty() ? null : result;
     }
 
     private <T> List<T> safeList(List<T> values) {

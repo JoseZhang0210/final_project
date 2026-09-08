@@ -42,21 +42,31 @@ public class RestaurantTimeController {
 		return ResponseEntity.ok(restaurantTime);
 	}
 
+	// 前台選擇餐廳後，取得該餐廳的可選時段。
 	@GetMapping("/restaurant/{restaurantId}")
-	public List<RestaurantTime> findByRestaurantId(@PathVariable Integer restaurantId) {
+	public List<RestaurantTime> findByRestaurantId(
+			@PathVariable Integer restaurantId) {
 		return restaurantTimeService.findByRestaurantId(restaurantId);
 	}
 
 	@PostMapping
-	public ResponseEntity<RestaurantTime> create(@RequestBody RestaurantTime restaurantTime) {
+	public ResponseEntity<RestaurantTime> create(
+			@RequestBody RestaurantTime restaurantTime) {
+
 		restaurantTime.setTimeId(null);
 
-		return ResponseEntity.status(HttpStatus.CREATED).body(restaurantTimeService.save(restaurantTime));
+		RestaurantTime savedTime = restaurantTimeService.save(restaurantTime);
+
+		return ResponseEntity
+				.status(HttpStatus.CREATED)
+				.body(savedTime);
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<RestaurantTime> update(@PathVariable Integer id,
+	public ResponseEntity<RestaurantTime> update(
+			@PathVariable Integer id,
 			@RequestBody RestaurantTime formRestaurantTime) {
+
 		RestaurantTime restaurantTime = restaurantTimeService.findById(id);
 
 		if (restaurantTime == null) {
@@ -73,14 +83,11 @@ public class RestaurantTimeController {
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> delete(@PathVariable Integer id) {
-		RestaurantTime restaurantTime = restaurantTimeService.findById(id);
-
-		if (restaurantTime == null) {
+		if (restaurantTimeService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
 
 		restaurantTimeService.deleteById(id);
-
 		return ResponseEntity.noContent().build();
 	}
 }
