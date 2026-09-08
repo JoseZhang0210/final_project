@@ -575,8 +575,12 @@ async function importBackup(event) {
       return;
     }
 
+    const skippedCount =
+      result.skippedRestaurants + result.skippedTimes + result.skippedReservations;
+    const convertedCount = result.memberConvertedToGuest ?? 0;
+
     showMessage(
-      `匯入完成：新增 ${result.addedRestaurants} 間餐廳、${result.addedTimes} 個時段、${result.addedReservations} 筆訂位。`,
+      `匯入完成：新增 ${result.addedRestaurants} 間餐廳、${result.addedTimes} 個時段、${result.addedReservations} 筆訂位；略過 ${skippedCount} 筆重複或格式異常資料${convertedCount ? `；${convertedCount} 筆不存在的會員已改為訪客訂位。` : "。"}`,
       "success",
     );
 
