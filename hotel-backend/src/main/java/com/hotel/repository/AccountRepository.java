@@ -11,6 +11,7 @@ import com.hotel.model.entity.Account;
 
 public interface AccountRepository extends JpaRepository<Account, Integer> {
     Account findByUsername (String username);
+    boolean existsByUsername (String username);
 
     // 1. 檢查這個帳號是不是員工，如果是，查出他的職位 (Position)
     @Query(value = "SELECT position FROM employee WHERE account_id = :accountId", nativeQuery = true)
