@@ -85,6 +85,14 @@ const userInitial = computed(() => {
   text-align: center;
   padding: 46px 20px;
   margin-bottom: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-content {
+  margin: 0 auto;
+  text-align: center;
 }
 
 .member-hero h1 {

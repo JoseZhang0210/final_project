@@ -14,8 +14,18 @@ const currentTime = ref(new Date());
 
 // 下拉選單選項（與資料庫值對應）
 const priorities = ["一般", "重要", "緊急"];
+const taskStatuses = ["待處理", "進行中", "已完成", "已取消"];
 const taskTypes = ["退房清潔", "日常清潔", "設備維修", "補充備品", "其他"];
-const taskStatuses = ["待處理", "進行中", "已完成", "已取消", "無"];
+
+// 工單「進行中」時房間狀態 / 工單「已完成」時房間狀態
+// 對應 AdminRoomView 的房間狀態：可預訂、已預訂、已入住、退房待清潔、清潔中、維修中、停用
+const taskTypeToRoomStatus = {
+  '退房清潔': { doing: '清潔中',  done: '可預訂' }, // 退房 → 清潔中 → 可預訂
+  '日常清潔': { doing: '已入住',  done: '已入住' }, // 續住清潔，維持已入住
+  '設備維修': { doing: '維修中',  done: '可預訂' }, // 維修 → 維修中 → 可預訂
+  '補充備品': { doing: null,      done: null     }, // 不改變房間狀態
+  '其他':     { doing: null,      done: null     },
+};
 
 // 查詢條件狀態 (對應後端 Controller 的可查詢參數)
 const searchParams = ref({
