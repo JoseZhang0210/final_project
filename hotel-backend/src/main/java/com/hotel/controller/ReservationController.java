@@ -22,9 +22,7 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    public ReservationController(
-            ReservationService reservationService) {
-
+    public ReservationController(ReservationService reservationService) {
         this.reservationService = reservationService;
     }
 
@@ -34,9 +32,7 @@ public class ReservationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Reservation> findById(
-            @PathVariable Integer id) {
-
+    public ResponseEntity<Reservation> findById(@PathVariable Integer id) {
         Reservation reservation = reservationService.findById(id);
 
         if (reservation == null) {
@@ -47,41 +43,33 @@ public class ReservationController {
     }
 
     @GetMapping("/member/{memberId}")
-    public List<Reservation> findByMemberId(
-            @PathVariable Integer memberId) {
-
+    public List<Reservation> findByMemberId(@PathVariable Integer memberId) {
         return reservationService.findByMemberId(memberId);
     }
 
     @GetMapping("/restaurant/{restaurantId}")
     public List<Reservation> findByRestaurantId(
             @PathVariable Integer restaurantId) {
-
-        return reservationService
-                .findByRestaurantId(restaurantId);
+        return reservationService.findByRestaurantId(restaurantId);
     }
 
     @PostMapping
     public ResponseEntity<Reservation> create(
             @RequestBody Reservation reservation) {
 
-        if (reservation.getMemberId() == null
-                && !hasContactInfo(reservation)) {
-
+        // 訪客訂位必須填寫姓名與電話。
+        if (isGuestWithoutContact(reservation)) {
             return ResponseEntity.badRequest().build();
         }
 
         reservation.setReservationId(null);
+        setDefaultStatus(reservation);
 
-        if (reservation.getStatus() == null
-                || reservation.getStatus().isBlank()) {
-
-            reservation.setStatus("已訂位");
-        }
+        Reservation savedReservation = reservationService.save(reservation);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(reservationService.save(reservation));
+                .body(savedReservation);
     }
 
     @PutMapping("/{id}")
@@ -95,9 +83,7 @@ public class ReservationController {
             return ResponseEntity.notFound().build();
         }
 
-        if (formReservation.getMemberId() == null
-                && !hasContactInfo(formReservation)) {
-
+        if (isGuestWithoutContact(formReservation)) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -105,33 +91,38 @@ public class ReservationController {
         reservation.setContactName(formReservation.getContactName());
         reservation.setContactPhone(formReservation.getContactPhone());
         reservation.setRestaurantId(formReservation.getRestaurantId());
-        reservation.setReservationDate(
-                formReservation.getReservationDate());
+        reservation.setReservationDate(formReservation.getReservationDate());
         reservation.setTimeId(formReservation.getTimeId());
         reservation.setPeopleCount(formReservation.getPeopleCount());
         reservation.setStatus(formReservation.getStatus());
 
-        return ResponseEntity.ok(
-                reservationService.save(reservation));
+        setDefaultStatus(reservation);
+
+        return ResponseEntity.ok(reservationService.save(reservation));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        Reservation reservation = reservationService.findById(id);
-
-        if (reservation == null) {
+        if (reservationService.findById(id) == null) {
             return ResponseEntity.notFound().build();
         }
 
         reservationService.deleteById(id);
-
         return ResponseEntity.noContent().build();
     }
 
-    private boolean hasContactInfo(Reservation reservation) {
-        return reservation.getContactName() != null
-                && !reservation.getContactName().isBlank()
-                && reservation.getContactPhone() != null
-                && !reservation.getContactPhone().isBlank();
+    private boolean isGuestWithoutContact(Reservation reservation) {
+        return reservation.getMemberId() == null
+                && (reservation.getContactName() == null
+                        || reservation.getContactName().isBlank()
+                        || reservation.getContactPhone() == null
+                        || reservation.getContactPhone().isBlank());
+    }
+
+    private void setDefaultStatus(Reservation reservation) {
+        if (reservation.getStatus() == null
+                || reservation.getStatus().isBlank()) {
+            reservation.setStatus("已訂位");
+        }
     }
 }
