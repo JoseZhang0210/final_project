@@ -7,7 +7,8 @@ import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
 import { useRouter } from "vue-router";
 
-const BOOKING_ORDER_API_URL = "/api/booking-orders";
+const BOOKING_API_URL = "/api/bookings";
+const BOOKING_ORDER_API_URL = "/api/orders";
 
 // 選單資料（初始化為空陣列）
 const bookingOrders = ref([]);
@@ -43,6 +44,7 @@ const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
 const form = ref(createEmptyForm());
 const showPaymentModal = ref(false);
 const currentNewBooking = ref(null);
+const isSubmittingPayment = ref(false); // 防止重複提交
 const paymentForm = ref({
   amount: 0,
   paymentMethod: '現金',
@@ -138,6 +140,38 @@ function clearForm() {
   form.value = createEmptyForm();
   formTitle.value = "新增訂房明細";
   message.value = "";
+}
+
+function fillDummyData() {
+  const today = new Date();
+  const tzOffset = today.getTimezoneOffset() * 60000;
+  const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+  
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const tomorrowStr = new Date(tomorrow.getTime() - tzOffset).toISOString().split('T')[0];
+  
+  let firstMemberId = 1;
+  if (bookings.value && bookings.value.length > 0) {
+    firstMemberId = bookings.value[0].memberId ?? bookings.value[0].member_id ?? 1;
+  }
+  
+  form.value = {
+    ...createEmptyForm(),
+    memberId: firstMemberId,
+    checkInDate: todayStr,
+    checkOutDate: tomorrowStr,
+    guestNum: 1,
+    roomTypeId: 2, 
+    bookingStatus: "已入住"
+  };
+  
+  setTimeout(() => {
+    if (availableRooms.value.length > 0) {
+      form.value.roomId = availableRooms.value[0].roomId;
+    }
+    calculatePrice();
+    formTitle.value = "新增訂房明細 (一鍵填入)";
+  }, 50);
 }
 
 async function loadSelectOptions() {
@@ -458,8 +492,24 @@ function openPaymentModal(booking) {
 }
 
 async function submitPayment() {
+  if (isSubmittingPayment.value) return; // 防止重複連打
+
+  const bookingId = currentNewBooking.value?.bookingId ?? currentNewBooking.value?.booking_id;
+  if (!bookingId) {
+    showMessage("無效的訂房 ID", "error");
+    return;
+  }
+
+  // 檢查該訂房是否已有付款紀錄，防止重複建立
+  const existing = getPaymentForBooking(bookingId);
+  if (existing) {
+    showMessage(`訂房 ID ${bookingId} 已有付款紀錄（付款 ID: ${existing.paymentId ?? existing.payment_id}），請勿重複新增`, "error");
+    showPaymentModal.value = false;
+    return;
+  }
+
+  isSubmittingPayment.value = true;
   try {
-    const bookingId = currentNewBooking.value.bookingId ?? currentNewBooking.value.booking_id;
     const paymentPayload = {
       bookingId: bookingId,
       amount: paymentForm.value.amount,
@@ -467,7 +517,7 @@ async function submitPayment() {
       paymentStatus: paymentForm.value.paymentStatus,
       transactionId: paymentForm.value.transactionId || null,
     };
-    
+
     await bookingPaymentApi.createPayment(paymentPayload);
     showMessage("付款紀錄建立成功", "success");
     showPaymentModal.value = false;
@@ -475,6 +525,8 @@ async function submitPayment() {
     await loadBookings(); // 重新拉取包含付款狀態的清單
   } catch (error) {
     showMessage(error.message || "建立付款失敗", "error");
+  } finally {
+    isSubmittingPayment.value = false; // 不管成功失敗都解除鎖定
   }
 }
 
@@ -638,7 +690,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
     <!-- 表單區塊 -->
     <section class="admin-card">
-      <h2>{{ formTitle }}</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>{{ formTitle }}</h2>
+        <button type="button" class="btn secondary" @click="fillDummyData">一鍵寫入資料</button>
+      </div>
 
       <form @submit.prevent="saveBooking">
         <div class="form-grid">
@@ -857,8 +912,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </div>
 
           <div class="modal-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" class="btn secondary" @click="skipPayment">跳過，不建立</button>
-            <button type="submit" class="btn primary">確認建立付款</button>
+            <button type="button" class="btn secondary" @click="skipPayment" :disabled="isSubmittingPayment">跳過，不建立</button>
+            <button type="submit" class="btn primary" :disabled="isSubmittingPayment">
+              {{ isSubmittingPayment ? '建立中…' : '確認建立付款' }}
+            </button>
           </div>
         </form>
       </div>

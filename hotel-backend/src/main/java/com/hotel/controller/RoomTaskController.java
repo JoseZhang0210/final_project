@@ -76,4 +76,13 @@ public class RoomTaskController {
         roomTaskService.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "任務刪除成功！"));
     }
+
+    @PostMapping("/auto-create-from-rooms")
+    public ResponseEntity<Map<String, Object>> autoCreateTasksFromRooms() {
+        int createdCount = roomTaskService.autoCreateTasksFromRooms();
+        return ResponseEntity.ok(Map.of(
+            "message", "已成功掃描房間狀態並建立工單！",
+            "createdCount", createdCount
+        ));
+    }
 }
