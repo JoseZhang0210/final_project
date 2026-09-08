@@ -32,6 +32,12 @@
             <span>我的訂單</span>
           </RouterLink>
 
+          <!-- 新增會員場地預約導覽連結。 -->
+          <RouterLink to="/member/rentals" class="nav-item" active-class="active">
+            <!-- 顯示場地預約入口名稱。 -->
+            <span>🎫 我的場地預約</span>
+          </RouterLink>
+
           <RouterLink to="/products" class="nav-item">
             <span class="icon">🛍</span>
             <span>飯店商城</span>

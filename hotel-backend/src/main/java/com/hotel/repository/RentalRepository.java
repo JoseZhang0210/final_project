@@ -13,6 +13,9 @@ import com.hotel.model.entity.Rental;
  * Rental 資料存取層。
  */
 public interface RentalRepository extends JpaRepository<Rental, Integer> {
+    // 新增驗證與前台占用共用有效狀態；已完成保留歷史占用，取消不占用。
+    @Query("select r from Rental r where (:venueId is null or r.venueId = :venueId) and r.rentalDate >= :from and r.rentalDate < :until and upper(trim(r.rentalStatus)) in ('PENDING','CONFIRMED','COMPLETED','待確認','待付款','已確認','已完成')")
+    List<Rental> findOccupied(@Param("venueId") Integer venueId, @Param("from") LocalDateTime from, @Param("until") LocalDateTime until); // 半開日期區間涵蓋既有非零時資料。
 
     List<Rental> findByVenueId(Integer venueId);
 
@@ -20,38 +23,4 @@ public interface RentalRepository extends JpaRepository<Rental, Integer> {
 
     boolean existsByVenueId(Integer venueId);
 
-    /**
-     * 同場地、同時間，只要不是取消狀態就視為撞期。
-     *
-     * 同時相容目前專題資料中可能存在的：
-     * CANCELLED / 已取消
-     */
-    @Query("""
-            select count(r)
-            from Rental r
-            where r.venueId = :venueId
-              and r.rentalDate = :rentalDate
-              and upper(coalesce(r.rentalStatus, '')) <> 'CANCELLED'
-              and coalesce(r.rentalStatus, '') <> '已取消'
-            """)
-    long countActiveCollisions(
-            @Param("venueId") Integer venueId,
-            @Param("rentalDate") LocalDateTime rentalDate);
-
-    /**
-     * 修改 Rental 時排除目前這一筆。
-     */
-    @Query("""
-            select count(r)
-            from Rental r
-            where r.venueId = :venueId
-              and r.rentalDate = :rentalDate
-              and r.rentalId <> :rentalId
-              and upper(coalesce(r.rentalStatus, '')) <> 'CANCELLED'
-              and coalesce(r.rentalStatus, '') <> '已取消'
-            """)
-    long countActiveCollisionsExcludingRental(
-            @Param("venueId") Integer venueId,
-            @Param("rentalDate") LocalDateTime rentalDate,
-            @Param("rentalId") Integer rentalId);
 }

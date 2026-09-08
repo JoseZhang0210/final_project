@@ -37,6 +37,10 @@ public class VenueController {
                     Map.entry("停用", "DISABLED"));
 
     private final VenueService venueService;
+    @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class) // 本模組自行保留權限錯誤，不修改共用例外處理。
+    public ResponseEntity<?> accessError(org.springframework.web.server.ResponseStatusException exception) { // 場地維護拒絕需回傳禁止存取。
+        return ResponseEntity.status(exception.getStatusCode()).body(Map.of("message", exception.getReason() == null ? "場地存取失敗" : exception.getReason())); // 不將權限拒絕變成五百錯誤。
+    }
 
     public VenueController(VenueService venueService) {
         this.venueService = venueService;
@@ -60,7 +64,8 @@ public class VenueController {
 
     @PostMapping
     public ResponseEntity<?> create(
-            @RequestBody Venue venue) {
+            @RequestBody Venue venue, org.springframework.security.core.Authentication authentication) { // 場地維護需要管理權限。
+        com.hotel.service.RentalService.requireManager(authentication); // 不允許會員自行新增場地。
 
         String validationError =
                 validateVenue(venue);
@@ -91,7 +96,8 @@ public class VenueController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody Venue venue) {
+            @RequestBody Venue venue, org.springframework.security.core.Authentication authentication) { // 場地更新包含價格與圖片，僅限管理者。
+        com.hotel.service.RentalService.requireManager(authentication); // 會員不能更改付款價格來源。
 
         if (!venueService.existsById(id)) {
             return ResponseEntity
@@ -114,12 +120,13 @@ public class VenueController {
         }
 
         return ResponseEntity.ok(
-                venueService.save(venue));
+                venueService.updateExisting(venue));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
-            @PathVariable Integer id) {
+            @PathVariable Integer id, org.springframework.security.core.Authentication authentication) { // 刪除場地需要管理權限。
+        com.hotel.service.RentalService.requireManager(authentication); // 不讓會員破壞場地資料。
 
         if (!venueService.existsById(id)) {
             return ResponseEntity

@@ -77,6 +77,7 @@ public class SecurityConfig {
                                                                 // Spring Boot error
                                                                 // -------------------------
                                                                 .requestMatchers("/error").permitAll()
+                                                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/rental-payments/ecpay/return").permitAll() // 僅放行場地付款綠界伺服器通知，由付款服務驗證簽章。
                                                                 // -------------------------
                                                                 // 其他 API
                                                                 // 需要 JWT

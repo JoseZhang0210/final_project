@@ -1,0 +1,7 @@
+<!-- 本地中性預設圖，不代表實際場地照片。 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <!-- 使用飯店米白底色，沒有外部資源。 -->
+  <rect width="640" height="360" fill="#f8f6f1"/>
+  <!-- 明確告知圖片尚未提供。 -->
+  <text x="320" y="185" text-anchor="middle" font-family="Arial, Microsoft JhengHei, sans-serif" font-size="28" fill="#4a3b2a">場地圖片尚未設定</text>
+</svg>
