@@ -43,6 +43,17 @@ const message = ref("");
 const messageType = ref("");
 const formTitle = ref("新增/編輯房務工單");
 const form = ref(createEmptyForm());
+const showFormModal = ref(false);
+
+function openAddModal() {
+  clearForm();
+  showFormModal.value = true;
+}
+
+function closeFormModal() {
+  showFormModal.value = false;
+  clearForm();
+}
 
 const filteredEmployees = computed(() => {
   if (!form.value || !form.value.taskType) return employees.value;
@@ -74,7 +85,8 @@ function showMessage(text, type) {
 
 function clearForm() {
   form.value = createEmptyForm();
-  formTitle.value = "新增房務工單";
+  formTitle.value = `編輯房務工單`;
+  showFormModal.value = true;
 }
 
 // 動態載入房間下拉選項 (GET /api/rooms)
@@ -244,6 +256,7 @@ async function saveRoomTask() {
     }
 
     clearForm();
+    showFormModal.value = false;
     await loadRoomTasks();
   } catch (error) {
     console.error("saveRoomTask Error:", error);
@@ -276,6 +289,7 @@ function editRoomTask(task) {
   };
 
   formTitle.value = `修改工單 ID：${taskId}`;
+  showFormModal.value = true;
 
   window.scrollTo({
     top: 0,
@@ -551,242 +565,148 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
 <template>
   <main class="task-page">
-    <header class="page-header">
-      <h1>房務工單管理</h1>
-      <p>管理客房清潔、維修、備品補充及員工指派</p>
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1>房務工單管理</h1>
+        <p>管理客房清潔、維修、備品補充及員工指派</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn secondary" @click="autoCreateTasks" :disabled="loading">
+          掃描房間自動建立工單
+        </button>
+        <button class="btn primary" @click="openAddModal" style="background-color: #A67C52; border: none;">+ 新增工單</button>
+      </div>
     </header>
 
     <div v-if="message" class="message" :class="messageType">
       {{ message }}
     </div>
 
-    <!-- 條件查詢卡片區塊 -->
+    <!-- 條件查詢與列表整合區塊 -->
     <section class="admin-card">
-      <h2>查詢工單</h2>
-      <form @submit.prevent="loadRoomTasks">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>工單 ID</label>
-            <input
-              v-model.number="searchParams.taskId"
-              type="number"
-              placeholder="輸入任務 ID"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>房間</label>
-            <select v-model="searchParams.roomId">
-              <option value="">全部房間</option>
-              <option
-                v-for="room in rooms"
-                :key="room.roomId"
-                :value="room.roomId"
-              >
-                房號 {{ room.roomNumber }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>負責員工</label>
-            <select v-model="searchParams.employeeId">
-              <option value="">全部員工</option>
-              <option
-                v-for="employee in employees"
-                :key="employee.employeeId"
-                :value="employee.employeeId"
-              >
-                {{ employee.employeeName }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>優先程度</label>
-            <select v-model="searchParams.priority">
-              <option value="">全部</option>
-              <option
-                v-for="priority in priorities"
-                :key="priority"
-                :value="priority"
-              >
-                {{ priority }}
-              </option>
-            </select>
-          </div>
+      
+      <!-- 條件查詢 -->
+      <div style="display: flex; align-items: flex-end; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label>工單 ID</label>
+          <input v-model.number="searchParams.taskId" type="number" placeholder="任務 ID" />
         </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn primary">搜尋工單</button>
-          <button type="button" class="btn secondary" @click="resetSearch">
-            重設條件
-          </button>
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label>房間</label>
+          <select v-model="searchParams.roomId">
+            <option value="">全部</option>
+            <option v-for="room in rooms" :key="room.roomId" :value="room.roomId">房號 {{ room.roomNumber }}</option>
+          </select>
         </div>
-      </form>
-    </section>
-
-    <!-- 新增 / 編輯表單區塊 -->
-    <section class="admin-card">
-      <h2>{{ formTitle }}</h2>
-
-      <form @submit.prevent="saveRoomTask">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>房間 *</label>
-
-            <select v-model="form.roomId" required>
-              <option value="" disabled>請選擇房間</option>
-
-              <!-- 防護選項：當選單陣列無此 ID 時，自動填入目前 ID 避免顯示空白 -->
-              <option
-                v-if="
-                  form.roomId !== '' &&
-                  form.roomId !== null &&
-                  !rooms.some((r) => Number(r.roomId) === Number(form.roomId))
-                "
-                :value="form.roomId"
-              >
-                房號 ID: {{ form.roomId }}
-              </option>
-
-              <option
-                v-for="room in rooms"
-                :key="room.roomId"
-                :value="room.roomId"
-              >
-                房號 {{ room.roomNumber }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>負責員工 *</label>
-
-            <select v-model="form.employeeId" required>
-              <option value="" disabled>請選擇員工</option>
-
-              <!-- 防護選項：當選單陣列無此 ID 時，自動填入目前 ID 避免顯示空白 -->
-              <option
-                v-if="
-                  form.employeeId !== '' &&
-                  form.employeeId !== null &&
-                  !employees.some(
-                    (e) => Number(e.employeeId) === Number(form.employeeId),
-                  )
-                "
-                :value="form.employeeId"
-              >
-                員工 ID: {{ form.employeeId }}
-              </option>
-
-              <option
-                v-for="employee in filteredEmployees"
-                :key="employee.employeeId"
-                :value="employee.employeeId"
-              >
-                {{ employee.employeeId }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>優先程度</label>
-
-            <select v-model="form.priority">
-              <option
-                v-for="priority in priorities"
-                :key="priority"
-                :value="priority"
-              >
-                {{ priority }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>工單類型</label>
-
-            <select v-model="form.taskType">
-              <option v-for="type in taskTypes" :key="type" :value="type">
-                {{ type }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>工單狀態</label>
-
-            <select v-model="form.taskStatus">
-              <option
-                v-for="status in taskStatuses"
-                :key="status"
-                :value="status"
-              >
-                {{ status }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>建立時間</label>
-            <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
-          </div>
-
-          <div class="form-group full-width">
-            <label>備註</label>
-
-            <textarea
-              v-model.trim="form.remark"
-              rows="4"
-              placeholder="請輸入房務需求或注意事項"
-            ></textarea>
-          </div>
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label>負責員工</label>
+          <select v-model="searchParams.employeeId">
+            <option value="">全部</option>
+            <option v-for="employee in employees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeName }}</option>
+          </select>
         </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn primary">
-            {{ form.taskId === null ? "新增工單" : "儲存修改" }}
-          </button>
-
-          <button type="button" class="btn secondary" @click="clearForm">
-            清除表單
-          </button>
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label>優先程度</label>
+          <select v-model="searchParams.priority">
+            <option value="">全部</option>
+            <option v-for="priority in priorities" :key="priority" :value="priority">{{ priority }}</option>
+          </select>
         </div>
-      </form>
-    </section>
-
-    <!-- 工單列表區塊 -->
-    <section class="admin-card">
-      <div class="table-header" style="flex-wrap: wrap; gap: 15px;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-          <h2>房務工單列表</h2>
-          
-          <button type="button" class="btn secondary" @click="autoCreateTasks" :disabled="loading">
-            掃描房間自動建立工單
-          </button>
-          
-          <!-- 快速切換過濾 -->
-          <div style="display: flex; gap: 10px;">
-            <select v-model="quickFilterType" class="quick-filter-select">
-              <option value="all">所有類型</option>
-              <option v-for="t in taskTypes" :key="t" :value="t">{{ t }}</option>
-            </select>
-
-            <select v-model="quickFilterPriority" class="quick-filter-select">
-              <option value="all">所有優先程度</option>
-              <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
-            </select>
-
-            <select v-model="quickFilterStatus" class="quick-filter-select">
-              <option value="all">所有狀態</option>
-              <option v-for="s in taskStatuses" :key="s" :value="s">{{ s }}</option>
-            </select>
-          </div>
+        <div class="form-actions" style="margin-top: 0;">
+          <button type="button" class="btn primary" @click="loadRoomTasks">搜尋</button>
+          <button type="button" class="btn secondary" @click="resetSearch">重設</button>
         </div>
-        
-        <span style="margin-left: auto;">共 {{ filteredTasks.length }} 張工單</span>
       </div>
+
+      <!-- 快速切換過濾 -->
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <select v-model="quickFilterType" class="quick-filter-select">
+          <option value="all">所有類型</option>
+          <option v-for="t in taskTypes" :key="t" :value="t">{{ t }}</option>
+        </select>
+        <select v-model="quickFilterPriority" class="quick-filter-select">
+          <option value="all">所有優先程度</option>
+          <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
+        </select>
+        <select v-model="quickFilterStatus" class="quick-filter-select">
+          <option value="all">所有狀態</option>
+          <option v-for="s in taskStatuses" :key="s" :value="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="table-header" style="margin-bottom: 10px;">
+        <span style="font-weight: 500; color: #666;">共 {{ filteredTasks.length }} 張工單</span>
+      </div>
+
+    <!-- 新增 / 編輯表單小視窗 (Modal) -->
+    <div v-if="showFormModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 800px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">{{ formTitle }}</h2>
+          <button type="button" class="btn secondary" @click="closeFormModal" style="padding: 5px 10px;">✕</button>
+        </div>
+
+        <form @submit.prevent="saveRoomTask">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>房間 *</label>
+              <select v-model="form.roomId" required>
+                <option value="" disabled>請選擇房間</option>
+                <option v-if="form.roomId !== '' && form.roomId !== null && !rooms.some((r) => Number(r.roomId) === Number(form.roomId))" :value="form.roomId">房號 ID: {{ form.roomId }}</option>
+                <option v-for="room in rooms" :key="room.roomId" :value="room.roomId">房號 {{ room.roomNumber }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>負責員工 *</label>
+              <select v-model="form.employeeId" required>
+                <option value="" disabled>請選擇員工</option>
+                <option v-if="form.employeeId !== '' && form.employeeId !== null && !employees.some((e) => Number(e.employeeId) === Number(form.employeeId))" :value="form.employeeId">員工 ID: {{ form.employeeId }}</option>
+                <option v-for="employee in filteredEmployees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeId }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>優先程度</label>
+              <select v-model="form.priority">
+                <option v-for="priority in priorities" :key="priority" :value="priority">{{ priority }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>工單類型</label>
+              <select v-model="form.taskType">
+                <option v-for="type in taskTypes" :key="type" :value="type">{{ type }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>工單狀態</label>
+              <select v-model="form.taskStatus">
+                <option v-for="status in taskStatuses" :key="status" :value="status">{{ status }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>建立時間</label>
+              <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>備註</label>
+              <textarea v-model.trim="form.remark" rows="4" placeholder="請輸入房務需求或注意事項"></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn secondary" @click="closeFormModal">取消</button>
+            <button type="submit" class="btn primary">{{ form.taskId === null ? "新增工單" : "儲存修改" }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
 
       <div class="table-wrapper">
         <table>
@@ -904,7 +824,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
   color: #27ae60;
 }
 
-.page-header,
+.page-header {
+  margin-bottom: 24px;
+}
+
 .admin-card {
   margin-bottom: 24px;
   padding: 24px;
