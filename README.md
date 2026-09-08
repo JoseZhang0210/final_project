@@ -35,7 +35,7 @@
 
 - 顧客網頁
 
-![顧客網頁架構圖](./doc/sitemap_Client.drawio.svg)
+![顧客網頁架構圖](./doc/sitemap_client.drawio.svg)
 
 - 員工網頁
 
