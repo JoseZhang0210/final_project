@@ -15,15 +15,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.entity.Reservation;
 import com.hotel.service.ReservationService;
+import com.hotel.service.SmsService;
 
 @RestController
 @RequestMapping("/api/reservations")
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final SmsService smsService;
 
-    public ReservationController(ReservationService reservationService) {
+    public ReservationController(
+            ReservationService reservationService,
+            SmsService smsService) {
+
         this.reservationService = reservationService;
+        this.smsService = smsService;
     }
 
     @GetMapping
@@ -57,7 +63,6 @@ public class ReservationController {
     public ResponseEntity<Reservation> create(
             @RequestBody Reservation reservation) {
 
-        // 訪客訂位必須填寫姓名與電話。
         if (isGuestWithoutContact(reservation)) {
             return ResponseEntity.badRequest().build();
         }
@@ -66,10 +71,9 @@ public class ReservationController {
         setDefaultStatus(reservation);
 
         Reservation savedReservation = reservationService.save(reservation);
+        sendReservationSms(savedReservation);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(savedReservation);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
     }
 
     @PutMapping("/{id}")
@@ -95,7 +99,6 @@ public class ReservationController {
         reservation.setTimeId(formReservation.getTimeId());
         reservation.setPeopleCount(formReservation.getPeopleCount());
         reservation.setStatus(formReservation.getStatus());
-
         setDefaultStatus(reservation);
 
         return ResponseEntity.ok(reservationService.save(reservation));
@@ -120,9 +123,25 @@ public class ReservationController {
     }
 
     private void setDefaultStatus(Reservation reservation) {
-        if (reservation.getStatus() == null
-                || reservation.getStatus().isBlank()) {
+        if (reservation.getStatus() == null || reservation.getStatus().isBlank()) {
             reservation.setStatus("已訂位");
+        }
+    }
+
+    // 會員訂位成功後通知；簡訊失敗不影響訂位成立。
+    private void sendReservationSms(Reservation reservation) {
+        if (reservation.getContactPhone() == null
+                || reservation.getContactPhone().isBlank()) {
+            return;
+        }
+
+        String message = "【星澄飯店】您的訂位已完成，訂位編號 #"
+                + reservation.getReservationId();
+
+        try {
+            smsService.send(reservation.getContactPhone(), message);
+        } catch (Exception e) {
+            System.out.println("訂位簡訊發送失敗：" + e.getMessage());
         }
     }
 }
