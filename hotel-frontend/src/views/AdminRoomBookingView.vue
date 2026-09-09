@@ -40,10 +40,55 @@ watch(() => searchCriteria.value.checkInDate, (newVal) => {
 });
 
 const bookingStatuses = ["待入住", "已入住", "已完成", "已取消"];
+const originalBookingStatus = ref("");
+
+const availableBookingStatuses = computed(() => {
+  const isNew = !form.value.bookingId;
+  const origStatus = originalBookingStatus.value;
+  const checkInDate = form.value.checkInDate;
+  
+  const now = new Date();
+  const currentHour = now.getHours();
+  const tzOffset = now.getTimezoneOffset() * 60000;
+  const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+
+  if (isNew) {
+    if (checkInDate === todayStr && currentHour < 15) {
+      return ["待入住"];
+    } else if (checkInDate === todayStr && currentHour >= 15) {
+      return ["待入住", "已入住"];
+    } else if (checkInDate > todayStr) {
+      return ["待入住"];
+    } else {
+      return ["待入住", "已入住"];
+    }
+  } else {
+    if (origStatus === "待入住") {
+      if (checkInDate === todayStr && currentHour < 15) {
+        return ["待入住", "已取消"];
+      } else if (checkInDate === todayStr && currentHour >= 15) {
+        return ["待入住", "已入住", "已取消"];
+      } else if (checkInDate > todayStr) {
+        return ["待入住", "已取消"];
+      } else {
+        return ["待入住", "已入住", "已取消"];
+      }
+    } else if (origStatus === "已入住") {
+      return ["已入住", "已完成", "已取消"];
+    } else {
+      return [origStatus];
+    }
+  }
+});
 
 const form = ref(createEmptyForm());
 const showPaymentModal = ref(false);
 const showFormModal = ref(false);
+
+const filteredRooms = computed(() => {
+  if (!form.value.roomTypeId) return rooms.value;
+  return rooms.value.filter((r) => r.roomTypeId === form.value.roomTypeId);
+});
 
 function openAddModal() {
   clearForm();
@@ -149,6 +194,7 @@ function showMessage(text, type) {
 
 function clearForm() {
   form.value = createEmptyForm();
+  originalBookingStatus.value = "";
   formTitle.value = "新增訂房明細";
   message.value = "";
 }
@@ -242,11 +288,15 @@ async function loadBookings() {
     const tzOffset = today.getTimezoneOffset() * 60000;
     const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
     
+    const currentHour = today.getHours();
+    
     rawBookings.forEach(b => {
       const cout = b.checkOutDate ?? b.check_out_date;
       const status = b.bookingStatus ?? b.booking_status;
       
-      if (cout < todayStr && status !== '已取消' && status !== '已完成') {
+      const isCheckoutOverdue = (cout < todayStr) || (cout === todayStr && currentHour >= 12);
+      
+      if (isCheckoutOverdue && status !== '已取消' && status !== '已完成') {
         b.bookingStatus = '已完成';
         if (b.booking_status !== undefined) b.booking_status = '已完成';
         
@@ -432,6 +482,7 @@ async function saveBooking() {
 }
 
 function editBooking(booking) {
+  originalBookingStatus.value = booking.bookingStatus ?? booking.booking_status ?? "待入住";
   form.value = {
     bookingId: booking.bookingId,
     memberId: booking.memberId ?? booking.member_id ?? "",
@@ -536,7 +587,11 @@ async function submitPayment() {
     showMessage("付款紀錄建立成功", "success");
     showPaymentModal.value = false;
     currentNewBooking.value = null;
-    await loadBookings(); // 重新拉取包含付款狀態的清單
+    
+    // 重新拉取付款狀態與清單
+    const paymentData = await bookingPaymentApi.getAllPayments().catch(() => []);
+    payments.value = Array.isArray(paymentData) ? paymentData : paymentData.content || [];
+    await loadBookings();
   } catch (error) {
     showMessage(error.message || "建立付款失敗", "error");
   } finally {
@@ -610,7 +665,8 @@ const filteredBookings = computed(() => {
     result = result.filter(b => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
-      return cin <= todayStr && cout >= todayStr;
+      const status = b.bookingStatus ?? b.booking_status;
+      return cin <= todayStr && cout >= todayStr && status !== "已取消";
     });
   } else if (currentFilter.value !== "all") {
     result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
@@ -793,6 +849,81 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
       </div>
     </section>
+
+    <!-- 新增 / 編輯表單小視窗 (Modal) -->
+    <div v-if="showFormModal" class="modal-overlay">
+      <div class="modal-content" style="max-width: 800px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="margin: 0;">{{ formTitle }}</h2>
+          <button type="button" class="btn secondary" @click="closeFormModal" style="padding: 5px 10px;">✕</button>
+        </div>
+
+        <form @submit.prevent="saveBooking">
+          <div class="form-grid">
+
+
+            <div class="form-group">
+              <label>會員 ID *</label>
+              <input v-model="form.memberId" type="text" placeholder="輸入會員 ID" required />
+            </div>
+
+            <div class="form-group">
+              <label>房型 *</label>
+              <select v-model="form.roomTypeId" @change="changeRoomType" required>
+                <option value="" disabled>請選擇房型</option>
+                <option v-for="type in roomTypes" :key="type.roomTypeId" :value="type.roomTypeId">
+                  {{ type.typeName }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>房號 *</label>
+              <select v-model="form.roomId" required>
+                <option value="" disabled>請選擇房號</option>
+                <option v-for="room in filteredRooms" :key="room.roomId" :value="room.roomId">
+                  房號 {{ room.roomNumber }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>入住日期 *</label>
+              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>退房日期 *</label>
+              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>人數 *</label>
+              <input v-model.number="form.guestNum" type="number" min="1" required />
+            </div>
+
+            <div class="form-group">
+              <label>訂房狀態</label>
+              <select v-model="form.bookingStatus">
+                <option v-for="status in availableBookingStatuses" :key="status" :value="status">
+                  {{ status }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>訂房價格</label>
+              <input v-model.number="form.bookingPrice" type="number" readonly style="background-color: #f5f5f5;" />
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn secondary" @click="closeFormModal">取消</button>
+            <button type="submit" class="btn primary">{{ form.bookingId ? "儲存修改" : "新增訂單" }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- 付款紀錄小視窗 (Modal) -->
     <div v-if="showPaymentModal" class="modal-overlay">

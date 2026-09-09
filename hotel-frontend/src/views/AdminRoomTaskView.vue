@@ -85,8 +85,7 @@ function showMessage(text, type) {
 
 function clearForm() {
   form.value = createEmptyForm();
-  formTitle.value = `編輯房務工單`;
-  showFormModal.value = true;
+  formTitle.value = `新增房務工單`;
 }
 
 // 動態載入房間下拉選項 (GET /api/rooms)
@@ -187,6 +186,9 @@ function resetSearch() {
     employeeId: "",
     priority: "",
   };
+  quickFilterType.value = "all";
+  quickFilterPriority.value = "all";
+  quickFilterStatus.value = "all";
   loadRoomTasks();
 }
 
@@ -1037,5 +1039,32 @@ tr.late-warning:hover td {
 .quick-filter-select:focus {
   border-color: #98a2b3;
   box-shadow: 0 0 0 3px rgba(152, 162, 179, 0.1);
+}
+
+/* Modal 樣式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions button {
+  min-width: 100px;
 }
 </style>

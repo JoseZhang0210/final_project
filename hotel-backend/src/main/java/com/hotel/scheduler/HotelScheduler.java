@@ -35,9 +35,11 @@ public class HotelScheduler {
     }
 
     @PostConstruct
+    @Scheduled(cron = "0 */5 * * * *")
     public void autoAdvanceBookingStates() {
         log.info("系統啟動：自動根據當前日期修正訂單狀態...");
         LocalDate today = LocalDate.now();
+        int currentHour = LocalDateTime.now().getHour();
 
         List<BookingDTO> allBookings = bookingService.findAll();
         for (BookingDTO b : allBookings) {
@@ -56,17 +58,28 @@ public class HotelScheduler {
                 // 2. 自動修正過期狀態 (排除已完成或已取消)
                 String currentStatus = b.getBookingStatus();
                 if (!"已完成".equals(currentStatus) && !"已取消".equals(currentStatus)) {
-                    if (today.isAfter(b.getCheckOutDate())) {
+                    
+                    boolean isCheckoutOverdue = today.isAfter(b.getCheckOutDate()) || 
+                                              (today.isEqual(b.getCheckOutDate()) && currentHour >= 12);
+                    
+                    boolean isPastCheckInDate = today.isAfter(b.getCheckInDate());
+                    boolean isCheckInTimeToday = today.isEqual(b.getCheckInDate()) && currentHour >= 15;
+
+                    if (isCheckoutOverdue) {
                         if ("待入住".equals(currentStatus)) {
                             log.info("自動修正：訂單 ID {} 過期未入住，轉為已取消", b.getBookingId());
                             updateDto.setBookingStatus("已取消");
                         } else {
-                            log.info("自動修正：訂單 ID {} 退房日已過，轉為已完成", b.getBookingId());
+                            log.info("自動修正：訂單 ID {} 退房時間已過 (12:00)，轉為已完成", b.getBookingId());
                             updateDto.setBookingStatus("已完成");
                         }
                         isUpdated = true;
-                    } else if (!today.isBefore(b.getCheckInDate()) && "待入住".equals(currentStatus)) {
-                        log.info("自動修正：訂單 ID {} 達到入住日，轉為已入住", b.getBookingId());
+                    } else if (isPastCheckInDate && "待入住".equals(currentStatus)) {
+                        log.info("自動修正：訂單 ID {} 逾期未入住 (No-show)，轉為已取消", b.getBookingId());
+                        updateDto.setBookingStatus("已取消");
+                        isUpdated = true;
+                    } else if (isCheckInTimeToday && "待入住".equals(currentStatus)) {
+                        log.info("自動修正：訂單 ID {} 達到今日入住時間 (15:00)，轉為已入住", b.getBookingId());
                         updateDto.setBookingStatus("已入住");
                         isUpdated = true;
                     }
@@ -88,6 +101,13 @@ public class HotelScheduler {
     @PostConstruct
     @Scheduled(cron = "0 */5 * * * *")
     public void autoSyncRoomStatuses() {
+        log.info("排程執行：自動為未分配房間的當日訂單分配空房...");
+        try {
+            bookingService.autoAssignRoomsForToday();
+        } catch (Exception e) {
+            log.error("自動分配房間失敗", e);
+        }
+
         log.info("排程執行：自動同步房間狀態與今日訂單...");
         try {
             roomService.syncRoomStatuses();
@@ -123,6 +143,32 @@ public class HotelScheduler {
             }
         }
         log.info("每日 12:00 自動退房排程執行完畢，共處理 {} 筆。", toCheckout.size());
+    }
+
+    /**
+     * 每天下午 14:45 自動完成退房清潔工單，避免與 15:00 入住狀態衝突
+     */
+    @Scheduled(cron = "0 45 14 * * *")
+    public void autoCompleteCheckoutTasks() {
+        log.info("開始執行每日 14:45 自動完成退房清潔排程...");
+        
+        List<RoomTask> allTasks = roomTaskRepository.findAll();
+        List<RoomTask> tasksToComplete = allTasks.stream()
+                .filter(t -> "退房清潔".equals(t.getTaskType()))
+                .filter(t -> !"已完成".equals(t.getTaskStatus()) && !"已取消".equals(t.getTaskStatus()))
+                .collect(Collectors.toList());
+                
+        for (RoomTask task : tasksToComplete) {
+            log.info("自動完成清潔工單：ID {}", task.getTaskId());
+            try {
+                com.hotel.model.dto.RoomTaskDTO updateDto = new com.hotel.model.dto.RoomTaskDTO();
+                updateDto.setTaskStatus("已完成");
+                roomTaskService.update(task.getTaskId(), updateDto);
+            } catch (Exception e) {
+                log.error("自動完成清潔工單失敗：ID " + task.getTaskId(), e);
+            }
+        }
+        log.info("每日 14:45 自動完成退房清潔排程執行完畢，共處理 {} 筆。", tasksToComplete.size());
     }
 
     /**

@@ -34,3 +34,6 @@ build/
 
 ### Frontend Build Output ###
 src/main/resources/static/
+
+# Ignore user uploaded files
+uploads/
