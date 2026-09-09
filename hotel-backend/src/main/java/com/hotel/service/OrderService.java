@@ -47,7 +47,7 @@ public class OrderService {
         private final CouponRepository couponRepository;
         private final PaymentRepository paymentRepository;
         private final AccountRepository accountRepository;
-private final MailUtil mailUtil;
+        private final MailUtil mailUtil;
 
         // =====================================================
         // 1. 查詢全部訂單 Entity
@@ -265,51 +265,27 @@ private final MailUtil mailUtil;
 
                 CustomerOrder order = new CustomerOrder();
 
-                order.setMemberId(
-                                memberId);
+                order.setMemberId(memberId);
 
-                order.setOrderDate(
-                                LocalDateTime.now());
+                order.setOrderDate(LocalDateTime.now());
 
-                order.setOriginalAmount(
-                                originalAmount);
+                order.setOriginalAmount(originalAmount);
 
-                order.setDiscountAmount(
-                                discountAmount);
+                order.setDiscountAmount(discountAmount);
 
-                order.setFinalAmount(
-                                finalAmount);
+                order.setFinalAmount(finalAmount);
 
-                order.setCouponId(
-                                couponId);
+                order.setCouponId(couponId);
 
                 // 尚未建立付款資料
-                order.setPaymentId(
-                                null);
+                order.setPaymentId(null);
 
-                order.setOrderStatus(
-                                "PENDING");
+                order.setOrderStatus("PENDING");
 
-                order = customerOrderRepository
-                                .save(
-                                                order);
+                order = customerOrderRepository.save(order);
 
-        // 發送訂單確認信件（非同步）
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("找不到會員"));
-        String subject = "【星澄飯店】訂單確認 - 訂單編號 " + order.getOrderId();
-        String htmlContent = "<!DOCTYPE html><html><body style='font-family: \"Microsoft JhengHei\", Arial, sans-serif; background-color:#f4f1ea; padding:20px;'>"
-                + "<h2>感謝您的訂購！</h2>"
-                + "<p>訂單編號: " + order.getOrderId() + "</p>"
-                + "<p>金額: " + order.getFinalAmount() + " 元</p>"
-                + "<p>我們已收到您的訂單，將盡快為您處理。</p>"
-                + "</body></html>";
-        // 取得會員對應的 Profile 以取得 Email
-        String memberEmail = profileRepository.findByAccountId(member.getAccountId())
-                .map(Profile::getEmail)
-                .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
-        EmailDTO emailDto = new EmailDTO(memberEmail, subject, htmlContent, true);
-        mailUtil.sendEmail(emailDto);
+                // 發送訂單確認信件（非同步）
+                mailUtil.sendOrderConfirmation(order.getOrderId(), memberId);
 
                 // ==============================
                 // 建立 OrderItem + 扣庫存
@@ -318,15 +294,10 @@ private final MailUtil mailUtil;
                 for (CreateOrderItemRequest requestItem : items) {
 
                         Product product = productRepository
-                                        .findById(
-                                                        requestItem
-                                                                        .getProductId())
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "找不到商品"));
+                                        .findById(requestItem.getProductId())
+                                        .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
 
-                        Integer quantity = requestItem
-                                        .getQuantity();
+                        Integer quantity = requestItem.getQuantity();
 
                         Integer unitPrice = product.getPrice();
 
@@ -336,38 +307,25 @@ private final MailUtil mailUtil;
 
                         OrderItem item = new OrderItem();
 
-                        item.setOrderId(
-                                        order.getOrderId());
+                        item.setOrderId(order.getOrderId());
 
-                        item.setProductId(
-                                        product.getProductId());
+                        item.setProductId(product.getProductId());
 
-                        item.setQuantity(
-                                        quantity);
+                        item.setQuantity(quantity);
 
                         // 記錄下單時價格
-                        item.setUnitPrice(
-                                        unitPrice);
+                        item.setUnitPrice(unitPrice);
 
-                        item.setSubtotal(
-                                        subtotal);
+                        item.setSubtotal(subtotal);
 
-                        orderItemRepository
-                                        .save(
-                                                        item);
+                        orderItemRepository.save(item);
 
                         // 扣庫存
-                        product.setStock(
-                                        product.getStock()
-                                                        -
-                                                        quantity);
+                        product.setStock(product.getStock() - quantity);
 
-                        updateProductStockStatus(
-                                        product);
+                        updateProductStockStatus(product);
 
-                        productRepository
-                                        .save(
-                                                        product);
+                        productRepository.save(product);
                 }
 
                 return order;
@@ -386,9 +344,7 @@ private final MailUtil mailUtil;
 
                 for (CustomerOrder order : orders) {
 
-                        result.add(
-                                        convertToDTO(
-                                                        order));
+                        result.add(convertToDTO(order));
                 }
 
                 return result;
@@ -409,8 +365,7 @@ private final MailUtil mailUtil;
                 }
 
                 if (!memberRepository
-                                .existsById(
-                                                memberId)) {
+                                .existsById(memberId)) {
 
                         throw new IllegalArgumentException(
                                         "找不到會員");
@@ -424,9 +379,7 @@ private final MailUtil mailUtil;
 
                 for (CustomerOrder order : orders) {
 
-                        result.add(
-                                        convertToDTO(
-                                                        order));
+                        result.add(convertToDTO(order));
                 }
 
                 return result;
