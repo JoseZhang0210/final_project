@@ -12,4 +12,5 @@ public interface RoomService {
     RoomDTO insert(RoomDTO roomDTO);
     RoomDTO update(Integer id, RoomDTO updatedRoomDTO);
     void deleteById(Integer id);
+    void syncRoomStatuses();
 }

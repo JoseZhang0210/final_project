@@ -2,6 +2,7 @@
 import { onMounted, ref , computed } from "vue";
 import { roomApi } from "@/api/roomApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
+import { fetchClient } from "@/api/apiClient";
 
 // 從 API 載入真實房型清單
 const roomTypes = ref([]);
@@ -155,6 +156,24 @@ async function deleteRoom(id) {
   }
 }
 
+async function syncRoomStatuses() {
+  if (!window.confirm("確定要手動同步今日訂房狀態與房間狀態嗎？")) {
+    return;
+  }
+  
+  loading.value = true;
+  message.value = "";
+  try {
+    await fetchClient('/api/rooms/sync-status', { method: 'POST' });
+    showMessage("今日房間狀態已成功同步！", "success");
+    await loadRooms();
+  } catch (error) {
+    showMessage("狀態同步發生例外錯誤", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
 function getStatusClass(status) {
   return {
     available: status === "可預訂",
@@ -179,12 +198,35 @@ onMounted(async () => {
 });
 
 const currentPage = ref(1);
+const currentFilter = ref('all');
 const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(rooms.value.length / itemsPerPage));
+
+// 各狀態筆數統計
+const statusCount = computed(() => {
+  const counts = { all: rooms.value.length };
+  roomStatuses.forEach(s => {
+    counts[s] = rooms.value.filter(r => (r.roomStatus ?? r.room_status) === s).length;
+  });
+  return counts;
+});
+
+// 依籾選過濾後的房間列表
+const filteredRooms = computed(() => {
+  if (currentFilter.value === 'all') return rooms.value;
+  return rooms.value.filter(r => (r.roomStatus ?? r.room_status) === currentFilter.value);
+});
+
+const totalPages = computed(() => Math.ceil(filteredRooms.value.length / itemsPerPage));
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return rooms.value.slice(start, start + itemsPerPage);
+  return filteredRooms.value.slice(start, start + itemsPerPage);
 });
+
+function setFilter(status) {
+  currentFilter.value = status;
+  currentPage.value = 1;
+}
+
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
@@ -268,7 +310,40 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
     <section class="admin-card">
       <div class="table-header">
         <h2>房間列表</h2>
-        <span>共 {{ rooms.length }} 間</span>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>共 {{ filteredRooms.length }} 間</span>
+          <button type="button" class="btn secondary" @click="syncRoomStatuses" :disabled="loading">
+            {{ loading ? '同步中...' : '同步今日房間狀態' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 狀態快速籾選 -->
+      <div class="status-tabs">
+        <button type="button" :class="{ active: currentFilter === 'all' }" @click="setFilter('all')">
+          全部 <span class="tab-count">{{ statusCount.all }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '可預訂' }" @click="setFilter('可預訂')">
+          可預訂 <span class="tab-count">{{ statusCount['可預訂'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '已預訂' }" @click="setFilter('已預訂')">
+          已預訂 <span class="tab-count">{{ statusCount['已預訂'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '已入住' }" @click="setFilter('已入住')">
+          已入住 <span class="tab-count">{{ statusCount['已入住'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '退房待清潔' }" @click="setFilter('退房待清潔')">
+          退房待清潔 <span class="tab-count">{{ statusCount['退房待清潔'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '清潔中' }" @click="setFilter('清潔中')">
+          清潔中 <span class="tab-count">{{ statusCount['清潔中'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '維修中' }" @click="setFilter('維修中')">
+          維修中 <span class="tab-count">{{ statusCount['維修中'] }}</span>
+        </button>
+        <button type="button" :class="{ active: currentFilter === '停用' }" @click="setFilter('停用')">
+          停用 <span class="tab-count">{{ statusCount['停用'] }}</span>
+        </button>
       </div>
 
       <div class="table-wrapper">
@@ -460,6 +535,51 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.status-tabs button {
+  padding: 6px 14px;
+  border: 1px solid #d8c9a3;
+  border-radius: 20px;
+  background: #f9f6ef;
+  color: #6b5b35;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-tabs button:hover {
+  background: #f0e8d0;
+}
+
+.status-tabs button.active {
+  background: #5c3d1e;
+  color: #fff;
+  border-color: #5c3d1e;
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-tabs button:not(.active) .tab-count {
+  background: rgba(92, 61, 30, 0.12);
+  color: #5c3d1e;
 }
 
 .table-wrapper {

@@ -60,4 +60,10 @@ public class RoomController {
         roomService.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "房間刪除成功！"));
     }
+
+    @PostMapping("/sync-status")
+    public ResponseEntity<Map<String, String>> syncRoomStatuses() {
+        roomService.syncRoomStatuses();
+        return ResponseEntity.ok(Map.of("message", "房間狀態同步完成"));
+    }
 }
