@@ -71,7 +71,7 @@
       <!-- Right: Summary Sidebar -->
       <div class="summary-sidebar">
         <div class="summary-card">
-          <img src="https://images.unsplash.com/photo-1542314831-c6a4d14ce8a1?q=80&w=500&auto=format&fit=crop" class="summary-img" alt="Hotel" />
+          <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945" class="summary-img" alt="Hotel Exterior" />
           <div class="summary-content">
             <h4>星澄飯店</h4>
             <div class="summary-dates">

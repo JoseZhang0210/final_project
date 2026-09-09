@@ -666,7 +666,7 @@ const filteredBookings = computed(() => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
       const status = b.bookingStatus ?? b.booking_status;
-      return cin <= todayStr && cout >= todayStr && status !== "已取消";
+      return cin <= todayStr && cout >= todayStr && status !== "已取消" && status !== "已完成";
     });
   } else if (currentFilter.value !== "all") {
     result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
