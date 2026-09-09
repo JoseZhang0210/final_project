@@ -155,7 +155,8 @@ public class BookingServiceImpl implements BookingService {
                         task.setCreatedAt(targetTime);
                     }
                     
-                    task.setEmployeeId(null); // 指派給空，避免無此員工時發生 FK 錯誤
+                    Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
+                    task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : 13); // 自動指派給工作量最少的房務專員，若無則預設 13
                     task.setRemark("由系統自動產生：退房清潔");
                     roomTaskRepository.save(task);
                 }
@@ -261,7 +262,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = new Booking();
         booking.setMemberId(dto.getMemberId());
         booking.setRoomTypeId(dto.getRoomTypeId());
-        booking.setCreatedAt(dto.getCreatedAt());
+        booking.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : java.time.LocalDateTime.now());
         booking.setRoomId(dto.getRoomId());
         booking.setCheckInDate(dto.getCheckInDate());
         booking.setCheckOutDate(dto.getCheckOutDate());

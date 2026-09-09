@@ -2,6 +2,7 @@ package com.hotel.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -68,6 +69,13 @@ public class SecurityConfig {
                                                                 // 開放前台查詢餐廳訂位 訪客api
                                                                 // -------------------------
                                                                 .requestMatchers("/api/public/**").permitAll()
+                                                                // 遊客可瀏覽商品、分類、評論與商品圖片；寫入操作仍需登入。
+                                                                .requestMatchers(HttpMethod.GET,
+                                                                                "/api/products", "/api/products/search",
+                                                                                "/api/products/{id:[0-9]+}",
+                                                                                "/api/products/{id:[0-9]+}/reviews",
+                                                                                "/api/categories", "/upload/products/**")
+                                                                .permitAll()
                                                                 // -------------------------
                                                                 // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼
                                                                 // -------------------------
