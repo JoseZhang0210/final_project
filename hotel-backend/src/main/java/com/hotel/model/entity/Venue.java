@@ -21,6 +21,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Venue {
+    @Column(name = "image_url", length = 1000) // 單一主圖網址對應場地專用欄位。
+    private String imageUrl; // 空值由前台顯示本地預設圖，不製造場地照片。
 
     /**
      * 場地編號，Primary Key。
