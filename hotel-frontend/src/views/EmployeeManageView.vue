@@ -65,7 +65,7 @@
           v-model="keyword"
           type="text"
           class="admin-input search-input"
-          placeholder="搜尋帳號、姓名、職位、信箱、電話..."
+          placeholder="搜尋帳號、姓名、部門、職位、權限、信箱、電話..."
           @keyup.enter="resetPage"
         />
 
@@ -185,6 +185,8 @@
                 <span class="sort-icon">{{ getSortIcon("department") }}</span>
               </th>
 
+              <th>權限</th>
+
               <th>聯絡方式</th>
 
               <th class="sortable" @click="changeSort('gender')">
@@ -204,7 +206,7 @@
           <tbody>
             <!-- 沒資料 -->
             <tr v-if="paginatedEmployees.length === 0">
-              <td colspan="8" class="empty-message">查無符合條件的員工</td>
+              <td colspan="9" class="empty-message">查無符合條件的員工</td>
             </tr>
 
             <!-- 員工列表 -->
@@ -243,16 +245,21 @@
                     {{ getDepartmentName(employee.departmentId, employee.departmentName) }}
                   </span>
                   <span class="position-text">{{ employee.position || "未設定職位" }}</span>
-                  <div v-if="employee.permissionNames && employee.permissionNames.length > 0" class="employee-perms-tags">
-                    <span
-                      v-for="(pName, pIdx) in employee.permissionNames"
-                      :key="pIdx"
-                      class="perm-badge"
-                    >
-                      {{ pName }}
-                    </span>
-                  </div>
                 </div>
+              </td>
+
+              <!-- 權限 -->
+              <td>
+                <div v-if="employee.permissionNames && employee.permissionNames.length > 0" class="employee-perms-tags">
+                  <span
+                    v-for="(pName, pIdx) in employee.permissionNames"
+                    :key="pIdx"
+                    class="perm-badge"
+                  >
+                    {{ pName }}
+                  </span>
+                </div>
+                <span v-else class="text-muted">—</span>
               </td>
 
 
@@ -1298,7 +1305,9 @@ const filteredEmployees = computed(() => {
       (emp.position || "").toLowerCase().includes(search) ||
       (emp.email || "").toLowerCase().includes(search) ||
       (emp.phone || "").includes(search) ||
-      (emp.departmentName || "").toLowerCase().includes(search);
+      (emp.departmentName || "").toLowerCase().includes(search) ||
+      (Array.isArray(emp.permissionNames) &&
+        emp.permissionNames.some((p) => (p || "").toLowerCase().includes(search)));
 
     const matchesDept =
       !deptFilter || String(emp.departmentId) === String(deptFilter);
@@ -3054,18 +3063,18 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 4px;
 }
 
 .perm-badge {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   background-color: #f6efe2;
   color: #8a5d24;
   font-size: 11px;
   font-weight: 500;
   border: 1px solid #ebdcc5;
+  white-space: nowrap;
 }
 
 /* =========================================================
