@@ -175,14 +175,107 @@ const paginatedData = computed(() => {
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
+// =======================
+// JSON 匯入與匯出邏輯
+// =======================
+const showImportModal = ref(false);
+const importMode = ref("file"); // "file" 或 "text"
+const importJsonText = ref("");
+const importing = ref(false);
+
+function openImportModal() {
+  showImportModal.value = true;
+  importMode.value = "file";
+  importJsonText.value = "";
+}
+
+function closeImportModal() {
+  showImportModal.value = false;
+  importJsonText.value = "";
+}
+
+function triggerFileInput() {
+  document.getElementById("jsonFileInput").click();
+}
+
+async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  importing.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const data = await roomTypeApi.importJson(formData, true);
+    closeImportModal();
+    showMessage(
+      `匯入完成！成功 ${data.successCount ?? 0} 筆，失敗 ${data.failureCount ?? 0} 筆`,
+      "success"
+    );
+    await loadRoomTypes();
+  } catch (error) {
+    console.error("匯入檔案錯誤：", error);
+    showMessage(error.message || "匯入失敗", "error");
+  } finally {
+    importing.value = false;
+    event.target.value = ""; // 重設 input
+  }
+}
+
+async function handleFileDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (!file || file.type !== "application/json") {
+    alert("請上傳有效的 JSON 檔案");
+    return;
+  }
+  const mockEvent = { target: { files: [file], value: "" } };
+  await handleFileUpload(mockEvent);
+}
+
+async function submitJsonText() {
+  if (!importJsonText.value.trim()) {
+    alert("請輸入 JSON 內容");
+    return;
+  }
+  
+  importing.value = true;
+  try {
+    const data = await roomTypeApi.importJson(importJsonText.value, false);
+    closeImportModal();
+    showMessage(
+      `匯入完成！成功 ${data.successCount ?? 0} 筆，失敗 ${data.failureCount ?? 0} 筆`,
+      "success"
+    );
+    await loadRoomTypes();
+  } catch (error) {
+    console.error("匯入文字錯誤：", error);
+    showMessage(error.message || "匯入失敗", "error");
+  } finally {
+    importing.value = false;
+  }
+}
+
+function exportJson() {
+  window.location.href = "/api/roomtypes/export/json";
+}
+
 </script>
 
 <template>
   <main class="room-type-page">
-    <header class="page-header">
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
       <div>
         <h1>房型資料管理</h1>
         <p>管理飯店房型、床型、容納人數與每晚價格</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn secondary" @click="openImportModal">
+          📥 匯入 JSON
+        </button>
+        <button type="button" class="btn secondary" @click="exportJson">
+          📤 匯出 JSON
+        </button>
       </div>
     </header>
 
@@ -345,6 +438,56 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
       </div>
     </section>
+
+    <!-- 匯入 Modal -->
+    <div v-if="showImportModal" class="modal-overlay" @click.self="closeImportModal">
+      <div class="modal-content import-modal">
+        <div class="modal-header">
+          <h2>📥 匯入房型資料 (JSON)</h2>
+          <button type="button" class="close-btn" @click="closeImportModal">✖</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="import-tabs">
+            <button type="button" :class="{ active: importMode === 'file' }" @click="importMode = 'file'">
+              📄 上傳 JSON 檔案
+            </button>
+            <button type="button" :class="{ active: importMode === 'text' }" @click="importMode = 'text'">
+              📝 貼上 JSON 內容
+            </button>
+          </div>
+
+          <div v-if="importMode === 'file'" class="import-file-area" @dragover.prevent @drop.prevent="handleFileDrop">
+            <input type="file" id="jsonFileInput" accept=".json" @change="handleFileUpload" style="display: none" />
+            <div class="drop-zone" @click="triggerFileInput">
+              <span class="icon">📄</span>
+              <p>點擊此處選取 .json 檔案，或拖放檔案至此</p>
+            </div>
+          </div>
+
+          <div v-if="importMode === 'text'" class="import-text-area">
+            <textarea v-model="importJsonText" placeholder='[\n  {\n    "typeName": "標準雙人房",\n    "pricePerNight": 2000,\n    "availableRooms": 10\n  }\n]' rows="10"></textarea>
+          </div>
+          
+          <div class="import-guide">
+            <div class="guide-title">📌 匯入規則：</div>
+            <ul>
+              <li>支援多筆陣列 <code>[...]</code> 或單筆物件 <code>{...}</code>。</li>
+              <li>若 <code>typeName</code> (房型名稱) 已存在，系統將自動<strong>更新</strong>該房型資料。</li>
+              <li>若 <code>typeName</code> 不存在，系統將<strong>新增</strong>房型。</li>
+              <li><code>availableRooms</code> 為房型預設總數，會同步更新。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn secondary" @click="closeImportModal">關閉</button>
+          <button v-if="importMode === 'text'" type="button" class="btn primary" :disabled="importing" @click="submitJsonText">
+            {{ importing ? "處理中..." : "開始匯入" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -541,4 +684,57 @@ tbody tr:hover td {
 .status.maintenance { color: #b42318; background-color: #feeceb; }
 
 .pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: white; border-radius: 12px;
+  width: 90%; max-width: 600px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+.modal-header {
+  padding: 16px 24px; border-bottom: 1px solid #e4e7ec;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h2 { margin: 0; font-size: 1.25rem; color: #101828; }
+.close-btn { background: none; border: none; font-size: 1.5rem; color: #667085; cursor: pointer; }
+.modal-body { padding: 24px; overflow-y: auto; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #e4e7ec; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* Import Tabs */
+.import-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.import-tabs button {
+  flex: 1; padding: 12px; border: 1px solid #e4e7ec; background: #f9fafb;
+  border-radius: 8px; cursor: pointer; font-weight: 600; color: #667085;
+}
+.import-tabs button.active { background: #315b7d; color: white; border-color: #315b7d; }
+
+/* Drop Zone */
+.drop-zone {
+  border: 2px dashed #cfd4dc; border-radius: 8px;
+  padding: 40px 20px; text-align: center; cursor: pointer;
+  background-color: #fcfcfd; transition: all 0.2s;
+}
+.drop-zone:hover { border-color: #315b7d; background-color: #f0f4f8; }
+.drop-zone .icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.drop-zone p { color: #667085; font-weight: 500; }
+
+/* Text Area */
+.import-text-area textarea {
+  width: 100%; padding: 12px; border: 1px solid #cfd4dc;
+  border-radius: 8px; font-family: monospace; font-size: 14px;
+}
+
+/* Guide */
+.import-guide { margin-top: 24px; padding: 16px; background-color: #f9fafb; border-radius: 8px; }
+.import-guide .guide-title { font-weight: 600; color: #344054; margin-bottom: 8px; }
+.import-guide ul { margin: 0; padding-left: 24px; color: #475467; font-size: 14px; line-height: 1.6; }
+.import-guide code { background-color: #f2f4f7; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
 </style>

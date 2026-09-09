@@ -239,10 +239,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <h1>房間狀態管理</h1>
         <p>管理實際房號、所屬房型、樓層及目前狀態</p>
       </div>
-
-      <button type="button" class="refresh-button" :disabled="loading" @click="loadRooms">
-        {{ loading ? "讀取中…" : "重新整理" }}
-      </button>
     </header>
 
     <div v-if="message" class="message" :class="messageType">

@@ -99,6 +99,48 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         roomTypeRepository.deleteById(id);
     }
 
+    @Override
+    public java.util.Map<String, Object> importRoomTypes(List<RoomTypeDTO> dtos) {
+        int successCount = 0;
+        int failureCount = 0;
+        
+        List<RoomType> existingRoomTypes = roomTypeRepository.findAll();
+        
+        for (RoomTypeDTO dto : dtos) {
+            try {
+                // Find existing by typeName
+                Optional<RoomType> existingOpt = existingRoomTypes.stream()
+                        .filter(rt -> rt.getTypeName().equals(dto.getTypeName()))
+                        .findFirst();
+                
+                if (existingOpt.isPresent()) {
+                    // Update
+                    RoomType existing = existingOpt.get();
+                    if (dto.getBedType() != null) existing.setBedType(dto.getBedType());
+                    if (dto.getCapacity() != null) existing.setCapacity(dto.getCapacity());
+                    if (dto.getRoomDescription() != null) existing.setRoomDescription(dto.getRoomDescription());
+                    if (dto.getPricePerNight() != null) existing.setPricePerNight(dto.getPricePerNight());
+                    if (dto.getAvailableRooms() != null) existing.setAvailableRooms(dto.getAvailableRooms());
+                    roomTypeRepository.save(existing);
+                } else {
+                    // Insert
+                    RoomType newRt = convertToEntity(dto);
+                    roomTypeRepository.save(newRt);
+                }
+                successCount++;
+            } catch (Exception e) {
+                failureCount++;
+                System.err.println("匯入房型失敗: " + dto.getTypeName() + ", 原因: " + e.getMessage());
+            }
+        }
+        
+        return java.util.Map.of(
+            "successCount", successCount,
+            "failureCount", failureCount,
+            "message", "匯入完成！成功 " + successCount + " 筆，失敗 " + failureCount + " 筆"
+        );
+    }
+
     // 查詢指定日期區間可用房間數
     private Integer calculateAvailableRooms(Integer roomTypeId, LocalDate checkIn, LocalDate checkOut) {
         List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, checkIn, checkOut);
