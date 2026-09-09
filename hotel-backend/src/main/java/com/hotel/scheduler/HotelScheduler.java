@@ -25,11 +25,13 @@ public class HotelScheduler {
     private final BookingService bookingService;
     private final RoomTaskService roomTaskService;
     private final RoomTaskRepository roomTaskRepository;
+    private final com.hotel.service.RoomService roomService;
 
-    public HotelScheduler(BookingService bookingService, RoomTaskService roomTaskService, RoomTaskRepository roomTaskRepository) {
+    public HotelScheduler(BookingService bookingService, RoomTaskService roomTaskService, RoomTaskRepository roomTaskRepository, com.hotel.service.RoomService roomService) {
         this.bookingService = bookingService;
         this.roomTaskService = roomTaskService;
         this.roomTaskRepository = roomTaskRepository;
+        this.roomService = roomService;
     }
 
     @PostConstruct
@@ -77,6 +79,21 @@ public class HotelScheduler {
             } catch (Exception e) {
                 log.error("自動修正訂單狀態失敗：ID " + b.getBookingId(), e);
             }
+        }
+    }
+
+    /**
+     * 系統啟動時與每 5 分鐘自動對齊房間與訂房狀態
+     */
+    @PostConstruct
+    @Scheduled(cron = "0 */5 * * * *")
+    public void autoSyncRoomStatuses() {
+        log.info("排程執行：自動同步房間狀態與今日訂單...");
+        try {
+            roomService.syncRoomStatuses();
+            log.info("自動同步房間狀態完成");
+        } catch (Exception e) {
+            log.error("自動同步房間狀態失敗", e);
         }
     }
 

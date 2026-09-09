@@ -54,6 +54,13 @@ public class JwtUtils {
         return claims.getSubject();
     }
     
+    public Date extractExpiration(String token) {
+        Claims claims = jwtParser
+                .parseSignedClaims(token)
+                .getPayload();
+        return claims.getExpiration();
+    }
+
     // 順便幫您補上驗證 Token 是否有效的方法，過濾器（Filter）會用到
     public boolean validateToken(String token) {
         try {

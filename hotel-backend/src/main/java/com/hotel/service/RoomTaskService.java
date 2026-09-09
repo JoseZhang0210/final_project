@@ -14,4 +14,7 @@ public interface RoomTaskService {
     RoomTaskDTO insert(RoomTaskDTO roomTaskDTO);
     RoomTaskDTO update(Integer id, RoomTaskDTO updatedTaskDTO);
     void deleteById(Integer id);
+
+    // 自動掃描退房待清潔的房間並建立工單
+    int autoCreateTasksFromRooms();
 }

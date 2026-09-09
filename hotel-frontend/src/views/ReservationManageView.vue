@@ -5,6 +5,13 @@ const RESTAURANT_API_URL = "/api/restaurant";
 const TIME_API_URL = "/api/restaurant_times";
 const RESERVATION_API_URL = "/api/reservations";
 const MEMBER_API_URL = "/api/members";
+const BACKUP_API_URL = "/api/restaurant-backup";
+
+const importInput = ref(null);
+const importing = ref(false);
+const exporting = ref(false);
+const exportStartDate = ref("");
+const exportEndDate = ref("");
 
 const restaurants = ref([]);
 const allTimes = ref([]);
@@ -18,6 +25,7 @@ const formTitle = ref("新增訂位");
 const loading = ref(false);
 const saving = ref(false);
 const memberLoaded = ref(false);
+const testingSms = ref(null);
 
 const form = ref(createEmptyForm());
 
@@ -35,10 +43,7 @@ function createEmptyForm() {
   };
 }
 
-// ==============================
-// JWT Header
-// ==============================
-
+// 呼叫後端時帶入登入 Token。
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
 
@@ -53,34 +58,18 @@ function getAuthHeaders() {
   return headers;
 }
 
-// ==============================
-// 是否為會員訂位
-// ==============================
-
 const hasMember = computed(() => {
   return String(form.value.memberId ?? "").trim() !== "";
 });
-
-// ==============================
-// 訊息
-// ==============================
 
 function showMessage(text, type) {
   message.value = text;
   messageType.value = type;
 }
 
-// ==============================
-// 時間格式
-// ==============================
-
 function formatTime(time) {
   return time ? time.slice(0, 5) : "";
 }
-
-// ==============================
-// 餐廳名稱
-// ==============================
 
 function getRestaurantName(restaurantId) {
   const restaurant = restaurants.value.find(
@@ -89,10 +78,6 @@ function getRestaurantName(restaurantId) {
 
   return restaurant ? restaurant.restaurantName : `餐廳 ID：${restaurantId}`;
 }
-
-// ==============================
-// 時段名稱
-// ==============================
 
 function getTimeName(timeId) {
   const time = allTimes.value.find(
@@ -106,10 +91,7 @@ function getTimeName(timeId) {
   return `${time.mealType}（${formatTime(time.openTime)} - ${formatTime(time.closeTime)}）`;
 }
 
-// ==============================
-// 會員資料
-// ==============================
-
+// 輸入會員 ID 後，自動帶入姓名與電話。
 function handleMemberIdInput() {
   memberLoaded.value = false;
   form.value.contactName = "";
@@ -163,19 +145,12 @@ async function loadMemberInfo() {
   }
 }
 
-// ==============================
-// 讀取餐廳
-// GET /api/restaurant
-// ==============================
-
 async function loadRestaurants() {
   try {
     const response = await fetch(RESTAURANT_API_URL, {
       method: "GET",
       headers: getAuthHeaders(),
     });
-
-    console.log("餐廳 API status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有餐廳資料權限", "error");
@@ -195,19 +170,12 @@ async function loadRestaurants() {
   }
 }
 
-// ==============================
-// 讀取全部時段
-// GET /api/restaurant_times
-// ==============================
-
 async function loadAllTimes() {
   try {
     const response = await fetch(TIME_API_URL, {
       method: "GET",
       headers: getAuthHeaders(),
     });
-
-    console.log("全部時段 API status：", response.status);
 
     if (!response.ok) {
       return;
@@ -218,11 +186,6 @@ async function loadAllTimes() {
     console.error(error);
   }
 }
-
-// ==============================
-// 根據餐廳讀取時段
-// GET /api/restaurant_times/restaurant/{id}
-// ==============================
 
 async function loadTimeOptions(selectedTimeId = "") {
   if (!form.value.restaurantId) {
@@ -239,8 +202,6 @@ async function loadTimeOptions(selectedTimeId = "") {
         headers: getAuthHeaders(),
       },
     );
-
-    console.log("餐廳時段 API status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有時段資料權限", "error");
@@ -262,11 +223,6 @@ async function loadTimeOptions(selectedTimeId = "") {
   }
 }
 
-// ==============================
-// 讀取訂位
-// GET /api/reservations
-// ==============================
-
 async function loadReservations() {
   loading.value = true;
 
@@ -275,8 +231,6 @@ async function loadReservations() {
       method: "GET",
       headers: getAuthHeaders(),
     });
-
-    console.log("訂位 API status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有訂位管理權限", "error");
@@ -290,7 +244,6 @@ async function loadReservations() {
 
     reservations.value = await response.json();
 
-    console.log("訂位資料：", reservations.value);
   } catch (error) {
     console.error(error);
 
@@ -300,10 +253,6 @@ async function loadReservations() {
   }
 }
 
-// ==============================
-// 清除表單
-// ==============================
-
 function clearForm() {
   form.value = createEmptyForm();
   timeOptions.value = [];
@@ -312,12 +261,6 @@ function clearForm() {
   message.value = "";
   messageType.value = "";
 }
-
-// ==============================
-// 儲存訂位
-// POST /api/reservations
-// PUT  /api/reservations/{id}
-// ==============================
 
 async function saveReservation() {
   if (hasMember.value && !memberLoaded.value) {
@@ -367,8 +310,6 @@ async function saveReservation() {
       body: JSON.stringify(payload),
     });
 
-    console.log("儲存訂位 status：", response.status);
-
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有操作權限", "error");
       return;
@@ -379,9 +320,8 @@ async function saveReservation() {
       return;
     }
 
-    showMessage(isEdit ? "修改成功" : "新增成功", "success");
-
     clearForm();
+    showMessage(isEdit ? "修改成功" : "新增成功", "success");
 
     await loadReservations();
   } catch (error) {
@@ -392,10 +332,6 @@ async function saveReservation() {
     saving.value = false;
   }
 }
-
-// ==============================
-// 編輯訂位
-// ==============================
 
 async function editReservation(reservation) {
   form.value = {
@@ -434,11 +370,6 @@ async function editReservation(reservation) {
   });
 }
 
-// ==============================
-// 刪除訂位
-// DELETE /api/reservations/{id}
-// ==============================
-
 async function deleteReservation(id) {
   if (!confirm("確定要刪除這筆訂位嗎？")) {
     return;
@@ -460,9 +391,8 @@ async function deleteReservation(id) {
       return;
     }
 
-    showMessage("訂位已刪除", "success");
-
     clearForm();
+    showMessage("訂位已刪除", "success");
 
     await loadReservations();
   } catch (error) {
@@ -472,13 +402,154 @@ async function deleteReservation(id) {
   }
 }
 
-// ==============================
-// 初始化
-// ==============================
+async function sendTestSms(reservation) {
+  if (!reservation.contactPhone) {
+    showMessage("此訂位沒有聯絡電話，無法測試簡訊", "error");
+    return;
+  }
+
+  testingSms.value = reservation.reservationId;
+
+  try {
+    const response = await fetch(
+      `${RESERVATION_API_URL}/${reservation.reservationId}/sms`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      },
+    );
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      showMessage(result.message || "測試簡訊發送失敗", "error");
+      return;
+    }
+
+    showMessage("測試簡訊已發送，請查看 Spring Boot Console", "success");
+  } catch (error) {
+    console.error(error);
+    showMessage("無法連線至測試簡訊 API", "error");
+  } finally {
+    testingSms.value = null;
+  }
+}
+
+// 匯入與匯出餐廳、時段、訂位資料。
+function openImportDialog() {
+  importInput.value?.click();
+}
+
+async function exportBackup() {
+  if (
+    exportStartDate.value &&
+    exportEndDate.value &&
+    exportStartDate.value > exportEndDate.value
+  ) {
+    showMessage("匯出起始日期不可晚於結束日期", "error");
+    return;
+  }
+
+  exporting.value = true;
+
+  try {
+    const params = new URLSearchParams();
+
+    if (exportStartDate.value) {
+      params.set("startDate", exportStartDate.value);
+    }
+
+    if (exportEndDate.value) {
+      params.set("endDate", exportEndDate.value);
+    }
+
+    const queryString = params.toString();
+    const exportUrl = queryString
+      ? `${BACKUP_API_URL}/export?${queryString}`
+      : `${BACKUP_API_URL}/export`;
+
+    const response = await fetch(exportUrl, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      showMessage("匯出失敗", "error");
+      return;
+    }
+
+    const backupData = await response.json();
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `餐廳訂位備份_${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    showMessage("餐廳、時段與訂位資料已匯出", "success");
+  } catch (error) {
+    console.error(error);
+    showMessage("無法連線至匯出 API", "error");
+  } finally {
+    exporting.value = false;
+  }
+}
+
+async function importBackup(event) {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    const backupData = JSON.parse(await file.text());
+
+    if (!confirm("匯入只會新增不存在的資料，確定要繼續嗎？")) {
+      return;
+    }
+
+    importing.value = true;
+
+    const response = await fetch(`${BACKUP_API_URL}/import`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(backupData),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      showMessage(result.message || "匯入失敗，請確認 JSON 格式", "error");
+      return;
+    }
+
+    const skippedCount =
+      result.skippedRestaurants + result.skippedTimes + result.skippedReservations;
+    const convertedCount = result.memberConvertedToGuest ?? 0;
+
+    showMessage(
+      `匯入完成：新增 ${result.addedRestaurants} 間餐廳、${result.addedTimes} 個時段、${result.addedReservations} 筆訂位；略過 ${skippedCount} 筆重複或格式異常資料${convertedCount ? `；${convertedCount} 筆不存在的會員已改為訪客訂位。` : "。"}`,
+      "success",
+    );
+
+    await loadRestaurants();
+    await loadAllTimes();
+    await loadReservations();
+  } catch (error) {
+    console.error(error);
+    showMessage("JSON 檔案格式錯誤或無法讀取", "error");
+  } finally {
+    importing.value = false;
+    event.target.value = "";
+  }
+}
 
 onMounted(async () => {
-  console.log("訂位頁 JWT：", localStorage.getItem("token"));
-
   await loadRestaurants();
   await loadAllTimes();
   await loadReservations();
@@ -487,18 +558,34 @@ onMounted(async () => {
 
 <template>
   <div class="reservation-page">
-    <!-- 頁面標題 -->
     <div class="admin-page-header">
       <div>
         <h1>餐廳訂位管理</h1>
 
         <p>管理飯店餐廳訂位、會員與非會員聯絡資訊及訂位狀態</p>
       </div>
-    </div>
+      <div class="backup-actions">
+        <input ref="importInput" type="file" accept="application/json,.json" hidden @change="importBackup" />
 
-    <!-- =========================
-         新增 / 修改訂位
-         ========================= -->
+        <label class="backup-date">
+          起始日期
+          <input v-model="exportStartDate" type="date" />
+        </label>
+
+        <label class="backup-date">
+          結束日期
+          <input v-model="exportEndDate" type="date" />
+        </label>
+
+        <button type="button" class="admin-btn admin-btn-secondary" :disabled="exporting" @click="exportBackup">
+          {{ exporting ? "匯出中..." : "匯出 JSON" }}
+        </button>
+
+        <button type="button" class="admin-btn admin-btn-primary" :disabled="importing" @click="openImportDialog">
+          {{ importing ? "匯入中..." : "匯入 JSON" }}
+        </button>
+      </div>
+    </div>
 
     <section class="admin-card reservation-form-card">
       <h2>
@@ -507,90 +594,53 @@ onMounted(async () => {
 
       <form @submit.prevent="saveReservation">
         <div class="admin-form-grid">
-          <!-- 會員 -->
           <div class="admin-form-group">
             <label> 會員 ID（選填） </label>
 
-            <input
-              v-model="form.memberId"
-              type="number"
-              min="1"
-              placeholder="會員訂位可輸入會員 ID"
-              @input="handleMemberIdInput"
-              @blur="loadMemberInfo"
-            />
+            <input v-model="form.memberId" type="number" min="1" placeholder="會員訂位可輸入會員 ID" @input="handleMemberIdInput"
+              @blur="loadMemberInfo" />
           </div>
 
-          <!-- 姓名 -->
           <div class="admin-form-group">
             <label> 訂位人姓名（非會員必填） </label>
 
-            <input
-              v-model="form.contactName"
-              type="text"
-              placeholder="請輸入訂位人姓名"
-              :disabled="memberLoaded"
-            />
+            <input v-model="form.contactName" type="text" placeholder="請輸入訂位人姓名" :disabled="memberLoaded" />
           </div>
 
-          <!-- 電話 -->
           <div class="admin-form-group">
             <label> 訂位人電話（非會員必填） </label>
 
-            <input
-              v-model="form.contactPhone"
-              type="text"
-              placeholder="請輸入聯絡電話"
-              :disabled="memberLoaded"
-            />
+            <input v-model="form.contactPhone" type="text" placeholder="請輸入聯絡電話" :disabled="memberLoaded" />
           </div>
 
-          <!-- 餐廳 -->
           <div class="admin-form-group">
             <label> 餐廳 * </label>
 
-            <select
-              v-model="form.restaurantId"
-              required
-              @change="loadTimeOptions()"
-            >
+            <select v-model="form.restaurantId" required @change="loadTimeOptions()">
               <option value="">請選擇餐廳</option>
 
-              <option
-                v-for="restaurant in restaurants"
-                :key="restaurant.restaurantId"
-                :value="String(restaurant.restaurantId)"
-              >
+              <option v-for="restaurant in restaurants" :key="restaurant.restaurantId"
+                :value="String(restaurant.restaurantId)">
                 {{ restaurant.restaurantName }}
               </option>
             </select>
           </div>
 
-          <!-- 日期 -->
           <div class="admin-form-group">
             <label> 訂位日期 * </label>
 
             <input v-model="form.reservationDate" type="date" required />
           </div>
 
-          <!-- 時段 -->
           <div class="admin-form-group">
             <label> 訂位時段 * </label>
 
-            <select
-              v-model="form.timeId"
-              required
-              :disabled="!form.restaurantId"
-            >
+            <select v-model="form.timeId" required :disabled="!form.restaurantId">
               <option value="">
                 {{ form.restaurantId ? "請選擇時段" : "請先選擇餐廳" }}
               </option>
 
-              <option
-                v-for="time in timeOptions"
-                :key="time.timeId"
-                :value="String(time.timeId)"
-              >
+              <option v-for="time in timeOptions" :key="time.timeId" :value="String(time.timeId)">
                 {{ time.mealType }}
                 （{{ formatTime(time.openTime) }}
                 -
@@ -599,14 +649,12 @@ onMounted(async () => {
             </select>
           </div>
 
-          <!-- 人數 -->
           <div class="admin-form-group">
             <label> 訂位人數 * </label>
 
             <input v-model="form.peopleCount" type="number" min="1" required />
           </div>
 
-          <!-- 狀態 -->
           <div class="admin-form-group">
             <label> 訂位狀態 * </label>
 
@@ -620,53 +668,33 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- 按鈕 -->
         <div class="admin-form-actions">
-          <button
-            type="submit"
-            class="admin-btn admin-btn-primary"
-            :disabled="saving"
-          >
+          <button type="submit" class="admin-btn admin-btn-primary" :disabled="saving">
             {{ saving ? "儲存中..." : "儲存" }}
           </button>
 
-          <button
-            type="button"
-            class="admin-btn admin-btn-secondary"
-            @click="clearForm"
-          >
+          <button type="button" class="admin-btn admin-btn-secondary" @click="clearForm">
             清除
           </button>
         </div>
 
-        <!-- 訊息 -->
         <div v-if="message" class="admin-message" :class="messageType">
           {{ message }}
         </div>
       </form>
     </section>
 
-    <!-- =========================
-         訂位列表
-         ========================= -->
-
     <section class="admin-card">
       <div class="reservation-list-header">
         <h2>訂位列表</h2>
 
-        <button
-          type="button"
-          class="admin-btn admin-btn-secondary"
-          @click="loadReservations"
-        >
+        <button type="button" class="admin-btn admin-btn-secondary" @click="loadReservations">
           重新整理
         </button>
       </div>
 
-      <!-- Loading -->
       <div v-if="loading" class="loading-message">訂位資料讀取中...</div>
 
-      <!-- Table -->
       <div v-else class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
@@ -689,10 +717,7 @@ onMounted(async () => {
               <td colspan="10" class="empty-row">目前沒有訂位資料</td>
             </tr>
 
-            <tr
-              v-for="reservation in reservations"
-              :key="reservation.reservationId"
-            >
+            <tr v-for="reservation in reservations" :key="reservation.reservationId">
               <td>
                 {{ reservation.reservationId }}
               </td>
@@ -726,36 +751,31 @@ onMounted(async () => {
               </td>
 
               <td>
-                <span
-                  class="reservation-status"
-                  :class="{
-                    'status-booked': reservation.status === '已訂位',
+                <span class="reservation-status" :class="{
+                  'status-booked': reservation.status === '已訂位',
 
-                    'status-cancelled': reservation.status === '已取消',
+                  'status-cancelled': reservation.status === '已取消',
 
-                    'status-completed': reservation.status === '已完成',
-                  }"
-                >
+                  'status-completed': reservation.status === '已完成',
+                }">
                   {{ reservation.status }}
                 </span>
               </td>
 
               <td>
                 <div class="reservation-actions">
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-edit"
-                    @click="editReservation(reservation)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-edit" @click="editReservation(reservation)">
                     修改
                   </button>
 
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-delete"
-                    @click="deleteReservation(reservation.reservationId)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-delete"
+                    @click="deleteReservation(reservation.reservationId)">
                     刪除
+                  </button>
+
+                  <button type="button" class="admin-btn admin-btn-secondary"
+                    :disabled="testingSms === reservation.reservationId" @click="sendTestSms(reservation)">
+                    {{ testingSms === reservation.reservationId ? "發送中..." : "測試簡訊" }}
                   </button>
                 </div>
               </td>
@@ -824,8 +844,6 @@ onMounted(async () => {
   color: #888;
 }
 
-/* 訂位狀態 */
-
 .reservation-status {
   display: inline-block;
 
@@ -871,6 +889,42 @@ select:disabled {
   cursor: not-allowed;
 
   transform: none;
+}
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.backup-date {
+  display: grid;
+  gap: 4px;
+  color: #6f5328;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.backup-date input {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #d8cbb9;
+  border-radius: 6px;
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .admin-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 700px) {

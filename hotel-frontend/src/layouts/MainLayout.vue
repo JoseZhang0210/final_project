@@ -118,7 +118,8 @@ header {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
 
