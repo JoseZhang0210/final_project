@@ -1,0 +1,24 @@
+[
+  {
+    "venueId": 1,
+    "venueName": "國際宴會廳",
+    "capacity": 200,
+    "pricePerDay": 50000,
+    "venueStatus": "可預約"
+  },
+  {
+    "venueId": 2,
+    "venueName": "會議室 A",
+    "capacity": 50,
+    "pricePerDay": 12000,
+    "venueStatus": "可預約"
+  },
+  {
+    "venueId": 3,
+    "venueName": "會議室 B",
+    "capacity": 30,
+    "pricePerDay": 8000,
+    "venueStatus": "可預約"
+  }
+]
+

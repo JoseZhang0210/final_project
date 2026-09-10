@@ -1,0 +1,18 @@
+[
+  { "employeeId": 1, "permissionId": 1 },
+  { "employeeId": 2, "permissionId": 1 },
+  { "employeeId": 3, "permissionId": 1 },
+  { "employeeId": 4, "permissionId": 1 },
+  { "employeeId": 1, "permissionId": 2 },
+  { "employeeId": 2, "permissionId": 2 },
+  { "employeeId": 3, "permissionId": 2 },
+  { "employeeId": 1, "permissionId": 3 },
+  { "employeeId": 5, "permissionId": 3 },
+  { "employeeId": 6, "permissionId": 3 },
+  { "employeeId": 1, "permissionId": 4 },
+  { "employeeId": 2, "permissionId": 4 },
+  { "employeeId": 1, "permissionId": 5 },
+  { "employeeId": 2, "permissionId": 5 },
+  { "employeeId": 5, "permissionId": 5 }
+]
+
