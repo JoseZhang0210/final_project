@@ -229,3 +229,10 @@ build/
 .vscode/
 
 .agents
+
+# Ignore node_modules
+node_modules/
+
+# Ignore test scripts
+test_db.js
+test_db.js*

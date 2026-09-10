@@ -91,7 +91,7 @@
         
         <!-- Fairmont style footer text -->
         <div class="search-footer">
-          Special Rates & Accessibility <span class="arrow-down">▼</span>
+          <!-- Special Rates & Accessibility <span class="arrow-down">▼</span> -->
         </div>
       </div>
     </div>

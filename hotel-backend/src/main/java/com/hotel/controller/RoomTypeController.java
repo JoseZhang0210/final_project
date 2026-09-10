@@ -16,8 +16,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
+
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.hotel.model.dto.RoomTypeDTO;
 import com.hotel.service.RoomTypeService;
+import com.hotel.util.JsonUtils;
 
 @RestController
 @RequestMapping("/api/roomtypes")
@@ -66,5 +74,79 @@ public class RoomTypeController {
     public ResponseEntity<Map<String, String>> deleteRoomType(@PathVariable Integer id) {
         roomTypeService.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "房型刪除成功！"));
+    }
+
+    // =========================================
+    // JSON 匯出 API
+    // GET /api/roomtypes/export/json
+    // =========================================
+    @GetMapping("/export/json")
+    public ResponseEntity<byte[]> exportRoomTypesToJson() {
+        List<RoomTypeDTO> roomTypes = roomTypeService.findAll();
+        
+        // 匯出時過濾掉不需要的欄位 (如 todayAvailableRooms 等) 以保持乾淨
+        // JsonUtils.toPrettyJson() 會處理序列化
+        String json = JsonUtils.toPrettyJson(roomTypes);
+        byte[] jsonBytes = (json != null ? json : "[]").getBytes(StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename("room_types.json", StandardCharsets.UTF_8).build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(jsonBytes);
+    }
+
+    // =========================================
+    // JSON 匯入 API (支援字串內容)
+    // POST /api/roomtypes/import/json
+    // =========================================
+    @PostMapping(value = {"/import", "/import/json"}, consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_PLAIN_VALUE})
+    public ResponseEntity<?> importRoomTypesFromJson(@RequestBody String json) {
+        return processImport(json);
+    }
+
+    // =========================================
+    // JSON 匯入 API (支援檔案上傳)
+    // POST /api/roomtypes/import/json/file
+    // =========================================
+    @PostMapping(value = "/import/json/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importRoomTypesFromJsonFile(@RequestParam("file") MultipartFile file) {
+        try {
+            String json = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return processImport(json);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "讀取檔案失敗：" + e.getMessage()));
+        }
+    }
+
+    private ResponseEntity<?> processImport(String json) {
+        if (json == null || json.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "匯入的 JSON 內容不可為空"));
+        }
+
+        try {
+            List<RoomTypeDTO> roomTypeList;
+            
+            // 判斷是單筆物件還是陣列
+            if (json.trim().startsWith("[")) {
+                roomTypeList = JsonUtils.toList(json, RoomTypeDTO.class);
+            } else {
+                RoomTypeDTO single = JsonUtils.fromJson(json, RoomTypeDTO.class);
+                roomTypeList = (single != null) ? List.of(single) : List.of();
+            }
+
+            if (roomTypeList.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "JSON 格式錯誤或無效資料"));
+            }
+
+            Map<String, Object> result = roomTypeService.importRoomTypes(roomTypeList);
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "解析 JSON 失敗：" + e.getMessage()));
+        }
     }
 }

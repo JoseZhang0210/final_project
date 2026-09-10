@@ -32,4 +32,19 @@ export const roomTypeApi = {
   deleteRoomType(id) {
     return fetchClient(`${BASE_URL}/${id}`, { method: "DELETE" });
   },
+
+  importJson(data, isFile = false) {
+    if (isFile) {
+      return fetchClient(`${BASE_URL}/import/json/file`, {
+        method: "POST",
+        body: data, // FormData object
+      });
+    } else {
+      return fetchClient(`${BASE_URL}/import/json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: data, // String
+      });
+    }
+  },
 };
