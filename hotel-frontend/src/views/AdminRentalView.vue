@@ -52,7 +52,17 @@ async function handleDelete(rental) { // 保留舊版刪除確認。
   } catch (error) { errorMessage.value = getApiErrorMessage(error); } // 顯示後端付款保護或權限錯誤。
   finally { loading.value = false; } // 恢復管理操作。
 } // 結束刪除流程。
-function resetForm() { editMode.value = false; form.value = {}; } // 取消編輯且不修改資料。
+function resetForm() {
+
+  // 離開編輯模式。
+  editMode.value = false;
+
+  // 清空目前編輯中的租借資料。
+  form.value = {};
+
+  // 取消編輯後移除「目前正在編輯租借 ID」提示。
+  message.value = '';
+}
 function formatDateTime(value) { return value ? String(value).replace('T', ' ') : ''; } // 沿用舊版表格時間顯示。
 
 // ------------------------------------------------------------
