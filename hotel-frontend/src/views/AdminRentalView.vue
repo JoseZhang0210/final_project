@@ -49,6 +49,29 @@ function formMemberName(id) {
   return memberNames.value[memberId]
     || '查無此會員';
 }
+function scrollToRentalForm() {
+
+  // 等 Vue 將 v-if 表單加入 DOM，並等待版面完成。
+  requestAnimationFrame(() => {
+
+    requestAnimationFrame(() => {
+
+      const target = document.getElementById(
+        'rental-form-section',
+      );
+
+      if (!target) {
+        return;
+      }
+
+      // 對齊表單卡片，而不是整個頁面的 top: 0。
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+  });
+}
 onMounted(refreshRentals); // 管理員進頁即載入全部租借。
 async function loadRentalData() { // 沿用舊版管理資料重新載入入口。
   // 租借、場地與會員資料並行載入。
@@ -95,13 +118,9 @@ function startCreate() {
     guestCount: '',
   };
 
-  message.value = '目前正在新增租借';
+  message.value = '';
   errorMessage.value = '';
-
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  });
+  scrollToRentalForm();
 }
 async function handleCreate() {
 
@@ -178,7 +197,7 @@ function startEdit(rental) { // 移植舊版選取資料並捲至表單的操作
   const aliases = { '待確認': 'PENDING', '待付款': 'PENDING', '已確認': 'CONFIRMED', '已取消': 'CANCELLED', '已完成': 'COMPLETED' }; // 相容 seed 與歷史中文狀態。
   form.value = { ...rental, rentalDate: String(rental.rentalDate).substring(0, 16), rentalStatus: aliases[rental.rentalStatus] || rental.rentalStatus }; // 複製資料，避免尚未儲存就改動表格。
   message.value = ''; errorMessage.value = ''; // 進入編輯模式時不顯示額外狀態提示。
-  window.scrollTo({ top: 0, behavior: 'smooth' }); // 沿用舊版操作位置。
+  scrollToRentalForm();
 } // 結束開始編輯。
 async function handleDelete(rental) { // 保留舊版刪除確認。
   if (loading.value || !window.confirm(`確定要刪除租借「${rental.eventName}」（ID ${rental.rentalId}）嗎？`)) return; // 取消時不送出請求。
@@ -269,7 +288,7 @@ function rentalStatusLabel(status) {
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </section>
     <!-- CRUD FORM -->
-    <section
+    <section id="rental-form-section"
       v-if="isLoggedIn && (editMode || createMode)"
       class="card"
     >
@@ -549,8 +568,9 @@ function rentalStatusLabel(status) {
 
 <style scoped>
 .page {
-  width: min(1200px, calc(100% - 40px));
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 42px 0 70px;
 }
 
@@ -916,5 +936,45 @@ select option {
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* ===== Admin Rental Full Width Override ===== */
+
+/*
+ * 租借管理使用後台全部可用寬度。
+ * 僅保留 AdminLayout 原本的安全邊距。
+ */
+.page {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.hero,
+.card {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* ===== Admin Rental Edge To Edge ===== */
+
+/*
+ * AdminLayout 的 .admin-content 左右各有 30px padding。
+ * 這裡只針對租借管理頁抵消，不修改其他後台頁面。
+ */
+.page {
+  width: calc(100% + 60px) !important;
+  max-width: none !important;
+  margin-left: -30px !important;
+  margin-right: -30px !important;
+}
+
+/* Hero、操作區、表格卡片跟著使用完整寬度。 */
+.page > .hero,
+.page > .card {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
 }
 </style>

@@ -659,8 +659,9 @@ function money(value) {
 .status-badge.unavailable { background: #fde9e7; color: #b3443c; } /* 維護與停用狀態不可操作，以紅色輔助辨識。 */
 .venue-cards details { margin: 12px 0; overflow-wrap: anywhere; } /* 長日期清單在卡片中換行。 */
 .rental-page {
-  width: min(1120px, calc(100% - 32px));
-  margin: 32px auto 60px;
+  width: 100%;
+  max-width: none;
+  margin: 32px 0 60px;
   font-family:
     Arial,
     "Microsoft JhengHei",
@@ -856,8 +857,9 @@ th {
 
 /* 整體頁面縮窄，避免資訊過度拉開。 */
 .rental-page {
-  width: min(980px, calc(100% - 24px)) !important;
-  margin: 20px auto 40px !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 20px 0 40px !important;
 }
 
 /* 卡片內距縮小。 */
