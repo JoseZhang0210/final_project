@@ -68,12 +68,12 @@ const isAdminOrEmployee = computed(() => {
 
             <div class="dropdown-divider"></div>
 
-            <RouterLink to="/member" class="dropdown-item">
+            <RouterLink v-if="!isAdminOrEmployee" to="/member" class="dropdown-item">
               <span class="dropdown-icon">👤</span>
               <span>會員中心</span>
             </RouterLink>
 
-            <RouterLink to="/member/orders" class="dropdown-item">
+            <RouterLink v-if="!isAdminOrEmployee" to="/member/orders" class="dropdown-item">
               <span class="dropdown-icon">📦</span>
               <span>我的訂單</span>
             </RouterLink>
