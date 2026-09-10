@@ -1,5 +1,5 @@
 <template>
-  <div class="product-manage-page">
+  <div class="product-view product-manage-page">
     <div class="admin-page-header">
       <div>
         <h1>商品管理</h1>
@@ -1526,4 +1526,4 @@ onMounted(async () => {
   await Promise.all([loadProducts(), loadCategories()]);
 });
 </script>
-<style src="@/assets/product-manage.css"></style>
+<style src="@/assets/product/product-manage.css"></style>

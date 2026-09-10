@@ -365,7 +365,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .product-image {
@@ -375,7 +375,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 
@@ -862,7 +862,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .recent-product-image {
@@ -872,7 +872,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 
@@ -1035,7 +1035,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .recommend-image {
@@ -1045,7 +1045,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 

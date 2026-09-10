@@ -90,6 +90,215 @@
     </div>
 
 
+    <!-- 今日待辦與異常中心 -->
+    <section class="dashboard-card operations-center" aria-labelledby="operations-title">
+      <header class="operations-header">
+        <div>
+          <div class="operations-title-row">
+            <h2 id="operations-title">今日待辦與異常中心</h2>
+            <span v-if="!operationsLoading" class="operations-total-badge">
+              {{ operationsTotal }} 項今日重點
+            </span>
+          </div>
+          <p>掌握今日住宿動態、待處理工作與需要留意的庫存狀況</p>
+        </div>
+
+        <div class="operations-actions">
+          <span v-if="operationsUpdatedAt" class="operations-updated-at">
+            更新於 {{ operationsUpdatedAt }}
+          </span>
+          <button
+            type="button"
+            class="operations-refresh-button"
+            :disabled="operationsLoading"
+            aria-label="重新整理今日待辦與異常資料"
+            @click="loadOperationsCenter"
+          >
+            <svg
+              :class="{ spinning: operationsLoading }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5" />
+            </svg>
+            {{ operationsLoading ? "更新中" : "重新整理" }}
+          </button>
+        </div>
+      </header>
+
+      <div v-if="operationsLoading && !operationsLoaded" class="operations-loading" role="status">
+        正在整理今日營運資料…
+      </div>
+
+      <template v-else>
+        <div v-if="operationsFailedSources" class="operations-warning" role="status">
+          部分資料暫時無法讀取（{{ operationsFailedSources }}/5），其餘項目仍可正常查看。
+        </div>
+
+        <div class="operations-grid">
+          <RouterLink to="/admin/room-booking" class="operation-item operation-info">
+            <span class="operation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6" />
+                <path d="m9 17 3-3 3 3" />
+              </svg>
+            </span>
+            <span class="operation-content">
+              <span class="operation-label">今日入住</span>
+              <strong>{{ todayCheckInCount }}</strong>
+              <small>{{ todayCheckInCount ? "查看今日入住名單" : "今日沒有入住安排" }}</small>
+            </span>
+          </RouterLink>
+
+          <RouterLink to="/admin/room-booking" class="operation-item operation-info">
+            <span class="operation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6" />
+                <path d="m15 17-3 3-3-3" />
+              </svg>
+            </span>
+            <span class="operation-content">
+              <span class="operation-label">今日退房</span>
+              <strong>{{ todayCheckOutCount }}</strong>
+              <small>{{ todayCheckOutCount ? "確認退房處理進度" : "今日沒有退房安排" }}</small>
+            </span>
+          </RouterLink>
+
+          <RouterLink to="/admin/orders" class="operation-item" :class="pendingOrderCount ? 'operation-warning-item' : 'operation-clear'">
+            <span class="operation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2h9l3 3v17H6zM9 10h6M9 14h6M9 18h4" />
+              </svg>
+            </span>
+            <span class="operation-content">
+              <span class="operation-label">待處理訂單</span>
+              <strong>{{ pendingOrderCount }}</strong>
+              <small>{{ pendingOrderCount ? "尚有訂單等待處理" : "訂單皆已處理" }}</small>
+            </span>
+          </RouterLink>
+
+          <RouterLink to="/admin/room-task" class="operation-item" :class="unfinishedRoomTaskCount ? 'operation-warning-item' : 'operation-clear'">
+            <span class="operation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </span>
+            <span class="operation-content">
+              <span class="operation-label">未完成房務</span>
+              <strong>{{ unfinishedRoomTaskCount }}</strong>
+              <small>{{ unfinishedRoomTaskCount ? "有房務工單尚未完成" : "房務工作皆已完成" }}</small>
+            </span>
+          </RouterLink>
+
+          <RouterLink to="/admin/products" class="operation-item" :class="lowStockProductCount ? 'operation-danger' : 'operation-clear'">
+            <span class="operation-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
+              </svg>
+            </span>
+            <span class="operation-content">
+              <span class="operation-label">低庫存商品</span>
+              <strong>{{ lowStockProductCount }}</strong>
+              <small>{{ lowStockProductCount ? `庫存 ${lowStockThreshold} 件以下，建議補貨` : "目前庫存狀況正常" }}</small>
+            </span>
+          </RouterLink>
+        </div>
+      </template>
+    </section>
+
+
+    <!-- =====================================================
+         快速管理與系統資訊
+         ===================================================== -->
+    <div class="dashboard-grid top-dashboard-grid">
+      <!-- 快速管理 -->
+      <section class="dashboard-card">
+        <div class="card-title">
+          <h2>快速管理</h2>
+        </div>
+
+        <div class="quick-grid">
+          <RouterLink to="/admin/products" class="quick-item">
+            🛍
+            <span>商品管理</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/orders" class="quick-item">
+            📦
+            <span>訂單管理</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/coupons" class="quick-item">
+            🎟
+            <span>優惠券管理</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/restaurants" class="quick-item">
+            🍽
+            <span>餐廳管理</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/rental" class="quick-item">
+            📝
+            <span>場地租借管理</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/reservations" class="quick-item">
+            📅
+            <span>訂位管理</span>
+          </RouterLink>
+        </div>
+      </section>
+
+      <!-- 系統資訊 -->
+      <section class="dashboard-card">
+        <div class="card-title">
+          <h2>系統資訊</h2>
+        </div>
+
+        <div class="system-info">
+          <p>
+            系統名稱
+            <span>星澄飯店管理系統</span>
+          </p>
+
+          <p>
+            後端服務
+            <span>Spring Boot</span>
+          </p>
+
+          <p>
+            前端框架
+            <span>Vue 3</span>
+          </p>
+
+          <p>
+            資料庫
+            <span>SQL Server</span>
+          </p>
+
+          <p>
+            訂單統計
+            <span>最近 12 個月</span>
+          </p>
+
+          <p>
+            商品分析
+            <span>月銷售統計</span>
+          </p>
+        </div>
+      </section>
+    </div>
+
+
     <!-- =====================================================
          本月訂單營運摘要
          ===================================================== -->
@@ -151,11 +360,69 @@
          最近 12 個月訂單統計
          ===================================================== -->
     <section
-      class="
-        dashboard-card
-        order-chart-card
-      "
+      class="dashboard-card analytics-card"
+      :class="{ collapsed: !analyticsExpanded }"
     >
+      <header class="analytics-card-header">
+        <div>
+          <h2>營運數據分析</h2>
+          <p>整合訂單趨勢與商品銷售表現</p>
+        </div>
+
+        <div class="analytics-header-actions">
+          <div class="analytics-tabs" role="group" aria-label="營運分析類型">
+            <button
+              type="button"
+              class="analytics-tab"
+              :class="{ active: activeAnalyticsTab === 'orders' }"
+              :aria-pressed="activeAnalyticsTab === 'orders'"
+              @click="activeAnalyticsTab = 'orders'; analyticsExpanded = true"
+            >
+              訂單趨勢
+            </button>
+
+            <button
+              type="button"
+              class="analytics-tab"
+              :class="{ active: activeAnalyticsTab === 'products' }"
+              :aria-pressed="activeAnalyticsTab === 'products'"
+              @click="activeAnalyticsTab = 'products'; analyticsExpanded = true"
+            >
+              商品月銷售
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="analytics-collapse-button"
+            :aria-expanded="analyticsExpanded"
+            aria-controls="analytics-content"
+            @click="analyticsExpanded = !analyticsExpanded"
+          >
+            <span>{{ analyticsExpanded ? "收合" : "展開" }}</span>
+            <svg
+              class="analytics-toggle-icon"
+              :class="{ open: analyticsExpanded }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div v-show="analyticsExpanded" id="analytics-content">
+      <div
+        v-show="activeAnalyticsTab === 'orders'"
+        id="orders-panel"
+        class="analytics-section analytics-panel"
+      >
 
       <div
         class="
@@ -173,8 +440,13 @@
             僅統計 COMPLETED 已完成訂單
           </p>
         </div>
+
       </div>
 
+
+      <div
+        class="analytics-body"
+      >
 
       <!-- Loading -->
       <div
@@ -382,19 +654,18 @@
         </div>
 
       </div>
-
-    </section>
+      </div>
+      </div>
 
 
     <!-- =====================================================
          指定月份商品銷售統計
          ===================================================== -->
-    <section
-      class="
-        dashboard-card
-        product-sales-card
-      "
-    >
+      <div
+        v-show="activeAnalyticsTab === 'products'"
+        id="products-panel"
+        class="analytics-section analytics-panel product-analytics-section"
+      >
 
       <!-- 標題 -->
       <div class="product-sales-header">
@@ -411,6 +682,10 @@
 
       </div>
 
+
+      <div
+        class="analytics-body"
+      >
 
       <!-- ===================================================
            查詢條件
@@ -886,183 +1161,11 @@
         </div>
 
       </div>
-
+      </div>
+      </div>
+      </div>
     </section>
 
-
-    <!-- =====================================================
-         下方 Dashboard
-         ===================================================== -->
-    <div class="dashboard-grid">
-
-      <!-- 快速管理 -->
-      <section
-        class="
-          dashboard-card
-        "
-      >
-
-        <div class="card-title">
-          <h2>
-            快速管理
-          </h2>
-        </div>
-
-
-        <div class="quick-grid">
-
-          <RouterLink
-            to="/admin/products"
-            class="quick-item"
-          >
-            🛍
-
-            <span>
-              商品管理
-            </span>
-          </RouterLink>
-
-
-          <RouterLink
-            to="/admin/orders"
-            class="quick-item"
-          >
-            📦
-
-            <span>
-              訂單管理
-            </span>
-          </RouterLink>
-
-
-          <RouterLink
-            to="/admin/coupons"
-            class="quick-item"
-          >
-            🎟
-
-            <span>
-              優惠券管理
-            </span>
-          </RouterLink>
-
-
-          <RouterLink
-            to="/admin/restaurants"
-            class="quick-item"
-          >
-            🍽
-
-            <span>
-              餐廳管理
-            </span>
-          </RouterLink>
-
-
-          <RouterLink
-            to="/admin/restaurant-times"
-            class="quick-item"
-          >
-            🕒
-
-            <span>
-              時段管理
-            </span>
-          </RouterLink>
-
-
-          <RouterLink
-            to="/admin/reservations"
-            class="quick-item"
-          >
-            📅
-
-            <span>
-              訂位管理
-            </span>
-          </RouterLink>
-
-        </div>
-
-      </section>
-
-
-      <!-- 系統資訊 -->
-      <section
-        class="
-          dashboard-card
-        "
-      >
-
-        <div class="card-title">
-
-          <h2>
-            系統資訊
-          </h2>
-
-        </div>
-
-
-        <div class="system-info">
-
-          <p>
-            系統名稱
-
-            <span>
-              星澄飯店管理系統
-            </span>
-          </p>
-
-
-          <p>
-            後端服務
-
-            <span>
-              Spring Boot
-            </span>
-          </p>
-
-
-          <p>
-            前端框架
-
-            <span>
-              Vue 3
-            </span>
-          </p>
-
-
-          <p>
-            資料庫
-
-            <span>
-              SQL Server
-            </span>
-          </p>
-
-
-          <p>
-            訂單統計
-
-            <span>
-              最近 12 個月
-            </span>
-          </p>
-
-
-          <p>
-            商品分析
-
-            <span>
-              月銷售統計
-            </span>
-          </p>
-
-        </div>
-
-      </section>
-
-    </div>
 
   </div>
 </template>
@@ -1075,6 +1178,12 @@ import {
   onMounted,
   ref,
 } from "vue";
+
+
+const analyticsExpanded = ref(true);
+
+const activeAnalyticsTab = ref("orders");
+
 
 
 // =====================================================
@@ -1095,6 +1204,31 @@ const reservationCount =
 
 const memberCount =
   ref("—");
+
+
+// =====================================================
+// 今日待辦與異常中心
+// =====================================================
+
+const lowStockThreshold = 5;
+
+const todayCheckInCount = ref(0);
+const todayCheckOutCount = ref(0);
+const pendingOrderCount = ref(0);
+const unfinishedRoomTaskCount = ref(0);
+const lowStockProductCount = ref(0);
+const operationsLoading = ref(false);
+const operationsLoaded = ref(false);
+const operationsFailedSources = ref(0);
+const operationsUpdatedAt = ref("");
+
+const operationsTotal = computed(() =>
+  todayCheckInCount.value
+  + todayCheckOutCount.value
+  + pendingOrderCount.value
+  + unfinishedRoomTaskCount.value
+  + lowStockProductCount.value
+);
 
 
 // =====================================================
@@ -1277,6 +1411,100 @@ async function fetchCount(
 
     return "—";
   }
+}
+
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+
+async function fetchOperationList(url) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`${url} 讀取失敗 (${response.status})`);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
+}
+
+
+async function loadOperationsCenter() {
+  operationsLoading.value = true;
+  operationsFailedSources.value = 0;
+
+  const requests = await Promise.allSettled([
+    fetchOperationList("/api/bookings"),
+    fetchOperationList("/api/orders"),
+    fetchOperationList("/api/roomtask"),
+    fetchOperationList("/api/products"),
+  ]);
+
+  const [bookingsResult, ordersResult, tasksResult, productsResult] = requests;
+  const today = getLocalDateKey();
+
+  if (bookingsResult.status === "fulfilled") {
+    const validBookings = bookingsResult.value.filter((booking) => {
+      const status = booking.bookingStatus ?? booking.booking_status;
+      return status !== "已取消";
+    });
+
+    todayCheckInCount.value = validBookings.filter((booking) =>
+      String(booking.checkInDate ?? booking.check_in_date ?? "").startsWith(today)
+    ).length;
+
+    todayCheckOutCount.value = validBookings.filter((booking) =>
+      String(booking.checkOutDate ?? booking.check_out_date ?? "").startsWith(today)
+    ).length;
+  } else {
+    operationsFailedSources.value += 2;
+    console.error(bookingsResult.reason);
+  }
+
+  if (ordersResult.status === "fulfilled") {
+    pendingOrderCount.value = ordersResult.value.filter((order) =>
+      (order.orderStatus ?? order.order_status) === "PENDING"
+    ).length;
+  } else {
+    operationsFailedSources.value += 1;
+    console.error(ordersResult.reason);
+  }
+
+  if (tasksResult.status === "fulfilled") {
+    unfinishedRoomTaskCount.value = tasksResult.value.filter((task) => {
+      const status = task.taskStatus ?? task.task_status;
+      return status !== "已完成" && status !== "已取消";
+    }).length;
+  } else {
+    operationsFailedSources.value += 1;
+    console.error(tasksResult.reason);
+  }
+
+  if (productsResult.status === "fulfilled") {
+    lowStockProductCount.value = productsResult.value.filter((product) => {
+      const stock = Number(product.stock ?? 0);
+      return stock <= lowStockThreshold && product.status !== "DISCONTINUED";
+    }).length;
+  } else {
+    operationsFailedSources.value += 1;
+    console.error(productsResult.reason);
+  }
+
+  operationsUpdatedAt.value = new Intl.DateTimeFormat("zh-TW", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+  operationsLoaded.value = true;
+  operationsLoading.value = false;
 }
 
 
@@ -2244,6 +2472,8 @@ onMounted(
         loadMonthlyOrderStatistics(),
 
         loadMonthlyProductSales(),
+
+        loadOperationsCenter(),
       ]);
 
 
@@ -2366,6 +2596,233 @@ onMounted(
 
 
 /* =====================================================
+   今日待辦與異常中心
+   ===================================================== */
+
+.operations-center {
+  margin-bottom: 28px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.operations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 26px;
+  border-bottom: 1px solid #eee5d9;
+  background: linear-gradient(135deg, #fff 0%, #fcfaf6 100%);
+}
+
+.operations-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.operations-title-row h2 {
+  margin: 0;
+  color: #5d431f;
+  font-size: 21px;
+}
+
+.operations-header p {
+  margin: 6px 0 0;
+  color: #766f68;
+  font-size: 13px;
+}
+
+.operations-total-badge {
+  padding: 4px 9px;
+  color: #76551f;
+  background: #f4ead9;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.operations-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 0 0 auto;
+}
+
+.operations-updated-at {
+  color: #766f68;
+  font-size: 12px;
+}
+
+.operations-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 14px;
+  color: #5d431f;
+  background: #fff;
+  border: 1px solid #dfcfb8;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.operations-refresh-button:hover:not(:disabled) {
+  background: #f8f2e8;
+  border-color: #b58a46;
+}
+
+.operations-refresh-button:focus-visible,
+.operation-item:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.35);
+  outline-offset: 3px;
+}
+
+.operations-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.operations-refresh-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.operations-refresh-button svg.spinning {
+  animation: operations-spin 0.8s linear infinite;
+}
+
+.operations-loading {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  color: #766f68;
+}
+
+.operations-warning {
+  margin: 18px 24px 0;
+  padding: 11px 14px;
+  color: #7a4c05;
+  background: #fff7e6;
+  border: 1px solid #f0d59d;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.operations-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px 24px 24px;
+}
+
+.operation-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 112px;
+  padding: 17px;
+  color: #4a3b2a;
+  background: #fbfaf8;
+  border: 1px solid #e9e0d5;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.operation-item:hover {
+  background: #fff;
+  border-color: #cdb184;
+  box-shadow: 0 8px 18px rgba(82, 61, 30, 0.09);
+}
+
+.operation-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #7b5a27;
+  background: #f3eadc;
+  border-radius: 10px;
+}
+
+.operation-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.operation-content {
+  min-width: 0;
+}
+
+.operation-label,
+.operation-content small {
+  display: block;
+}
+
+.operation-label {
+  color: #62584e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.operation-content strong {
+  display: block;
+  margin: 3px 0;
+  color: #40301e;
+  font-size: 27px;
+  line-height: 1.1;
+}
+
+.operation-content small {
+  overflow: hidden;
+  color: #766f68;
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operation-warning-item {
+  background: #fffaf1;
+  border-color: #ead3a9;
+}
+
+.operation-warning-item .operation-icon {
+  color: #8a5a0a;
+  background: #fae9c7;
+}
+
+.operation-danger {
+  background: #fff8f6;
+  border-color: #ecc9c0;
+}
+
+.operation-danger .operation-icon {
+  color: #a13f2f;
+  background: #f8dfd9;
+}
+
+.operation-clear .operation-icon {
+  color: #3d7352;
+  background: #e5f1e9;
+}
+
+@keyframes operations-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =====================================================
    本月訂單摘要
    ===================================================== */
 
@@ -2446,13 +2903,163 @@ onMounted(
 
 
 /* =====================================================
-   訂單圖表
+   可收合營運分析
    ===================================================== */
 
-.order-chart-card {
+.analytics-card {
   margin-bottom: 28px;
+  padding: 0;
+  overflow: hidden;
 }
 
+
+.analytics-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 26px;
+  border-bottom: 1px solid #e8dfd2;
+  background: linear-gradient(135deg, #fff 0%, #fcfaf6 100%);
+}
+
+
+.analytics-card.collapsed .analytics-card-header {
+  border-bottom-color: transparent;
+}
+
+
+.analytics-card-header h2 {
+  margin: 0 0 5px;
+  color: #5d431f;
+  font-size: 21px;
+}
+
+
+.analytics-card-header p {
+  margin: 0;
+  color: #8b8176;
+  font-size: 13px;
+}
+
+
+.analytics-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+
+.analytics-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #e5dac9;
+  border-radius: 11px;
+  background: #f5f0e8;
+}
+
+
+.analytics-tab,
+.analytics-collapse-button {
+  min-height: 40px;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.analytics-tab {
+  padding: 9px 15px;
+  border-radius: 8px;
+  background: transparent;
+  color: #786b5d;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+
+.analytics-tab:hover {
+  color: #5d431f;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+
+.analytics-tab.active {
+  color: #fff;
+  background: #95691f;
+  box-shadow: 0 3px 9px rgba(111, 83, 40, 0.2);
+}
+
+
+.analytics-collapse-button {
+  min-width: 86px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid #d9c5a5;
+  border-radius: 9px;
+  background: #fff;
+  color: #6f5328;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.analytics-collapse-button:hover {
+  border-color: #b58a46;
+  background: #f8f2e9;
+  box-shadow: 0 3px 10px rgba(111, 83, 40, 0.1);
+}
+
+
+.analytics-tab:focus-visible,
+.analytics-collapse-button:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.3);
+  outline-offset: 2px;
+}
+
+
+.analytics-toggle-icon {
+  width: 17px;
+  height: 17px;
+  transition: transform 0.2s ease;
+}
+
+
+.analytics-toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+
+.analytics-section {
+  padding: 26px;
+}
+
+
+.analytics-card .chart-title,
+.analytics-card .product-sales-header {
+  margin-bottom: 0;
+}
+
+
+.analytics-body {
+  margin-top: 24px;
+}
+
+
+/* =====================================================
+   訂單圖表
+   ===================================================== */
 
 .chart-title {
   display: flex;
@@ -2689,11 +3296,6 @@ onMounted(
 /* =====================================================
    商品月銷售統計
    ===================================================== */
-
-.product-sales-card {
-  margin-bottom: 28px;
-}
-
 
 .product-sales-header {
   display: flex;
@@ -3244,6 +3846,11 @@ onMounted(
 }
 
 
+.top-dashboard-grid {
+  margin-bottom: 28px;
+}
+
+
 /* =====================================================
    快速管理
    ===================================================== */
@@ -3337,9 +3944,19 @@ onMounted(
    RWD
    ===================================================== */
 
+@media (max-width: 1300px) {
+  .operations-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (
   max-width: 1000px
 ) {
+
+  .operations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
   .stat-grid {
     grid-template-columns:
@@ -3411,6 +4028,56 @@ onMounted(
   max-width: 700px
 ) {
 
+  .operations-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .operations-actions {
+    justify-content: space-between;
+  }
+
+  .analytics-card-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+
+  .analytics-header-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+
+  .analytics-tabs {
+    display: flex;
+  }
+
+
+  .analytics-tab {
+    flex: 1;
+  }
+
+
+  .analytics-collapse-button {
+    width: 100%;
+  }
+
+  .analytics-section {
+    padding: 20px;
+  }
+
+
+  .analytics-card .chart-title,
+  .analytics-card .product-sales-header {
+    align-items: flex-start;
+    gap: 16px;
+  }
+
   .order-stat-grid {
     grid-template-columns:
       1fr;
@@ -3435,6 +4102,21 @@ onMounted(
 }
 
 
+@media (prefers-reduced-motion: reduce) {
+  .analytics-tab,
+  .analytics-collapse-button,
+  .analytics-toggle-icon,
+  .operations-refresh-button,
+  .operation-item {
+    transition: none;
+  }
+
+  .operations-refresh-button svg.spinning {
+    animation: none;
+  }
+}
+
+
 @media (
   max-width: 600px
 ) {
@@ -3448,6 +4130,23 @@ onMounted(
   .quick-grid {
     grid-template-columns:
       1fr;
+  }
+
+
+  .operations-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+
+  .operations-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+
+  .operations-refresh-button {
+    width: 100%;
   }
 }
 

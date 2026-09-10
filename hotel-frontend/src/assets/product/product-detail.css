@@ -125,7 +125,7 @@
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #eee8df;
+  background: var(--product-image-background);
 }
 
 .recommendation-image-wrap img,
@@ -133,7 +133,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: var(--product-image-fit);
   transition: transform 260ms ease;
 }
 
@@ -261,10 +261,11 @@
 .image-frame {
   width: min(100%, 470px);
   aspect-ratio: 1 / 1;
+  padding: clamp(16px, 3vw, 28px);
   overflow: hidden;
-  border: 10px solid rgba(255, 253, 249, 0.88);
-  border-radius: 50% 50% 46% 54% / 48% 46% 54% 52%;
-  background: #eee9e1;
+  border: 1px solid rgba(173, 130, 65, 0.18);
+  border-radius: 22px;
+  background: var(--product-image-background);
   box-shadow: 0 22px 45px rgba(75, 57, 34, 0.15);
 }
 
@@ -272,7 +273,9 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: var(--product-image-fit);
+  object-position: center;
+  border-radius: 14px;
 }
 
 .product-content {
@@ -1436,7 +1439,7 @@
 .recent-image-wrap {
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #eee8df;
+  background: var(--product-image-background);
 }
 
 .recent-info {
@@ -1576,23 +1579,6 @@
   width: 160px;
   height: 46px;
   margin-top: 46px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-a:focus-visible,
-button:focus-visible {
-  outline: 3px solid rgba(79, 128, 190, 0.55);
-  outline-offset: 3px;
 }
 
 @keyframes skeleton-shimmer {
@@ -1845,13 +1831,3 @@ button:focus-visible {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
