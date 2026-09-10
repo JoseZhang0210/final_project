@@ -1,4 +1,38 @@
 <script setup>
+function scrollToRestaurants() {
+  const target = document.querySelector("#restaurant-list");
+
+  if (!target) {
+    return;
+  }
+
+  const headerOffset = 100;
+  const targetPosition =
+    target.getBoundingClientRect().top + window.scrollY - headerOffset;
+  const startPosition = window.scrollY;
+  const distance = targetPosition - startPosition;
+  const duration = 900;
+  const startTime = performance.now();
+
+  function easeInOutQuad(progress) {
+    return progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+  }
+
+  function animateScroll(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    window.scrollTo(0, startPosition + distance * easeInOutQuad(progress));
+
+    if (progress < 1) {
+      requestAnimationFrame(animateScroll);
+    }
+  }
+
+  requestAnimationFrame(animateScroll);
+}
 const restaurants = [
   {
     name: "雲饗中式自助餐廳",
@@ -50,7 +84,9 @@ const restaurants = [
           星澄飯店為您準備不同風味的用餐體驗。
         </p>
 
-        <a href="#restaurant-list" class="hero-button">探索餐廳</a>
+        <a href="#restaurant-list" class="hero-button" @click.prevent="scrollToRestaurants">
+          探索餐廳
+        </a>
       </div>
     </section>
 
@@ -188,6 +224,10 @@ const restaurants = [
   grid-template-columns: repeat(2, 1fr);
   gap: 30px;
   margin: 20px auto 0;
+}
+
+#restaurant-list {
+  scroll-margin-top: 100px;
 }
 
 .restaurant-card {
