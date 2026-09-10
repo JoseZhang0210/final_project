@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hotel.dto.AdminRentalCreateRequest;
 import com.hotel.dto.RentalCreateRequest;
 import com.hotel.model.entity.Rental;
 import com.hotel.service.RentalService;
@@ -122,6 +123,42 @@ public class RentalController {
         }
     }
 
+    /**
+     * 管理員替既有會員新增場地租借。
+     *
+     * memberId 可由管理員指定，
+     * rentalId、paymentId、rentalStatus 仍由後端產生。
+     */
+    @PostMapping("/admin")
+    public ResponseEntity<?> createForManager(
+            @RequestBody AdminRentalCreateRequest request,
+            Authentication authentication) {
+
+        // 僅具有場地租借管理權限的人員可以使用此入口。
+        RentalService.requireManager(authentication);
+
+        try {
+            Rental savedRental =
+                    rentalService.createForManager(request);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(savedRental);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            e.getMessage()));
+
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(Map.of(
+                            "message",
+                            "會員、付款或場地資料不存在，或資料違反資料庫限制"));
+        }
+    }
     /**
      * 保留管理端完整修改功能。
      */
