@@ -1,5 +1,5 @@
 <template>
-  <div class="shop-page">
+  <div class="product-view shop-page">
     <!-- =========================
          商城 Hero
          ========================= -->
@@ -122,15 +122,18 @@
               type="button"
               class="wishlist-button"
               :class="{ active: isProductInWishlist(product.productId) }"
+              :disabled="!isLoggedIn"
               :aria-label="
-                isProductInWishlist(product.productId)
+                !isLoggedIn
+                  ? '請先登入會員後使用願望清單'
+                  : isProductInWishlist(product.productId)
                   ? `將 ${product.productName} 移出願望清單`
                   : `將 ${product.productName} 加入願望清單`
               "
               :title="
                 isProductInWishlist(product.productId)
                   ? '移出願望清單'
-                  : '加入願望清單'
+                  : isLoggedIn ? '加入願望清單' : '請先登入會員'
               "
               @click.stop="handleToggleWishlist(product.productId)"
             >
@@ -191,7 +194,7 @@
             <!-- =========================
                  購買數量
                  ========================= -->
-            <div v-if="canBuy(product)" class="quantity-area" @click.stop>
+            <div v-if="canBuy(product) && isLoggedIn" class="quantity-area" @click.stop>
               <span class="quantity-label"> 數量 </span>
 
               <div class="quantity-control">
@@ -228,10 +231,10 @@
             <button
               type="button"
               class="product-button"
-              :disabled="!canBuy(product)"
+              :disabled="!canBuy(product) || !isLoggedIn"
               @click.stop="buyProduct(product)"
             >
-              {{ canBuy(product) ? "購買" : "暫無法購買" }}
+              {{ !isLoggedIn ? "登入後加入購物車" : canBuy(product) ? "加入購物車" : "暫無法購買" }}
             </button>
           </div>
         </article>
@@ -397,8 +400,10 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 
 import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 
 import { getAuthHeaders } from "@/utils/auth";
+import { useAuthStore } from "@/stores/auth";
 
 import {
   getRecentlyViewedIds,
@@ -411,6 +416,8 @@ import { getWishlistIds, toggleWishlist } from "@/utils/wishlist";
 import { normalizeProductId } from "@/utils/productId";
 
 const router = useRouter();
+const authStore = useAuthStore();
+const { isLoggedIn } = storeToRefs(authStore);
 
 const ACTIVE_PRODUCT_STATUSES = new Set(["ACTIVE", "上架", "上架中"]);
 
@@ -789,6 +796,8 @@ function decreaseQuantity(product) {
 // =====================================================
 
 function buyProduct(product) {
+  if (!isLoggedIn.value) return;
+
   if (!canBuy(product)) {
     alert("此商品目前無法購買");
 
@@ -899,12 +908,16 @@ function handleClearRecentlyViewed() {
 // =====================================================
 
 function isProductInWishlist(productId) {
+  if (!isLoggedIn.value) return false;
+
   const id = normalizeProductId(productId);
 
   return id !== null && wishlistIdSet.value.has(id);
 }
 
 function handleToggleWishlist(productId) {
+  if (!isLoggedIn.value) return;
+
   const id = normalizeProductId(productId);
 
   if (id === null) {
@@ -943,4 +956,4 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped src="@/assets/product-shop.css"></style>
+<style scoped src="@/assets/product/product-shop.css"></style>

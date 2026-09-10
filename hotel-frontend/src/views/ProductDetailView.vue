@@ -1,5 +1,5 @@
 <template>
-  <div class="product-detail-page">
+  <div class="product-view product-detail-page">
     <div class="detail-ambient detail-ambient-left" aria-hidden="true"></div>
     <div class="detail-ambient detail-ambient-right" aria-hidden="true"></div>
 
@@ -177,14 +177,14 @@
               <button
                 type="button"
                 class="purchase-button"
-                :disabled="!canBuy"
+                :disabled="!canBuy || !isLoggedIn"
                 @click="addToCart"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6.5 8.5h11l1 12h-13l1-12Z" />
                   <path d="M9 9V6a3 3 0 0 1 6 0v3" />
                 </svg>
-                {{ canBuy ? "加入購物車" : "目前無法購買" }}
+                {{ !isLoggedIn ? "登入後加入購物車" : canBuy ? "加入購物車" : "目前無法購買" }}
               </button>
             </div>
 
@@ -203,9 +203,12 @@
                 type="button"
                 class="wishlist-action"
                 :class="{ active: inWishlist }"
+                :disabled="!isLoggedIn"
                 :aria-pressed="inWishlist"
                 :aria-label="
-                  inWishlist
+                  !isLoggedIn
+                    ? '請先登入會員後使用願望清單'
+                    : inWishlist
                     ? `將 ${product.productName} 移出願望清單`
                     : `將 ${product.productName} 加入願望清單`
                 "
@@ -216,7 +219,7 @@
                     d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"
                   />
                 </svg>
-                {{ inWishlist ? "已收藏" : "加入願望清單" }}
+                {{ !isLoggedIn ? "登入後加入願望清單" : inWishlist ? "已收藏" : "加入願望清單" }}
               </button>
 
               <RouterLink to="/products" class="shop-link">
@@ -264,9 +267,230 @@
               <p>{{ product.description || "此商品目前尚無詳細介紹。" }}</p>
             </div>
 
-            <div v-else-if="activeProductTab === 'reviews'" class="tab-empty-state">
-              <h2>商品評價</h2>
-              <p>目前尚無商品評價。</p>
+            <div
+              v-else-if="activeProductTab === 'reviews'"
+              class="reviews-panel"
+              @click="closeReviewMenu"
+            >
+              <div class="reviews-heading">
+                <div>
+                  <p class="section-eyebrow">CUSTOMER REVIEWS</p>
+                  <h2>商品評價</h2>
+                </div>
+                <div v-if="reviews.length" class="rating-summary" aria-label="商品平均評分">
+                  <strong>{{ averageRating }}</strong>
+                  <div>
+                    <div class="display-stars" aria-hidden="true">
+                      <svg
+                        v-for="star in 5"
+                        :key="star"
+                        viewBox="0 0 24 24"
+                        :class="{ filled: star <= Math.round(Number(averageRating)) }"
+                      >
+                        <path d="m12 2.7 2.83 5.73 6.32.92-4.58 4.46 1.08 6.3L12 17.14l-5.65 2.97 1.08-6.3-4.58-4.46 6.32-.92L12 2.7Z" />
+                      </svg>
+                    </div>
+                    <span>{{ reviews.length }} 則評論</span>
+                  </div>
+                </div>
+              </div>
+
+              <form v-if="isLoggedIn" ref="reviewForm" class="review-form" @submit.prevent="submitReview">
+                <div class="review-form-heading">
+                  <div>
+                    <h3>
+                      {{ editingReviewId
+                        ? "編輯我的評價"
+                        : ownReview
+                          ? "你已留下評價"
+                          : "分享你的使用心得" }}
+                    </h3>
+                    <p>
+                      {{ editingReviewId
+                        ? "修改星等或評論內容後儲存。"
+                        : ownReview
+                          ? "若要修改內容，請從你的評論右上角選擇編輯。"
+                          : "你的會員名稱會顯示在評論旁。" }}
+                    </p>
+                  </div>
+                  <span v-if="editingReviewId" class="review-status-badge">編輯中</span>
+                  <span v-else-if="ownReview" class="review-status-badge">已評價</span>
+                </div>
+
+                <fieldset class="rating-fieldset">
+                  <legend>商品星等</legend>
+                  <div class="rating-input" @mouseleave="hoveredRating = 0">
+                    <button
+                      v-for="star in 5"
+                      :key="star"
+                      type="button"
+                      :aria-label="`${star} 星`"
+                      :aria-pressed="reviewRating === star"
+                      :class="{ active: star <= (hoveredRating || reviewRating) }"
+                      @mouseenter="hoveredRating = star"
+                      @focus="hoveredRating = star"
+                      @blur="hoveredRating = 0"
+                      @click="reviewRating = star"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m12 2.7 2.83 5.73 6.32.92-4.58 4.46 1.08 6.3L12 17.14l-5.65 2.97 1.08-6.3-4.58-4.46 6.32-.92L12 2.7Z" />
+                      </svg>
+                    </button>
+                    <span>{{ reviewRating ? `${reviewRating} 星` : "請選擇星等" }}</span>
+                  </div>
+                </fieldset>
+
+                <label class="review-comment-field" for="review-comment">
+                  <span>評論內容</span>
+                  <textarea
+                    id="review-comment"
+                    ref="reviewCommentInput"
+                    v-model="reviewComment"
+                    maxlength="1000"
+                    rows="5"
+                    placeholder="說說你喜歡這項商品的地方……"
+                    required
+                  ></textarea>
+                  <small>{{ reviewComment.length }} / 1000</small>
+                </label>
+
+                <div class="review-form-footer">
+                  <p
+                    v-if="reviewMessage"
+                    :class="['review-message', reviewMessageType]"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {{ reviewMessage }}
+                  </p>
+                  <button
+                    type="submit"
+                    class="review-submit-button"
+                    :disabled="submittingReview || !reviewRating || !reviewComment.trim()"
+                  >
+                    {{ submittingReview ? "送出中…" : editingReviewId || ownReview ? "更新評價" : "送出評價" }}
+                  </button>
+                  <button
+                    v-if="editingReviewId"
+                    type="button"
+                    class="review-cancel-button"
+                    @click="cancelEditReview"
+                  >
+                    取消編輯
+                  </button>
+                </div>
+              </form>
+
+              <div v-else class="review-login-notice">
+                <div>
+                  <h3>登入後即可發表評論</h3>
+                  <p>遊客可以閱讀會員評論，登入會員後才能評分與留言。</p>
+                </div>
+                <RouterLink to="/login">前往登入</RouterLink>
+              </div>
+
+              <div class="review-list-section">
+                <h3>會員評論</h3>
+
+                <div v-if="reviewsLoading" class="reviews-loading" aria-live="polite">
+                  評價載入中…
+                </div>
+                <div v-else-if="reviewsError" class="reviews-error" role="alert">
+                  <p>{{ reviewsError }}</p>
+                  <button type="button" @click="loadReviews">重新載入</button>
+                </div>
+                <div v-else-if="reviews.length === 0" class="reviews-empty">
+                  <p>目前尚無商品評價，成為第一位分享心得的會員吧。</p>
+                </div>
+                <ol v-else class="review-list">
+                  <li v-for="review in reviews" :key="review.reviewId" class="review-item">
+                    <article class="review-card">
+                      <div class="review-card-header">
+                        <div class="review-identity">
+                          <div class="review-avatar" aria-hidden="true">
+                            {{ getMemberInitial(review.memberName) }}
+                          </div>
+                          <div class="review-author">
+                            <strong>{{ review.memberName }}</strong>
+                            <span v-if="review.ownReview" class="own-review-label">我的評論</span>
+                          </div>
+                        </div>
+                        <div v-if="canDeleteReview(review)" class="review-menu" @click.stop>
+                            <button
+                              type="button"
+                              class="review-menu-trigger"
+                              :aria-label="`${review.memberName} 的評論操作`"
+                              aria-haspopup="true"
+                              :aria-expanded="openReviewMenuId === review.reviewId"
+                              :aria-controls="`review-menu-${review.reviewId}`"
+                              @click="toggleReviewMenu(review.reviewId)"
+                              @keydown.esc="closeReviewMenu"
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="5" cy="12" r="1.5" />
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="19" cy="12" r="1.5" />
+                              </svg>
+                            </button>
+                            <div
+                              v-if="openReviewMenuId === review.reviewId"
+                              :id="`review-menu-${review.reviewId}`"
+                              class="review-menu-popover"
+                              aria-label="評論操作"
+                              @keydown.esc="closeReviewMenu"
+                            >
+                              <button
+                                v-if="review.ownReview"
+                                type="button"
+                                @click="startEditReview(review)"
+                              >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path d="m4 20 4.2-1 10.6-10.6a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20ZM14.5 7.1l2.8 2.8" />
+                                </svg>
+                                編輯
+                              </button>
+                              <button
+                                type="button"
+                                class="danger"
+                                :disabled="deletingReviewId === review.reviewId"
+                                @click="deleteReview(review)"
+                              >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                  <path d="M4 7h16M9 7V4h6v3M6.5 7l.8 13h9.4l.8-13M10 11v5M14 11v5" />
+                                </svg>
+                                {{ deletingReviewId === review.reviewId ? "刪除中…" : "刪除" }}
+                              </button>
+                            </div>
+                        </div>
+                      </div>
+                      <div class="review-meta-row">
+                        <div class="display-stars review-stars" :aria-label="`${review.rating} 星評價`">
+                          <svg
+                            v-for="star in 5"
+                            :key="star"
+                            viewBox="0 0 24 24"
+                            :class="{ filled: star <= review.rating }"
+                            aria-hidden="true"
+                          >
+                            <path d="m12 2.7 2.83 5.73 6.32.92-4.58 4.46 1.08 6.3L12 17.14l-5.65 2.97 1.08-6.3-4.58-4.46 6.32-.92L12 2.7Z" />
+                          </svg>
+                        </div>
+                        <span aria-hidden="true">·</span>
+                        <time :datetime="review.updatedAt">{{ formatReviewDate(review.updatedAt) }}</time>
+                      </div>
+                      <p>{{ review.comment }}</p>
+                    </article>
+                  </li>
+                </ol>
+                <p
+                  v-if="reviewListMessage"
+                  :class="['review-list-message', reviewListMessageType]"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {{ reviewListMessage }}
+                </p>
+              </div>
             </div>
 
             <div v-else-if="activeProductTab === 'specifications'" class="tab-copy">
@@ -360,10 +584,12 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { storeToRefs } from "pinia";
 
 import { getAuthHeaders } from "@/utils/auth";
+import { useAuthStore } from "@/stores/auth";
 import { normalizeProductId } from "@/utils/productId";
 import {
   addRecentlyViewed,
@@ -372,6 +598,8 @@ import {
 import { getWishlistIds, toggleWishlist } from "@/utils/wishlist";
 
 const route = useRoute();
+const authStore = useAuthStore();
+const { authorities, isLoggedIn } = storeToRefs(authStore);
 
 const DEFAULT_IMAGE = "/upload/products/default-product.jpg";
 const PRODUCT_API = "/api/products";
@@ -393,15 +621,50 @@ const quantity = ref(1);
 const purchaseMessage = ref("");
 const purchaseMessageType = ref("success");
 const activeProductTab = ref("features");
+const reviews = ref([]);
+const reviewsLoading = ref(false);
+const reviewsError = ref("");
+const reviewRating = ref(0);
+const hoveredRating = ref(0);
+const reviewComment = ref("");
+const reviewMessage = ref("");
+const reviewMessageType = ref("success");
+const submittingReview = ref(false);
+const deletingReviewId = ref(null);
+const reviewListMessage = ref("");
+const reviewListMessageType = ref("success");
+const editingReviewId = ref(null);
+const openReviewMenuId = ref(null);
+const reviewForm = ref(null);
+const reviewCommentInput = ref(null);
 const originalDocumentTitle = document.title;
 
-const productTabs = [
+const productTabs = computed(() => [
   { key: "features", label: "商品特色" },
-  { key: "reviews", label: "商品評價 (0)" },
+  { key: "reviews", label: `商品評價 (${reviews.value.length})` },
   { key: "specifications", label: "商品規格" },
   { key: "returns", label: "退／換貨須知" },
   { key: "related", label: "相關類別" },
-];
+]);
+
+const ownReview = computed(() =>
+  reviews.value.find((review) => review.ownReview),
+);
+
+const canManageReviews = computed(() =>
+  authorities.value.some((authority) =>
+    ["ROLE_ADMIN", "ROLE_EMPLOYEE"].includes(authority),
+  ),
+);
+
+const averageRating = computed(() => {
+  if (!reviews.value.length) return "0.0";
+  const total = reviews.value.reduce(
+    (sum, review) => sum + Number(review.rating || 0),
+    0,
+  );
+  return (total / reviews.value.length).toFixed(1);
+});
 
 const purchasableRelatedProducts = computed(() =>
   allProducts.value.filter((item) => {
@@ -449,6 +712,8 @@ const productImage = computed(() => {
 });
 
 const inWishlist = computed(() => {
+  if (!isLoggedIn.value) return false;
+
   const id = Number(product.value?.productId);
   return wishlistIds.value.some((itemId) => Number(itemId) === id);
 });
@@ -492,6 +757,13 @@ async function loadProduct() {
   quantity.value = 1;
   activeProductTab.value = "features";
   purchaseMessage.value = "";
+  reviews.value = [];
+  reviewsError.value = "";
+  reviewRating.value = 0;
+  reviewComment.value = "";
+  reviewMessage.value = "";
+  editingReviewId.value = null;
+  openReviewMenuId.value = null;
 
   if (id === null) {
     errorMessage.value = "商品編號不正確";
@@ -526,6 +798,7 @@ async function loadProduct() {
     }
 
     product.value = data;
+    void loadReviews();
     addRecentlyViewed(id);
     recentlyViewedIds.value = getRecentlyViewedIds();
     document.title = `${data.productName}｜星澄飯店商城`;
@@ -541,21 +814,199 @@ function handleProductTabKeydown(event, currentIndex) {
   let nextIndex = currentIndex;
 
   if (event.key === "ArrowRight") {
-    nextIndex = (currentIndex + 1) % productTabs.length;
+    nextIndex = (currentIndex + 1) % productTabs.value.length;
   } else if (event.key === "ArrowLeft") {
-    nextIndex = (currentIndex - 1 + productTabs.length) % productTabs.length;
+    nextIndex = (currentIndex - 1 + productTabs.value.length) % productTabs.value.length;
   } else if (event.key === "Home") {
     nextIndex = 0;
   } else if (event.key === "End") {
-    nextIndex = productTabs.length - 1;
+    nextIndex = productTabs.value.length - 1;
   } else {
     return;
   }
 
   event.preventDefault();
-  const nextTab = productTabs[nextIndex];
+  const nextTab = productTabs.value[nextIndex];
   activeProductTab.value = nextTab.key;
   document.getElementById(`product-tab-${nextTab.key}`)?.focus();
+}
+
+async function loadReviews() {
+  const productId = normalizeProductId(product.value?.productId ?? route.params.id);
+  if (productId === null) return;
+
+  reviewsLoading.value = true;
+  reviewsError.value = "";
+
+  try {
+    const response = await fetch(`${PRODUCT_API}/${productId}/reviews`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error(response.status === 401 || response.status === 403
+        ? "請先登入會員後查看商品評價。"
+        : "目前無法載入商品評價。");
+    }
+
+    const data = await response.json();
+    reviews.value = Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("商品評價載入失敗：", error);
+    reviewsError.value = error.message || "目前無法載入商品評價。";
+  } finally {
+    reviewsLoading.value = false;
+  }
+}
+
+async function submitReview() {
+  if (!isLoggedIn.value) return;
+
+  const productId = normalizeProductId(product.value?.productId);
+  if (productId === null || submittingReview.value) return;
+
+  reviewMessage.value = "";
+  if (!reviewRating.value) {
+    reviewMessage.value = "請先選擇 1 到 5 星評分。";
+    reviewMessageType.value = "error";
+    return;
+  }
+  if (!reviewComment.value.trim()) {
+    reviewMessage.value = "請輸入評論內容。";
+    reviewMessageType.value = "error";
+    return;
+  }
+
+  submittingReview.value = true;
+  try {
+    const response = await fetch(`${PRODUCT_API}/${productId}/reviews`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        rating: reviewRating.value,
+        comment: reviewComment.value.trim(),
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || "評價送出失敗，請稍後再試。");
+    }
+
+    const wasUpdate = Boolean(ownReview.value);
+    await loadReviews();
+    resetReviewForm();
+    reviewMessage.value = wasUpdate ? "評價已更新。" : "謝謝你的評價！";
+    reviewMessageType.value = "success";
+  } catch (error) {
+    console.error("商品評價送出失敗：", error);
+    reviewMessage.value = error.message || "評價送出失敗，請稍後再試。";
+    reviewMessageType.value = "error";
+  } finally {
+    submittingReview.value = false;
+  }
+}
+
+async function deleteReview(review) {
+  const productId = normalizeProductId(product.value?.productId);
+  if (productId === null || !canDeleteReview(review) || deletingReviewId.value !== null) return;
+
+  const confirmed = window.confirm(
+    `確定要刪除「${review.memberName}」的這則評論嗎？此操作無法復原。`,
+  );
+  if (!confirmed) return;
+
+  closeReviewMenu();
+  deletingReviewId.value = review.reviewId;
+  reviewListMessage.value = "";
+
+  try {
+    const response = await fetch(
+      `${PRODUCT_API}/${productId}/reviews/${review.reviewId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+    );
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || "評論刪除失敗，請稍後再試。");
+    }
+
+    reviews.value = reviews.value.filter(
+      (item) => item.reviewId !== review.reviewId,
+    );
+    if (review.ownReview) {
+      resetReviewForm();
+    }
+    reviewListMessage.value = "評論已刪除。";
+    reviewListMessageType.value = "success";
+  } catch (error) {
+    console.error("商品評論刪除失敗：", error);
+    reviewListMessage.value = error.message || "評論刪除失敗，請稍後再試。";
+    reviewListMessageType.value = "error";
+  } finally {
+    deletingReviewId.value = null;
+  }
+}
+
+async function startEditReview(review) {
+  if (!review?.ownReview) return;
+
+  editingReviewId.value = review.reviewId;
+  reviewRating.value = Number(review.rating);
+  hoveredRating.value = 0;
+  reviewComment.value = review.comment || "";
+  reviewMessage.value = "";
+  closeReviewMenu();
+
+  await nextTick();
+  reviewForm.value?.scrollIntoView({ behavior: "smooth", block: "center" });
+  reviewCommentInput.value?.focus({ preventScroll: true });
+}
+
+function cancelEditReview() {
+  resetReviewForm();
+  reviewMessage.value = "";
+}
+
+function resetReviewForm() {
+  editingReviewId.value = null;
+  reviewRating.value = 0;
+  hoveredRating.value = 0;
+  reviewComment.value = "";
+}
+
+function toggleReviewMenu(reviewId) {
+  openReviewMenuId.value = openReviewMenuId.value === reviewId ? null : reviewId;
+}
+
+function closeReviewMenu() {
+  openReviewMenuId.value = null;
+}
+
+function handleDocumentPointerDown(event) {
+  if (!event.target.closest?.(".review-menu")) {
+    closeReviewMenu();
+  }
+}
+
+function canDeleteReview(review) {
+  return canManageReviews.value || Boolean(review?.ownReview);
+}
+
+function getMemberInitial(memberName) {
+  return String(memberName || "會員").trim().charAt(0).toUpperCase();
+}
+
+function formatReviewDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("zh-TW", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
 }
 
 async function loadRelatedProducts() {
@@ -595,6 +1046,8 @@ function handleImageError(event) {
 }
 
 function handleToggleWishlist() {
+  if (!isLoggedIn.value) return;
+
   const id = normalizeProductId(product.value?.productId);
   if (id === null) return;
 
@@ -622,6 +1075,11 @@ function showPurchaseMessage(message, type = "success") {
 }
 
 function addToCart() {
+  if (!isLoggedIn.value) {
+    showPurchaseMessage("請先登入會員後再加入購物車。", "error");
+    return;
+  }
+
   if (!product.value || !canBuy.value) {
     showPurchaseMessage("此商品目前無法購買。", "error");
     return;
@@ -690,9 +1148,14 @@ function formatPrice(price) {
 
 watch(() => route.params.id, loadProduct, { immediate: true });
 
+onMounted(() => {
+  document.addEventListener("pointerdown", handleDocumentPointerDown);
+});
+
 onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", handleDocumentPointerDown);
   document.title = originalDocumentTitle;
 });
 </script>
 
-<style scoped src="@/assets/product-detail.css"></style>
+<style scoped src="@/assets/product/product-detail.css"></style>

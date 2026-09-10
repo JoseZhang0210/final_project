@@ -365,7 +365,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .product-image {
@@ -375,7 +375,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 
@@ -443,6 +443,12 @@
   background: #fff5f6;
 
   color: #b74f5e;
+}
+
+.wishlist-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* =====================================================
@@ -856,7 +862,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .recent-product-image {
@@ -866,7 +872,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 
@@ -1029,7 +1035,7 @@
 
   overflow: hidden;
 
-  background: #eeeae4;
+  background: var(--product-image-background);
 }
 
 .recommend-image {
@@ -1039,7 +1045,7 @@
 
   display: block;
 
-  object-fit: contain;
+  object-fit: var(--product-image-fit);
 
   object-position: center;
 

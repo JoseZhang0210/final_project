@@ -1,4 +1,13 @@
 import axios from "axios";
+export async function getOccupiedDates(token, from, to) { // 占用資料不含私人活動或付款資訊。
+  return (await api.get("/rentals/occupied-dates", { ...authConfig(token), params: { from, to } })).data; // 只傳有限日期範圍。
+}
+export async function getRentalPayment(token, id) { // 讀取後端驗證過的歷史付款資訊。
+  return (await api.get(`/rental-payments/rentals/${id}`, authConfig(token))).data; // 金額不從場地目前價格回推。
+}
+export async function checkoutRental(token, id) { // 付款請求只傳租借編號。
+  return (await api.post(`/rental-payments/rentals/${id}/checkout`, null, authConfig(token))).data; // 會員與金額均由後端決定。
+}
 
 const api = axios.create({
   baseURL: "/api",
@@ -83,6 +92,20 @@ export async function createRental(token, payload) {
   return response.data;
 }
 
+
+/*
+ * 目前登入會員取消自己的場地預約。
+ * 取消只改 Rental 狀態，不刪除歷史紀錄。
+ */
+export async function cancelMyRental(token, id) {
+  const response = await api.post(
+    `/rentals/${id}/cancel`,
+    null,
+    authConfig(token),
+  );
+
+  return response.data;
+}
 export async function updateRental(token, id, payload) {
   const response = await api.put(
     `/rentals/${id}`,
@@ -100,6 +123,31 @@ export async function deleteRental(token, id) {
   return response.data;
 }
 
+
+/*
+ * 從使用者電腦選擇圖片並上傳到場地。
+ * FormData 交給瀏覽器自動設定 multipart boundary。
+ */
+export async function uploadVenueImage(
+  token,
+  id,
+  file,
+) {
+  const formData = new FormData();
+
+  formData.append(
+    "file",
+    file,
+  );
+
+  const response = await api.post(
+    `/venues/${id}/upload-image`,
+    formData,
+    authConfig(token),
+  );
+
+  return response.data;
+}
 export function getApiErrorMessage(error) {
   const data = error?.response?.data;
 

@@ -1,5 +1,6 @@
 import "./assets/hotel-common.css";
 import "./assets/admin.css";
+import "./assets/product/product-common.css";
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";

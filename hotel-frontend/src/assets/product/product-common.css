@@ -1,0 +1,86 @@
+/* =========================================================
+   Product views - shared foundation
+   僅套用於帶有 .product-view 的商品相關頁面
+   ========================================================= */
+
+.product-view {
+  --product-ink: #40382f;
+  --product-muted: #756b60;
+  --product-gold: #b58a46;
+  --product-gold-dark: #8f692f;
+  --product-line: #e3ddd4;
+  --product-surface: #ffffff;
+  --product-soft-surface: #faf8f4;
+  --product-danger: #a13f2f;
+  --product-danger-bg: #fff1ee;
+  --product-focus-ring: rgba(181, 138, 70, 0.28);
+  --product-shadow-sm: 0 5px 15px rgba(0, 0, 0, 0.08);
+  --product-transition-fast: 180ms ease;
+  --product-image-fit: contain;
+  --product-image-background: #f2eee7;
+  width: 100%;
+}
+
+.product-view,
+.product-view *,
+.product-view *::before,
+.product-view *::after {
+  box-sizing: border-box;
+}
+
+.product-view button,
+.product-view input,
+.product-view select,
+.product-view textarea {
+  font-family: inherit;
+}
+
+.product-view img {
+  max-width: 100%;
+  object-position: center;
+}
+
+.product-view button:disabled,
+.product-view input:disabled,
+.product-view select:disabled,
+.product-view textarea:disabled,
+.product-view [aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.product-view .admin-btn:disabled {
+  opacity: 0.65;
+  transform: none;
+}
+
+.product-view button:focus-visible,
+.product-view a:focus-visible,
+.product-view input:focus-visible,
+.product-view select:focus-visible,
+.product-view textarea:focus-visible {
+  outline: 3px solid var(--product-focus-ring);
+  outline-offset: 3px;
+}
+
+.product-view .product-visually-hidden,
+.product-view .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-view *,
+  .product-view *::before,
+  .product-view *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

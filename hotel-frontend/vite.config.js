@@ -20,6 +20,11 @@ export default defineConfig({
       "/api":{
         target:"http://localhost:8081",
         changeOrigin:true
+      },
+      // 開發環境中，商品與房型圖片由 Spring Boot 的 uploads 目錄提供
+      "/uploads":{
+        target:"http://localhost:8081",
+        changeOrigin:true
       }
     }
   },

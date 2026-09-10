@@ -491,7 +491,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="product-form-page product-edit-page">
+  <div class="product-view product-form-page product-edit-page">
     <!-- =========================
          Header
          ========================= -->
@@ -723,4 +723,4 @@ onBeforeUnmount(() => {
   </div>
 </template>
 
-<style scoped src="@/assets/product-form.css"></style>
+<style scoped src="@/assets/product/product-form.css"></style>

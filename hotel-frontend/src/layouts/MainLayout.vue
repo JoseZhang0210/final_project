@@ -44,6 +44,8 @@ const isAdminOrEmployee = computed(() => {
         <RouterLink to="/cart">
           購物車 <span v-if="cartCount > 0"> ({{ cartCount }})</span>
         </RouterLink>
+        <!-- 場地租借：進入場地租借申請頁面。 -->
+        <RouterLink to="/rentals"> 場地租借 </RouterLink>
 
         <!-- 未登入狀態 -->
         <template v-if="!isLoggedIn">
@@ -66,12 +68,12 @@ const isAdminOrEmployee = computed(() => {
 
             <div class="dropdown-divider"></div>
 
-            <RouterLink to="/member" class="dropdown-item">
+            <RouterLink v-if="!isAdminOrEmployee" to="/member" class="dropdown-item">
               <span class="dropdown-icon">👤</span>
               <span>會員中心</span>
             </RouterLink>
 
-            <RouterLink to="/member/orders" class="dropdown-item">
+            <RouterLink v-if="!isAdminOrEmployee" to="/member/orders" class="dropdown-item">
               <span class="dropdown-icon">📦</span>
               <span>我的訂單</span>
             </RouterLink>
@@ -116,7 +118,8 @@ header {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
 
