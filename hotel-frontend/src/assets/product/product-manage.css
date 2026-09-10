@@ -37,6 +37,24 @@
   transform: none;
 }
 
+.product-manage-page .product-demo-button {
+  border-color: #c9aa77;
+  background-color: #f5ead7;
+  color: #6f4d1f;
+}
+
+.product-manage-page .product-demo-button:hover:not(:disabled) {
+  border-color: #a97b35;
+  background-color: #ead7b7;
+  color: #563913;
+}
+
+.product-manage-page .admin-message.warning {
+  border: 1px solid #e3c98f;
+  background-color: #fff6df;
+  color: #7a520b;
+}
+
 .product-manage-page .product-import-input {
   position: absolute;
   width: 1px;

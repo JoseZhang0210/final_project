@@ -53,7 +53,7 @@ public class Product {
     @PrePersist
     @PreUpdate
     public void synchronizeStockStatus() {
-        if (stock != null && stock <= 0) {
+        if (stock != null && stock <= 0 && !"DISCONTINUED".equals(status)) {
             status = "OUT_OF_STOCK";
         }
     }
