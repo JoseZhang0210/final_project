@@ -50,7 +50,7 @@ public class MailUtil {
          * 萬用非同步發信方法
          * 支援純文字、HTML、以及多個附件
          */
-        @Async("mailTaskExecutor") // 指定使用自訂的執行緒池，若無設定可直接寫 @Async
+        @Async // 指定使用自訂的執行緒池，若無設定可直接寫 @Async
         public void sendEmail(EmailDTO emailDto) {
                 log.info("開始背景發送郵件，目標: {}, 主旨: {}", emailDto.getTo(), emailDto.getSubject());
 
@@ -89,7 +89,7 @@ public class MailUtil {
          * @param orderId  訂單編號
          * @param memberId 會員編號
          */
-        @Async("mailTaskExecutor")
+        @Async
         public void sendOrderConfirmation(Integer orderId, Integer memberId) {
                 // 1. 取得會員 Email
                 String toEmail = profileRepository.findByAccountId(
