@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -38,5 +39,14 @@ public class ReservationService {
 
 	public void deleteById(Integer id) {
 		reservationRepository.deleteById(id);
+	}
+
+	public Long sumPeopleByRestaurantAndTime(
+			Integer restaurantId,
+			Integer timeId,
+			LocalDate reservationDate) {
+
+		return reservationRepository.sumPeopleByRestaurantAndTime(
+				restaurantId, timeId, reservationDate);
 	}
 }

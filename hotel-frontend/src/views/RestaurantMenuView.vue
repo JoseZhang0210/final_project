@@ -46,7 +46,7 @@ const restaurants = [
         <p class="eyebrow">DINING AT XINGCHENG HOTEL</p>
         <h1>品味每一段美好時光</h1>
         <p>
-          從豐盛自助餐、精緻西式料理，到浪漫義式餐點與夜晚駐唱酒吧，
+          從豐盛自助餐、精緻西式料理，到浪漫義式餐點與夜晚駐唱酒吧，<br />
           星澄飯店為您準備不同風味的用餐體驗。
         </p>
 
@@ -108,7 +108,9 @@ const restaurants = [
   min-height: 520px;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 60px 10%;
+  text-align: center;
   background:
     linear-gradient(90deg, rgba(30, 24, 18, 0.76), rgba(30, 24, 18, 0.22)),
     url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=90") center / cover;
@@ -135,11 +137,11 @@ const restaurants = [
 }
 
 .hero-content>p:not(.eyebrow) {
-  max-width: 560px;
-  margin: 22px 0 32px;
+  max-width: 800px;
+  margin: 22px auto 32px;
   color: #f3ece3;
   font-size: 17px;
-  line-height: 1.9;
+  line-height: 2;
 }
 
 .hero-button {
