@@ -2,11 +2,10 @@
   <div class="login-page">
     <div class="login-container">
       <div class="login-card">
-        <div class="hotel-name">星澄飯店</div>
 
         <h1>會員登入</h1>
 
-        <p class="subtitle">登入您的會員帳號， 使用星澄飯店商城與會員服務。</p>
+        <p class="subtitle">登入您的會員帳號， 享受會員服務。</p>
 
         <form @submit.prevent="login">
           <div class="form-group">
@@ -23,10 +22,7 @@
           </div>
 
           <div class="form-group">
-            <div class="label-row">
-              <label for="password"> 密碼 </label>
-              <RouterLink to="/forgot-password" class="forgot-link"> 忘記密碼？ </RouterLink>
-            </div>
+            <label for="password"> 密碼 </label>
 
             <input
               id="password"
@@ -48,9 +44,10 @@
         </form>
 
         <div class="link-area">
-          還沒有會員帳號？
-
+          <span>還沒有會員帳號？</span>
           <RouterLink to="/register"> 立即註冊 </RouterLink>
+          <span class="divider">|</span>
+          <RouterLink to="/forgot-password"> 忘記密碼？ </RouterLink>
         </div>
 
         <div class="home-link">
@@ -310,32 +307,12 @@ h1 {
   margin-bottom: 20px;
 }
 
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
 label {
   display: block;
-  margin-bottom: 0;
+  margin-bottom: 8px;
   color: #554536;
   font-size: 14px;
   font-weight: bold;
-}
-
-.forgot-link {
-  font-size: 12.5px;
-  color: #9b7435;
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.forgot-link:hover {
-  color: #6e542c;
-  text-decoration: underline;
 }
 
 input {
@@ -430,6 +407,12 @@ input:focus {
 
 .link-area a:hover {
   text-decoration: underline;
+}
+
+.link-area .divider {
+  margin: 0 8px;
+
+  color: #ccc;
 }
 
 .home-link {

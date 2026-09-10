@@ -27,6 +27,7 @@ import ProductDetailView from "../views/ProductDetailView.vue";
 import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
+import AdminRentalView from "../views/AdminRentalView.vue"; // 後台獨立使用既有租借管理功能。
 import VenueView from "../views/VenueView.vue";
 //---------------------------------------------------
 import AdminRoomTypeView from "../views/AdminRoomTypeView.vue";
@@ -46,6 +47,7 @@ import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 //--------------- 會員中心 -----------------
 import MemberLayout from "../layouts/MemberLayout.vue";
 import MemberProfileView from "../views/MemberProfileView.vue";
+import MemberPasswordView from "../views/MemberPasswordView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
 
 const router = createRouter({
@@ -153,7 +155,7 @@ const router = createRouter({
         {
           path: "rental",
           name: "admin-rental",
-          component: RentalView,
+          component: AdminRentalView, // 管理列表不再進入會員專用元件。
         },
       ],
     },
@@ -282,10 +284,20 @@ const router = createRouter({
               component: MemberProfileView,
             },
             {
+              path: "password",
+              name: "member-password",
+              component: MemberPasswordView,
+            },
+            {
               path: "orders",
               name: "member-orders",
               component: MyOrdersView,
             },
+            { // 新增會員專屬場地預約入口。
+              path: "rentals", // 完整網址為 /member/rentals。
+              name: "member-rentals", // 提供場地頁面辨識會員模式。
+              component: RentalView, // 重用場地頁面並由後端限制本人資料。
+            }, // 結束場地預約路由。
           ],
         },
       ],

@@ -30,6 +30,13 @@ public class RentalController {
 
     private final RentalService rentalService;
 
+    /** 將租借存取例外轉為原始 HTTP 狀態。 */
+    @org.springframework.web.bind.annotation.ExceptionHandler(org.springframework.web.server.ResponseStatusException.class) // 避免共用例外處理把權限錯誤改成伺服器錯誤。
+    public ResponseEntity<?> accessError(org.springframework.web.server.ResponseStatusException exception) { // 僅處理本控制器的權限與不存在結果。
+        return ResponseEntity.status(exception.getStatusCode()).body(Map.of("message", exception.getReason() == null ? "租借存取失敗" : exception.getReason())); // 保留指定的四零三或四零四。
+    }
+
+    /** 建立使用指定租借服務的控制器。 */
     public RentalController(RentalService rentalService) {
         this.rentalService = rentalService;
     }
@@ -41,7 +48,8 @@ public class RentalController {
     @GetMapping
     public ResponseEntity<List<Rental>> findAll(
             @RequestParam(required = false)
-            Integer venueId) {
+            Integer venueId, Authentication authentication) { // 管理列表需讀取登入權限。
+        RentalService.requireManager(authentication); // 一般會員不能取得全部資料。
 
         if (venueId != null) {
             return ResponseEntity.ok(
@@ -71,14 +79,11 @@ public class RentalController {
         }
     }
 
+    /** 依權限取得單筆租借。 */
     @GetMapping("/{id}")
     public ResponseEntity<Rental> findById(
-            @PathVariable Integer id) {
-
-        return rentalService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElseGet(() ->
-                        ResponseEntity.notFound().build());
+            @PathVariable Integer id, Authentication authentication) { // 取得身分供單筆所有權驗證。
+        return ResponseEntity.ok(rentalService.findAccessible(id, authentication)); // 由服務層拒絕非本人與不存在資料。
     }
 
     /**
@@ -120,10 +125,43 @@ public class RentalController {
     /**
      * 保留管理端完整修改功能。
      */
+
+    /**
+     * 會員取消自己的場地預約。
+     *
+     * 不使用 DELETE，避免刪除租借及付款歷史。
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelMine(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        try {
+            Rental cancelled =
+                    rentalService.cancelForCurrentUser(
+                            id,
+                            authentication.getName());
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "message",
+                            "預約已取消",
+                            "rental",
+                            cancelled));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            e.getMessage()));
+        }
+    }
+    /** 由管理員更新指定租借。 */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody Rental rental) {
+            @RequestBody Rental rental, Authentication authentication) { // 更新只允許管理員。
+        RentalService.requireManager(authentication); // 先驗證權限再查詢資料。
 
         if (rentalService.findById(id).isEmpty()) {
             return ResponseEntity
@@ -154,9 +192,21 @@ public class RentalController {
         }
     }
 
+    /** 查詢指定日期範圍內的場地占用日期。 */
+    @GetMapping("/occupied-dates") // 提供不含私人欄位的占用日期。
+    public ResponseEntity<?> occupied(@RequestParam(required = false) Integer venueId, @RequestParam java.time.LocalDate from, @RequestParam java.time.LocalDate to) { // 日期範圍由服務層限制。
+        try { // 將輸入錯誤轉成明確回應。
+            return ResponseEntity.ok(rentalService.occupied(venueId, from, to)); // 回傳最小占用資料。
+        } catch (IllegalArgumentException exception) { // 不將錯誤日期視為伺服器故障。
+            return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage())); // 提示使用者修正日期。
+        }
+    }
+
+    /** 由管理員刪除指定租借紀錄。 */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
-            @PathVariable Integer id) {
+            @PathVariable Integer id, Authentication authentication) { // 刪除需驗證管理權限。
+        RentalService.requireManager(authentication); // 會員不能刪除任何租借。
 
         if (!rentalService.deleteById(id)) {
             return ResponseEntity
