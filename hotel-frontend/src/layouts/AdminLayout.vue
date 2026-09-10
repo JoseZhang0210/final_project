@@ -96,7 +96,31 @@
           <h2>星澄飯店管理系統</h2>
         </div>
 
-        <div class="admin-user">管理員</div>
+        <div class="admin-header-actions">
+          <div class="admin-user">管理員</div>
+
+          <RouterLink
+            v-if="route.name === 'dashboard'"
+            to="/"
+            class="admin-home-button"
+          >
+            <svg
+              class="admin-home-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m3 11 9-8 9 8" />
+              <path d="M5 10v10h14V10" />
+              <path d="M9 20v-6h6v6" />
+            </svg>
+            <span>回首頁</span>
+          </RouterLink>
+        </div>
       </header>
 
       <!-- 子頁面 -->
@@ -109,6 +133,9 @@
 
 <script setup>
 import { ref } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
 
 /*
  * 控制餐廳管理選單展開 / 收合
@@ -120,4 +147,67 @@ const restaurantOpen = ref(true);
 const roombookingOpen = ref(true);
 </script>
 
-<style></style>
+<style scoped>
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.admin-home-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 17px;
+  box-sizing: border-box;
+  border: 1px solid #9f763b;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #a98043 0%, #87612e 100%);
+  box-shadow: 0 4px 12px rgba(111, 83, 40, 0.2);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-home-button:hover {
+  border-color: #795421;
+  background: linear-gradient(135deg, #b68d4d 0%, #76501f 100%);
+  box-shadow: 0 6px 16px rgba(111, 83, 40, 0.3);
+}
+
+.admin-home-button:active {
+  background: #76501f;
+  box-shadow: 0 2px 7px rgba(111, 83, 40, 0.25);
+}
+
+.admin-home-button:focus-visible {
+  outline: 3px solid rgba(181, 138, 70, 0.35);
+  outline-offset: 3px;
+}
+
+.admin-home-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .admin-header-actions {
+    gap: 8px;
+  }
+
+  .admin-home-button {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+}
+</style>
