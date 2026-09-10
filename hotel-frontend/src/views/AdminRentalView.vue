@@ -1,10 +1,11 @@
 <script setup>
 // 移植 ab025d7 的管理表單、列表與編輯刪除流程，沿用目前既有登入。
 import { computed, onMounted, ref } from 'vue'; // 使用既有響應式狀態。
-import { getStoredToken, getRentals, getVenues, createAdminRental, updateRental, deleteRental, getApiErrorMessage } from '../api/venueRentalApi'; // 僅使用既有管理 API。
+import { getStoredToken, getRentals, getVenues, getMembers, createAdminRental, updateRental, deleteRental, getApiErrorMessage } from '../api/venueRentalApi'; // 僅使用既有管理 API。
 const token = ref(getStoredToken()); // 不建立新的登入流程。
 const rentals = ref([]); // 保存全部租借，不查詢會員專用端點。
 const venues = ref([]); // 場地名稱由既有場地 API 取得。
+const memberNames = ref({}); // 依會員 ID 保存會員姓名，不修改會員模組。
 const loading = ref(false); // 避免重複提交管理操作。
 const message = ref(''); // 顯示操作結果。
 const errorMessage = ref(''); // 保留後端權限及付款保護錯誤。
@@ -14,10 +15,64 @@ const createMode = ref(false); // 管理員新增租借。
 const form = ref({}); // 編輯時複製完整租借欄位。
 const rentalStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']; // 沿用既有租借狀態。
 const venueName = id => venues.value.find(v => Number(v.venueId) === Number(id))?.venueName || `場地 ${id}`; // 缺少場地時仍保留原編號。
+/*
+ * 後台列表同時顯示會員姓名與會員 ID。
+ */
+function memberName(id) {
+
+  const memberId = Number(id);
+
+  if (!Number.isInteger(memberId) || memberId <= 0) {
+    return '會員資料未知';
+  }
+
+  const name = memberNames.value[memberId];
+
+  if (!name) {
+    return `會員 ID ${memberId}`;
+  }
+
+  return `${name}（ID ${memberId}）`;
+}
+
+/*
+ * 新增與編輯表單依會員 ID 顯示姓名。
+ */
+function formMemberName(id) {
+
+  const memberId = Number(id);
+
+  if (!Number.isInteger(memberId) || memberId <= 0) {
+    return '';
+  }
+
+  return memberNames.value[memberId]
+    || '查無此會員';
+}
 onMounted(refreshRentals); // 管理員進頁即載入全部租借。
 async function loadRentalData() { // 沿用舊版管理資料重新載入入口。
-  const [all, places] = await Promise.all([getRentals(token.value), getVenues(token.value)]); // 不要求管理員具有 Member 關聯。
-  rentals.value = all ?? []; venues.value = places ?? []; // 同步更新表格與場地名稱。
+  // 租借、場地與會員資料並行載入。
+  const [all, places, members] = await Promise.all([
+    getRentals(token.value),
+    getVenues(token.value),
+    getMembers(token.value),
+  ]);
+
+  rentals.value = all ?? [];
+  venues.value = places ?? [];
+
+  // 建立 memberId -> 姓名對照表。
+  memberNames.value = Object.fromEntries(
+    (members ?? [])
+      .filter(member =>
+        Number.isInteger(Number(member.memberId)),
+      )
+      .map(member => [
+        Number(member.memberId),
+        String(member.name || '').trim()
+          || '未設定姓名',
+      ]),
+  );
 } // 結束管理資料載入。
 async function refreshRentals() { // 恢復重新整理功能。
   if (!token.value) { errorMessage.value = '請先使用網站登入'; return; } // 不在管理畫面重做登入。
@@ -282,6 +337,13 @@ function rentalStatusLabel(status) {
             :readonly="editMode"
             :disabled="loading"
           >
+
+          <span
+            v-if="form.memberId"
+            class="description"
+          >
+            會員姓名：{{ formMemberName(form.memberId) }}
+          </span>
         </label>
 
         <label>
@@ -424,7 +486,7 @@ function rentalStatusLabel(status) {
 
               <td>{{ rental.rentalId }}</td>
               <td>{{ venueName(rental.venueId) }}</td>
-              <td>{{ rental.memberId }}</td>
+              <td>{{ memberName(rental.memberId) }}</td>
               <td>{{ rental.eventName }}</td>
               <td>{{ formatDateTime(rental.rentalDate) }}</td>
               <td>{{ rental.guestCount }}</td>

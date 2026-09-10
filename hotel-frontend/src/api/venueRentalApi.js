@@ -33,6 +33,18 @@ export function getStoredAuthorities() {
   }
 }
 
+/*
+ * 後台場地租借取得既有會員資料，
+ * 僅用於依 memberId 顯示會員姓名。
+ */
+export async function getMembers(token) {
+  const response = await api.get(
+    "/members",
+    authConfig(token),
+  );
+
+  return response.data;
+}
 export async function getVenues(token) {
   const response = await api.get(
     "/venues",
