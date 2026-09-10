@@ -2,11 +2,10 @@
   <div class="login-page">
     <div class="login-container">
       <div class="login-card">
-        <div class="hotel-name">星澄飯店</div>
 
         <h1>會員登入</h1>
 
-        <p class="subtitle">登入您的會員帳號， 使用星澄飯店商城與會員服務。</p>
+        <p class="subtitle">登入您的會員帳號， 享受會員服務。</p>
 
         <form @submit.prevent="login">
           <div class="form-group">
