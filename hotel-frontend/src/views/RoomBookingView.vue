@@ -22,53 +22,77 @@
         <h1 class="title">星澄飯店</h1>
         <p class="description">將飯店的舒適與質感帶回家，為生活增添美好體驗。</p>
       </div>
-    </div>
 
-    <!-- Booking Search Bar (Fairmont Style) -->
-    <div class="search-bar-wrapper">
-      <div class="search-bar">
-        
-        <div class="search-field">
-          <span class="icon">📍</span>
-          <div class="field-content">
-            <label>Where to?</label>
-            <input type="text" value="星澄飯店" readonly class="readonly-input" />
-          </div>
-        </div>
-        
-        <div class="search-field dates-field">
-          <span class="icon">📅</span>
-          <div class="field-content">
-            <label>What are your dates?</label>
-            <div class="date-inputs">
-              <VueDatePicker 
-                v-model="dateRange" 
-                range 
-                multi-calendars 
-                :max-range="30" 
-                :min-date="today" 
-                :enable-time-picker="false"
-                dark
-                hide-input-icon
-                placeholder="Select dates"
-              />
+      <!-- Booking Search Bar (Fairmont Style) -->
+      <div class="search-bar-wrapper">
+        <div class="search-bar">
+          
+          <div class="search-field">
+            <span class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            </span>
+            <div class="field-content">
+              <label>Where to?</label>
+              <input type="text" value="星澄飯店" readonly class="readonly-input" />
             </div>
           </div>
-        </div>
-        
-        <div class="search-field">
-          <span class="icon">🛏️</span>
-          <div class="field-content">
-            <label>Rooms & Guests</label>
-            <select v-model="searchData.guests">
-              <option v-for="n in 4" :key="n" :value="n">1 Room - {{ n }} Guest(s)</option>
-            </select>
+          
+          <div class="search-field dates-field">
+            <span class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </span>
+            <div class="field-content">
+              <label>What are your dates?</label>
+              <div class="date-inputs">
+                <VueDatePicker 
+                  ref="datePickerRef"
+                  v-model="dateRange" 
+                  :range="{ minRange: 1, maxRange: 30 }"
+                  multi-calendars 
+                  :min-date="today" 
+                  :enable-time-picker="false"
+                  format="yyyy/MM/dd"
+                  dark
+                  hide-input-icon
+                  placeholder="Select dates"
+                  @internal-model-change="handleInternalModelChange"
+                >
+                  <template #action-row="{ modelValue, closePicker }">
+                    <div class="custom-action-row">
+                      <button class="action-btn clear-btn" @click="dateRange = null; closePicker()">Clear</button>
+                      <div class="action-right">
+                        <span class="nights-text" v-if="modelValue && modelValue[0] && modelValue[1]">
+                          {{ calculateNights(modelValue) }} NIGHTS
+                        </span>
+                      </div>
+                    </div>
+                  </template>
+                </VueDatePicker>
+              </div>
+            </div>
           </div>
+          
+          <div class="search-field">
+            <span class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+            </span>
+            <div class="field-content">
+              <label>Rooms & Guests</label>
+              <select v-model="searchData.guests">
+                <option v-for="n in 4" :key="n" :value="n">1 Room - {{ n }} Guest(s)</option>
+              </select>
+            </div>
+          </div>
+          
+          <button class="btn-check-rates" @click="handleSearch">
+            CHECK RATES
+          </button>
         </div>
         
-        <button class="btn-check-rates" @click="handleSearch">
-          CHECK RATES
-        </button>
+        <!-- Fairmont style footer text -->
+        <div class="search-footer">
+          <!-- Special Rates & Accessibility <span class="arrow-down">▼</span> -->
+        </div>
       </div>
     </div>
   </div>
@@ -88,15 +112,44 @@ const authStore = useAuthStore();
 const now = new Date();
 const offset = now.getTimezoneOffset() * 60000;
 const localNow = new Date(now.getTime() - offset);
+localNow.setHours(0, 0, 0, 0); // Strip time
 const today = localNow;
 
 const tomorrowDate = new Date(localNow.getTime() + 86400000);
+tomorrowDate.setHours(0, 0, 0, 0); // Strip time
 
 const dateRange = ref([today, tomorrowDate]);
 
 const searchData = ref({
   guests: 1
 });
+
+const datePickerRef = ref(null);
+const isSelecting = ref(false);
+
+function calculateNights(range) {
+  if (!range || !range[0] || !range[1]) return 0;
+  const diffTime = Math.abs(range[1] - range[0]);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function handleInternalModelChange(val) {
+  if (val && val[0] && !val[1]) {
+    isSelecting.value = true;
+  }
+  
+  if (val && val[0] && val[1]) {
+    if (isSelecting.value) {
+      isSelecting.value = false;
+      // 延遲 800 毫秒，讓使用者有足夠時間看到右下角顯示的入住天數
+      setTimeout(() => {
+        if (datePickerRef.value) {
+          datePickerRef.value.selectDate();
+        }
+      }, 800);
+    }
+  }
+}
 
 function handleSearch() {
   if (!authStore.isLoggedIn) {
@@ -242,8 +295,10 @@ function handleSearch() {
   flex-direction: column;
   align-items: center;
   z-index: 10;
-  background: linear-gradient(to right, rgba(60, 60, 60, 0.95), rgba(80, 80, 80, 0.95));
-  padding: 1.5rem 0 1rem 0;
+  background: rgba(22, 22, 22, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 2.5rem 0 1rem 0;
 }
 
 .search-bar {
@@ -260,14 +315,19 @@ function handleSearch() {
   align-items: flex-start;
   padding: 0 1.5rem;
   color: #fff;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.search-field:nth-child(3) {
+  border-right: none;
 }
 
 .search-field .icon {
-  font-size: 1.2rem;
   margin-right: 1rem;
-  margin-top: 0.2rem;
-  opacity: 0.8;
-  filter: grayscale(1) brightness(2);
+  margin-top: 0.1rem;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
 }
 
 .field-content {
@@ -277,10 +337,12 @@ function handleSearch() {
 }
 
 .search-field label {
-  color: #ccc;
-  font-size: 0.8rem;
-  margin-bottom: 0.3rem;
-  font-weight: 400;
+  color: #999;
+  font-size: 0.75rem;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .search-field input,
@@ -328,6 +390,11 @@ function handleSearch() {
 :deep(.dp__main) {
   width: 100%;
 }
+/* 隱藏時間選擇的時鐘按鈕與預覽文字 */
+:deep([data-test-id="open-time-picker-btn"]),
+:deep(.dp__selection_preview) {
+  display: none !important;
+}
 
 .search-field select option {
   background: #444;
@@ -352,7 +419,65 @@ function handleSearch() {
   background: #f0f0f0;
 }
 
+.search-footer {
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
 
+.search-footer:hover {
+  color: #FFFFFF;
+}
+
+.arrow-down {
+  font-size: 0.6rem;
+}
+
+.custom-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 20px;
+  background-color: transparent;
+  border-top: 1px solid #444;
+}
+
+.action-right {
+  display: flex;
+  align-items: center;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+}
+
+.clear-btn {
+  text-decoration: underline;
+  color: #fff;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.clear-btn:hover {
+  opacity: 0.7;
+}
+
+.nights-text {
+  font-size: 0.85rem;
+  color: #fff;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
 
 @media (max-width: 900px) {
   .search-bar {

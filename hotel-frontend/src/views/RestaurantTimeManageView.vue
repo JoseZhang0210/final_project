@@ -6,41 +6,30 @@ const TIME_API_URL = "/api/restaurant_times";
 
 const restaurants = ref([]);
 const times = ref([]);
-
 const formTitle = ref("新增時段");
-
 const message = ref("");
 const messageType = ref("");
-
 const loading = ref(false);
 const saving = ref(false);
+const form = ref(createEmptyForm());
 
-const form = ref({
-  timeId: null,
-  restaurantId: "",
-  mealType: "早餐",
-  openTime: "",
-  closeTime: "",
-});
+function createEmptyForm() {
+  return {
+    timeId: null,
+    restaurantId: "",
+    mealType: "早餐",
+    openTime: "",
+    closeTime: "",
+  };
+}
 
-// ==============================
-// 是否修改模式
-// ==============================
+// 判斷目前是新增或修改時段。
+const isEditing = computed(() => form.value.timeId !== null);
 
-const isEditing = computed(() => {
-  return form.value.timeId !== null;
-});
-
-// ==============================
-// JWT Header
-// ==============================
-
+// 呼叫後端時帶入登入 Token。
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
-
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = { "Content-Type": "application/json" };
 
   if (token) {
     headers.Authorization = "Bearer " + token;
@@ -49,46 +38,20 @@ function getAuthHeaders() {
   return headers;
 }
 
-// ==============================
-// 顯示訊息
-// ==============================
-
 function showMessage(text, type) {
   message.value = text;
   messageType.value = type;
 }
 
-// ==============================
-// 清除表單
-// ==============================
-
 function clearForm() {
-  form.value = {
-    timeId: null,
-    restaurantId: "",
-    mealType: "早餐",
-    openTime: "",
-    closeTime: "",
-  };
-
+  form.value = createEmptyForm();
   formTitle.value = "新增時段";
-
-  message.value = "";
-
-  messageType.value = "";
+  showMessage("", "");
 }
-
-// ==============================
-// 時間格式
-// ==============================
 
 function formatTime(time) {
   return time ? time.slice(0, 5) : "";
 }
-
-// ==============================
-// 取得餐廳名稱
-// ==============================
 
 function getRestaurantName(restaurantId) {
   const restaurant = restaurants.value.find(
@@ -98,19 +61,12 @@ function getRestaurantName(restaurantId) {
   return restaurant ? restaurant.restaurantName : "餐廳資料不存在";
 }
 
-// ==============================
-// 讀取餐廳
-// GET /api/restaurant
-// ==============================
-
 async function loadRestaurants() {
   try {
     const response = await fetch(RESTAURANT_API_URL, {
       method: "GET",
       headers: getAuthHeaders(),
     });
-
-    console.log("餐廳 API status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有餐廳資料權限", "error");
@@ -125,15 +81,9 @@ async function loadRestaurants() {
     restaurants.value = await response.json();
   } catch (error) {
     console.error(error);
-
     showMessage("讀取餐廳資料失敗", "error");
   }
 }
-
-// ==============================
-// 讀取時段
-// GET /api/restaurant_times
-// ==============================
 
 async function loadTimes() {
   loading.value = true;
@@ -143,8 +93,6 @@ async function loadTimes() {
       method: "GET",
       headers: getAuthHeaders(),
     });
-
-    console.log("時段 API status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有時段管理權限", "error");
@@ -157,46 +105,26 @@ async function loadTimes() {
     }
 
     times.value = await response.json();
-
-    console.log("時段資料：", times.value);
   } catch (error) {
     console.error(error);
-
     showMessage("讀取時段資料失敗", "error");
   } finally {
     loading.value = false;
   }
 }
 
-// ==============================
-// 編輯時段
-// ==============================
-
 function editTime(time) {
   form.value = {
     timeId: time.timeId,
-
     restaurantId: String(time.restaurantId),
-
     mealType: time.mealType ?? "早餐",
-
     openTime: formatTime(time.openTime),
-
     closeTime: formatTime(time.closeTime),
   };
 
   formTitle.value = "修改時段";
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
-
-// ==============================
-// 刪除時段
-// DELETE /api/restaurant_times/{id}
-// ==============================
 
 async function deleteTime(id) {
   if (!window.confirm("確定要刪除這個時段嗎？")) {
@@ -220,31 +148,19 @@ async function deleteTime(id) {
     }
 
     clearForm();
-
     showMessage("時段已刪除", "success");
-
     await loadTimes();
   } catch (error) {
     console.error(error);
-
     showMessage("刪除失敗", "error");
   }
 }
 
-// ==============================
-// 儲存時段
-// POST /api/restaurant_times
-// PUT  /api/restaurant_times/{id}
-// ==============================
-
 async function saveTime() {
   const restaurantTime = {
     restaurantId: Number(form.value.restaurantId),
-
     mealType: form.value.mealType,
-
     openTime: form.value.openTime,
-
     closeTime: form.value.closeTime,
   };
 
@@ -257,13 +173,9 @@ async function saveTime() {
 
     const response = await fetch(url, {
       method: isEditing.value ? "PUT" : "POST",
-
       headers: getAuthHeaders(),
-
       body: JSON.stringify(restaurantTime),
     });
-
-    console.log("儲存時段 status：", response.status);
 
     if (response.status === 401 || response.status === 403) {
       showMessage("登入狀態失效或沒有操作權限", "error");
@@ -276,28 +188,18 @@ async function saveTime() {
     }
 
     const successText = isEditing.value ? "修改成功" : "新增成功";
-
     clearForm();
-
     showMessage(successText, "success");
-
     await loadTimes();
   } catch (error) {
     console.error(error);
-
     showMessage("儲存失敗", "error");
   } finally {
     saving.value = false;
   }
 }
 
-// ==============================
-// 初始化
-// ==============================
-
 onMounted(async () => {
-  console.log("餐廳時段頁 JWT：", localStorage.getItem("token"));
-
   await loadRestaurants();
   await loadTimes();
 });
@@ -305,7 +207,6 @@ onMounted(async () => {
 
 <template>
   <div class="time-page">
-    <!-- 頁面標題 -->
     <div class="admin-page-header">
       <div>
         <h1>餐廳時段管理</h1>
@@ -314,10 +215,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- =========================
-         新增 / 修改時段
-         ========================= -->
-
     <section class="admin-card time-form-card">
       <h2>
         {{ formTitle }}
@@ -325,24 +222,19 @@ onMounted(async () => {
 
       <form @submit.prevent="saveTime">
         <div class="admin-form-grid">
-          <!-- 餐廳 -->
           <div class="admin-form-group">
             <label for="restaurantId"> 餐廳 * </label>
 
             <select id="restaurantId" v-model="form.restaurantId" required>
               <option value="">請選擇餐廳</option>
 
-              <option
-                v-for="restaurant in restaurants"
-                :key="restaurant.restaurantId"
-                :value="String(restaurant.restaurantId)"
-              >
+              <option v-for="restaurant in restaurants" :key="restaurant.restaurantId"
+                :value="String(restaurant.restaurantId)">
                 {{ restaurant.restaurantName }}
               </option>
             </select>
           </div>
 
-          <!-- 餐期 -->
           <div class="admin-form-group">
             <label for="mealType"> 餐期 * </label>
 
@@ -357,73 +249,46 @@ onMounted(async () => {
             </select>
           </div>
 
-          <!-- 開始時間 -->
           <div class="admin-form-group">
             <label for="openTime"> 開始時間 * </label>
 
             <input id="openTime" v-model="form.openTime" type="time" required />
           </div>
 
-          <!-- 結束時間 -->
           <div class="admin-form-group">
             <label for="closeTime"> 結束時間 * </label>
 
-            <input
-              id="closeTime"
-              v-model="form.closeTime"
-              type="time"
-              required
-            />
+            <input id="closeTime" v-model="form.closeTime" type="time" required />
           </div>
         </div>
 
-        <!-- 按鈕 -->
         <div class="admin-form-actions">
-          <button
-            type="submit"
-            class="admin-btn admin-btn-primary"
-            :disabled="saving"
-          >
+          <button type="submit" class="admin-btn admin-btn-primary" :disabled="saving">
             {{ saving ? "儲存中..." : "儲存" }}
           </button>
 
-          <button
-            type="button"
-            class="admin-btn admin-btn-secondary"
-            @click="clearForm"
-          >
+          <button type="button" class="admin-btn admin-btn-secondary" @click="clearForm">
             清除
           </button>
         </div>
 
-        <!-- 訊息 -->
         <div v-if="message" class="admin-message" :class="messageType">
           {{ message }}
         </div>
       </form>
     </section>
 
-    <!-- =========================
-         時段列表
-         ========================= -->
-
     <section class="admin-card">
       <div class="time-list-header">
         <h2>時段列表</h2>
 
-        <button
-          type="button"
-          class="admin-btn admin-btn-secondary"
-          @click="loadTimes"
-        >
+        <button type="button" class="admin-btn admin-btn-secondary" @click="loadTimes">
           重新整理
         </button>
       </div>
 
-      <!-- Loading -->
       <div v-if="loading" class="loading-message">時段資料讀取中...</div>
 
-      <!-- Table -->
       <div v-else class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
@@ -465,19 +330,11 @@ onMounted(async () => {
 
               <td>
                 <div class="time-actions">
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-edit"
-                    @click="editTime(time)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-edit" @click="editTime(time)">
                     修改
                   </button>
 
-                  <button
-                    type="button"
-                    class="admin-btn admin-btn-delete"
-                    @click="deleteTime(time.timeId)"
-                  >
+                  <button type="button" class="admin-btn admin-btn-delete" @click="deleteTime(time.timeId)">
                     刪除
                   </button>
                 </div>

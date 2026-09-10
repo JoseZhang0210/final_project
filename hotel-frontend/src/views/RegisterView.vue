@@ -14,12 +14,6 @@
           填寫個人資料並完成信箱驗證，開啟專屬禮遇、預訂與會員服務。
         </p>
 
-        <!-- 訊息提示 -->
-        <div v-if="message" class="message-banner" :class="messageType">
-          <span class="message-icon">{{ messageType === 'success' ? '✓' : '⚠️' }}</span>
-          <span>{{ message }}</span>
-        </div>
-
         <form @submit.prevent="register" class="register-form">
           <!-- 區塊 1: 帳號安全 -->
           <div class="form-section">
@@ -39,8 +33,13 @@
                   type="text"
                   placeholder="請輸入 4~20 位英數字帳號"
                   autocomplete="username"
+                  :class="{ 'is-invalid': errors.username }"
+                  @blur="checkUsername"
                   required
                 />
+                <div v-if="errors.username" class="field-error">
+                  {{ errors.username }}
+                </div>
               </div>
 
               <!-- 密碼 -->
@@ -54,8 +53,13 @@
                   type="password"
                   placeholder="請輸入密碼 (至少 6 碼)"
                   autocomplete="new-password"
+                  :class="{ 'is-invalid': errors.password }"
+                  @blur="validatePassword"
                   required
                 />
+                <div v-if="errors.password" class="field-error">
+                  {{ errors.password }}
+                </div>
               </div>
 
               <!-- 確認密碼 -->
@@ -69,8 +73,13 @@
                   type="password"
                   placeholder="請再次輸入密碼"
                   autocomplete="new-password"
+                  :class="{ 'is-invalid': errors.confirmPassword }"
+                  @blur="validateConfirmPassword"
                   required
                 />
+                <div v-if="errors.confirmPassword" class="field-error">
+                  {{ errors.confirmPassword }}
+                </div>
               </div>
             </div>
           </div>
@@ -94,6 +103,8 @@
                     type="email"
                     placeholder="例：user@example.com"
                     autocomplete="email"
+                    :class="{ 'is-invalid': errors.email }"
+                    @blur="checkEmail"
                     required
                   />
                   <button
@@ -106,6 +117,9 @@
                     <span v-else-if="countdown > 0">{{ countdown }} 秒後重新發送</span>
                     <span v-else>發送驗證碼</span>
                   </button>
+                </div>
+                <div v-if="errors.email" class="field-error">
+                  {{ errors.email }}
                 </div>
                 <small class="field-hint">驗證信件將發送至此信箱，請留意收件匣或垃圾郵件。</small>
               </div>
@@ -261,11 +275,13 @@
 <script setup>
 import { onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useToastStore } from "@/stores/toast";
 
 const router = useRouter();
+const toastStore = useToastStore();
 
 // =====================================================
-// 表單狀態
+// 表單與錯誤訊息狀態
 // =====================================================
 
 const form = reactive({
@@ -284,21 +300,110 @@ const form = reactive({
   address: "",
 });
 
+const errors = reactive({
+  username: "",
+  password: "",
+  confirmPassword: "",
+  email: "",
+});
+
 const loading = ref(false);
 const sendingCode = ref(false);
 const countdown = ref(0);
 let timer = null;
 
-const message = ref("");
-const messageType = ref("");
-
 // =====================================================
-// 顯示訊息
+// 失焦驗證 (Blur Validations)
 // =====================================================
 
-function showMessage(text, type) {
-  message.value = text;
-  messageType.value = type;
+async function checkUsername() {
+  const username = form.username.trim();
+  if (!username) {
+    errors.username = "請輸入帳號";
+    return false;
+  }
+
+  if (username.length < 4 || username.length > 20) {
+    errors.username = "帳號長度需為 4~20 個字元";
+    return false;
+  }
+
+  try {
+    const response = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+    const data = await response.json().catch(() => ({}));
+    if (data.exists) {
+      errors.username = "此帳號已被註冊，請更換其他帳號名稱";
+      return false;
+    } else {
+      errors.username = "";
+      return true;
+    }
+  } catch (error) {
+    console.error("檢查帳號重複錯誤：", error);
+    errors.username = "";
+    return true;
+  }
+}
+
+async function checkEmail() {
+  const email = form.email.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email) {
+    errors.email = "請輸入電子信箱";
+    return false;
+  }
+
+  if (!emailRegex.test(email)) {
+    errors.email = "請輸入正確格式的電子郵件信箱";
+    return false;
+  }
+
+  try {
+    const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+    const data = await response.json().catch(() => ({}));
+    if (data.exists) {
+      errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
+      return false;
+    } else {
+      errors.email = "";
+      return true;
+    }
+  } catch (error) {
+    console.error("檢查信箱重複錯誤：", error);
+    errors.email = "";
+    return true;
+  }
+}
+
+function validatePassword() {
+  if (!form.password) {
+    errors.password = "請輸入密碼";
+    return false;
+  }
+  if (form.password.length < 6) {
+    errors.password = "密碼長度至少需為 6 個字元";
+    return false;
+  }
+  errors.password = "";
+
+  // 若確認密碼已填寫，一併再觸發比對
+  if (form.confirmPassword) {
+    validateConfirmPassword();
+  }
+  return true;
+}
+
+function validateConfirmPassword() {
+  if (!form.confirmPassword) {
+    errors.confirmPassword = "請輸入確認密碼";
+    return false;
+  }
+  if (form.password !== form.confirmPassword) {
+    errors.confirmPassword = "兩次輸入的密碼不一致，請重新確認";
+    return false;
+  }
+  errors.confirmPassword = "";
+  return true;
 }
 
 // =====================================================
@@ -307,16 +412,16 @@ function showMessage(text, type) {
 // =====================================================
 
 async function sendVerificationCode() {
-  const email = form.email.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!email || !emailRegex.test(email)) {
-    showMessage("請輸入正確格式的電子郵件信箱", "error");
+  const isEmailValid = await checkEmail();
+  if (!isEmailValid) {
+    if (errors.email) {
+      toastStore.showToast(errors.email, "error");
+    }
     return;
   }
 
+  const email = form.email.trim();
   sendingCode.value = true;
-  message.value = "";
 
   try {
     const response = await fetch("/api/auth/send-code", {
@@ -330,11 +435,11 @@ async function sendVerificationCode() {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      showMessage(data.message || "發送驗證碼失敗，請稍後再試", "error");
+      toastStore.showToast(data.message || "發送驗證碼失敗，請稍後再試", "error");
       return;
     }
 
-    showMessage(data.message || "驗證碼已寄出，請至信箱收取！", "success");
+    toastStore.showToast(data.message || "驗證碼已寄出，請至信箱收取！", "success");
 
     // 啟動 60 秒倒數計時
     countdown.value = 60;
@@ -348,7 +453,7 @@ async function sendVerificationCode() {
     }, 1000);
   } catch (error) {
     console.error("發送驗證碼錯誤：", error);
-    showMessage("無法連接伺服器發送驗證碼，請檢查網路連線", "error");
+    toastStore.showToast("無法連接伺服器發送驗證碼，請檢查網路連線", "error");
   } finally {
     sendingCode.value = false;
   }
@@ -360,44 +465,29 @@ async function sendVerificationCode() {
 // =====================================================
 
 async function register() {
-  message.value = "";
+  // 觸發前端欄位失焦校驗
+  const isUsernameValid = await checkUsername();
+  const isEmailValid = await checkEmail();
+  const isPasswordValid = validatePassword();
+  const isConfirmPasswordValid = validateConfirmPassword();
 
-  // ==========================
-  // 前端欄位校驗
-  // ==========================
-
-  if (!form.username.trim()) {
-    showMessage("請輸入帳號", "error");
-    return;
-  }
-
-  if (!form.password) {
-    showMessage("請輸入密碼", "error");
-    return;
-  }
-
-  if (form.password.length < 6) {
-    showMessage("密碼長度至少需為 6 個字元", "error");
-    return;
-  }
-
-  if (form.password !== form.confirmPassword) {
-    showMessage("兩次輸入的密碼不一致，請重新確認", "error");
+  if (!isUsernameValid || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid) {
+    toastStore.showToast("請檢查表單輸入是否有誤", "error");
     return;
   }
 
   if (!form.email.trim()) {
-    showMessage("請輸入電子郵件信箱", "error");
+    toastStore.showToast("請輸入電子郵件信箱", "error");
     return;
   }
 
   if (!form.verificationCode.trim()) {
-    showMessage("請輸入收到的信箱 6 位數驗證碼", "error");
+    toastStore.showToast("請輸入收到的信箱 6 位數驗證碼", "error");
     return;
   }
 
   if (!form.name.trim()) {
-    showMessage("請輸入真實姓名", "error");
+    toastStore.showToast("請輸入真實姓名", "error");
     return;
   }
 
@@ -432,16 +522,21 @@ async function register() {
     const data = await response.json().catch(() => ({}));
 
     if (response.status === 409) {
-      showMessage("此帳號已被註冊，請更換其他帳號名稱", "error");
+      if (data.message && data.message.includes("信箱")) {
+        errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
+      } else {
+        errors.username = data.message || "此帳號已被註冊，請更換其他帳號名稱";
+      }
+      toastStore.showToast(data.message || "此帳號或信箱已被註冊", "error");
       return;
     }
 
     if (!response.ok) {
-      showMessage(data.message || "註冊失敗，請確認欄位資訊與驗證碼", "error");
+      toastStore.showToast(data.message || "註冊失敗，請確認欄位資訊與驗證碼", "error");
       return;
     }
 
-    showMessage("🎉 註冊成功！即將前往登入頁面...", "success");
+    toastStore.showToast("🎉 註冊成功！即將前往登入頁面...", "success");
 
     // 1.5 秒後跳轉至登入頁
     setTimeout(() => {
@@ -449,7 +544,7 @@ async function register() {
     }, 1500);
   } catch (error) {
     console.error("註冊錯誤：", error);
-    showMessage("無法連接後端伺服器，請稍後再試", "error");
+    toastStore.showToast("無法連接後端伺服器，請稍後再試", "error");
   } finally {
     loading.value = false;
   }
@@ -602,6 +697,21 @@ select:focus {
   border-color: #b58a46;
   background-color: #fff;
   box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.18);
+}
+
+input.is-invalid {
+  border-color: #c93b2b;
+}
+
+input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(201, 59, 43, 0.18);
+}
+
+.field-error {
+  color: #c93b2b;
+  font-size: 12.5px;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 .code-input {

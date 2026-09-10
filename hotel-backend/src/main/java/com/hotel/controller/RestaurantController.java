@@ -43,18 +43,23 @@ public class RestaurantController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Restaurant> create(@RequestBody Restaurant restaurant) {
+	public ResponseEntity<Restaurant> create(
+			@RequestBody Restaurant restaurant) {
 
+		// 新增時不使用前端傳入的 ID。
 		restaurant.setRestaurantId(null);
 
-		Restaurant saveRestaurant = restaurantService.save(restaurant);
+		Restaurant savedRestaurant = restaurantService.save(restaurant);
 
-		return ResponseEntity.status(HttpStatus.CREATED).body(saveRestaurant);
-
+		return ResponseEntity
+				.status(HttpStatus.CREATED)
+				.body(savedRestaurant);
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<Restaurant> update(@PathVariable Integer id, @RequestBody Restaurant formRestaurant) {
+	public ResponseEntity<Restaurant> update(
+			@PathVariable Integer id,
+			@RequestBody Restaurant formRestaurant) {
 
 		Restaurant restaurant = restaurantService.findById(id);
 
@@ -73,14 +78,11 @@ public class RestaurantController {
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> delete(@PathVariable Integer id) {
-		Restaurant restaurant = restaurantService.findById(id);
-
-		if (restaurant == null) {
+		if (restaurantService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
 
 		restaurantService.deleteById(id);
-
 		return ResponseEntity.noContent().build();
 	}
 }

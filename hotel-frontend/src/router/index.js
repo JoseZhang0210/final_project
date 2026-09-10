@@ -13,10 +13,10 @@ import RestaurantTimeManageView from "../views/RestaurantTimeManageView.vue";
 import ReservationManageView from "../views/ReservationManageView.vue";
 //--------------------餐廳前台管理-----------------------------------
 import RestaurantReservationView from "../views/RestaurantReservationView.vue";
-//--------------------登入登出註冊管理--------------------------------
 import LoginView from "../views/LoginView.vue";
 import LogoutView from "../views/LogoutView.vue";
 import RegisterView from "../views/RegisterView.vue";
+import ForgotPasswordView from "../views/ForgotPasswordView.vue";
 //---------------------- 商品後台管理-----------------
 import ProductManageView from "../views/ProductManageView.vue";
 import ProductEditView from "../views/ProductEditView.vue";
@@ -27,6 +27,7 @@ import ProductDetailView from "../views/ProductDetailView.vue";
 import AdminOrdersView from "../views/AdminOrdersView.vue";
 //---------------------------------------------------
 import RentalView from "../views/RentalView.vue";
+import AdminRentalView from "../views/AdminRentalView.vue"; // 後台獨立使用既有租借管理功能。
 import VenueView from "../views/VenueView.vue";
 //---------------------------------------------------
 import AdminRoomTypeView from "../views/AdminRoomTypeView.vue";
@@ -46,6 +47,7 @@ import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 //--------------- 會員中心 -----------------
 import MemberLayout from "../layouts/MemberLayout.vue";
 import MemberProfileView from "../views/MemberProfileView.vue";
+import MemberPasswordView from "../views/MemberPasswordView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
 
 const router = createRouter({
@@ -153,7 +155,7 @@ const router = createRouter({
         {
           path: "rental",
           name: "admin-rental",
-          component: RentalView,
+          component: AdminRentalView, // 管理列表不再進入會員專用元件。
         },
       ],
     },
@@ -181,6 +183,11 @@ const router = createRouter({
           path: "/register",
           name: "register",
           component: RegisterView,
+        },
+        {
+          path: "/forgot-password",
+          name: "forgot-password",
+          component: ForgotPasswordView,
         },
         {
           path: "products",
@@ -277,10 +284,20 @@ const router = createRouter({
               component: MemberProfileView,
             },
             {
+              path: "password",
+              name: "member-password",
+              component: MemberPasswordView,
+            },
+            {
               path: "orders",
               name: "member-orders",
               component: MyOrdersView,
             },
+            { // 新增會員專屬場地預約入口。
+              path: "rentals", // 完整網址為 /member/rentals。
+              name: "member-rentals", // 提供場地頁面辨識會員模式。
+              component: RentalView, // 重用場地頁面並由後端限制本人資料。
+            }, // 結束場地預約路由。
           ],
         },
       ],
@@ -290,6 +307,22 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 };
   },
+});
+
+router.beforeEach((to, from, next) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // 延遲引用以避免 pinia 初始化前調用
+      import("@/stores/auth").then(({ useAuthStore }) => {
+        const authStore = useAuthStore();
+        authStore.checkAndRefreshToken();
+      });
+    }
+  } catch (e) {
+    console.error("Route auth check error:", e);
+  }
+  next();
 });
 
 export default router;

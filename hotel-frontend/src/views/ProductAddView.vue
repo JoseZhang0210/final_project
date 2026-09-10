@@ -1,5 +1,5 @@
 <template>
-  <div class="product-form-page product-add-page">
+  <div class="product-view product-form-page product-add-page">
     <!-- =========================
          頁面標題
          ========================= -->
@@ -153,7 +153,7 @@
                   <input
                     ref="imageInput"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     hidden
                     @change="handleImageSelect"
                   />
@@ -381,9 +381,7 @@ async function loadCategories() {
 // =====================================================
 
 function previewUrlImage() {
-  // 使用 URL 時，
-  // 清除原本選擇的本機圖片
-
+  // 使用 URL 時，清除原本選擇的本機圖片
   selectedImageFile.value = null;
 
   revokeObjectUrl();
@@ -392,11 +390,7 @@ function previewUrlImage() {
 
   const url = product.imageUrl?.trim();
 
-  if (url) {
-    imagePreview.value = url;
-  } else {
-    imagePreview.value = "";
-  }
+  imagePreview.value = url || "";
 }
 
 // =====================================================
@@ -414,8 +408,10 @@ function handleImageSelect(event) {
   // 檢查是不是圖片
   // ==========================
 
-  if (!file.type.startsWith("image/")) {
-    showError("只能選擇圖片檔案");
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+  if (!allowedTypes.has(file.type)) {
+    showError("只能選擇 JPG、PNG 或 WebP 圖片");
 
     event.target.value = "";
 
@@ -440,9 +436,7 @@ function handleImageSelect(event) {
 
   imageError.value = false;
 
-  // 清除 URL 欄位
-  // 避免使用者不知道目前是哪一種來源
-
+  // 選擇本機圖片時改用上傳後的站內路徑
   product.imageUrl = "";
 
   revokeObjectUrl();
@@ -497,11 +491,6 @@ function revokeObjectUrl() {
 // =====================================================
 
 async function uploadImage() {
-  // ==========================
-  // 沒有選本機圖片
-  // 直接使用輸入的 URL
-  // ==========================
-
   if (!selectedImageFile.value) {
     return product.imageUrl?.trim() || "";
   }
@@ -711,4 +700,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped src="@/assets/product-form.css"></style>
+<style scoped src="@/assets/product/product-form.css"></style>

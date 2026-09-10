@@ -104,4 +104,47 @@ public class RoomServiceImpl implements RoomService {
         room.setRoomStatus(dto.getRoomStatus());
         return room;
     }
+
+    @Override
+    @Transactional
+    public void syncRoomStatuses() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        List<Room> allRooms = roomRepository.findAll();
+        List<com.hotel.model.entity.Booking> todayBookings = bookingRepository.findAll().stream()
+                .filter(b -> b.getRoomId() != null)
+                .filter(b -> !b.getCheckInDate().isAfter(today) && !b.getCheckOutDate().isBefore(today))
+                .filter(b -> !"已取消".equals(b.getBookingStatus()) && !"已完成".equals(b.getBookingStatus()))
+                .collect(Collectors.toList());
+
+        for (Room room : allRooms) {
+            String currentRoomStatus = room.getRoomStatus();
+            
+            // 系統不應強制覆蓋實體維運狀態
+            if ("維修中".equals(currentRoomStatus) || "停用".equals(currentRoomStatus) || 
+                "退房待清潔".equals(currentRoomStatus) || "清潔中".equals(currentRoomStatus)) {
+                continue;
+            }
+
+            Optional<com.hotel.model.entity.Booking> activeBooking = todayBookings.stream()
+                    .filter(b -> b.getRoomId().equals(room.getRoomId()))
+                    .findFirst();
+
+            if (activeBooking.isPresent()) {
+                String bookingStatus = activeBooking.get().getBookingStatus();
+                if ("已入住".equals(bookingStatus) && !"已入住".equals(currentRoomStatus)) {
+                    room.setRoomStatus("已入住");
+                    roomRepository.save(room);
+                } else if ("待入住".equals(bookingStatus) && !"已預訂".equals(currentRoomStatus)) {
+                    room.setRoomStatus("已預訂");
+                    roomRepository.save(room);
+                }
+            } else {
+                // 如果當天沒有該房間的有效訂單，且房間狀態為「已入住」或「已預訂」，則復原為「可預訂」
+                if ("已入住".equals(currentRoomStatus) || "已預訂".equals(currentRoomStatus)) {
+                    room.setRoomStatus("可預訂");
+                    roomRepository.save(room);
+                }
+            }
+        }
+    }
 }

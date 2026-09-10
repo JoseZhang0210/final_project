@@ -31,9 +31,15 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", "請求參數錯誤：" + e.getMessage()));
     }
 
+    /** 將未預期例外轉為一般伺服器錯誤回應。 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "伺服器內部錯誤：" + e.getMessage()));
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "message",
+                        "伺服器內部錯誤："
+                                + String.valueOf(
+                                        e.getMessage())));
     }
 }

@@ -1,10 +1,16 @@
 package com.hotel.controller;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.ProductImportResultDTO;
 import com.hotel.model.dto.ProductJsonDTO;
@@ -31,6 +38,13 @@ import com.hotel.util.JsonUtils;
 @RestController
 @RequestMapping("/api/products")
 public class ProductRestController {
+
+        private static final Path PRODUCT_UPLOAD_DIR = Path.of("uploads", "products");
+        private static final long MAX_IMAGE_SIZE = 5L * 1024 * 1024;
+        private static final Map<String, String> ALLOWED_IMAGE_TYPES = Map.of(
+                        "image/jpeg", ".jpg",
+                        "image/png", ".png",
+                        "image/webp", ".webp");
 
         private final ProductService productService;
 
@@ -95,6 +109,56 @@ public class ProductRestController {
                 }
 
                 return ResponseEntity.ok(result);
+        }
+
+        // =========================================
+        // 上傳商品圖片
+        // POST /api/products/upload-image
+        // =========================================
+
+        @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<?> uploadImage(
+                        @RequestParam("file") MultipartFile file) {
+
+                if (file.isEmpty()) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", "請選擇圖片"));
+                }
+
+                if (file.getSize() > MAX_IMAGE_SIZE) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", "圖片大小不能超過 5MB"));
+                }
+
+                String contentType = file.getContentType();
+                String normalizedContentType = contentType == null
+                                ? ""
+                                : contentType.toLowerCase(Locale.ROOT);
+
+                if (!ALLOWED_IMAGE_TYPES.containsKey(normalizedContentType)) {
+                        return ResponseEntity.badRequest()
+                                        .body(Map.of("message", "只能上傳 JPG、PNG 或 WebP 圖片"));
+                }
+
+                try {
+                        Path uploadPath = PRODUCT_UPLOAD_DIR.toAbsolutePath().normalize();
+                        Files.createDirectories(uploadPath);
+
+                        String extension = ALLOWED_IMAGE_TYPES.get(normalizedContentType);
+                        String filename = UUID.randomUUID() + extension;
+                        Path targetPath = uploadPath.resolve(filename);
+
+                        Files.copy(
+                                        file.getInputStream(),
+                                        targetPath,
+                                        StandardCopyOption.REPLACE_EXISTING);
+
+                        return ResponseEntity.ok(
+                                        Map.of("imageUrl", "/uploads/products/" + filename));
+                } catch (IOException exception) {
+                        return ResponseEntity.internalServerError()
+                                        .body(Map.of("message", "圖片上傳失敗"));
+                }
         }
 
         // =========================================
