@@ -188,6 +188,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
+import { memberApi } from '@/api/memberApi';
 
 const authStore = useAuthStore();
 const toastStore = useToastStore();
@@ -237,62 +238,34 @@ const userInitial = computed(() => {
 });
 
 // =========================================
-// 輔助工具方法
-// =========================================
-// 產生 JWT Header
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers.Authorization = 'Bearer ' + token;
-  }
-  return headers;
-}
-
 // =========================================
 // API 資料載入
 // =========================================
 async function fetchProfile() {
   loading.value = true;
   try {
-    const res = await fetch('/api/members/me', {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
+    const data = await memberApi.getMyProfile();
+    if (data) {
+      form.memberId = data.memberId ?? null;
+      form.accountId = data.accountId ?? null;
+      form.username = data.username || '';
+      form.name = data.name || '';
+      form.email = data.email || '';
+      form.phone = data.phone || '';
+      form.gender = data.gender || '男';
+      form.birthday = data.birthday || '';
+      form.zipcode = data.zipcode || '';
+      form.city = data.city || '';
+      form.district = data.district || '';
+      form.address = data.address || '';
 
-    if (res.status === 401 || res.status === 403) {
-      toastStore.showToast('登入狀態已過期，請重新登入', 'error');
-      return;
-    }
-
-    if (!res.ok) {
-      toastStore.showToast('取得個人資料失敗', 'error');
-      return;
-    }
-
-    const data = await res.json();
-    form.memberId = data.memberId ?? null;
-    form.accountId = data.accountId ?? null;
-    form.username = data.username || '';
-    form.name = data.name || '';
-    form.email = data.email || '';
-    form.phone = data.phone || '';
-    form.gender = data.gender || '男';
-    form.birthday = data.birthday || '';
-    form.zipcode = data.zipcode || '';
-    form.city = data.city || '';
-    form.district = data.district || '';
-    form.address = data.address || '';
-
-    // 若從後端取得姓名，同步 Pinia store
-    if (data.name) {
-      authStore.updateName(data.name);
+      if (data.name) {
+        authStore.updateName(data.name);
+      }
     }
   } catch (err) {
     console.error('取得個人資料錯誤：', err);
-    toastStore.showToast('網路連線異常，請稍後再試', 'error');
+    toastStore.showToast(err.message || '網路連線異常，請稍後再試', 'error');
   } finally {
     loading.value = false;
   }

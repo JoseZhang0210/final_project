@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
+import { memberApi } from "@/api/memberApi";
 
 const RESTAURANT_API_URL = "/api/restaurant";
 const TIME_API_URL = "/api/restaurant_times";
@@ -269,32 +270,14 @@ async function loadMemberInfo() {
     }
 
     try {
-        const response = await fetch(`${MEMBER_API_URL}/${memberId}`, {
-            method: "GET",
-            headers: getAuthHeaders(),
-        });
+        const member = await memberApi.findMemberById(memberId);
 
-        if (response.status === 404) {
-            showMessage("查無此會員 ID", "error");
-            return;
+        if (member) {
+            form.value.memberId = String(member.memberId);
+            form.value.contactName = member.name ?? "";
+            form.value.contactPhone = member.phone ?? "";
+            memberLoaded.value = true;
         }
-
-        if (response.status === 401 || response.status === 403) {
-            showMessage("登入狀態失效或沒有會員資料權限", "error");
-            return;
-        }
-
-        if (!response.ok) {
-            showMessage("讀取會員資料失敗", "error");
-            return;
-        }
-
-        const member = await response.json();
-
-        form.value.memberId = String(member.memberId);
-        form.value.contactName = member.name ?? "";
-        form.value.contactPhone = member.phone ?? "";
-        memberLoaded.value = true;
     } catch (error) {
         console.error(error);
         showMessage("無法連線至會員 API", "error");

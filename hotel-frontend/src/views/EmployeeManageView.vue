@@ -1978,36 +1978,13 @@ async function deleteEmployee(employeeOrId) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/${employeeId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有刪除權限", "error");
-      return;
-    }
-
-    if (response.status === 409) {
-      const data = await response.json().catch(() => ({}));
-      showMessage(
-        data.message || "無法刪除：該員工已有相關業務紀錄，建議將狀態改為停用",
-        "error"
-      );
-      return;
-    }
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      showMessage(data.message || "刪除員工失敗", "error");
-      return;
-    }
+    await employeeApi.deleteEmployee(employeeId);
 
     showMessage("員工刪除成功", "success");
     await loadEmployees();
   } catch (error) {
     console.error("刪除員工錯誤：", error);
-    showMessage("刪除員工失敗", "error");
+    showMessage(error.message || "刪除員工失敗", "error");
   }
 }
 
@@ -2203,11 +2180,10 @@ function onDrop(event) {
 
 async function handleImport() {
   importResult.value = null;
-  const token = localStorage.getItem("token");
 
   try {
     importing.value = true;
-    let response;
+    let data;
 
     if (importMode.value === "file") {
       if (!importFile.value) {
@@ -2219,16 +2195,7 @@ async function handleImport() {
       const formData = new FormData();
       formData.append("file", importFile.value);
 
-      const headers = {};
-      if (token) {
-        headers.Authorization = "Bearer " + token;
-      }
-
-      response = await fetch(`${API_URL}/import`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
+      data = await employeeApi.importEmployeesFile(formData);
     } else {
       if (!importJsonText.value.trim()) {
         showMessage("請輸入要匯入的 JSON 內容", "error");
@@ -2236,31 +2203,7 @@ async function handleImport() {
         return;
       }
 
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers.Authorization = "Bearer " + token;
-      }
-
-      response = await fetch(`${API_URL}/import`, {
-        method: "POST",
-        headers: headers,
-        body: importJsonText.value.trim(),
-      });
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有員工管理權限", "error");
-      return;
-    }
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      showMessage(data.message || "匯入失敗", "error");
-      importResult.value = data;
-      return;
+      data = await employeeApi.importEmployeesJson(importJsonText.value.trim());
     }
 
     importResult.value = data;

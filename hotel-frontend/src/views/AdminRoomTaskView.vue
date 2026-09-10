@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref, computed, watch } from "vue";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
-import { fetchClient } from "@/api/apiClient"; // for employees API
+import { employeeApi } from "@/api/employeeApi";
 
 // 下拉選單資料 (透過 API 動態載入)
 const rooms = ref([]);
@@ -105,9 +105,8 @@ async function loadRooms() {
 // 動態載入員工下拉選項 (GET /api/employees)
 async function loadEmployees() {
   try {
-    // We don't have an employeeApi yet, so use fetchClient for now
-    const data = await fetchClient("/api/employees", { method: "GET" });
-    employees.value = data.map((item) => ({
+    const data = await employeeApi.findAllEmployees();
+    employees.value = (data || []).map((item) => ({
       employeeId: item.employeeId ?? item.employee_id,
       employeeName:
         item.employeeName ??

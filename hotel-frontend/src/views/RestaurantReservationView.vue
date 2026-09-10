@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useRoute } from "vue-router";
+import { memberApi } from "@/api/memberApi";
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -146,23 +147,16 @@ async function loadMemberProfile() {
     }
 
     try {
-        const response = await fetch("/api/members/me", {
-            headers: getAuthHeaders(),
-        });
+        const data = await memberApi.getMyProfile();
 
-        if (!response.ok) {
-            showMessage("會員資料讀取失敗，請重新登入。", "error");
-            return;
+        if (data) {
+            memberProfile.value = data;
+            memberLoaded.value = true;
+
+            form.value.memberId = data.memberId;
+            form.value.contactName = data.name ?? "";
+            form.value.contactPhone = data.phone ?? "";
         }
-
-        const data = await response.json();
-
-        memberProfile.value = data;
-        memberLoaded.value = true;
-
-        form.value.memberId = data.memberId;
-        form.value.contactName = data.name ?? "";
-        form.value.contactPhone = data.phone ?? "";
     } catch (error) {
         console.error(error);
         showMessage("無法讀取會員資料。", "error");

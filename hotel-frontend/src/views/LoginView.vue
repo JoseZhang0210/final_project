@@ -102,6 +102,7 @@
 import { useAuthStore } from "@/stores/auth";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { authApi } from "@/api/authApi";
 
 const router = useRouter();
 
@@ -155,34 +156,10 @@ async function login() {
     // 呼叫登入 API
     // =====================================
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        username: username.value,
-        password: password.value,
-      }),
+    const data = await authApi.login({
+      username: username.value,
+      password: password.value,
     });
-
-    // =====================================
-    // 登入失敗
-    // =====================================
-
-    if (!response.ok) {
-      message.value = "帳號或密碼錯誤";
-      messageType.value = "error";
-      return;
-    }
-
-    // =====================================
-    // 取得登入資料
-    // =====================================
-
-    const data = await response.json();
 
     console.log("登入結果：", data);
 

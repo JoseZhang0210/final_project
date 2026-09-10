@@ -275,6 +275,7 @@
 import { ref, reactive, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useToastStore } from '@/stores/toast';
+import { memberApi } from '@/api/memberApi';
 
 const authStore = useAuthStore();
 const toastStore = useToastStore();
@@ -457,39 +458,20 @@ async function handleSubmit() {
   }
 
   submitting.value = true;
-  const token = localStorage.getItem('token');
 
   try {
-    const res = await fetch('/api/members/me/password', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token ? 'Bearer ' + token : '',
-      },
-      body: JSON.stringify({
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
-        confirmPassword: form.confirmPassword,
-      }),
+    const res = await memberApi.changeMyPassword({
+      currentPassword: form.currentPassword,
+      newPassword: form.newPassword,
+      confirmPassword: form.confirmPassword,
     });
 
-    if (res.status === 401 || res.status === 403) {
-      toastStore.showToast('登入狀態已過期，請重新登入', 'error');
-      return;
-    }
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      toastStore.showToast(data.message || '修改密碼失敗，請稍後再試', 'error');
-      return;
-    }
-
-    toastStore.showToast(data.message || '密碼修改成功！', 'success');
+    const msg = typeof res === "string" ? res : (res && res.message);
+    toastStore.showToast(msg || '密碼修改成功！', 'success');
     resetForm();
   } catch (err) {
     console.error('修改密碼錯誤：', err);
-    toastStore.showToast('網路連線異常，請稍後再試', 'error');
+    toastStore.showToast(err.message || '網路連線異常，請稍後再試', 'error');
   } finally {
     submitting.value = false;
   }

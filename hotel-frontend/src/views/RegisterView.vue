@@ -280,6 +280,7 @@
 import { onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToastStore } from "@/stores/toast";
+import { authApi } from "@/api/authApi";
 
 const router = useRouter();
 const toastStore = useToastStore();
@@ -333,9 +334,8 @@ async function checkUsername() {
   }
 
   try {
-    const response = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
-    const data = await response.json().catch(() => ({}));
-    if (data.exists) {
+    const data = await authApi.checkUsername(username);
+    if (data && data.exists) {
       errors.username = "此帳號已被註冊，請更換其他帳號名稱";
       return false;
     } else {
@@ -363,9 +363,8 @@ async function checkEmail() {
   }
 
   try {
-    const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
-    const data = await response.json().catch(() => ({}));
-    if (data.exists) {
+    const data = await authApi.checkEmail(email);
+    if (data && data.exists) {
       errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
       return false;
     } else {
@@ -428,22 +427,9 @@ async function sendVerificationCode() {
   sendingCode.value = true;
 
   try {
-    const response = await fetch("/api/auth/send-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: email }),
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      toastStore.showToast(data.message || "發送驗證碼失敗，請稍後再試", "error");
-      return;
-    }
-
-    toastStore.showToast(data.message || "驗證碼已寄出，請至信箱收取！", "success");
+    const res = await authApi.sendCode(email);
+    const msg = typeof res === "string" ? res : (res && res.message);
+    toastStore.showToast(msg || "驗證碼已寄出，請至信箱收取！", "success");
 
     // 啟動 60 秒倒數計時
     countdown.value = 60;
@@ -513,33 +499,7 @@ async function register() {
   };
 
   try {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    console.log("註冊 API 回傳 status：", response.status);
-
-    const data = await response.json().catch(() => ({}));
-
-    if (response.status === 409) {
-      if (data.message && data.message.includes("信箱")) {
-        errors.email = "此電子信箱已被註冊，請更換其他信箱或直接登入";
-      } else {
-        errors.username = data.message || "此帳號已被註冊，請更換其他帳號名稱";
-      }
-      toastStore.showToast(data.message || "此帳號或信箱已被註冊", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      toastStore.showToast(data.message || "註冊失敗，請確認欄位資訊與驗證碼", "error");
-      return;
-    }
-
+    await authApi.register(payload);
     toastStore.showToast("🎉 註冊成功！即將前往登入頁面...", "success");
 
     // 1.5 秒後跳轉至登入頁

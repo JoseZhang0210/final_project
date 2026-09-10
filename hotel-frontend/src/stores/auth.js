@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { authApi } from '@/api/authApi'
 
 function parseJwtPayload(token) {
     if (!token) return null;
@@ -107,28 +108,16 @@ export const useAuthStore = defineStore('auth', () => {
 
         refreshPromise = (async () => {
             try {
-                const res = await fetch('/api/auth/refresh', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.token) {
-                        login(data.token, data.authorities || authorities.value, data.name || name.value);
-                        console.log("Token 自動續期成功");
-                        return true;
-                    }
-                } else if (res.status === 401 || res.status === 403) {
-                    console.warn("Token 續期失效或已過期，自動登出");
-                    logout();
+                const data = await authApi.refreshToken();
+                if (data && data.token) {
+                    login(data.token, data.authorities || authorities.value, data.name || name.value);
+                    console.log("Token 自動續期成功");
+                    return true;
                 }
                 return false;
             } catch (err) {
-                console.error("Token 刷新失敗:", err);
+                console.warn("Token 續期失敗，自動登出:", err);
+                logout();
                 return false;
             } finally {
                 refreshPromise = null;

@@ -688,6 +688,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { memberApi } from "@/api/memberApi";
 
 // =====================================================
 // API
@@ -965,35 +966,12 @@ async function loadMembers() {
   loading.value = true;
 
   try {
-    const response = await fetch(API_URL, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有會員管理權限", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      showMessage("取得會員資料失敗", "error");
-      return;
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-
-    if (!contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("會員 API 回傳的不是 JSON：", text);
-      showMessage("會員 API 回傳的不是 JSON，請檢查 proxy 或後端路徑", "error");
-      return;
-    }
-
-    members.value = await response.json();
+    const data = await memberApi.findAllMembers();
+    members.value = data || [];
     currentPage.value = 1;
   } catch (error) {
     console.error("會員讀取錯誤：", error);
-    showMessage("讀取會員資料失敗", "error");
+    showMessage(error.message || "讀取會員資料失敗", "error");
   } finally {
     loading.value = false;
   }
@@ -1091,29 +1069,10 @@ async function saveMember() {
   }
 
   try {
-    const url = isEditing ? `${API_URL}/${editingMemberId.value}` : API_URL;
-    const method = isEditing ? "PUT" : "POST";
-
-    const response = await fetch(url, {
-      method: method,
-      headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有會員管理權限", "error");
-      return;
-    }
-
-    if (response.status === 409) {
-      showMessage("帳號已存在", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      showMessage(data.message || "儲存會員失敗", "error");
-      return;
+    if (isEditing) {
+      await memberApi.updateMember(editingMemberId.value, payload);
+    } else {
+      await memberApi.createMember(payload);
     }
 
     closeModal();
@@ -1121,7 +1080,7 @@ async function saveMember() {
     await loadMembers();
   } catch (error) {
     console.error("會員儲存錯誤：", error);
-    showMessage("儲存會員失敗", "error");
+    showMessage(error.message || "儲存會員失敗", "error");
   } finally {
     saving.value = false;
   }
@@ -1149,29 +1108,13 @@ async function toggleStatus(member) {
   }
 
   try {
-    const response = await fetch(
-      `${API_URL}/${memberId}/status?status=${nextStatus}`,
-      {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      }
-    );
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有會員管理權限", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      showMessage("更新會員狀態失敗", "error");
-      return;
-    }
+    await memberApi.updateMemberStatus(memberId, nextStatus);
 
     showMessage(`會員已${actionText}`, "success");
     await loadMembers();
   } catch (error) {
     console.error("會員狀態更新錯誤：", error);
-    showMessage("更新會員狀態失敗", "error");
+    showMessage(error.message || "更新會員狀態失敗", "error");
   }
 }
 
@@ -1196,35 +1139,13 @@ async function deleteMember(memberOrId) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/${memberId}`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有刪除權限", "error");
-      return;
-    }
-
-    if (response.status === 409) {
-      const data = await response.json().catch(() => ({}));
-      showMessage(
-        data.message || "無法刪除：該會員已有相關訂單或付款紀錄，建議改為停用",
-        "error"
-      );
-      return;
-    }
-
-    if (!response.ok) {
-      showMessage("刪除會員失敗", "error");
-      return;
-    }
+    await memberApi.deleteMember(memberId);
 
     showMessage("會員刪除成功", "success");
     await loadMembers();
   } catch (error) {
     console.error("刪除會員錯誤：", error);
-    showMessage("刪除會員失敗", "error");
+    showMessage(error.message || "刪除會員失敗", "error");
   }
 }
 
@@ -1290,53 +1211,29 @@ function closeExportModal() {
 async function handleExport() {
   exporting.value = true;
   try {
-    const params = new URLSearchParams();
+    const exportParams = {};
 
     if (exportScope.value === "filtered") {
-      if (keyword.value.trim()) params.append("keyword", keyword.value.trim());
-      if (selectedStatus.value) params.append("status", selectedStatus.value);
+      if (keyword.value.trim()) exportParams.keyword = keyword.value.trim();
+      if (selectedStatus.value) exportParams.status = selectedStatus.value;
     } else if (exportScope.value === "selected") {
       if (selectedMemberIds.value.length === 0) {
         showMessage("請先勾選要匯出的會員", "error");
         exporting.value = false;
         return;
       }
-      params.append("ids", selectedMemberIds.value.join(","));
+      exportParams.ids = selectedMemberIds.value;
     } else if (exportScope.value === "custom") {
-      if (exportCustom.minId) params.append("minId", exportCustom.minId);
-      if (exportCustom.maxId) params.append("maxId", exportCustom.maxId);
-      if (exportCustom.limit) params.append("limit", exportCustom.limit);
-      if (exportCustom.offset) params.append("offset", exportCustom.offset);
-      if (keyword.value.trim()) params.append("keyword", keyword.value.trim());
-      if (selectedStatus.value) params.append("status", selectedStatus.value);
+      if (exportCustom.minId) exportParams.minId = exportCustom.minId;
+      if (exportCustom.maxId) exportParams.maxId = exportCustom.maxId;
+      if (exportCustom.limit) exportParams.limit = exportCustom.limit;
+      if (exportCustom.offset) exportParams.offset = exportCustom.offset;
+      if (keyword.value.trim()) exportParams.keyword = keyword.value.trim();
+      if (selectedStatus.value) exportParams.status = selectedStatus.value;
     }
 
-    const queryString = params.toString() ? `?${params.toString()}` : "";
-    const url = `${API_URL}/export${queryString}`;
+    const blob = await memberApi.exportMembers(exportParams);
 
-    const token = localStorage.getItem("token");
-    const headers = {};
-    if (token) {
-      headers.Authorization = "Bearer " + token;
-    }
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: headers,
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有會員管理權限", "error");
-      return;
-    }
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      showMessage(err.message || "匯出會員失敗", "error");
-      return;
-    }
-
-    const blob = await response.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = downloadUrl;
@@ -1352,7 +1249,7 @@ async function handleExport() {
     showMessage("會員資料 JSON 匯出成功！", "success");
   } catch (error) {
     console.error("匯出錯誤：", error);
-    showMessage("匯出會員資料失敗", "error");
+    showMessage(error.message || "匯出會員資料失敗", "error");
   } finally {
     exporting.value = false;
   }
@@ -1418,11 +1315,10 @@ function onDrop(event) {
 
 async function handleImport() {
   importResult.value = null;
-  const token = localStorage.getItem("token");
 
   try {
     importing.value = true;
-    let response;
+    let data;
 
     if (importMode.value === "file") {
       if (!importFile.value) {
@@ -1434,16 +1330,7 @@ async function handleImport() {
       const formData = new FormData();
       formData.append("file", importFile.value);
 
-      const headers = {};
-      if (token) {
-        headers.Authorization = "Bearer " + token;
-      }
-
-      response = await fetch(`${API_URL}/import`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
+      data = await memberApi.importMembersFile(formData);
     } else {
       if (!importJsonText.value.trim()) {
         showMessage("請輸入要匯入的 JSON 內容", "error");
@@ -1451,31 +1338,7 @@ async function handleImport() {
         return;
       }
 
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers.Authorization = "Bearer " + token;
-      }
-
-      response = await fetch(`${API_URL}/import`, {
-        method: "POST",
-        headers: headers,
-        body: importJsonText.value.trim(),
-      });
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      showMessage("登入狀態失效或沒有會員管理權限", "error");
-      return;
-    }
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      showMessage(data.message || "匯入失敗", "error");
-      importResult.value = data;
-      return;
+      data = await memberApi.importMembersJson(importJsonText.value.trim());
     }
 
     importResult.value = data;

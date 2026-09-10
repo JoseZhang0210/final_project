@@ -131,6 +131,7 @@
 import { onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToastStore } from "@/stores/toast";
+import { authApi } from "@/api/authApi";
 
 const router = useRouter();
 const toastStore = useToastStore();
@@ -203,22 +204,9 @@ async function sendVerificationCode() {
   sendingCode.value = true;
 
   try {
-    const response = await fetch("/api/auth/forgot-password/send-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: email }),
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      toastStore.showToast(data.message || "發送驗證碼失敗，請稍後再試", "error");
-      return;
-    }
-
-    toastStore.showToast(data.message || "驗證碼已發送至您的信箱，請於 5 分鐘內輸入！", "success");
+    const res = await authApi.sendForgotPasswordCode({ email: email });
+    const msg = typeof res === "string" ? res : (res && res.message);
+    toastStore.showToast(msg || "驗證碼已發送至您的信箱，請於 5 分鐘內輸入！", "success");
 
     // 啟動 60 秒冷卻倒數
     countdown.value = 60;
@@ -265,24 +253,11 @@ async function handleResetPassword() {
   loading.value = true;
 
   try {
-    const response = await fetch("/api/auth/forgot-password/reset", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: form.email.trim(),
-        code: form.code.trim(),
-        newPassword: form.newPassword,
-      }),
+    await authApi.resetPassword({
+      email: form.email.trim(),
+      code: form.code.trim(),
+      newPassword: form.newPassword,
     });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      toastStore.showToast(data.message || "密碼重設失敗，請確認驗證碼是否正確", "error");
-      return;
-    }
 
     toastStore.showToast("🎉 密碼重設成功！即將前往登入頁面...", "success");
 
