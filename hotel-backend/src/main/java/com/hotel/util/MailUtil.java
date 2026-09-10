@@ -18,6 +18,8 @@ import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.Product;
 import com.hotel.repository.OrderItemRepository;
 import com.hotel.repository.ProductRepository;
+import com.hotel.repository.CustomerOrderRepository;
+import com.hotel.model.entity.CustomerOrder;
 import java.util.List;
 
 import java.io.File;
@@ -32,18 +34,21 @@ public class MailUtil {
         private final MemberRepository memberRepository;
         private final OrderItemRepository orderItemRepository;
         private final ProductRepository productRepository;
+        private final CustomerOrderRepository customerOrderRepository;
 
     // 自動讀取 application.properties 裡的發信人設定
     @Value("${spring.mail.username}")
     private String fromEmail;
 
         MailUtil(JavaMailSender mailSender, ProfileRepository profileRepository, MemberRepository memberRepository,
-                        OrderItemRepository orderItemRepository, ProductRepository productRepository) {
+                        OrderItemRepository orderItemRepository, ProductRepository productRepository,
+                        CustomerOrderRepository customerOrderRepository) {
                 this.mailSender = mailSender;
                 this.profileRepository = profileRepository;
                 this.memberRepository = memberRepository;
                 this.orderItemRepository = orderItemRepository;
                 this.productRepository = productRepository;
+                this.customerOrderRepository = customerOrderRepository;
         }
 
     /**
@@ -128,6 +133,11 @@ public class MailUtil {
                 // 2. 取得訂單商品
                 // =========================================================
                 List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+                if (items.isEmpty()) {
+                        throw new IllegalStateException("訂單 " + orderId + " 沒有商品明細，停止寄送確認信");
+                }
+                CustomerOrder order = customerOrderRepository.findById(orderId)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到訂單 " + orderId));
 
                 // =========================================================
                 // 3. 建立 HTML
@@ -413,7 +423,7 @@ public class MailUtil {
                         sb.append("color:#555555;");
                         sb.append("'>");
 
-                        sb.append("$").append(product.getPrice());
+                        sb.append("$").append(item.getUnitPrice());
 
                         sb.append("</td>");
 
@@ -440,6 +450,12 @@ public class MailUtil {
                 // =========================================================
                 sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
                 sb.append(" style='margin-top:20px;'>");
+                sb.append("<tr><td style='text-align:right;padding:8px 10px;'>商品總額</td>");
+                sb.append("<td style='text-align:right;padding:8px 10px;'>$")
+                                .append(order.getOriginalAmount()).append("</td></tr>");
+                sb.append("<tr><td style='text-align:right;padding:8px 10px;'>優惠折扣</td>");
+                sb.append("<td style='text-align:right;padding:8px 10px;'>-$")
+                                .append(order.getDiscountAmount()).append("</td></tr>");
 
                 sb.append("<tr>");
 
@@ -464,17 +480,7 @@ public class MailUtil {
 
                 sb.append("$");
 
-                // 計算總金額
-                java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
-
-                for (OrderItem item : items) {
-                        if (item.getSubtotal() != null) {
-                                totalAmount = totalAmount.add(
-                                                java.math.BigDecimal.valueOf(item.getSubtotal()));
-                        }
-                }
-
-                sb.append(totalAmount);
+                sb.append(order.getFinalAmount());
 
                 sb.append("</td>");
 

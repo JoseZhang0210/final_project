@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.hotel.model.dto.CreateOrderItemRequest;
 import com.hotel.model.dto.MonthlyOrderStatisticsDTO;
@@ -284,9 +286,6 @@ public class OrderService {
 
                 order = customerOrderRepository.save(order);
 
-                // 發送訂單確認信件（非同步）
-                mailUtil.sendOrderConfirmation(order.getOrderId(), memberId);
-
                 // ==============================
                 // 建立 OrderItem + 扣庫存
                 // ==============================
@@ -327,6 +326,21 @@ public class OrderService {
 
                         productRepository.save(product);
                 }
+
+                // 明細與庫存成功提交後才寄信，回滾時不寄送確認信。
+                Integer confirmedOrderId = order.getOrderId();
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                                try {
+                                        mailUtil.sendOrderConfirmation(confirmedOrderId, memberId);
+                                } catch (Exception ex) {
+                                        // 訂單已提交，寄信失敗不應讓下單 API 回報失敗。
+                                        org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                                                        .error("訂單 {} 已建立，但確認信寄送失敗", confirmedOrderId, ex);
+                                }
+                        }
+                });
 
                 return order;
         }
