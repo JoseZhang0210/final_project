@@ -100,7 +100,6 @@
           <div class="admin-user">管理員</div>
 
           <RouterLink
-            v-if="route.name === 'dashboard'"
             to="/"
             class="admin-home-button"
           >
