@@ -90,6 +90,7 @@ public class PublicReservationController {
         }
 
         Restaurant restaurant = restaurantService.findById(reservation.getRestaurantId());
+
         RestaurantTime restaurantTime = restaurantTimeService.findById(reservation.getTimeId());
 
         if (restaurant == null || restaurantTime == null) {
@@ -97,9 +98,34 @@ public class PublicReservationController {
                     .body(Map.of("message", "餐廳或時段資料不存在。"));
         }
 
-        if (!restaurantTime.getRestaurantId().equals(reservation.getRestaurantId())) {
+        if (!restaurantTime.getRestaurantId()
+                .equals(reservation.getRestaurantId())) {
+
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "選擇的時段不屬於此餐廳。"));
+        }
+
+        if (restaurant.getCapacity() == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "此餐廳尚未設定可訂位人數。"));
+        }
+
+        Long bookedPeople = reservationService
+                .sumPeopleByRestaurantAndTime(
+                        reservation.getRestaurantId(),
+                        reservation.getTimeId(),
+                        reservation.getReservationDate());
+
+        int remainingSeats = restaurant.getCapacity()
+                - bookedPeople.intValue();
+
+        if (reservation.getPeopleCount() > remainingSeats) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "message",
+                            "此時段僅剩 "
+                                    + Math.max(remainingSeats, 0)
+                                    + " 個座位，無法完成訂位。"));
         }
 
         reservation.setReservationId(null);
@@ -107,9 +133,11 @@ public class PublicReservationController {
         reservation.setStatus("已訂位");
 
         Reservation savedReservation = reservationService.save(reservation);
+
         sendReservationSms(savedReservation);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(savedReservation);
     }
 
     // 訂位成功後通知訪客；簡訊失敗不影響訂位成立。
