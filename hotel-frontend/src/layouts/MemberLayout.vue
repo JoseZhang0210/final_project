@@ -27,6 +27,11 @@
             <span>個人資料</span>
           </RouterLink>
 
+          <RouterLink to="/member/password" class="nav-item" active-class="active">
+            <span class="icon">🔒</span>
+            <span>修改密碼</span>
+          </RouterLink>
+
           <RouterLink to="/member/orders" class="nav-item" active-class="active">
             <span class="icon">📦</span>
             <span>我的訂單</span>
