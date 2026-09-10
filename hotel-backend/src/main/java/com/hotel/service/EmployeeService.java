@@ -2,7 +2,9 @@ package com.hotel.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -14,10 +16,14 @@ import com.hotel.model.dto.EmployeeDTO;
 import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Department;
 import com.hotel.model.entity.Employee;
+import com.hotel.model.entity.EmployeePermission;
+import com.hotel.model.entity.Permission;
 import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
 import com.hotel.repository.DepartmentRepository;
+import com.hotel.repository.EmployeePermissionRepository;
 import com.hotel.repository.EmployeeRepository;
+import com.hotel.repository.PermissionRepository;
 import com.hotel.repository.ProfileRepository;
 
 @Service
@@ -28,6 +34,8 @@ public class EmployeeService {
     private final AccountRepository accountRepository;
     private final ProfileRepository profileRepository;
     private final DepartmentRepository departmentRepository;
+    private final EmployeePermissionRepository employeePermissionRepository;
+    private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
 
     public EmployeeService(
@@ -35,21 +43,34 @@ public class EmployeeService {
             AccountRepository accountRepository,
             ProfileRepository profileRepository,
             DepartmentRepository departmentRepository,
+            EmployeePermissionRepository employeePermissionRepository,
+            PermissionRepository permissionRepository,
             PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.accountRepository = accountRepository;
         this.profileRepository = profileRepository;
         this.departmentRepository = departmentRepository;
+        this.employeePermissionRepository = employeePermissionRepository;
+        this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     // =========================================
-    // 1. 查詢所有員工（整合 Account, Profile 與 Department，支援關鍵字、狀態與部門篩選）
+    // 1. 查詢所有員工（整合 Account, Profile, Department 與 Permissions，支援關鍵字、狀態與部門篩選）
     // =========================================
     @Transactional(readOnly = true)
     public List<EmployeeDTO> findAllEmployees(String keyword, String status, Integer departmentId) {
         List<Employee> employees = employeeRepository.findAll();
         List<EmployeeDTO> list = new ArrayList<>();
+
+        Map<Integer, String> permissionNameMap = permissionRepository.findAll().stream()
+                .collect(Collectors.toMap(Permission::getPermissionId, Permission::getPermissionName, (v1, v2) -> v1));
+
+        List<EmployeePermission> allEmployeePermissions = employeePermissionRepository.findAll();
+        Map<Integer, List<Integer>> empPermMap = new java.util.HashMap<>();
+        for (EmployeePermission ep : allEmployeePermissions) {
+            empPermMap.computeIfAbsent(ep.getEmployeeId(), k -> new ArrayList<>()).add(ep.getPermissionId());
+        }
 
         for (Employee employee : employees) {
             Account account = null;
@@ -68,6 +89,14 @@ public class EmployeeService {
             }
 
             EmployeeDTO dto = toDTO(employee, account, profile, department);
+            List<Integer> permIds = empPermMap.getOrDefault(employee.getEmployeeId(), Collections.emptyList());
+            dto.setPermissionIds(new ArrayList<>(permIds));
+            List<String> permNames = permIds.stream()
+                    .map(permissionNameMap::get)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toList());
+            dto.setPermissionNames(permNames);
+
             list.add(dto);
         }
 
@@ -126,7 +155,9 @@ public class EmployeeService {
             department = departmentRepository.findById(employee.getDepartmentId()).orElse(null);
         }
 
-        return toDTO(employee, account, profile, department);
+        EmployeeDTO dto = toDTO(employee, account, profile, department);
+        populatePermissions(dto, employee.getEmployeeId());
+        return dto;
     }
 
     // =========================================
@@ -150,7 +181,9 @@ public class EmployeeService {
         if (employee.getDepartmentId() != null) {
             department = departmentRepository.findById(employee.getDepartmentId()).orElse(null);
         }
-        return toDTO(employee, account, profile, department);
+        EmployeeDTO dto = toDTO(employee, account, profile, department);
+        populatePermissions(dto, employee.getEmployeeId());
+        return dto;
     }
 
 
@@ -207,11 +240,17 @@ public class EmployeeService {
             department = departmentRepository.findById(savedEmployee.getDepartmentId()).orElse(null);
         }
 
-        return toDTO(savedEmployee, savedAccount, savedProfile, department);
+        if (dto.getPermissionIds() != null) {
+            syncEmployeePermissions(savedEmployee.getEmployeeId(), dto.getPermissionIds());
+        }
+
+        EmployeeDTO createdDto = toDTO(savedEmployee, savedAccount, savedProfile, department);
+        populatePermissions(createdDto, savedEmployee.getEmployeeId());
+        return createdDto;
     }
 
     // =========================================
-    // 4. 修改員工詳細資料
+    // 4. 修改員工詳細資料（含權限關聯同步）
     // =========================================
     public EmployeeDTO updateEmployee(Integer employeeId, EmployeeDTO dto) {
         Employee employee = employeeRepository.findById(employeeId).orElse(null);
@@ -284,12 +323,19 @@ public class EmployeeService {
             profile = profileRepository.save(profile);
         }
 
+        // 同步權限
+        if (dto.getPermissionIds() != null) {
+            syncEmployeePermissions(employee.getEmployeeId(), dto.getPermissionIds());
+        }
+
         Department department = null;
         if (employee.getDepartmentId() != null) {
             department = departmentRepository.findById(employee.getDepartmentId()).orElse(null);
         }
 
-        return toDTO(employee, account, profile, department);
+        EmployeeDTO updatedDto = toDTO(employee, account, profile, department);
+        populatePermissions(updatedDto, employee.getEmployeeId());
+        return updatedDto;
     }
 
     // =========================================
@@ -321,11 +367,13 @@ public class EmployeeService {
             department = departmentRepository.findById(employee.getDepartmentId()).orElse(null);
         }
 
-        return toDTO(employee, account, profile, department);
+        EmployeeDTO statusDto = toDTO(employee, account, profile, department);
+        populatePermissions(statusDto, employee.getEmployeeId());
+        return statusDto;
     }
 
     // =========================================
-    // 6. 刪除員工（連動刪除 Profile, Employee, Account）
+    // 6. 刪除員工（連動刪除 EmployeePermission, Profile, Employee, Account）
     // =========================================
     public boolean deleteEmployee(Integer employeeId) {
         Employee employee = employeeRepository.findById(employeeId).orElse(null);
@@ -334,6 +382,9 @@ public class EmployeeService {
         }
 
         Integer accountId = employee.getAccountId();
+
+        // 0. 刪除 EmployeePermission
+        employeePermissionRepository.deleteByEmployeeId(employeeId);
 
         // 1. 刪除 Profile
         if (accountId != null) {
@@ -349,6 +400,49 @@ public class EmployeeService {
         }
 
         return true;
+    }
+
+    // =========================================
+    // 輔助方法：同步更新員工權限關聯
+    // =========================================
+    private void syncEmployeePermissions(Integer employeeId, List<Integer> permissionIds) {
+        if (employeeId == null) {
+            return;
+        }
+        employeePermissionRepository.deleteByEmployeeId(employeeId);
+        employeePermissionRepository.flush();
+
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            List<EmployeePermission> list = new ArrayList<>();
+            for (Integer permId : permissionIds) {
+                if (permId != null) {
+                    list.add(new EmployeePermission(employeeId, permId));
+                }
+            }
+            if (!list.isEmpty()) {
+                employeePermissionRepository.saveAll(list);
+            }
+        }
+    }
+
+    // =========================================
+    // 輔助方法：查詢單一員工權限並填入 DTO
+    // =========================================
+    private void populatePermissions(EmployeeDTO dto, Integer employeeId) {
+        if (dto == null || employeeId == null) {
+            return;
+        }
+        List<EmployeePermission> epList = employeePermissionRepository.findByEmployeeId(employeeId);
+        List<Integer> permIds = epList.stream().map(EmployeePermission::getPermissionId).collect(Collectors.toList());
+        dto.setPermissionIds(permIds);
+
+        if (!permIds.isEmpty()) {
+            List<Permission> perms = permissionRepository.findAllById(permIds);
+            List<String> permNames = perms.stream().map(Permission::getPermissionName).collect(Collectors.toList());
+            dto.setPermissionNames(permNames);
+        } else {
+            dto.setPermissionNames(new ArrayList<>());
+        }
     }
 
     // =========================================
@@ -411,4 +505,5 @@ public class EmployeeService {
         return dto;
     }
 }
+
 
