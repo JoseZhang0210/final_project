@@ -2,12 +2,6 @@
   <div class="register-page">
     <div class="register-container">
       <div class="register-card">
-        <!-- 飯店品牌標頭 -->
-        <div class="hotel-brand">
-          <div class="hotel-name">星澄飯店</div>
-          <div class="hotel-en">GRAND ASTER HOTEL & RESORTS</div>
-        </div>
-
         <h1>尊榮會員註冊</h1>
 
         <p class="subtitle">
@@ -18,7 +12,8 @@
           <!-- 區塊 1: 帳號安全 -->
           <div class="form-section">
             <div class="section-title">
-              <span class="section-icon">🔐</span> 帳號安全設定
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              帳號安全設定
             </div>
 
             <div class="form-grid">
@@ -87,7 +82,8 @@
           <!-- 區塊 2: 信箱驗證 -->
           <div class="form-section">
             <div class="section-title">
-              <span class="section-icon">✉️</span> 電子信箱與身份驗證
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              電子信箱與身份驗證
             </div>
 
             <div class="form-grid">
@@ -145,7 +141,8 @@
           <!-- 區塊 3: 個人基本資料 -->
           <div class="form-section">
             <div class="section-title">
-              <span class="section-icon">👤</span> 個人基本資料
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              個人基本資料
             </div>
 
             <div class="form-grid">
@@ -165,12 +162,18 @@
 
               <!-- 性別 -->
               <div class="form-group">
-                <label for="gender"> 性別 </label>
-                <select id="gender" v-model="form.gender">
-                  <option value="男">男</option>
-                  <option value="女">女</option>
-                  <option value="其他">其他</option>
-                </select>
+                <label> 性別 </label>
+                <div class="gender-radio-group">
+                  <label class="radio-label">
+                    <input type="radio" v-model="form.gender" value="男" /> 男
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" v-model="form.gender" value="女" /> 女
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" v-model="form.gender" value="其他" /> 其他
+                  </label>
+                </div>
               </div>
 
               <!-- 聯絡電話 -->
@@ -199,7 +202,8 @@
           <!-- 區塊 4: 通訊地址 -->
           <div class="form-section">
             <div class="section-title">
-              <span class="section-icon">📍</span> 通訊地址 (選填)
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              通訊地址 (選填)
             </div>
 
             <div class="form-grid">
@@ -291,7 +295,7 @@ const form = reactive({
   email: "",
   verificationCode: "",
   name: "",
-  gender: "男",
+  gender: "其他",
   phone: "",
   birthday: "",
   zipcode: "",
@@ -585,31 +589,11 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-.hotel-brand {
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-.hotel-name {
-  color: #9b7435;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 3px;
-}
-
-.hotel-en {
-  color: #998369;
-  font-size: 11px;
-  letter-spacing: 2px;
-  margin-top: 2px;
-  font-weight: 600;
-}
-
 h1 {
   text-align: center;
   color: #3b2c1d;
   font-size: 24px;
-  margin: 14px 0 8px 0;
+  margin: 0 0 8px 0;
   font-weight: 700;
 }
 
@@ -645,8 +629,36 @@ h1 {
   padding-bottom: 8px;
 }
 
-.section-icon {
-  font-size: 16px;
+.lucide-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.gender-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+  font-weight: normal;
+  margin-bottom: 0;
+}
+
+.radio-label input[type="radio"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #b58a46;
 }
 
 .form-grid {
