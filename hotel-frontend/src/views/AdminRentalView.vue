@@ -1,7 +1,7 @@
 <script setup>
 // 移植 ab025d7 的管理表單、列表與編輯刪除流程，沿用目前既有登入。
 import { computed, onMounted, ref } from 'vue'; // 使用既有響應式狀態。
-import { getStoredToken, getRentals, getVenues, updateRental, deleteRental, getApiErrorMessage } from '../api/venueRentalApi'; // 僅使用既有管理 API。
+import { getStoredToken, getRentals, getVenues, createAdminRental, updateRental, deleteRental, getApiErrorMessage } from '../api/venueRentalApi'; // 僅使用既有管理 API。
 const token = ref(getStoredToken()); // 不建立新的登入流程。
 const rentals = ref([]); // 保存全部租借，不查詢會員專用端點。
 const venues = ref([]); // 場地名稱由既有場地 API 取得。
@@ -9,7 +9,8 @@ const loading = ref(false); // 避免重複提交管理操作。
 const message = ref(''); // 顯示操作結果。
 const errorMessage = ref(''); // 保留後端權限及付款保護錯誤。
 const isLoggedIn = computed(() => Boolean(token.value)); // 僅控制顯示，後端負責授權。
-const editMode = ref(false); // 沿用舊版編輯模式。
+const editMode = ref(false); // 編輯既有租借。
+const createMode = ref(false); // 管理員新增租借。
 const form = ref({}); // 編輯時複製完整租借欄位。
 const rentalStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']; // 沿用既有租借狀態。
 const venueName = id => venues.value.find(v => Number(v.venueId) === Number(id))?.venueName || `場地 ${id}`; // 缺少場地時仍保留原編號。
@@ -24,6 +25,86 @@ async function refreshRentals() { // 恢復重新整理功能。
   try { await loadRentalData(); } catch (error) { errorMessage.value = getApiErrorMessage(error); } // 顯示實際管理 API 錯誤。
   finally { loading.value = false; } // 無論成功失敗都恢復按鈕。
 } // 結束重新整理。
+function startCreate() {
+
+  // 新增與編輯模式不可同時存在。
+  editMode.value = false;
+  createMode.value = true;
+
+  // 新增時只準備管理員需要輸入的欄位。
+  form.value = {
+    memberId: '',
+    venueId: '',
+    eventName: '',
+    rentalDate: '',
+    guestCount: '',
+  };
+
+  message.value = '目前正在新增租借';
+  errorMessage.value = '';
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  });
+}
+async function handleCreate() {
+
+  if (!createMode.value || loading.value) {
+    return;
+  }
+
+  const payload = {
+    memberId: Number(form.value.memberId),
+    venueId: Number(form.value.venueId),
+    eventName: String(form.value.eventName || '').trim(),
+    rentalDate: form.value.rentalDate,
+    guestCount: Number(form.value.guestCount),
+  };
+
+  if (!Number.isInteger(payload.memberId)
+      || payload.memberId <= 0) {
+    errorMessage.value = '請輸入正確的會員 ID';
+    return;
+  }
+
+  if (!Number.isInteger(payload.venueId)
+      || payload.venueId <= 0) {
+    errorMessage.value = '請選擇場地';
+    return;
+  }
+
+  if (!payload.eventName
+      || payload.eventName.length > 50
+      || !payload.rentalDate
+      || !Number.isInteger(payload.guestCount)
+      || payload.guestCount <= 0) {
+    errorMessage.value = '請填寫活動名稱、日期與正整數人數';
+    return;
+  }
+
+  loading.value = true;
+  message.value = '';
+  errorMessage.value = '';
+
+  try {
+    await createAdminRental(
+      token.value,
+      payload,
+    );
+
+    resetForm();
+    await loadRentalData();
+
+    message.value = '租借新增成功';
+
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+
+  } finally {
+    loading.value = false;
+  }
+}
 async function handleSubmit() { // 恢復舊版儲存編輯流程。
   if (!editMode.value || loading.value) return; // 只允許編輯既有租借。
   loading.value = true; message.value = ''; errorMessage.value = ''; // 清除上一筆操作結果。
@@ -36,7 +117,9 @@ async function handleSubmit() { // 恢復舊版儲存編輯流程。
   finally { loading.value = false; } // 結束管理寫入狀態。
 } // 結束儲存修改。
 function startEdit(rental) { // 移植舊版選取資料並捲至表單的操作。
-  editMode.value = true; // 顯示既有編輯表單。
+  // 編輯既有資料時關閉新增模式。
+  createMode.value = false;
+  editMode.value = true;
   const aliases = { '待確認': 'PENDING', '待付款': 'PENDING', '已確認': 'CONFIRMED', '已取消': 'CANCELLED', '已完成': 'COMPLETED' }; // 相容 seed 與歷史中文狀態。
   form.value = { ...rental, rentalDate: String(rental.rentalDate).substring(0, 16), rentalStatus: aliases[rental.rentalStatus] || rental.rentalStatus }; // 複製資料，避免尚未儲存就改動表格。
   message.value = '目前正在編輯租借 ID ' + rental.rentalId; errorMessage.value = ''; // 提示目前編輯對象。
@@ -54,13 +137,14 @@ async function handleDelete(rental) { // 保留舊版刪除確認。
 } // 結束刪除流程。
 function resetForm() {
 
-  // 離開編輯模式。
+  // 離開新增與編輯模式。
   editMode.value = false;
+  createMode.value = false;
 
-  // 清空目前編輯中的租借資料。
+  // 清空目前表單中的租借資料。
   form.value = {};
 
-  // 取消編輯後移除「目前正在編輯租借 ID」提示。
+  // 取消操作後移除目前狀態提示。
   message.value = '';
 }
 function formatDateTime(value) { return value ? String(value).replace('T', ' ') : ''; } // 沿用舊版表格時間顯示。
@@ -107,24 +191,42 @@ function rentalStatusLabel(status) {
 
     <!-- 沿用網站登入，僅顯示管理結果與重新整理，不重建登入功能。 -->
     <section class="card">
-      <button type="button" :disabled="loading" @click="refreshRentals">重新整理</button>
+      <div class="actions">
+        <button
+          type="button"
+          :disabled="loading"
+          @click="refreshRentals"
+        >
+          重新整理
+        </button>
+
+        <button
+          v-if="isLoggedIn"
+          type="button"
+          class="secondary"
+          :disabled="loading"
+          @click="startCreate"
+        >
+          新增資料
+        </button>
+      </div>
       <p v-if="message" class="success">{{ message }}</p>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </section>
     <!-- CRUD FORM -->
     <section
-      v-if="isLoggedIn && editMode"
+      v-if="isLoggedIn && (editMode || createMode)"
       class="card"
     >
 
       <div class="form-header">
         <div>
           <h2>
-            修改租借
-          </h2>
+          {{ createMode ? '新增租借' : '修改租借' }}
+        </h2>
 
           <p class="description">
-            修改活動、日期、人數與狀態；原會員、場地與付款關聯保留
+            {{ createMode ? '替既有會員新增場地租借' : '修改活動、日期、人數與狀態；原會員、場地與付款關聯保留' }}
           </p>
         </div>
 
@@ -138,7 +240,7 @@ function rentalStatusLabel(status) {
 
       <div class="rental-form">
 
-        <label>
+        <label v-if="editMode">
           <span>租借 ID</span>
           <input
             v-model="form.rentalId"
@@ -174,8 +276,11 @@ function rentalStatusLabel(status) {
         <label>
           <span>會員 ID</span>
           <input
-            v-model="form.memberId" readonly
+            v-model="form.memberId"
             type="number"
+            min="1"
+            :readonly="editMode"
+            :disabled="loading"
           >
         </label>
 
@@ -205,7 +310,7 @@ function rentalStatusLabel(status) {
           >
         </label>
 
-        <label>
+        <label v-if="editMode">
           <span>付款 ID</span>
           <input
             v-model="form.paymentId" readonly
@@ -213,7 +318,7 @@ function rentalStatusLabel(status) {
           >
         </label>
 
-        <label>
+        <label v-if="editMode">
           <span>狀態</span>
 
           <select v-model="form.rentalStatus" :disabled="loading">
@@ -232,6 +337,16 @@ function rentalStatusLabel(status) {
       <div class="actions form-actions">
 
         <button
+          v-if="createMode"
+          type="button"
+          :disabled="loading"
+          @click="handleCreate"
+        >
+          新增租借
+        </button>
+
+        <button
+          v-if="editMode"
           type="button"
           :disabled="loading"
           @click="handleSubmit"
@@ -240,10 +355,11 @@ function rentalStatusLabel(status) {
         </button>
 
         <button
-          v-if="editMode"
+          v-if="createMode || editMode"
           type="button"
           class="secondary"
-          :disabled="loading" @click="resetForm"
+          :disabled="loading"
+          @click="resetForm"
         >
           取消
         </button>

@@ -92,6 +92,20 @@ export async function createRental(token, payload) {
   return response.data;
 }
 
+/*
+ * 管理員替既有會員建立場地租借。
+ * memberId 由後台指定，其餘系統欄位仍由後端產生。
+ */
+export async function createAdminRental(token, payload) {
+  const response = await api.post(
+    "/rentals/admin",
+    payload,
+    authConfig(token),
+  );
+
+  return response.data;
+}
+
 
 /*
  * 目前登入會員取消自己的場地預約。
