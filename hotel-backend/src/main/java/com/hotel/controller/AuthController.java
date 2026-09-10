@@ -24,6 +24,7 @@ import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
 import com.hotel.repository.ProfileRepository;
 import com.hotel.service.MemberService;
+import com.hotel.util.JsonUtils;
 import com.hotel.util.JwtUtils;
 import com.hotel.util.MailUtil;
 
@@ -205,6 +206,92 @@ public class AuthController {
         response.put("authorities", authorities);
         response.put("name", name);
         return ResponseEntity.ok(response);
+    }
+
+    // =====================================================
+    // Google 第三方登入
+    // POST /api/auth/google-login
+    // =====================================================
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> request) {
+        String credential = request.get("credential");
+        String email = request.get("email");
+        String name = request.get("name");
+
+        // 若傳入 Google Credential (JWT)，解析 Payload 取得 email 與 name
+        if (credential != null && !credential.isBlank()) {
+            try {
+                String[] parts = credential.split("\\.");
+                if (parts.length >= 2) {
+                    byte[] decodedBytes = java.util.Base64.getUrlDecoder().decode(parts[1]);
+                    String jsonStr = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
+                    Map<String, Object> payload = JsonUtils.toMap(jsonStr);
+                    if (payload != null) {
+                        if (payload.get("email") != null) {
+                            email = String.valueOf(payload.get("email"));
+                        }
+                        if (payload.get("name") != null && (name == null || name.isBlank())) {
+                            name = String.valueOf(payload.get("name"));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // 解析失敗時使用原本傳入的 email 與 name
+            }
+        }
+
+        if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "未取得有效的 Google 電子信箱"));
+        }
+        email = email.trim().toLowerCase();
+
+        // 查詢是否已存在以此 Email 註冊的會員
+        Profile profile = profileRepository.findFirstByEmail(email).orElse(null);
+
+        if (profile != null && profile.getAccountId() != null) {
+            // 已註冊：執行登入並發放 JWT
+            Account account = accountRepository.findById(profile.getAccountId()).orElse(null);
+            if (account == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "查無對應的會員帳號資料"));
+            }
+
+            if ("0".equals(account.getStatus())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "該帳號已被停用，請聯絡客服人員"));
+            }
+
+            UserDetails user = userDetailsService.loadUserByUsername(account.getUsername());
+            String token = jwtUtils.generateToken(user);
+
+            java.util.List<String> authorities = user.getAuthorities().stream()
+                    .map(auth -> auth != null ? auth.getAuthority() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+            String displayName = (profile.getName() != null && !profile.getName().isBlank())
+                    ? profile.getName()
+                    : user.getUsername();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("registered", true);
+            response.put("token", token);
+            response.put("authorities", authorities);
+            response.put("name", displayName);
+            response.put("username", user.getUsername());
+            return ResponseEntity.ok(response);
+        } else {
+            // 尚未註冊：生成專屬 Google 預先認證碼並存入快取（15 分鐘效期）
+            String googleVerifiedCode = "G-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+            long expireTime = System.currentTimeMillis() + (15 * 60 * 1000);
+            verificationCodes.put(email, new VerificationCodeRecord(googleVerifiedCode, expireTime));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("registered", false);
+            response.put("email", email);
+            response.put("name", name != null ? name : "");
+            response.put("googleVerifiedCode", googleVerifiedCode);
+            response.put("message", "此 Google 帳號尚未註冊，即將為您引導至註冊頁面並帶入資料");
+            return ResponseEntity.ok(response);
+        }
     }
 
     // =====================================================
