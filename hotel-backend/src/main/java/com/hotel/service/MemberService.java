@@ -300,6 +300,33 @@ public class MemberService {
     }
 
     // =========================================
+    // 9. 會員修改密碼
+    // =========================================
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("使用者帳號無效");
+        }
+        Account account = accountRepository.findByUsername(username.trim());
+        if (account == null) {
+            throw new IllegalArgumentException("查無此會員帳號");
+        }
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("請輸入目前的密碼");
+        }
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new IllegalArgumentException("新密碼長度至少需為 6 個字元");
+        }
+        if (!passwordEncoder.matches(currentPassword, account.getPassword())) {
+            throw new IllegalArgumentException("目前密碼輸入錯誤，請重新確認");
+        }
+        if (passwordEncoder.matches(newPassword.trim(), account.getPassword())) {
+            throw new IllegalArgumentException("新密碼不能與目前密碼相同");
+        }
+        account.setPassword(passwordEncoder.encode(newPassword.trim()));
+        accountRepository.save(account);
+    }
+
+    // =========================================
     // 輔助方法：Entity -> DTO 轉換
     // =========================================
     private MemberDTO toDTO(Member member, Account account, Profile profile) {
