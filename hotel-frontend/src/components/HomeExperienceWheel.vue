@@ -11,20 +11,20 @@ const experiences = [
     action: "探索住宿",
   },
   {
-    title: "精緻餐飲",
-    english: "TASTE & GATHER",
-    description: "與重要的人共享一席佳餚，讓相聚的時刻值得回味。",
-    photo: "photo-1517248135467-4c7edcad34c4",
-    to: "/restaurant-menu",
-    action: "探索餐廳",
-  },
-  {
     title: "飯店商品",
     english: "SHOP & ENJOY",
     description: "挑選喜愛的飯店好物，把旅途中的舒適與質感帶回日常。",
     photo: "/images/home-hotel-gourmet.png",
     to: "/products",
     action: "探索商品",
+  },
+  {
+    title: "精緻餐飲",
+    english: "TASTE & GATHER",
+    description: "與重要的人共享一席佳餚，讓相聚的時刻值得回味。",
+    photo: "photo-1517248135467-4c7edcad34c4",
+    to: "/restaurant-menu",
+    action: "探索餐廳",
   },
   {
     title: "場地租借",
@@ -37,7 +37,6 @@ const experiences = [
 ];
 const selected = ref(0);
 const rotation = ref(0);
-const autoPlayPaused = ref(false);
 const autoPlayActive = ref(false);
 const current = computed(() => experiences[selected.value]);
 const AUTO_ROTATE_DELAY = 5000;
@@ -65,7 +64,6 @@ function syncAutoRotate() {
   stopAutoRotate();
 
   if (
-    autoPlayPaused.value ||
     pointerInsideWheel ||
     focusInsideCarousel ||
     document.hidden ||
@@ -110,11 +108,6 @@ function handleFocusIn() {
 
 function handleFocusOut(event) {
   focusInsideCarousel = event.currentTarget.contains(event.relatedTarget);
-  syncAutoRotate();
-}
-
-function toggleAutoPlay() {
-  autoPlayPaused.value = !autoPlayPaused.value;
   syncAutoRotate();
 }
 
@@ -210,24 +203,7 @@ onBeforeUnmount(() => {
       >
         ›
       </button>
-      <button
-        type="button"
-        class="autoplay-toggle"
-        :aria-label="autoPlayPaused ? '繼續自動播放' : '暫停自動播放'"
-        :aria-pressed="autoPlayPaused"
-        @click="toggleAutoPlay"
-      >
-        <svg v-if="autoPlayPaused" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m9 7 8 5-8 5V7Z" />
-        </svg>
-        <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M9 7v10M15 7v10" />
-        </svg>
-      </button>
     </div>
-    <a href="#home-services" class="wheel-scroll"
-      >探索更多 <span aria-hidden="true">↓</span></a
-    >
   </section>
 </template>
 
@@ -411,18 +387,6 @@ onBeforeUnmount(() => {
   color: #775322;
   font-size: 28px;
 }
-.wheel-controls .autoplay-toggle {
-  margin-left: -12px;
-}
-.autoplay-toggle svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 .wheel-count {
   font-size: 15px;
   letter-spacing: 0.15em;
@@ -430,18 +394,8 @@ onBeforeUnmount(() => {
 .wheel-count span {
   opacity: 0.75;
 }
-.wheel-scroll {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  color: white;
-  font-size: 13px;
-  text-decoration: none;
-}
 .wheel-link:focus-visible,
-.wheel-controls button:focus-visible,
-.wheel-scroll:focus-visible {
+.wheel-controls button:focus-visible {
   outline: 3px solid #bc8a3a;
   outline-offset: 4px;
 }

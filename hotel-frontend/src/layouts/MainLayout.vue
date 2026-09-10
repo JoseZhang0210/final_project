@@ -30,7 +30,9 @@ const isAdminOrEmployee = computed(() => {
 <template>
   <div class="layout">
     <header>
-      <RouterLink to="/" class="logo">星澄飯店</RouterLink>
+      <RouterLink to="/" class="logo" aria-label="星澄飯店首頁">
+        <img src="/images/starlight-hotel-logo-emblem.svg" alt="星澄飯店" />
+      </RouterLink>
 
       <nav>
         <RouterLink to="/"> 首頁 </RouterLink>
@@ -152,11 +154,16 @@ header {
 }
 
 .logo {
-  font-size: 26px;
-  font-weight: bold;
-  color: #9b7435;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   text-decoration: none;
-  letter-spacing: 1.5px;
+}
+
+.logo img {
+  display: block;
+  width: 220px;
+  height: auto;
 }
 
 nav {
@@ -370,6 +377,10 @@ footer {
     flex-wrap: wrap;
     justify-content: center;
     gap: 14px;
+  }
+
+  .logo img {
+    width: 196px;
   }
 }
 </style>
