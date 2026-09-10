@@ -177,7 +177,7 @@ function startEdit(rental) { // 移植舊版選取資料並捲至表單的操作
   editMode.value = true;
   const aliases = { '待確認': 'PENDING', '待付款': 'PENDING', '已確認': 'CONFIRMED', '已取消': 'CANCELLED', '已完成': 'COMPLETED' }; // 相容 seed 與歷史中文狀態。
   form.value = { ...rental, rentalDate: String(rental.rentalDate).substring(0, 16), rentalStatus: aliases[rental.rentalStatus] || rental.rentalStatus }; // 複製資料，避免尚未儲存就改動表格。
-  message.value = '目前正在編輯租借 ID ' + rental.rentalId; errorMessage.value = ''; // 提示目前編輯對象。
+  message.value = ''; errorMessage.value = ''; // 進入編輯模式時不顯示額外狀態提示。
   window.scrollTo({ top: 0, behavior: 'smooth' }); // 沿用舊版操作位置。
 } // 結束開始編輯。
 async function handleDelete(rental) { // 保留舊版刪除確認。
