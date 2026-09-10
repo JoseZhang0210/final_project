@@ -1,5 +1,5 @@
 <template>
-  <div class="product-detail-page">
+  <div class="product-view product-detail-page">
     <div class="detail-ambient detail-ambient-left" aria-hidden="true"></div>
     <div class="detail-ambient detail-ambient-right" aria-hidden="true"></div>
 
@@ -1158,4 +1158,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped src="@/assets/product-detail.css"></style>
+<style scoped src="@/assets/product/product-detail.css"></style>

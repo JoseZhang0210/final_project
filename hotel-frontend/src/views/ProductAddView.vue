@@ -1,5 +1,5 @@
 <template>
-  <div class="product-form-page product-add-page">
+  <div class="product-view product-form-page product-add-page">
     <!-- =========================
          頁面標題
          ========================= -->
@@ -700,4 +700,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped src="@/assets/product-form.css"></style>
+<style scoped src="@/assets/product/product-form.css"></style>
