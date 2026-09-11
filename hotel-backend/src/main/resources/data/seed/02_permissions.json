@@ -23,6 +23,26 @@
     "permissionId": 5,
     "permissionCode": "ORDER_MANAGE",
     "permissionName": "訂單管理"
+  },
+  {
+    "permissionId": 6,
+    "permissionCode": "PRODUCT_MANAGE",
+    "permissionName": "商品管理"
+  },
+  {
+    "permissionId": 7,
+    "permissionCode": "EMPLOYEE_MANAGE",
+    "permissionName": "員工管理"
+  },
+  {
+    "permissionId": 8,
+    "permissionCode": "COUPON_MANAGE",
+    "permissionName": "優惠券管理"
+  },
+  {
+    "permissionId": 9,
+    "permissionCode": "VENUE_MANAGE",
+    "permissionName": "場地管理"
   }
 ]
 
