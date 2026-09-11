@@ -1,0 +1,19 @@
+[
+  {
+    "paymentId": 1,
+    "paymentMethod": null,
+    "paymentTime": null,
+    "totalPrice": 50000,
+    "paymentStatus": "待付款",
+    "memberId": 1
+  },
+  {
+    "paymentId": 2,
+    "paymentMethod": null,
+    "paymentTime": null,
+    "totalPrice": 12000,
+    "paymentStatus": "待付款",
+    "memberId": 1
+  }
+]
+
