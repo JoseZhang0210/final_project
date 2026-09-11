@@ -1,0 +1,83 @@
+[
+  {
+    "productId": 1,
+    "productName": "飯店馬克杯",
+    "categoryId": 1,
+    "description": "飯店限定陶瓷馬克杯",
+    "price": 350,
+    "stock": 60,
+    "imageUrl": "https://www.ikea.com.tw/dairyfarm/tw/images/425/0642527_PE701233_S5.jpg",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 2,
+    "productName": "飯店保溫瓶",
+    "categoryId": 1,
+    "description": "不鏽鋼保溫瓶",
+    "price": 599,
+    "stock": 20,
+    "imageUrl": "https://pcm.trplus.com.tw/1000x1000/sys-master/productImages/h61/hf0/12482803433502/000000000014380795-gallery-01-20250512120526166.jpg",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 3,
+    "productName": "飯店帆布袋",
+    "categoryId": 1,
+    "description": "飯店紀念帆布袋",
+    "price": 299,
+    "stock": 25,
+    "imageUrl": "https://img.pchome.com.tw/cs/items/DIBF8QA900FUMYK/l000001_1684827319.jpg?width=640",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 4,
+    "productName": "飯店鑰匙圈",
+    "categoryId": 1,
+    "description": "飯店造型紀念鑰匙圈",
+    "price": 150,
+    "stock": 50,
+    "imageUrl": "https://ethergifts.com.tw/cdn/shop/files/Stainless-Steel-Round-Key-Ring_1.jpg?v=1744870780",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 5,
+    "productName": "飯店明信片",
+    "categoryId": 1,
+    "description": "飯店風景紀念明信片",
+    "price": 80,
+    "stock": 100,
+    "imageUrl": "https://www.hsabc.com.tw/upload/Product/F_20180425073935Pw0Qv9.JPG",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 6,
+    "productName": "飯店浴袍",
+    "categoryId": 2,
+    "description": "柔軟舒適飯店浴袍",
+    "price": 899,
+    "stock": 15,
+    "imageUrl": "https://www.ikea.com.tw/dairyfarm/tw/images/355/1135518_PE879084_S4.jpg",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 7,
+    "productName": "牙刷組",
+    "categoryId": 2,
+    "description": "客房盥洗牙刷組",
+    "price": 50,
+    "stock": 100,
+    "imageUrl": "https://cdn-general.cybassets.com/media/W1siZiIsIjEzODk2L3Byb2R1Y3RzLzUxODQxNjc4LzE3MzMzNjg5NzlfOGM3NjMyZDFjMTljNTA4ODNiMmQuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=653de3478f6602ad",
+    "status": "ACTIVE"
+  },
+  {
+    "productId": 8,
+    "productName": "刮鬍刀",
+    "categoryId": 2,
+    "description": "一次性刮鬍刀",
+    "price": 80,
+    "stock": 80,
+    "imageUrl": "https://down-tw.img.susercontent.com/file/dec7c4ec0fe46e252f62ed9c8978a85b",
+    "status": "ACTIVE"
+  }
+]
+

@@ -101,6 +101,44 @@ public class MemberController {
     }
 
     // =========================================
+    // 4-1. 會員修改自己的密碼（使用 JWT 識別）
+    // PUT /api/members/me/password
+    // =========================================
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changeMyPassword(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "尚未登入或認證已失效"));
+        }
+
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+        String confirmPassword = request.get("confirmPassword");
+
+        if (currentPassword == null || currentPassword.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "請輸入目前密碼"));
+        }
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "新密碼長度至少需為 6 個字元"));
+        }
+        if (confirmPassword != null && !newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "兩次輸入的新密碼不一致"));
+        }
+
+        try {
+            memberService.changePassword(authentication.getName(), currentPassword, newPassword);
+            return ResponseEntity.ok(Map.of("message", "密碼修改成功！"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "修改密碼失敗：" + e.getMessage()));
+        }
+    }
+
+    // =========================================
     // 5. 依 ID 查詢單一會員詳細資料
     // GET /api/members/{id}
     // 例如：GET /api/members/1

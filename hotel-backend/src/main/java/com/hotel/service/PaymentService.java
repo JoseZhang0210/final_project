@@ -258,17 +258,6 @@ public class PaymentService {
                 Payment savedPayment = paymentRepository
                                 .save(payment);
 
-                // =============================
-                // 確認這筆 Payment 有對應訂單
-                // =============================
-
-                CustomerOrder order = customerOrderRepository
-                                .findByPaymentId(
-                                                paymentId)
-                                .orElseThrow(
-                                                () -> new RuntimeException(
-                                                                "找不到對應訂單"));
-
                 // =========================================
                 // 非常重要：
                 //

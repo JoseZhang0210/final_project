@@ -1,5 +1,5 @@
 <template>
-  <div class="shop-page">
+  <div class="product-view shop-page">
     <!-- =========================
          商城 Hero
          ========================= -->
@@ -29,29 +29,52 @@
         </div>
 
         <!-- 商品分類 -->
-        <div class="category-list">
+        <div
+          class="category-carousel"
+          :class="categoryDirection > 0 ? 'moving-next' : 'moving-previous'"
+        >
           <button
+            v-if="categoryOptions.length > 4"
             type="button"
-            class="category-button"
-            :class="{
-              active: selectedCategory === null,
-            }"
-            @click="selectCategory(null)"
+            class="category-arrow"
+            aria-label="向左查看更多商品分類"
+            :disabled="!canScrollCategoriesLeft"
+            @click="changeCategoryPage(-1)"
           >
-            全部商品
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
 
+          <Transition name="category-page" mode="out-in">
+            <div :key="categoryPageStart" class="category-list">
+              <button
+                v-for="category in visibleCategoryOptions"
+                :key="category.categoryId ?? 'all'"
+                type="button"
+                class="category-button"
+                :class="{
+                  active: selectedCategory === category.categoryId,
+                }"
+                :title="category.categoryName"
+                @click="selectCategory(category.categoryId)"
+              >
+                {{ category.categoryName }}
+              </button>
+            </div>
+          </Transition>
+
           <button
-            v-for="category in categories"
-            :key="category.categoryId"
+            v-if="categoryOptions.length > 4"
             type="button"
-            class="category-button"
-            :class="{
-              active: selectedCategory === category.categoryId,
-            }"
-            @click="selectCategory(category.categoryId)"
+            class="category-arrow"
+            aria-label="向右查看更多商品分類"
+            :disabled="!canScrollCategoriesRight"
+            @click="changeCategoryPage(1)"
           >
-            {{ category.categoryName }}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -489,6 +512,28 @@ const products = ref([]);
 
 const categories = ref([]);
 
+const categoryOptions = computed(() => [
+  { categoryId: null, categoryName: "全部商品" },
+  ...categories.value,
+]);
+
+const CATEGORY_PAGE_SIZE = 4;
+const categoryPageStart = ref(0);
+const categoryDirection = ref(1);
+
+const visibleCategoryOptions = computed(() =>
+  categoryOptions.value.slice(
+    categoryPageStart.value,
+    categoryPageStart.value + CATEGORY_PAGE_SIZE,
+  ),
+);
+
+const canScrollCategoriesLeft = computed(() => categoryPageStart.value > 0);
+const canScrollCategoriesRight = computed(
+  () =>
+    categoryPageStart.value + CATEGORY_PAGE_SIZE < categoryOptions.value.length,
+);
+
 // =====================================================
 // 搜尋文字
 // =====================================================
@@ -705,6 +750,25 @@ function selectCategory(categoryId) {
   selectedCategory.value = categoryId;
 
   scrollToProducts();
+}
+
+function changeCategoryPage(direction) {
+  const lastStartIndex = Math.max(
+    0,
+    categoryOptions.value.length - CATEGORY_PAGE_SIZE,
+  );
+
+  const nextStartIndex = Math.min(
+    lastStartIndex,
+    Math.max(0, categoryPageStart.value + direction),
+  );
+
+  if (nextStartIndex === categoryPageStart.value) {
+    return;
+  }
+
+  categoryDirection.value = direction;
+  categoryPageStart.value = nextStartIndex;
 }
 
 // =====================================================
@@ -956,4 +1020,4 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped src="@/assets/product-shop.css"></style>
+<style scoped src="@/assets/product/product-shop.css"></style>

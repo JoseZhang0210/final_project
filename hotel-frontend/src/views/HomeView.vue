@@ -14,7 +14,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
         <div class="home-section__heading">
           <p class="home-section__eyebrow">OUR SERVICES</p>
           <h2 id="services-title">展開你的星澄體驗</h2>
-          <p>無論是一夜好眠、一席佳餚，或把飯店質感帶回家，都能從這裡開始。</p>
+          <p>無論是一夜好眠、一席佳餚、飯店選物或重要聚會，都能從這裡開始。</p>
         </div>
 
         <div class="home-services__grid">
@@ -67,6 +67,24 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
             <p>精選寢具、香氛與特色商品，讓旅途中的舒適延續到日常。</p>
             <RouterLink to="/products" class="service-card__link">
               前往商城
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </RouterLink>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 20V8l8-4 8 4v12M4 10h16M8 20v-6h8v6" />
+                <path d="M9 7.5h.01M15 7.5h.01" />
+              </svg>
+            </div>
+            <p class="service-card__number">04</p>
+            <h3>場地租借</h3>
+            <p>從會議、聚會到慶祝活動，找到符合人數與需求的理想空間。</p>
+            <RouterLink to="/rentals" class="service-card__link">
+              查看場地
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="m9 18 6-6-6-6" />
               </svg>
@@ -266,9 +284,9 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
 }
 
 .home-services__grid {
-  width: min(1180px, 100%);
+  width: min(1400px, 100%);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px;
   margin-inline: auto;
 }
@@ -433,7 +451,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
     font-size: clamp(28px, 5.2vw, 42px);
   }
   .home-services__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .service-card {
     min-height: 280px;
@@ -481,6 +499,9 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
   .home-section__heading {
     margin-bottom: 32px;
     text-align: left;
+  }
+  .home-services__grid {
+    grid-template-columns: 1fr;
   }
   .service-card {
     min-height: 0;

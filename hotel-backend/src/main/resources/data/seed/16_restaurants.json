@@ -1,0 +1,19 @@
+[
+  {
+    "restaurantId": 1,
+    "restaurantName": "雲澄自助餐廳",
+    "address": "桃園市中壢區中央西路100號",
+    "phone": "03-1234567",
+    "capacity": 120,
+    "description": "提供中西式自助餐"
+  },
+  {
+    "restaurantId": 2,
+    "restaurantName": "景觀咖啡廳",
+    "address": "桃園市中壢區中央西路100號",
+    "phone": "03-1234568",
+    "capacity": 60,
+    "description": "提供咖啡及下午茶"
+  }
+]
+

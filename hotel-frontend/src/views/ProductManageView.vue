@@ -1,5 +1,5 @@
 <template>
-  <div class="product-manage-page">
+  <div class="product-view product-manage-page">
     <div class="admin-page-header">
       <div>
         <h1>商品管理</h1>
@@ -10,7 +10,7 @@
         <button
           type="button"
           class="admin-btn admin-btn-secondary product-json-button"
-          :disabled="exporting || importing"
+          :disabled="exporting || importing || seedingDemo"
           @click="exportProductsJson"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -22,7 +22,7 @@
         <button
           type="button"
           class="admin-btn admin-btn-secondary product-json-button"
-          :disabled="exporting || importing"
+          :disabled="exporting || importing || seedingDemo"
           @click="openImportFilePicker"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -38,6 +38,20 @@
           accept=".json,application/json"
           @change="handleImportFile"
         />
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary product-json-button product-demo-button"
+          :disabled="exporting || importing || seedingDemo"
+          @click="seedDemoProducts"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <ellipse cx="12" cy="5" rx="8" ry="3" />
+            <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+            <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+          </svg>
+          {{ seedingDemo ? "建立中..." : "一鍵加入展示商品" }}
+        </button>
 
         <RouterLink
           to="/admin/products/add"
@@ -590,6 +604,8 @@ const exporting = ref(false);
 
 const importing = ref(false);
 
+const seedingDemo = ref(false);
+
 const importFileInput = ref(null);
 
 // =====================================================
@@ -834,6 +850,47 @@ async function handleImportFile(event) {
   } finally {
     importing.value = false;
     event.target.value = "";
+  }
+}
+
+// =====================================================
+// 一鍵建立展示商品
+// =====================================================
+
+async function seedDemoProducts() {
+  const confirmed = window.confirm(
+    "確定要加入展示商品嗎？系統只會補上尚未存在的展示資料，不會覆蓋目前商品。",
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  seedingDemo.value = true;
+
+  try {
+    const response = await fetch("/api/products/demo-seed", {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(result?.message || "建立展示商品失敗");
+    }
+
+    await Promise.all([loadProducts(), loadCategories()]);
+    showMessage(
+      result?.message
+        || `展示資料建立完成：新增 ${result?.createdCount ?? 0} 筆商品`,
+      "success",
+      7000,
+    );
+  } catch (error) {
+    console.error("建立展示商品失敗：", error);
+    showMessage(error.message || "建立展示商品失敗", "error", 7000);
+  } finally {
+    seedingDemo.value = false;
   }
 }
 
@@ -1141,13 +1198,19 @@ async function deleteProduct(product) {
       headers: getAuthHeaders(),
     });
 
+    const responseData = await response.json().catch(() => null);
+
     if (!response.ok) {
-      showMessage("刪除商品失敗", "error");
+      showMessage(responseData?.message || "刪除商品失敗", "error", 6000);
 
       return;
     }
 
-    showMessage("商品刪除成功", "success");
+    showMessage(
+      responseData?.message || "商品刪除成功",
+      responseData?.archived ? "warning" : "success",
+      7000,
+    );
 
     if (keyword.value.trim()) {
       await searchProducts();
@@ -1526,4 +1589,4 @@ onMounted(async () => {
   await Promise.all([loadProducts(), loadCategories()]);
 });
 </script>
-<style src="@/assets/product-manage.css"></style>
+<style src="@/assets/product/product-manage.css"></style>

@@ -47,7 +47,9 @@ import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 //--------------- 會員中心 -----------------
 import MemberLayout from "../layouts/MemberLayout.vue";
 import MemberProfileView from "../views/MemberProfileView.vue";
+import MemberPasswordView from "../views/MemberPasswordView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
+import ProductWishlistView from "../views/ProductWishlistView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -283,9 +285,19 @@ const router = createRouter({
               component: MemberProfileView,
             },
             {
+              path: "password",
+              name: "member-password",
+              component: MemberPasswordView,
+            },
+            {
               path: "orders",
               name: "member-orders",
               component: MyOrdersView,
+            },
+            {
+              path: "wishlist",
+              name: "member-wishlist",
+              component: ProductWishlistView,
             },
             { // 新增會員專屬場地預約入口。
               path: "rentals", // 完整網址為 /member/rentals。

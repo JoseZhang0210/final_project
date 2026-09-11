@@ -1,4 +1,38 @@
 <script setup>
+function scrollToRestaurants() {
+  const target = document.querySelector("#restaurant-list");
+
+  if (!target) {
+    return;
+  }
+
+  const headerOffset = 100;
+  const targetPosition =
+    target.getBoundingClientRect().top + window.scrollY - headerOffset;
+  const startPosition = window.scrollY;
+  const distance = targetPosition - startPosition;
+  const duration = 900;
+  const startTime = performance.now();
+
+  function easeInOutQuad(progress) {
+    return progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+  }
+
+  function animateScroll(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    window.scrollTo(0, startPosition + distance * easeInOutQuad(progress));
+
+    if (progress < 1) {
+      requestAnimationFrame(animateScroll);
+    }
+  }
+
+  requestAnimationFrame(animateScroll);
+}
 const restaurants = [
   {
     name: "雲饗中式自助餐廳",
@@ -46,11 +80,13 @@ const restaurants = [
         <p class="eyebrow">DINING AT XINGCHENG HOTEL</p>
         <h1>品味每一段美好時光</h1>
         <p>
-          從豐盛自助餐、精緻西式料理，到浪漫義式餐點與夜晚駐唱酒吧，
+          從豐盛自助餐、精緻西式料理，到浪漫義式餐點與夜晚駐唱酒吧，<br />
           星澄飯店為您準備不同風味的用餐體驗。
         </p>
 
-        <a href="#restaurant-list" class="hero-button">探索餐廳</a>
+        <a href="#restaurant-list" class="hero-button" @click.prevent="scrollToRestaurants">
+          探索餐廳
+        </a>
       </div>
     </section>
 
@@ -108,7 +144,9 @@ const restaurants = [
   min-height: 520px;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 60px 10%;
+  text-align: center;
   background:
     linear-gradient(90deg, rgba(30, 24, 18, 0.76), rgba(30, 24, 18, 0.22)),
     url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1800&q=90") center / cover;
@@ -135,11 +173,11 @@ const restaurants = [
 }
 
 .hero-content>p:not(.eyebrow) {
-  max-width: 560px;
-  margin: 22px 0 32px;
+  max-width: 800px;
+  margin: 22px auto 32px;
   color: #f3ece3;
   font-size: 17px;
-  line-height: 1.9;
+  line-height: 2;
 }
 
 .hero-button {
@@ -186,6 +224,10 @@ const restaurants = [
   grid-template-columns: repeat(2, 1fr);
   gap: 30px;
   margin: 20px auto 0;
+}
+
+#restaurant-list {
+  scroll-margin-top: 100px;
 }
 
 .restaurant-card {
