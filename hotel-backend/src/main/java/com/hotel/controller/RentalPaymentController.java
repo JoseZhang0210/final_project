@@ -21,6 +21,14 @@ public class RentalPaymentController { // 控制器不處理付款狀態邏輯�
     /** 建立指定租借的綠界 Stage 結帳參數。 */
     @PostMapping("/rentals/{id}/checkout") // 前端只傳租借編號，不接收價格。
     public Object checkout(@PathVariable Integer id, Authentication authentication) { return service.checkout(id,authentication); } // 返回後端簽章的 Stage 表單參數。
+    /** 本機測試付款；仍要求登入會員，且 Service 會再驗證本人。 */
+    @PostMapping("/rentals/{id}/stage-demo-paid")
+    public Object stageDemoPaid(
+        @PathVariable Integer id,
+        Authentication authentication
+    ) {
+        return service.stageDemoPaid(id, authentication);
+    }
     /** 驗證並處理綠界付款結果通知。 */
     @PostMapping(value="/ecpay/return",produces="text/plain") // 唯一不需要會員 JWT 的付款通知路徑。
     public ResponseEntity<String> callback(@RequestParam MultiValueMap<String,String> parameters) { // 綠界以表單傳遞資料。
