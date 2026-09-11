@@ -2,6 +2,7 @@ package com.hotel.model.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -40,5 +41,10 @@ public class EmployeeDTO {
     private LocalDate birthday;
     private String gender;
     private LocalDateTime updatedAt;
+
+    // 權限清單
+    private List<Integer> permissionIds;
+    private List<String> permissionNames;
 }
+
 

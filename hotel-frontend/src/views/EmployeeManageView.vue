@@ -41,8 +41,17 @@
         >
           ＋ 新增員工
         </button>
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary"
+          @click="openPermissionModal"
+        >
+          ⚙ 權限種類管理
+        </button>
       </div>
     </div>
+
 
     <!-- =========================
          員工管理卡片
@@ -56,7 +65,7 @@
           v-model="keyword"
           type="text"
           class="admin-input search-input"
-          placeholder="搜尋帳號、姓名、職位、信箱、電話..."
+          placeholder="搜尋帳號、姓名、部門、職位、權限、信箱、電話..."
           @keyup.enter="resetPage"
         />
 
@@ -176,6 +185,8 @@
                 <span class="sort-icon">{{ getSortIcon("department") }}</span>
               </th>
 
+              <th>權限</th>
+
               <th>聯絡方式</th>
 
               <th class="sortable" @click="changeSort('gender')">
@@ -195,7 +206,7 @@
           <tbody>
             <!-- 沒資料 -->
             <tr v-if="paginatedEmployees.length === 0">
-              <td colspan="8" class="empty-message">查無符合條件的員工</td>
+              <td colspan="9" class="empty-message">查無符合條件的員工</td>
             </tr>
 
             <!-- 員工列表 -->
@@ -236,6 +247,21 @@
                   <span class="position-text">{{ employee.position || "未設定職位" }}</span>
                 </div>
               </td>
+
+              <!-- 權限 -->
+              <td>
+                <div v-if="employee.permissionNames && employee.permissionNames.length > 0" class="employee-perms-tags">
+                  <span
+                    v-for="(pName, pIdx) in employee.permissionNames"
+                    :key="pIdx"
+                    class="perm-badge"
+                  >
+                    {{ pName }}
+                  </span>
+                </div>
+                <span v-else class="text-muted">—</span>
+              </td>
+
 
               <!-- 聯絡方式 -->
               <td>
@@ -540,6 +566,50 @@
             </div>
           </div>
 
+          <!-- 區塊 4: 權限設定 -->
+          <div class="form-section-title perm-section-header">
+            <span>🛡️ 權限設定</span>
+            <div class="perm-header-actions">
+              <button
+                type="button"
+                class="link-action-btn"
+                @click="selectAllPermissions"
+              >
+                全選
+              </button>
+              <button
+                type="button"
+                class="link-action-btn"
+                @click="clearAllPermissions"
+              >
+                清空
+              </button>
+            </div>
+          </div>
+          <div class="perm-selector-wrapper">
+            <div v-if="permissions.length === 0" class="perm-empty-tip">
+              目前系統尚無權限種類，可點擊頁面上方「⚙ 權限種類管理」進行新增。
+            </div>
+            <div v-else class="perm-checkbox-grid">
+              <label
+                v-for="perm in permissions"
+                :key="perm.permissionId"
+                class="perm-checkbox-card"
+                :class="{ active: form.permissionIds.includes(perm.permissionId) }"
+              >
+                <input
+                  type="checkbox"
+                  :value="perm.permissionId"
+                  v-model="form.permissionIds"
+                />
+                <div class="perm-card-content">
+                  <span class="perm-card-name">{{ perm.permissionName }}</span>
+                  <span class="perm-card-code">{{ perm.permissionCode }}</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div class="employee-modal-footer">
             <button
               type="button"
@@ -560,6 +630,172 @@
         </form>
       </div>
     </div>
+
+    <!-- =====================================================
+         權限種類管理 Modal
+         ===================================================== -->
+    <div
+      v-if="permissionModalOpen"
+      class="category-modal"
+      @click.self="closePermissionModal"
+    >
+      <div class="category-manage-card">
+        <!-- Header -->
+        <div class="category-modal-header">
+          <div>
+            <h2>權限種類管理</h2>
+            <p>新增、修改或刪除系統員工權限種類</p>
+          </div>
+
+          <button type="button" class="modal-close" @click="closePermissionModal">
+            ×
+          </button>
+        </div>
+
+        <!-- =========================
+             新增種類
+             ========================= -->
+        <div class="category-create-area">
+          <label> 新增權限種類 </label>
+
+          <div class="perm-create-row">
+            <input
+              id="newPermissionName"
+              v-model="newPermissionName"
+              type="text"
+              placeholder="權限名稱，例如：訂單管理"
+              maxlength="50"
+              @keyup.enter="addPermission"
+            />
+
+            <input
+              v-model="newPermissionCode"
+              type="text"
+              placeholder="權限代碼，例如：ORDER_MANAGE"
+              maxlength="50"
+              @keyup.enter="addPermission"
+            />
+
+            <button
+              type="button"
+              class="admin-btn admin-btn-primary"
+              :disabled="permissionSaving"
+              @click="addPermission"
+            >
+              {{ permissionSaving ? "新增中..." : "＋ 新增" }}
+            </button>
+          </div>
+        </div>
+
+        <div class="category-divider"></div>
+
+        <!-- =========================
+             權限清單 List
+             ========================= -->
+        <div class="category-list-area">
+          <div class="category-list-title">
+            <span> 目前權限種類 </span>
+            <span class="category-count"> {{ permissions.length }} 種 </span>
+          </div>
+
+          <!-- 沒分類 -->
+          <div v-if="permissions.length === 0" class="category-empty">
+            尚無權限種類
+          </div>
+
+          <!-- 權限列表 -->
+          <div
+            v-for="perm in permissions"
+            :key="perm.permissionId"
+            class="category-manage-row"
+          >
+            <!-- 一般模式 -->
+            <template v-if="editingPermissionId !== perm.permissionId">
+              <div class="category-info perm-info-row">
+                <span class="category-id"> #{{ perm.permissionId }} </span>
+                <strong class="perm-title">
+                  {{ perm.permissionName }}
+                </strong>
+                <span class="perm-code-tag">
+                  {{ perm.permissionCode }}
+                </span>
+              </div>
+
+              <div class="category-actions">
+                <button
+                  type="button"
+                  class="category-edit-button"
+                  @click="startEditPermission(perm)"
+                >
+                  修改
+                </button>
+
+                <button
+                  type="button"
+                  class="category-delete-button"
+                  @click="deletePermission(perm)"
+                >
+                  刪除
+                </button>
+              </div>
+            </template>
+
+            <!-- 修改模式 -->
+            <template v-else>
+              <div class="perm-edit-row">
+                <input
+                  v-model="editingPermissionName"
+                  type="text"
+                  class="category-edit-input"
+                  placeholder="權限名稱"
+                  maxlength="50"
+                  @keyup.enter="updatePermission(perm.permissionId)"
+                />
+                <input
+                  v-model="editingPermissionCode"
+                  type="text"
+                  class="category-edit-input"
+                  placeholder="權限代碼"
+                  maxlength="50"
+                  @keyup.enter="updatePermission(perm.permissionId)"
+                />
+              </div>
+
+              <div class="category-actions">
+                <button
+                  type="button"
+                  class="category-save-button"
+                  :disabled="permissionUpdating"
+                  @click="updatePermission(perm.permissionId)"
+                >
+                  {{ permissionUpdating ? "儲存中" : "儲存" }}
+                </button>
+
+                <button
+                  type="button"
+                  class="category-cancel-button"
+                  @click="cancelEditPermission"
+                >
+                  取消
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="category-modal-footer">
+          <button
+            type="button"
+            class="admin-btn admin-btn-secondary"
+            @click="closePermissionModal"
+          >
+            關閉
+          </button>
+        </div>
+      </div>
+    </div>
+
 
     <!-- =====================================================
          匯出 Modal
@@ -778,6 +1014,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 const API_URL = "/api/employees";
 const DEPT_API_URL = "/api/departments";
+const PERM_API_URL = "/api/permissions";
 
 const DEFAULT_DEPARTMENTS = ["櫃檯部", "客房部", "餐飲部", "行政部"];
 
@@ -787,6 +1024,7 @@ const DEFAULT_DEPARTMENTS = ["櫃檯部", "客房部", "餐飲部", "行政部"]
 
 const departments = ref([]);
 const employees = ref([]);
+const permissions = ref([]);
 const keyword = ref("");
 const selectedDepartment = ref("");
 const selectedStatus = ref("");
@@ -794,6 +1032,19 @@ const loading = ref(false);
 const saving = ref(false);
 const message = ref("");
 const messageType = ref("");
+
+// =====================================================
+// 權限種類 Modal 狀態
+// =====================================================
+
+const permissionModalOpen = ref(false);
+const newPermissionName = ref("");
+const newPermissionCode = ref("");
+const permissionSaving = ref(false);
+const editingPermissionId = ref(null);
+const editingPermissionName = ref("");
+const editingPermissionCode = ref("");
+const permissionUpdating = ref(false);
 
 // =====================================================
 // 排序
@@ -827,6 +1078,7 @@ const form = reactive({
   departmentId: "",
   customDepartmentName: "",
   position: "",
+  permissionIds: [],
   name: "",
   email: "",
   phone: "",
@@ -837,6 +1089,7 @@ const form = reactive({
   district: "",
   address: "",
 });
+
 
 // =====================================================
 // JWT Header
@@ -1052,7 +1305,9 @@ const filteredEmployees = computed(() => {
       (emp.position || "").toLowerCase().includes(search) ||
       (emp.email || "").toLowerCase().includes(search) ||
       (emp.phone || "").includes(search) ||
-      (emp.departmentName || "").toLowerCase().includes(search);
+      (emp.departmentName || "").toLowerCase().includes(search) ||
+      (Array.isArray(emp.permissionNames) &&
+        emp.permissionNames.some((p) => (p || "").toLowerCase().includes(search)));
 
     const matchesDept =
       !deptFilter || String(emp.departmentId) === String(deptFilter);
@@ -1245,6 +1500,7 @@ function openCreateModal() {
   form.departmentId = departments.value.length > 0 ? departments.value[0].id : "__NEW__";
   form.customDepartmentName = "";
   form.position = "";
+  form.permissionIds = [];
   form.name = "";
   form.email = "";
   form.phone = "";
@@ -1285,6 +1541,7 @@ function openEditModal(employee) {
   }
 
   form.position = employee.position || "";
+  form.permissionIds = Array.isArray(employee.permissionIds) ? [...employee.permissionIds] : [];
   form.name = employee.name || "";
   form.email = employee.email || "";
   form.phone = employee.phone || "";
@@ -1353,6 +1610,7 @@ async function saveEmployee() {
     departmentId: finalDepartmentId,
     departmentName: finalDepartmentName,
     position: form.position.trim(),
+    permissionIds: Array.isArray(form.permissionIds) ? form.permissionIds : [],
     name: form.name.trim(),
     email: form.email.trim(),
     phone: form.phone.trim(),
@@ -1406,6 +1664,234 @@ async function saveEmployee() {
     saving.value = false;
   }
 }
+
+// =====================================================
+// 權限全選 / 清空
+// =====================================================
+
+function selectAllPermissions() {
+  form.permissionIds = permissions.value.map((p) => p.permissionId);
+}
+
+function clearAllPermissions() {
+  form.permissionIds = [];
+}
+
+// =====================================================
+// 讀取權限種類清單
+// GET /api/permissions
+// =====================================================
+
+async function loadPermissions() {
+  try {
+    const response = await fetch(PERM_API_URL, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      console.error("讀取權限種類失敗：", response.status);
+      return;
+    }
+
+    permissions.value = await response.json();
+  } catch (error) {
+    console.error("讀取權限種類失敗：", error);
+  }
+}
+
+// =====================================================
+// 開啟 / 關閉 權限種類管理 Modal
+// =====================================================
+
+function openPermissionModal() {
+  newPermissionName.value = "";
+  newPermissionCode.value = "";
+  cancelEditPermission();
+  permissionModalOpen.value = true;
+  setTimeout(() => {
+    document.getElementById("newPermissionName")?.focus();
+  }, 50);
+}
+
+function closePermissionModal() {
+  permissionModalOpen.value = false;
+  newPermissionName.value = "";
+  newPermissionCode.value = "";
+  cancelEditPermission();
+}
+
+// =====================================================
+// 權限種類 - 新增
+// POST /api/permissions
+// =====================================================
+
+async function addPermission() {
+  const permName = newPermissionName.value.trim();
+  const permCode = newPermissionCode.value.trim().toUpperCase();
+
+  if (!permName) {
+    showMessage("請輸入權限名稱", "error");
+    return;
+  }
+  if (!permCode) {
+    showMessage("請輸入權限代碼", "error");
+    return;
+  }
+
+  permissionSaving.value = true;
+
+  try {
+    const response = await fetch(PERM_API_URL, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        permissionName: permName,
+        permissionCode: permCode,
+      }),
+    });
+
+    if (response.status === 409) {
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "這個權限名稱或代碼已經存在", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage("新增權限種類失敗", "error");
+      return;
+    }
+
+    newPermissionName.value = "";
+    newPermissionCode.value = "";
+    await loadPermissions();
+    showMessage("權限種類新增成功", "success");
+  } catch (error) {
+    console.error("新增權限失敗：", error);
+    showMessage("新增權限種類失敗", "error");
+  } finally {
+    permissionSaving.value = false;
+  }
+}
+
+// =====================================================
+// 權限種類 - 編輯控制
+// =====================================================
+
+function startEditPermission(perm) {
+  editingPermissionId.value = perm.permissionId;
+  editingPermissionName.value = perm.permissionName;
+  editingPermissionCode.value = perm.permissionCode;
+}
+
+function cancelEditPermission() {
+  editingPermissionId.value = null;
+  editingPermissionName.value = "";
+  editingPermissionCode.value = "";
+}
+
+// =====================================================
+// 權限種類 - 修改儲存
+// PUT /api/permissions/{id}
+// =====================================================
+
+async function updatePermission(permissionId) {
+  const permName = editingPermissionName.value.trim();
+  const permCode = editingPermissionCode.value.trim().toUpperCase();
+
+  if (!permName) {
+    showMessage("權限名稱不能為空", "error");
+    return;
+  }
+  if (!permCode) {
+    showMessage("權限代碼不能為空", "error");
+    return;
+  }
+
+  permissionUpdating.value = true;
+
+  try {
+    const response = await fetch(`${PERM_API_URL}/${permissionId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        permissionName: permName,
+        permissionCode: permCode,
+      }),
+    });
+
+    if (response.status === 409) {
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "這個權限名稱或代碼已經存在", "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage("修改權限種類失敗", "error");
+      return;
+    }
+
+    cancelEditPermission();
+    await loadPermissions();
+    await loadEmployees(); // 同步表格中的權限名稱
+    showMessage("權限種類修改成功", "success");
+  } catch (error) {
+    console.error("修改權限失敗：", error);
+    showMessage("修改權限種類失敗", "error");
+  } finally {
+    permissionUpdating.value = false;
+  }
+}
+
+// =====================================================
+// 權限種類 - 刪除
+// DELETE /api/permissions/{id}
+// =====================================================
+
+async function deletePermission(perm) {
+  const result = window.confirm(
+    `確定要刪除權限種類「${perm.permissionName} (${perm.permissionCode})」嗎？`
+  );
+
+  if (!result) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${PERM_API_URL}/${perm.permissionId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 409) {
+      let errorMessage = "此權限種類仍有員工使用，請先移除員工權限後再刪除";
+      try {
+        const data = await response.json();
+        if (data.message) {
+          errorMessage = data.message;
+        }
+      } catch {}
+      showMessage(errorMessage, "error");
+      return;
+    }
+
+    if (!response.ok) {
+      showMessage("刪除權限種類失敗", "error");
+      return;
+    }
+
+    // 如果當前表單有勾選到被刪除的權限，予以移除
+    form.permissionIds = form.permissionIds.filter((id) => id !== perm.permissionId);
+
+    await loadPermissions();
+    await loadEmployees();
+    showMessage("權限種類刪除成功", "success");
+  } catch (error) {
+    console.error("刪除權限失敗：", error);
+    showMessage("刪除權限種類失敗", "error");
+  }
+}
+
 
 // =====================================================
 // 啟用 / 停用
@@ -1817,9 +2303,9 @@ watch(totalPages, (total) => {
 // =====================================================
 
 onMounted(async () => {
-  await loadDepartments();
-  await loadEmployees();
+  await Promise.all([loadDepartments(), loadEmployees(), loadPermissions()]);
 });
+
 </script>
 
 <style scoped>
@@ -2568,4 +3054,358 @@ onMounted(async () => {
     flex-direction: column;
   }
 }
+
+/* =========================================================
+   權限標籤 (表格與項目)
+   ========================================================= */
+
+.employee-perms-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.perm-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: #f6efe2;
+  color: #8a5d24;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #ebdcc5;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   員工表單 - 權限勾選卡片群組
+   ========================================================= */
+
+.perm-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.perm-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.link-action-btn {
+  background: none;
+  border: none;
+  color: #9b7435;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.link-action-btn:hover {
+  background-color: #f3ede2;
+  color: #6f5328;
+}
+
+.perm-selector-wrapper {
+  margin-bottom: 12px;
+}
+
+.perm-empty-tip {
+  color: #999;
+  font-size: 13px;
+  padding: 12px;
+  background-color: #fbf9f5;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.perm-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.perm-checkbox-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid #e8e2d7;
+  border-radius: 8px;
+  background-color: #fdfdfc;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.perm-checkbox-card:hover {
+  border-color: #b58a46;
+  background-color: #fbf8f2;
+}
+
+.perm-checkbox-card.active {
+  border-color: #b58a46;
+  background-color: #fdf8ef;
+  box-shadow: 0 0 0 1px #b58a46;
+}
+
+.perm-checkbox-card input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: #b58a46;
+  cursor: pointer;
+}
+
+.perm-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perm-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a3b2a;
+}
+
+.perm-card-code {
+  font-size: 11px;
+  color: #8c7b6d;
+  font-family: monospace;
+}
+
+/* =========================================================
+   權限種類管理 Modal (參照 Category Modal 風格)
+   ========================================================= */
+
+.category-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: rgba(47, 42, 36, 0.55);
+}
+
+.category-manage-card {
+  width: min(650px, 94vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.25);
+}
+
+.category-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #4a3b2a;
+  color: white;
+}
+
+.category-modal-header h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.category-modal-header p {
+  margin: 5px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.category-create-area {
+  padding: 22px 24px 18px;
+}
+
+.category-create-area label {
+  display: block;
+  margin-bottom: 9px;
+  color: #554536;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.perm-create-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.perm-create-row input {
+  flex: 1;
+  min-width: 140px;
+  padding: 11px 13px;
+  border: 1px solid #d8d0c5;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.perm-create-row input:focus,
+.category-edit-input:focus {
+  outline: none;
+  border-color: #b58a46;
+  box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.13);
+}
+
+.category-divider {
+  height: 1px;
+  margin: 0 24px;
+  background-color: #eee8df;
+}
+
+.category-list-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px;
+}
+
+.category-list-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #574b40;
+  font-weight: bold;
+}
+
+.category-count {
+  padding: 4px 9px;
+  border-radius: 15px;
+  background-color: #f2ece3;
+  color: #9b7435;
+  font-size: 11px;
+}
+
+.category-empty {
+  padding: 30px;
+  text-align: center;
+  color: #999;
+}
+
+.category-manage-row {
+  min-height: 58px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 10px 2px;
+  border-bottom: 1px solid #eee9e2;
+}
+
+.category-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-id {
+  width: 42px;
+  color: #aaa198;
+  font-size: 12px;
+}
+
+.perm-info-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.perm-title {
+  color: #51463b;
+  font-size: 14px;
+}
+
+.perm-code-tag {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: #f3ede2;
+  color: #8c6832;
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.perm-edit-row {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-actions {
+  display: flex;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.category-actions button {
+  padding: 6px 11px;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.category-edit-button {
+  background-color: #edf2fb;
+  color: #3d6092;
+}
+
+.category-edit-button:hover {
+  background-color: #dce7f7;
+}
+
+.category-delete-button {
+  background-color: #fdebea;
+  color: #b24842;
+}
+
+.category-delete-button:hover {
+  background-color: #f8d8d5;
+}
+
+.category-save-button {
+  background-color: #e5f6eb;
+  color: #257641;
+}
+
+.category-save-button:hover {
+  background-color: #d3eddd;
+}
+
+.category-cancel-button {
+  background-color: #eeeae4;
+  color: #6f655a;
+}
+
+.category-cancel-button:hover {
+  background-color: #e3ddd4;
+}
+
+.category-edit-input {
+  flex: 1;
+  min-width: 110px;
+  padding: 9px 11px;
+  border: 1px solid #d8d0c5;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.category-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 24px;
+  border-top: 1px solid #eee8df;
+}
 </style>
+

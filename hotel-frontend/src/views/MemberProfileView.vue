@@ -1,223 +1,186 @@
 <template>
   <div class="member-profile-view">
     <div class="profile-card">
+      <!-- 頂部標題列 -->
       <div class="card-header">
         <div class="header-title">
-          <h2>👤 個人資料</h2>
-          <span class="status-badge active">帳號狀態：正常</span>
-        </div>
-        <button class="edit-btn" @click="openEditModal">
-          <span class="edit-icon">✏️</span> 修改個人資料
-        </button>
-      </div>
-
-      <div class="card-body">
-        <!-- 載入中狀態 -->
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <span>資料載入中...</span>
-        </div>
-
-        <template v-else>
-          <!-- 第一排：基本狀態與身分 -->
-          <div class="profile-info-grid">
-            <div class="info-group">
-              <label>會員姓名</label>
-              <div class="info-value highlight">{{ profileData.name || authStore.name || '未設定' }}</div>
-            </div>
-
-            <div class="info-group">
-              <label>登入狀態</label>
-              <div class="info-value text-success">✓ 已驗證登入</div>
-            </div>
-
-            <div class="info-group">
-              <label>帳號權限</label>
-              <div class="info-value">
-                <span v-for="auth in authStore.authorities" :key="auth" class="role-tag">
-                  {{ auth }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 第二排：詳細聯絡與個人資訊 -->
-          <div class="section-subtitle">詳細資訊</div>
-          <div class="profile-detail-grid">
-            <div class="info-group">
-              <label>電子信箱</label>
-              <div class="info-value">{{ profileData.email || '未設定' }}</div>
-            </div>
-
-            <div class="info-group">
-              <label>聯絡電話</label>
-              <div class="info-value">{{ profileData.phone || '未設定' }}</div>
-            </div>
-
-            <div class="info-group">
-              <label>性別</label>
-              <div class="info-value">{{ profileData.gender || '未設定' }}</div>
-            </div>
-
-            <div class="info-group">
-              <label>生日</label>
-              <div class="info-value">{{ profileData.birthday || '未設定' }}</div>
-            </div>
-
-            <div class="info-group full-width">
-              <label>通訊地址</label>
-              <div class="info-value">{{ fullAddress || '未設定' }}</div>
-            </div>
-          </div>
-        </template>
-
-        <!-- 快捷服務區塊 -->
-        <div class="quick-links-section">
-          <h3>快捷服務</h3>
-          <div class="quick-cards-grid">
-            <RouterLink to="/member/orders" class="quick-card">
-              <div class="quick-icon">📦</div>
-              <div class="quick-text">
-                <div class="quick-title">我的訂單</div>
-                <div class="quick-desc">查看商城歷史訂單及出貨進度</div>
-              </div>
-            </RouterLink>
-
-            <RouterLink to="/products" class="quick-card">
-              <div class="quick-icon">🛍</div>
-              <div class="quick-text">
-                <div class="quick-title">飯店商城</div>
-                <div class="quick-desc">選購星澄嚴選商品與伴手禮</div>
-              </div>
-            </RouterLink>
-
-            <RouterLink to="/cart" class="quick-card">
-              <div class="quick-icon">🛒</div>
-              <div class="quick-text">
-                <div class="quick-title">購物車</div>
-                <div class="quick-desc">檢視待結帳商品</div>
-              </div>
-            </RouterLink>
-
-            <RouterLink to="/restaurant-menu" class="quick-card">
-              <div class="quick-icon">🍽</div>
-              <div class="quick-text">
-                <div class="quick-title">餐廳美饌</div>
-                <div class="quick-desc">預覽主廚精選菜單與時段</div>
-              </div>
-            </RouterLink>
-          </div>
+          <h2>我的檔案</h2>
+          <p>管理並維護您的會員個人檔案與通訊資訊</p>
         </div>
       </div>
+
+      <!-- 載入中狀態 -->
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>正在載入會員個人資料...</p>
+      </div>
+
+      <!-- 個人檔案表單主體 (直接編輯，無需彈窗或打碼) -->
+      <form v-else class="profile-form-layout" @submit.prevent="saveProfile">
+        <!-- 左側：各欄位輸入區 -->
+        <div class="form-fields-container">
+          <!-- 1. 使用者帳號 (唯讀) -->
+          <div class="form-row">
+            <div class="row-label">使用者帳號</div>
+            <div class="row-content">
+              <div class="username-display">
+                <span class="username-text">{{ form.username || 'guest' }}</span>
+                <span class="readonly-badge">系統帳號不可變更</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 真實姓名 -->
+          <div class="form-row">
+            <label class="row-label required" for="profile-name">姓名</label>
+            <div class="row-content">
+              <input
+                id="profile-name"
+                v-model="form.name"
+                type="text"
+                class="form-input"
+                :class="{ 'has-error': formErrors.name }"
+                placeholder="請輸入您的真實姓名"
+                autocomplete="name"
+              />
+              <span v-if="formErrors.name" class="error-msg">{{ formErrors.name }}</span>
+            </div>
+          </div>
+
+          <!-- 3. 電子信箱 -->
+          <div class="form-row">
+            <label class="row-label" for="profile-email">Email</label>
+            <div class="row-content">
+              <input
+                id="profile-email"
+                v-model="form.email"
+                type="email"
+                class="form-input"
+                :class="{ 'has-error': formErrors.email }"
+                placeholder="例如：example@hotel.com"
+                autocomplete="email"
+              />
+              <span v-if="formErrors.email" class="error-msg">{{ formErrors.email }}</span>
+            </div>
+          </div>
+
+          <!-- 4. 手機號碼 -->
+          <div class="form-row">
+            <label class="row-label" for="profile-phone">手機號碼</label>
+            <div class="row-content">
+              <input
+                id="profile-phone"
+                v-model="form.phone"
+                type="tel"
+                class="form-input"
+                :class="{ 'has-error': formErrors.phone }"
+                placeholder="例如：0912345678"
+                autocomplete="tel"
+              />
+              <span v-if="formErrors.phone" class="error-msg">{{ formErrors.phone }}</span>
+            </div>
+          </div>
+
+          <!-- 5. 性別 (單選按鈕) -->
+          <div class="form-row">
+            <div class="row-label">性別</div>
+            <div class="row-content">
+              <div class="gender-radio-group">
+                <label class="radio-item">
+                  <input v-model="form.gender" type="radio" value="男" />
+                  <span class="radio-label">男性</span>
+                </label>
+                <label class="radio-item">
+                  <input v-model="form.gender" type="radio" value="女" />
+                  <span class="radio-label">女性</span>
+                </label>
+                <label class="radio-item">
+                  <input v-model="form.gender" type="radio" value="其他" />
+                  <span class="radio-label">其他</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. 生日 -->
+          <div class="form-row">
+            <label class="row-label" for="profile-birthday">生日</label>
+            <div class="row-content">
+              <input
+                id="profile-birthday"
+                v-model="form.birthday"
+                type="date"
+                class="form-input date-input"
+              />
+            </div>
+          </div>
+
+          <!-- 7. 通訊地址 -->
+          <div class="form-row address-row">
+            <div class="row-label">通訊地址</div>
+            <div class="row-content">
+              <!-- 郵遞區號 / 縣市 / 鄉鎮市區 -->
+              <div class="address-inputs-grid">
+                <input
+                  v-model="form.zipcode"
+                  type="text"
+                  class="form-input"
+                  placeholder="郵遞區號 (例: 100)"
+                />
+                <input
+                  v-model="form.city"
+                  type="text"
+                  class="form-input"
+                  placeholder="縣市 (例: 台北市)"
+                />
+                <input
+                  v-model="form.district"
+                  type="text"
+                  class="form-input"
+                  placeholder="鄉鎮市區 (例: 中正區)"
+                />
+              </div>
+
+              <!-- 詳細街道門牌 -->
+              <div class="address-detail-input">
+                <input
+                  v-model="form.address"
+                  type="text"
+                  class="form-input"
+                  placeholder="詳細門牌地址 (街道、巷弄、門牌、樓層等)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. 儲存按鈕 -->
+          <div class="form-row submit-row">
+            <div class="row-label"></div>
+            <div class="row-content">
+              <button type="submit" class="btn-submit-save" :disabled="saving">
+                <span v-if="saving" class="btn-spinner"></span>
+                <span>{{ saving ? '儲存中...' : '儲存' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：會員頭像與等級卡 (參考設計) -->
+        <div class="avatar-sidebar-section">
+          <div class="avatar-box">
+            <div class="avatar-large-circle">
+              {{ userInitial }}
+            </div>
+          </div>
+          <div class="sidebar-user-name">{{ displayName }}</div>
+          <div class="sidebar-tier-tag">星澄貴賓會員</div>
+          <p class="sidebar-hint-text">
+            星澄飯店會員專屬資料中心<br />
+            隨時更新以享有最即時的住宿禮遇
+          </p>
+        </div>
+      </form>
     </div>
-
-    <!-- 修改個人資料 Modal (Teleport 到 body，置中且可捲動) -->
-    <Teleport to="body">
-      <Transition name="modal-fade">
-        <div v-if="modalOpen" class="modal-overlay" @click.self="closeEditModal">
-          <div class="modal-container" role="dialog" aria-modal="true">
-            <div class="modal-header">
-              <div class="modal-title">
-                <h3>✏️ 修改個人資料</h3>
-                <p>請更新您的會員資訊，完成後點擊儲存</p>
-              </div>
-              <button class="modal-close-btn" @click="closeEditModal">✕</button>
-            </div>
-
-            <form class="modal-body" @submit.prevent="saveProfile">
-              <div class="form-grid">
-                <!-- 姓名 -->
-                <div class="form-group full-width">
-                  <label class="required">姓名</label>
-                  <input
-                    v-model="editForm.name"
-                    type="text"
-                    placeholder="請輸入您的真實姓名"
-                    :class="{ 'has-error': formErrors.name }"
-                  />
-                  <span v-if="formErrors.name" class="error-msg">{{ formErrors.name }}</span>
-                </div>
-
-                <!-- 電子信箱 -->
-                <div class="form-group">
-                  <label>電子信箱</label>
-                  <input
-                    v-model="editForm.email"
-                    type="email"
-                    placeholder="example@hotel.com"
-                    :class="{ 'has-error': formErrors.email }"
-                  />
-                  <span v-if="formErrors.email" class="error-msg">{{ formErrors.email }}</span>
-                </div>
-
-                <!-- 聯絡電話 -->
-                <div class="form-group">
-                  <label>聯絡電話</label>
-                  <input
-                    v-model="editForm.phone"
-                    type="tel"
-                    placeholder="例如：0912345678"
-                    :class="{ 'has-error': formErrors.phone }"
-                  />
-                  <span v-if="formErrors.phone" class="error-msg">{{ formErrors.phone }}</span>
-                </div>
-
-                <!-- 性別 -->
-                <div class="form-group">
-                  <label>性別</label>
-                  <select v-model="editForm.gender">
-                    <option value="">未指定</option>
-                    <option value="男">男</option>
-                    <option value="女">女</option>
-                    <option value="其他">其他</option>
-                  </select>
-                </div>
-
-                <!-- 生日 -->
-                <div class="form-group">
-                  <label>生日</label>
-                  <input v-model="editForm.birthday" type="date" />
-                </div>
-
-                <!-- 郵遞區號 -->
-                <div class="form-group">
-                  <label>郵遞區號</label>
-                  <input v-model="editForm.zipcode" type="text" placeholder="例如：100" />
-                </div>
-
-                <!-- 縣市 -->
-                <div class="form-group">
-                  <label>縣市</label>
-                  <input v-model="editForm.city" type="text" placeholder="例如：台北市" />
-                </div>
-
-                <!-- 鄉鎮市區 -->
-                <div class="form-group">
-                  <label>鄉鎮市區</label>
-                  <input v-model="editForm.district" type="text" placeholder="例如：中正區" />
-                </div>
-
-                <!-- 詳細地址 -->
-                <div class="form-group full-width">
-                  <label>詳細地址</label>
-                  <input v-model="editForm.address" type="text" placeholder="街道、門牌、樓層等" />
-                </div>
-              </div>
-
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" :disabled="saving" @click="closeEditModal">
-                  取消
-                </button>
-                <button type="submit" class="btn btn-primary" :disabled="saving">
-                  <span v-if="saving" class="btn-spinner"></span>
-                  <span>{{ saving ? '儲存中...' : '確認儲存' }}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -229,28 +192,20 @@ import { useToastStore } from '@/stores/toast';
 const authStore = useAuthStore();
 const toastStore = useToastStore();
 
+// =========================================
+// 狀態管理
+// =========================================
 const loading = ref(false);
 const saving = ref(false);
-const modalOpen = ref(false);
 
-const profileData = ref({
+const form = reactive({
   memberId: null,
+  accountId: null,
+  username: '',
   name: '',
   email: '',
   phone: '',
-  gender: '',
-  birthday: '',
-  zipcode: '',
-  city: '',
-  district: '',
-  address: '',
-});
-
-const editForm = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  gender: '',
+  gender: '男',
   birthday: '',
   zipcode: '',
   city: '',
@@ -264,18 +219,26 @@ const formErrors = reactive({
   phone: '',
 });
 
-// 組合完整地址顯示
-const fullAddress = computed(() => {
-  const parts = [
-    profileData.value.zipcode,
-    profileData.value.city,
-    profileData.value.district,
-    profileData.value.address,
-  ].filter((p) => !!p && p.trim().length > 0);
-
-  return parts.length > 0 ? parts.join(' ') : '';
+// =========================================
+// 計算屬性
+// =========================================
+// 顯示名稱
+const displayName = computed(() => {
+  return form.name || authStore.name || '星澄貴賓';
 });
 
+// 頭像首字縮寫
+const userInitial = computed(() => {
+  const currentName = form.name || authStore.name || '';
+  if (currentName && currentName.trim().length > 0) {
+    return currentName.trim().charAt(0);
+  }
+  return '客';
+});
+
+// =========================================
+// 輔助工具方法
+// =========================================
 // 產生 JWT Header
 function getAuthHeaders() {
   const token = localStorage.getItem('token');
@@ -288,7 +251,9 @@ function getAuthHeaders() {
   return headers;
 }
 
-// 載入會員自己的個人資料
+// =========================================
+// API 資料載入
+// =========================================
 async function fetchProfile() {
   loading.value = true;
   try {
@@ -308,18 +273,18 @@ async function fetchProfile() {
     }
 
     const data = await res.json();
-    profileData.value = {
-      memberId: data.memberId,
-      name: data.name || '',
-      email: data.email || '',
-      phone: data.phone || '',
-      gender: data.gender || '',
-      birthday: data.birthday || '',
-      zipcode: data.zipcode || '',
-      city: data.city || '',
-      district: data.district || '',
-      address: data.address || '',
-    };
+    form.memberId = data.memberId ?? null;
+    form.accountId = data.accountId ?? null;
+    form.username = data.username || '';
+    form.name = data.name || '';
+    form.email = data.email || '';
+    form.phone = data.phone || '';
+    form.gender = data.gender || '男';
+    form.birthday = data.birthday || '';
+    form.zipcode = data.zipcode || '';
+    form.city = data.city || '';
+    form.district = data.district || '';
+    form.address = data.address || '';
 
     // 若從後端取得姓名，同步 Pinia store
     if (data.name) {
@@ -333,45 +298,22 @@ async function fetchProfile() {
   }
 }
 
-// 打開 Modal 並將現有資料帶入編輯表單
-function openEditModal() {
-  formErrors.name = '';
-  formErrors.email = '';
-  formErrors.phone = '';
-
-  editForm.name = profileData.value.name || authStore.name || '';
-  editForm.email = profileData.value.email || '';
-  editForm.phone = profileData.value.phone || '';
-  editForm.gender = profileData.value.gender || '';
-  editForm.birthday = profileData.value.birthday || '';
-  editForm.zipcode = profileData.value.zipcode || '';
-  editForm.city = profileData.value.city || '';
-  editForm.district = profileData.value.district || '';
-  editForm.address = profileData.value.address || '';
-
-  modalOpen.value = true;
-}
-
-// 關閉 Modal
-function closeEditModal() {
-  if (saving.value) return;
-  modalOpen.value = false;
-}
-
-// 前端驗證
+// =========================================
+// 表單驗證
+// =========================================
 function validateForm() {
   let valid = true;
   formErrors.name = '';
   formErrors.email = '';
   formErrors.phone = '';
 
-  const nameVal = editForm.name.trim();
+  const nameVal = form.name.trim();
   if (!nameVal) {
     formErrors.name = '姓名為必填項目';
     valid = false;
   }
 
-  const emailVal = editForm.email.trim();
+  const emailVal = form.email.trim();
   if (emailVal) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailVal)) {
@@ -380,7 +322,7 @@ function validateForm() {
     }
   }
 
-  const phoneVal = editForm.phone.trim();
+  const phoneVal = form.phone.trim();
   if (phoneVal) {
     const phoneRegex = /^09\d{8}$/;
     if (!phoneRegex.test(phoneVal)) {
@@ -392,7 +334,9 @@ function validateForm() {
   return valid;
 }
 
-// 儲存修改資料
+// =========================================
+// 儲存修改個人資料
+// =========================================
 async function saveProfile() {
   if (!validateForm()) {
     toastStore.showToast('表單內容有誤，請檢查後重新提交', 'error');
@@ -401,15 +345,15 @@ async function saveProfile() {
 
   saving.value = true;
   const payload = {
-    name: editForm.name.trim(),
-    email: editForm.email.trim(),
-    phone: editForm.phone.trim(),
-    gender: editForm.gender,
-    birthday: editForm.birthday || null,
-    zipcode: editForm.zipcode.trim(),
-    city: editForm.city.trim(),
-    district: editForm.district.trim(),
-    address: editForm.address.trim(),
+    name: form.name.trim(),
+    email: form.email.trim(),
+    phone: form.phone.trim(),
+    gender: form.gender,
+    birthday: form.birthday || null,
+    zipcode: form.zipcode.trim(),
+    city: form.city.trim(),
+    district: form.district.trim(),
+    address: form.address.trim(),
   };
 
   try {
@@ -432,27 +376,23 @@ async function saveProfile() {
 
     const updated = await res.json();
 
-    // 更新本頁資料
-    profileData.value = {
-      ...profileData.value,
-      name: updated.name || payload.name,
-      email: updated.email || payload.email,
-      phone: updated.phone || payload.phone,
-      gender: updated.gender || payload.gender,
-      birthday: updated.birthday || payload.birthday,
-      zipcode: updated.zipcode || payload.zipcode,
-      city: updated.city || payload.city,
-      district: updated.district || payload.district,
-      address: updated.address || payload.address,
-    };
+    // 更新表單數據
+    form.name = updated.name || payload.name;
+    form.email = updated.email || payload.email;
+    form.phone = updated.phone || payload.phone;
+    form.gender = updated.gender || payload.gender;
+    form.birthday = updated.birthday || payload.birthday;
+    form.zipcode = updated.zipcode || payload.zipcode;
+    form.city = updated.city || payload.city;
+    form.district = updated.district || payload.district;
+    form.address = updated.address || payload.address;
 
     // 同步 Pinia store 與 localStorage 使側邊欄即時更新
     if (payload.name) {
       authStore.updateName(payload.name);
     }
 
-    modalOpen.value = false;
-    toastStore.showToast('個人資料修改成功！', 'success');
+    toastStore.showToast('個人資料儲存成功！', 'success');
   } catch (err) {
     console.error('儲存個人資料錯誤：', err);
     toastStore.showToast('網路連線異常，請稍後再試', 'error');
@@ -472,74 +412,31 @@ onMounted(() => {
 }
 
 .profile-card {
-  background: #fff;
+  background: #ffffff;
   border-radius: 14px;
-  padding: 32px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 32px 36px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   border: 1px solid #eee7dd;
 }
 
+/* 頂部標題 */
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee7dd;
-  margin-bottom: 26px;
+  padding-bottom: 18px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid #f0e9df;
 }
 
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.card-header h2 {
+.header-title h2 {
   font-size: 22px;
+  font-weight: 700;
   color: #4a3b2a;
-  margin: 0;
+  margin: 0 0 4px 0;
 }
 
-.status-badge {
+.header-title p {
   font-size: 13px;
-  font-weight: bold;
-  padding: 6px 14px;
-  border-radius: 20px;
-}
-
-.status-badge.active {
-  background-color: #e5f6eb;
-  color: #257641;
-}
-
-/* 編輯按鈕 */
-.edit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background-color: #b58a46;
-  color: #fff;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 10px rgba(181, 138, 70, 0.25);
-}
-
-.edit-btn:hover {
-  background-color: #9d7535;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(181, 138, 70, 0.35);
-}
-
-.edit-icon {
-  font-size: 16px;
+  color: #8c7d6e;
+  margin: 0;
 }
 
 /* 載入中狀態 */
@@ -548,14 +445,14 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 0;
+  padding: 60px 0;
   color: #887864;
-  gap: 12px;
+  gap: 14px;
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: 3px solid #eee7dd;
   border-top-color: #b58a46;
   border-radius: 50%;
@@ -568,346 +465,296 @@ onMounted(() => {
   }
 }
 
-/* 資料區塊格線 */
-.profile-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin-bottom: 24px;
+/* 表單佈局：左表單 + 右頭像 */
+.profile-form-layout {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
 }
 
-.section-subtitle {
-  font-size: 15px;
-  font-weight: 700;
-  color: #6a5744;
-  margin-bottom: 12px;
-  padding-left: 4px;
-  border-left: 3px solid #b58a46;
+.form-fields-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 }
 
-.profile-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
-  margin-bottom: 36px;
+/* 每一列表單行 (Label 左邊，Content 右邊) */
+.form-row {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
 }
 
-.info-group {
-  background: #fdfbf7;
-  padding: 16px 20px;
-  border-radius: 10px;
-  border: 1px solid #f0e9df;
+.form-row.address-row {
+  align-items: flex-start;
 }
 
-.info-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.info-group label {
-  display: block;
-  font-size: 13px;
-  color: #887864;
-  margin-bottom: 6px;
+.row-label {
+  width: 130px;
+  font-size: 14px;
   font-weight: 600;
-}
-
-.info-value {
-  font-size: 15px;
-  color: #333;
-  font-weight: 500;
-  word-break: break-word;
-}
-
-.info-value.highlight {
-  color: #b58a46;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.info-value.text-success {
-  color: #257641;
-}
-
-.role-tag {
-  display: inline-block;
-  background: #ede6dc;
-  color: #5c4d3d;
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-right: 6px;
-  margin-bottom: 4px;
-}
-
-/* 快捷卡片 */
-.quick-links-section h3 {
-  font-size: 18px;
-  color: #4a3b2a;
-  margin-bottom: 18px;
-}
-
-.quick-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.quick-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  background: #fff;
-  border: 1px solid #eee7dd;
-  border-radius: 12px;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.25s ease;
-}
-
-.quick-card:hover {
-  border-color: #b58a46;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 18px rgba(181, 138, 70, 0.12);
-}
-
-.quick-icon {
-  font-size: 28px;
-  width: 46px;
-  height: 46px;
-  background: #faf6ee;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #6a5744;
+  text-align: right;
+  padding-right: 28px;
   flex-shrink: 0;
 }
 
-.quick-title {
-  font-size: 15px;
-  font-weight: bold;
-  color: #4a3b2a;
-  margin-bottom: 3px;
-}
-
-.quick-desc {
-  font-size: 12px;
-  color: #888;
-  line-height: 1.4;
-}
-
-/* =========================================
-   Modal 樣式（居中大型，可垂直滾動）
-   ========================================= */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(30, 24, 18, 0.55);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 20px;
-}
-
-.modal-container {
-  background: #fff;
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalPop {
-  from {
-    opacity: 0;
-    transform: scale(0.94) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 24px 28px 18px;
-  border-bottom: 1px solid #eee7dd;
-  background: #faf7f2;
-}
-
-.modal-title h3 {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  color: #4a3b2a;
-}
-
-.modal-title p {
-  margin: 0;
-  font-size: 13px;
-  color: #887864;
-}
-
-.modal-close-btn {
-  background: transparent;
-  border: none;
-  font-size: 20px;
-  color: #888;
-  cursor: pointer;
-  line-height: 1;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.modal-close-btn:hover {
-  color: #333;
-  background: #ebdccb;
-}
-
-.modal-body {
-  padding: 24px 28px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #554433;
-  margin-bottom: 6px;
-}
-
-.form-group label.required::after {
+.row-label.required::after {
   content: ' *';
   color: #c62828;
 }
 
-.form-group input,
-.form-group select {
-  padding: 10px 14px;
-  border: 1px solid #dcd3c5;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  background-color: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
+.row-content {
+  flex: 1;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+/* 唯讀帳號顯示 */
+.username-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.username-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4a3b2a;
+}
+
+.readonly-badge {
+  font-size: 11px;
+  color: #8c7d6e;
+  background: #f7f3eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #ebdccb;
+}
+
+/* 標準輸入框 */
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #dcd3c5;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333333;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
   outline: none;
   border-color: #b58a46;
   box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.15);
 }
 
-.form-group input.has-error {
+.form-input.has-error {
   border-color: #d32f2f;
   background-color: #fff8f8;
+}
+
+.date-input {
+  cursor: pointer;
 }
 
 .error-msg {
   font-size: 12px;
   color: #d32f2f;
-  margin-top: 4px;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
-.modal-footer {
+/* 性別單選群組 */
+.gender-radio-group {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 24px;
-  border-top: 1px solid #eee7dd;
-  margin-top: 10px;
+  align-items: center;
+  gap: 24px;
+  padding: 6px 0;
 }
 
-.btn {
+.radio-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 22px;
-  border-radius: 8px;
   font-size: 14px;
-  font-weight: 600;
+  color: #4a3b2a;
   cursor: pointer;
-  transition: all 0.2s;
+  user-select: none;
+}
+
+.radio-item input[type='radio'] {
+  accent-color: #b58a46;
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.radio-label {
+  font-weight: 500;
+}
+
+/* 地址輸入組合 */
+.address-inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.address-detail-input {
+  width: 100%;
+}
+
+/* 儲存按鈕行 */
+.submit-row {
+  margin-top: 10px;
+}
+
+.btn-submit-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #b58a46;
+  color: #ffffff;
   border: none;
-}
-
-.btn-secondary {
-  background-color: #eee7dd;
-  color: #5c4d3d;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #e2d8ca;
-}
-
-.btn-primary {
-  background-color: #b58a46;
-  color: #fff;
+  padding: 10px 36px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
   box-shadow: 0 4px 10px rgba(181, 138, 70, 0.25);
+  min-width: 120px;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: #9d7535;
+.btn-submit-save:hover:not(:disabled) {
+  background: #9d7535;
+  transform: translateY(-1px);
   box-shadow: 0 6px 14px rgba(181, 138, 70, 0.35);
 }
 
-.btn:disabled {
-  opacity: 0.6;
+.btn-submit-save:disabled {
+  opacity: 0.65;
   cursor: not-allowed;
 }
 
 .btn-spinner {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-/* Modal 動畫 */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.25s ease;
+/* 右側頭像專區 */
+.avatar-sidebar-section {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: 36px;
+  border-left: 1px solid #f0e9df;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
+.avatar-box {
+  margin-bottom: 14px;
 }
 
-@media (max-width: 640px) {
-  .form-grid {
+.avatar-large-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b58a46 0%, #8f692f 100%);
+  color: #ffffff;
+  font-size: 34px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(181, 138, 70, 0.3);
+  border: 3px solid #ffffff;
+}
+
+.sidebar-user-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4a3b2a;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.sidebar-tier-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8f692f;
+  background: #fdf5e6;
+  border: 1px solid #f1ddbc;
+  padding: 3px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.sidebar-hint-text {
+  font-size: 12px;
+  color: #a39587;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* =========================================
+   響應式設計 (RWD)
+   ========================================= */
+@media (max-width: 860px) {
+  .profile-card {
+    padding: 24px 20px;
+  }
+
+  .profile-form-layout {
+    flex-direction: column-reverse;
+    gap: 28px;
+  }
+
+  .avatar-sidebar-section {
+    width: 100%;
+    border-left: none;
+    border-bottom: 1px solid #f0e9df;
+    padding-left: 0;
+    padding-bottom: 20px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .row-label {
+    width: 100%;
+    text-align: left;
+    padding-right: 0;
+  }
+
+  .row-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .address-inputs-grid {
     grid-template-columns: 1fr;
+  }
+
+  .btn-submit-save {
+    width: 100%;
   }
 }
 </style>

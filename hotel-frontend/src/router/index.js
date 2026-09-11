@@ -47,6 +47,7 @@ import AdminCouponsView  from "@/views/AdminCouponsView.vue";
 //--------------- 會員中心 -----------------
 import MemberLayout from "../layouts/MemberLayout.vue";
 import MemberProfileView from "../views/MemberProfileView.vue";
+import MemberPasswordView from "../views/MemberPasswordView.vue";
 import MyOrdersView from "../views/MyOrdersView.vue";
 
 const router = createRouter({
@@ -281,6 +282,11 @@ const router = createRouter({
               path: "profile",
               name: "member-profile",
               component: MemberProfileView,
+            },
+            {
+              path: "password",
+              name: "member-password",
+              component: MemberPasswordView,
             },
             {
               path: "orders",
