@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { roomTypeApi } from "@/api/roomTypeApi";
 
 const roomTypes = ref([]);
