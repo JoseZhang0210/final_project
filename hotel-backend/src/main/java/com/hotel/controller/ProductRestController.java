@@ -33,6 +33,8 @@ import com.hotel.model.dto.ProductImportResultDTO;
 import com.hotel.model.dto.ProductJsonDTO;
 import com.hotel.model.entity.Product;
 import com.hotel.service.ProductService;
+import com.hotel.service.ProductService.ProductDeleteResult;
+import com.hotel.service.ProductService.ProductDemoSeedResult;
 import com.hotel.util.JsonUtils;
 
 @RestController
@@ -109,6 +111,17 @@ public class ProductRestController {
                 }
 
                 return ResponseEntity.ok(result);
+        }
+
+        // =========================================
+        // 建立展示用商品資料
+        // POST /api/products/demo-seed
+        // =========================================
+
+        @PostMapping("/demo-seed")
+        public ResponseEntity<ProductDemoSeedResult> seedDemoProducts() {
+
+                return ResponseEntity.ok(productService.seedDemoProducts());
         }
 
         // =========================================
@@ -357,24 +370,19 @@ public class ProductRestController {
         // =========================================
 
         @DeleteMapping("/{id}")
-        public ResponseEntity<Void> deleteProduct(
+        public ResponseEntity<ProductDeleteResult> deleteProduct(
                         @PathVariable Integer id) {
 
-                Product product = productService
-                                .findById(id);
+                ProductDeleteResult result = productService.deleteById(id);
 
-                if (product == null) {
+                if (result == null) {
 
                         return ResponseEntity
                                         .notFound()
                                         .build();
                 }
 
-                productService
-                                .deleteById(id);
-
                 return ResponseEntity
-                                .noContent()
-                                .build();
+                                .ok(result);
         }
 }

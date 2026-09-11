@@ -1,59 +1,281 @@
 <script setup>
 // 移植 ab025d7 的管理表單、列表與編輯刪除流程，沿用目前既有登入。
-import { computed, onMounted, ref } from 'vue'; // 使用既有響應式狀態。
-import { getStoredToken, getRentals, getVenues, updateRental, deleteRental, getApiErrorMessage } from '../api/venueRentalApi'; // 僅使用既有管理 API。
+import { computed, onMounted, ref } from "vue"; // 使用既有響應式狀態。
+import {
+  getStoredToken,
+  getRentals,
+  getVenues,
+  getMembers,
+  createAdminRental,
+  updateRental,
+  deleteRental,
+  getApiErrorMessage,
+} from "../api/venueRentalApi"; // 僅使用既有管理 API。
 const token = ref(getStoredToken()); // 不建立新的登入流程。
 const rentals = ref([]); // 保存全部租借，不查詢會員專用端點。
 const venues = ref([]); // 場地名稱由既有場地 API 取得。
+const memberNames = ref({}); // 依會員 ID 保存會員姓名，不修改會員模組。
 const loading = ref(false); // 避免重複提交管理操作。
-const message = ref(''); // 顯示操作結果。
-const errorMessage = ref(''); // 保留後端權限及付款保護錯誤。
+const message = ref(""); // 顯示操作結果。
+const errorMessage = ref(""); // 保留後端權限及付款保護錯誤。
 const isLoggedIn = computed(() => Boolean(token.value)); // 僅控制顯示，後端負責授權。
-const editMode = ref(false); // 沿用舊版編輯模式。
+const editMode = ref(false); // 編輯既有租借。
+const createMode = ref(false); // 管理員新增租借。
 const form = ref({}); // 編輯時複製完整租借欄位。
-const rentalStatuses = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']; // 沿用既有租借狀態。
-const venueName = id => venues.value.find(v => Number(v.venueId) === Number(id))?.venueName || `場地 ${id}`; // 缺少場地時仍保留原編號。
+const rentalStatuses = ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]; // 沿用既有租借狀態。
+const venueName = (id) =>
+  venues.value.find((v) => Number(v.venueId) === Number(id))?.venueName ||
+  `場地 ${id}`; // 缺少場地時仍保留原編號。
+/*
+ * 後台列表同時顯示會員姓名與會員 ID。
+ */
+function memberName(id) {
+  const memberId = Number(id);
+
+  if (!Number.isInteger(memberId) || memberId <= 0) {
+    return "會員資料未知";
+  }
+
+  const name = memberNames.value[memberId];
+
+  if (!name) {
+    return `會員 ID ${memberId}`;
+  }
+
+  return `${name}（ID ${memberId}）`;
+}
+
+/*
+ * 新增與編輯表單依會員 ID 顯示姓名。
+ */
+function formMemberName(id) {
+  const memberId = Number(id);
+
+  if (!Number.isInteger(memberId) || memberId <= 0) {
+    return "";
+  }
+
+  return memberNames.value[memberId] || "查無此會員";
+}
+function scrollToRentalForm() {
+  // 等 Vue 將 v-if 表單加入 DOM，並等待版面完成。
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const target = document.getElementById("rental-form-section");
+
+      if (!target) {
+        return;
+      }
+
+      // 對齊表單卡片，而不是整個頁面的 top: 0。
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  });
+}
 onMounted(refreshRentals); // 管理員進頁即載入全部租借。
-async function loadRentalData() { // 沿用舊版管理資料重新載入入口。
-  const [all, places] = await Promise.all([getRentals(token.value), getVenues(token.value)]); // 不要求管理員具有 Member 關聯。
-  rentals.value = all ?? []; venues.value = places ?? []; // 同步更新表格與場地名稱。
+async function loadRentalData() {
+  // 沿用舊版管理資料重新載入入口。
+  // 租借、場地與會員資料並行載入。
+  const [all, places, members] = await Promise.all([
+    getRentals(token.value),
+    getVenues(token.value),
+    getMembers(token.value),
+  ]);
+
+  rentals.value = all ?? [];
+  venues.value = places ?? [];
+
+  // 建立 memberId -> 姓名對照表。
+  memberNames.value = Object.fromEntries(
+    (members ?? [])
+      .filter((member) => Number.isInteger(Number(member.memberId)))
+      .map((member) => [
+        Number(member.memberId),
+        String(member.name || "").trim() || "未設定姓名",
+      ]),
+  );
 } // 結束管理資料載入。
-async function refreshRentals() { // 恢復重新整理功能。
-  if (!token.value) { errorMessage.value = '請先使用網站登入'; return; } // 不在管理畫面重做登入。
-  loading.value = true; errorMessage.value = ''; // 鎖定操作並清除舊錯誤。
-  try { await loadRentalData(); } catch (error) { errorMessage.value = getApiErrorMessage(error); } // 顯示實際管理 API 錯誤。
-  finally { loading.value = false; } // 無論成功失敗都恢復按鈕。
+async function refreshRentals() {
+  // 恢復重新整理功能。
+  if (!token.value) {
+    errorMessage.value = "請先使用網站登入";
+    return;
+  } // 不在管理畫面重做登入。
+  loading.value = true;
+  errorMessage.value = ""; // 鎖定操作並清除舊錯誤。
+  try {
+    await loadRentalData();
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+  } finally {
+    // 顯示實際管理 API 錯誤。
+    loading.value = false;
+  } // 無論成功失敗都恢復按鈕。
 } // 結束重新整理。
-async function handleSubmit() { // 恢復舊版儲存編輯流程。
+function startCreate() {
+  // 新增與編輯模式不可同時存在。
+  editMode.value = false;
+  createMode.value = true;
+
+  // 新增時只準備管理員需要輸入的欄位。
+  form.value = {
+    memberId: "",
+    venueId: "",
+    eventName: "",
+    rentalDate: "",
+    guestCount: "",
+  };
+
+  message.value = "";
+  errorMessage.value = "";
+  scrollToRentalForm();
+}
+async function handleCreate() {
+  if (!createMode.value || loading.value) {
+    return;
+  }
+
+  const payload = {
+    memberId: Number(form.value.memberId),
+    venueId: Number(form.value.venueId),
+    eventName: String(form.value.eventName || "").trim(),
+    rentalDate: form.value.rentalDate,
+    guestCount: Number(form.value.guestCount),
+  };
+
+  if (!Number.isInteger(payload.memberId) || payload.memberId <= 0) {
+    errorMessage.value = "請輸入正確的會員 ID";
+    return;
+  }
+
+  if (!Number.isInteger(payload.venueId) || payload.venueId <= 0) {
+    errorMessage.value = "請選擇場地";
+    return;
+  }
+
+  if (
+    !payload.eventName ||
+    payload.eventName.length > 50 ||
+    !payload.rentalDate ||
+    !Number.isInteger(payload.guestCount) ||
+    payload.guestCount <= 0
+  ) {
+    errorMessage.value = "請填寫活動名稱、日期與正整數人數";
+    return;
+  }
+
+  loading.value = true;
+  message.value = "";
+  errorMessage.value = "";
+
+  try {
+    await createAdminRental(token.value, payload);
+
+    resetForm();
+    await loadRentalData();
+
+    message.value = "租借新增成功";
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+  } finally {
+    loading.value = false;
+  }
+}
+async function handleSubmit() {
+  // 恢復舊版儲存編輯流程。
   if (!editMode.value || loading.value) return; // 只允許編輯既有租借。
-  loading.value = true; message.value = ''; errorMessage.value = ''; // 清除上一筆操作結果。
-  try { // 由前端基本驗證與後端完整驗證共同保護資料。
-    const payload = { ...form.value, eventName: form.value.eventName.trim(), guestCount: Number(form.value.guestCount) }; // 保留原有會員、場地及付款關聯。
-    if (!payload.eventName || payload.eventName.length > 50 || !payload.rentalDate || !Number.isInteger(payload.guestCount) || payload.guestCount <= 0) throw new Error('請填寫活動名稱、日期與正整數人數'); // 延續舊版必要欄位檢查。
+  loading.value = true;
+  message.value = "";
+  errorMessage.value = ""; // 清除上一筆操作結果。
+  try {
+    // 由前端基本驗證與後端完整驗證共同保護資料。
+    const payload = {
+      ...form.value,
+      eventName: form.value.eventName.trim(),
+      guestCount: Number(form.value.guestCount),
+    }; // 保留原有會員、場地及付款關聯。
+    if (
+      !payload.eventName ||
+      payload.eventName.length > 50 ||
+      !payload.rentalDate ||
+      !Number.isInteger(payload.guestCount) ||
+      payload.guestCount <= 0
+    )
+      throw new Error("請填寫活動名稱、日期與正整數人數"); // 延續舊版必要欄位檢查。
     await updateRental(token.value, payload.rentalId, payload); // 呼叫既有管理更新 API。
-    resetForm(); await loadRentalData(); message.value = '租借修改成功'; // 成功後清空編輯並重載資料。
-  } catch (error) { errorMessage.value = getApiErrorMessage(error); } // 保留碰撞或權限拒絕訊息。
-  finally { loading.value = false; } // 結束管理寫入狀態。
+    resetForm();
+    await loadRentalData();
+    message.value = "租借修改成功"; // 成功後清空編輯並重載資料。
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+  } finally {
+    // 保留碰撞或權限拒絕訊息。
+    loading.value = false;
+  } // 結束管理寫入狀態。
 } // 結束儲存修改。
-function startEdit(rental) { // 移植舊版選取資料並捲至表單的操作。
-  editMode.value = true; // 顯示既有編輯表單。
-  const aliases = { '待確認': 'PENDING', '待付款': 'PENDING', '已確認': 'CONFIRMED', '已取消': 'CANCELLED', '已完成': 'COMPLETED' }; // 相容 seed 與歷史中文狀態。
-  form.value = { ...rental, rentalDate: String(rental.rentalDate).substring(0, 16), rentalStatus: aliases[rental.rentalStatus] || rental.rentalStatus }; // 複製資料，避免尚未儲存就改動表格。
-  message.value = '目前正在編輯租借 ID ' + rental.rentalId; errorMessage.value = ''; // 提示目前編輯對象。
-  window.scrollTo({ top: 0, behavior: 'smooth' }); // 沿用舊版操作位置。
+function startEdit(rental) {
+  // 移植舊版選取資料並捲至表單的操作。
+  // 編輯既有資料時關閉新增模式。
+  createMode.value = false;
+  editMode.value = true;
+  const aliases = {
+    待確認: "PENDING",
+    待付款: "PENDING",
+    已確認: "CONFIRMED",
+    已取消: "CANCELLED",
+    已完成: "COMPLETED",
+  }; // 相容 seed 與歷史中文狀態。
+  form.value = {
+    ...rental,
+    rentalDate: String(rental.rentalDate).substring(0, 16),
+    rentalStatus: aliases[rental.rentalStatus] || rental.rentalStatus,
+  }; // 複製資料，避免尚未儲存就改動表格。
+  message.value = "";
+  errorMessage.value = ""; // 進入編輯模式時不顯示額外狀態提示。
+  scrollToRentalForm();
 } // 結束開始編輯。
-async function handleDelete(rental) { // 保留舊版刪除確認。
-  if (loading.value || !window.confirm(`確定要刪除租借「${rental.eventName}」（ID ${rental.rentalId}）嗎？`)) return; // 取消時不送出請求。
-  loading.value = true; message.value = ''; errorMessage.value = ''; // 暫停其他管理操作。
-  try { // 已進入付款流程的租借仍由後端拒絕刪除。
+async function handleDelete(rental) {
+  // 保留舊版刪除確認。
+  if (
+    loading.value ||
+    !window.confirm(
+      `確定要刪除租借「${rental.eventName}」（ID ${rental.rentalId}）嗎？`,
+    )
+  )
+    return; // 取消時不送出請求。
+  loading.value = true;
+  message.value = "";
+  errorMessage.value = ""; // 暫停其他管理操作。
+  try {
+    // 已進入付款流程的租借仍由後端拒絕刪除。
     await deleteRental(token.value, rental.rentalId); // 使用既有管理刪除 API。
     if (form.value.rentalId === rental.rentalId) resetForm(); // 清除已刪除項目的編輯表單。
-    await loadRentalData(); message.value = '租借刪除成功'; // 更新列表與結果提示。
-  } catch (error) { errorMessage.value = getApiErrorMessage(error); } // 顯示後端付款保護或權限錯誤。
-  finally { loading.value = false; } // 恢復管理操作。
+    await loadRentalData();
+    message.value = "租借刪除成功"; // 更新列表與結果提示。
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+  } finally {
+    // 顯示後端付款保護或權限錯誤。
+    loading.value = false;
+  } // 恢復管理操作。
 } // 結束刪除流程。
-function resetForm() { editMode.value = false; form.value = {}; } // 取消編輯且不修改資料。
-function formatDateTime(value) { return value ? String(value).replace('T', ' ') : ''; } // 沿用舊版表格時間顯示。
+function resetForm() {
+  // 離開新增與編輯模式。
+  editMode.value = false;
+  createMode.value = false;
+
+  // 清空目前表單中的租借資料。
+  form.value = {};
+
+  // 取消操作後移除目前狀態提示。
+  message.value = "";
+}
+function formatDateTime(value) {
+  return value ? String(value).replace("T", " ") : "";
+} // 沿用舊版表格時間顯示。
 
 // ------------------------------------------------------------
 // 後台租借狀態顯示繁體中文；送往後端的值仍維持原英文狀態。
@@ -73,137 +295,137 @@ function rentalStatusLabel(status) {
 <!-- 以下表單、列表及 scoped 樣式移植自 ab025d7，僅調整現行登入與唯讀關聯欄位。 -->
 <template>
   <main class="page">
-
     <section class="hero">
       <div>
-        <p class="eyebrow">
-          HOTEL MANAGEMENT
-        </p>
+        <p class="eyebrow">HOTEL MANAGEMENT</p>
 
         <h1>租借管理</h1>
 
-        <p>
-          查看與管理所有會員的場地租借
-        </p>
+        <p>查看與管理所有會員的場地租借</p>
       </div>
 
-      <div
-        v-if="isLoggedIn"
-        class="connection-badge"
-      >
-        場地租借管理
-      </div>
+
     </section>
 
     <!-- 沿用網站登入，僅顯示管理結果與重新整理，不重建登入功能。 -->
     <section class="card">
-      <button type="button" :disabled="loading" @click="refreshRentals">重新整理</button>
+      <div class="actions">
+        <button type="button" :disabled="loading" @click="refreshRentals">
+          重新整理
+        </button>
+
+        <button
+          v-if="isLoggedIn"
+          type="button"
+          class="secondary"
+          :disabled="loading"
+          @click="startCreate"
+        >
+          新增資料
+        </button>
+      </div>
       <p v-if="message" class="success">{{ message }}</p>
       <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     </section>
     <!-- CRUD FORM -->
     <section
-      v-if="isLoggedIn && editMode"
+      id="rental-form-section"
+      v-if="isLoggedIn && (editMode || createMode)"
       class="card"
     >
-
       <div class="form-header">
         <div>
           <h2>
-            修改租借
+            {{ createMode ? "新增租借" : "修改租借" }}
           </h2>
 
           <p class="description">
-            修改活動、日期、人數與狀態；原會員、場地與付款關聯保留
+            {{
+              createMode
+                ? "替既有會員新增場地租借"
+                : "修改活動、日期、人數與狀態；原會員、場地與付款關聯保留"
+            }}
           </p>
         </div>
 
-        <span
-          v-if="editMode"
-          class="edit-badge"
-        >
-          EDIT MODE
-        </span>
+        <span v-if="editMode" class="edit-badge"> EDIT MODE </span>
       </div>
 
       <div class="rental-form">
-
-        <label>
+        <label v-if="editMode">
           <span>租借 ID</span>
-          <input
-            v-model="form.rentalId"
-            type="number"
-            :disabled="editMode"
-          >
+          <input v-model="form.rentalId" type="number" :disabled="editMode" />
         </label>
 
         <label>
-  <!-- 後台編輯租借時直接選擇場地，不要求管理者記住場地 ID。 -->
-  <span>場地</span>
+          <!-- 後台編輯租借時直接選擇場地，不要求管理者記住場地 ID。 -->
+          <span>場地</span>
 
-  <select
-    v-model="form.venueId"
-    :disabled="loading"
-  >
-    <!-- 空值用於提示尚未選擇場地。 -->
-    <option value="">
-      請選擇場地
-    </option>
+          <select v-model="form.venueId" :disabled="loading">
+            <!-- 空值用於提示尚未選擇場地。 -->
+            <option value="">請選擇場地</option>
 
-    <!-- 場地資料沿用既有 getVenues() API，不新增其他資料來源。 -->
-    <option
-      v-for="venue in venues"
-      :key="venue.venueId"
-      :value="venue.venueId"
-    >
-      {{ venue.venueName }}
-    </option>
-  </select>
-</label>
+            <!-- 場地資料沿用既有 getVenues() API，不新增其他資料來源。 -->
+            <option
+              v-for="venue in venues"
+              :key="venue.venueId"
+              :value="venue.venueId"
+            >
+              {{ venue.venueName }}
+            </option>
+          </select>
+        </label>
 
         <label>
           <span>會員 ID</span>
           <input
-            v-model="form.memberId" readonly
+            v-model="form.memberId"
             type="number"
-          >
+            min="1"
+            :readonly="editMode"
+            :disabled="loading"
+          />
+
+          <span v-if="form.memberId" class="description">
+            會員姓名：{{ formMemberName(form.memberId) }}
+          </span>
         </label>
 
         <label>
           <span>活動名稱</span>
           <input
-            v-model="form.eventName" :disabled="loading"
+            v-model="form.eventName"
+            :disabled="loading"
             type="text"
             maxlength="50"
-          >
+          />
         </label>
 
         <label>
           <span>租借日期</span>
           <input
-            v-model="form.rentalDate" :disabled="loading"
+            v-model="form.rentalDate"
+            :disabled="loading"
             type="datetime-local"
-          >
+          />
         </label>
 
         <label>
           <span>人數</span>
           <input
-            v-model="form.guestCount" :disabled="loading"
+            v-model="form.guestCount"
+            :disabled="loading"
             type="number"
             min="1"
-          >
+          />
         </label>
 
-        <label>
+        <label v-if="editMode">
           <span>付款 ID</span>
-          <input
-            v-model="form.paymentId" readonly
-            type="number"
-          >
+          <input v-model="form.paymentId" readonly type="number" />
         </label>
 
-        <label>
+        <label v-if="editMode">
           <span>狀態</span>
 
           <select v-model="form.rentalStatus" :disabled="loading">
@@ -216,12 +438,20 @@ function rentalStatusLabel(status) {
             </option>
           </select>
         </label>
-
       </div>
 
       <div class="actions form-actions">
+        <button
+          v-if="createMode"
+          type="button"
+          :disabled="loading"
+          @click="handleCreate"
+        >
+          新增租借
+        </button>
 
         <button
+          v-if="editMode"
           type="button"
           :disabled="loading"
           @click="handleSubmit"
@@ -230,51 +460,33 @@ function rentalStatusLabel(status) {
         </button>
 
         <button
-          v-if="editMode"
+          v-if="createMode || editMode"
           type="button"
           class="secondary"
-          :disabled="loading" @click="resetForm"
+          :disabled="loading"
+          @click="resetForm"
         >
           取消
         </button>
-
       </div>
-
     </section>
 
     <!-- TABLE -->
     <section class="card">
-
       <div class="table-header">
-
         <div>
           <h2>Rental 資料</h2>
 
           <p class="description">
-            {{
-              isLoggedIn
-                ? '共 ' + rentals.length + ' 筆'
-                : '請先登入'
-            }}
+            {{ isLoggedIn ? "共 " + rentals.length + " 筆" : "請先登入" }}
           </p>
         </div>
 
-        <span
-          v-if="isLoggedIn"
-          class="status-ok"
-        >
-          API CONNECTED
-        </span>
-
+        <span v-if="isLoggedIn" class="status-ok"> API CONNECTED </span>
       </div>
 
-      <div
-        v-if="isLoggedIn && rentals.length"
-        class="table-wrap"
-      >
-
+      <div v-if="isLoggedIn && rentals.length" class="table-wrap">
         <table>
-
           <thead>
             <tr>
               <th>租借 ID</th>
@@ -290,33 +502,32 @@ function rentalStatusLabel(status) {
           </thead>
 
           <tbody>
-
-            <tr
-              v-for="rental in rentals"
-              :key="rental.rentalId"
-            >
-
+            <tr v-for="rental in rentals" :key="rental.rentalId">
               <td>{{ rental.rentalId }}</td>
               <td>{{ venueName(rental.venueId) }}</td>
-              <td>{{ rental.memberId }}</td>
+              <td>{{ memberName(rental.memberId) }}</td>
               <td>{{ rental.eventName }}</td>
               <td>{{ formatDateTime(rental.rentalDate) }}</td>
               <td>{{ rental.guestCount }}</td>
               <td>{{ rental.paymentId }}</td>
 
               <td>
-                <span class="status" :class="`status-${String(rental.rentalStatus || '').toLowerCase()}`"> <!-- 狀態以文字及顏色共同辨識。 -->
+                <span
+                  class="status"
+                  :class="`status-${String(rental.rentalStatus || '').toLowerCase()}`"
+                >
+                  <!-- 狀態以文字及顏色共同辨識。 -->
                   {{ rentalStatusLabel(rental.rentalStatus) }}
                 </span>
               </td>
 
               <td>
                 <div class="actions">
-
                   <button
                     type="button"
                     class="small secondary"
-                    :disabled="loading" @click="startEdit(rental)"
+                    :disabled="loading"
+                    @click="startEdit(rental)"
                   >
                     編輯
                   </button>
@@ -324,45 +535,30 @@ function rentalStatusLabel(status) {
                   <button
                     type="button"
                     class="small danger"
-                    :disabled="loading" @click="handleDelete(rental)"
+                    :disabled="loading"
+                    @click="handleDelete(rental)"
                   >
                     刪除
                   </button>
-
                 </div>
               </td>
-
             </tr>
-
           </tbody>
-
         </table>
-
       </div>
 
-      <div
-        v-else-if="isLoggedIn"
-        class="empty"
-      >
-        目前沒有 Rental 資料
-      </div>
+      <div v-else-if="isLoggedIn" class="empty">目前沒有 Rental 資料</div>
 
-      <div
-        v-else
-        class="empty"
-      >
-        請先使用網站登入
-      </div>
-
+      <div v-else class="empty">請先使用網站登入</div>
     </section>
-
   </main>
 </template>
 
 <style scoped>
 .page {
-  width: min(1200px, calc(100% - 40px));
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 42px 0 70px;
 }
 
@@ -382,6 +578,7 @@ function rentalStatusLabel(status) {
 }
 
 .eyebrow {
+  display: flex;
   margin: 0 0 8px;
   color: #7c3aed;
   font-size: 12px;
@@ -426,8 +623,7 @@ h2 {
 .rental-form {
   margin-top: 20px;
   display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -610,8 +806,7 @@ th {
 
 @media (max-width: 950px) {
   .rental-form {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -728,5 +923,64 @@ select option {
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* ===== Admin Rental Full Width Override ===== */
+
+/*
+ * 租借管理使用後台全部可用寬度。
+ * 僅保留 AdminLayout 原本的安全邊距。
+ */
+.page {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.hero,
+.card {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* ===== Admin Rental Edge To Edge ===== */
+
+/*
+ * AdminLayout 的 .admin-content 左右各有 30px padding。
+ * 這裡只針對租借管理頁抵消，不修改其他後台頁面。
+ */
+.page {
+  width: calc(100% + 60px) !important;
+  max-width: none !important;
+  margin-left: -30px !important;
+  margin-right: -30px !important;
+}
+
+/* Hero、操作區、表格卡片跟著使用完整寬度。 */
+.page > .hero,
+.page > .card {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+/* ===== Admin Rental Hero Center ===== */
+.hero {
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center;
+}
+
+.hero > div:first-child {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero h1,
+.hero p {
+  text-align: center;
 }
 </style>
