@@ -103,7 +103,7 @@ const currentNewBooking = ref(null);
 const isSubmittingPayment = ref(false); // 防止重複提交
 const paymentForm = ref({
   amount: 0,
-  paymentMethod: '現金',
+  paymentMethod: '信用卡',
   paymentStatus: '已付款',
   transactionId: ''
 });
@@ -666,7 +666,7 @@ const filteredBookings = computed(() => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
       const status = b.bookingStatus ?? b.booking_status;
-      return cin <= todayStr && cout >= todayStr && status !== "已取消";
+      return cin <= todayStr && cout >= todayStr && status !== "已取消" && status !== "已完成";
     });
   } else if (currentFilter.value !== "all") {
     result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
@@ -940,7 +940,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <div class="form-group">
             <label>付款方式</label>
             <select v-model="paymentForm.paymentMethod" required>
-              <option value="現金">現金</option>
               <option value="信用卡">信用卡</option>
               <option value="銀行轉帳">銀行轉帳</option>
               <option value="LINE PAY">LINE PAY</option>
@@ -952,9 +951,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <label>付款狀態</label>
             <select v-model="paymentForm.paymentStatus" required>
               <option value="已付款">已付款</option>
-              <option value="待付款">待付款</option>
+              <option value="未付款">未付款</option>
               <option value="已退款">已退款</option>
-              <option value="已取消">已取消</option>
+              <option value="付款失敗">付款失敗</option>
             </select>
           </div>
 
