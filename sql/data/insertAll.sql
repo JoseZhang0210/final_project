@@ -147,11 +147,15 @@ GO
    ========================================================= */
 INSERT INTO permission ( permission_code, permission_name)
 VALUES
-( 'ROOM_MANAGE', '房間管理'),
-( 'BOOKING_MANAGE', '訂房管理'),
-( 'RESTAURANT_MANAGE', '餐廳管理'),
-( 'MEMBER_MANAGE', '會員管理'),
-( 'ORDER_MANAGE', '訂單管理');
+( N'ROOM_MANAGE', N'房間管理'),
+( N'BOOKING_MANAGE', N'訂房管理'),
+( N'RESTAURANT_MANAGE', N'餐廳管理'),
+( N'MEMBER_MANAGE', N'會員管理'),
+( N'ORDER_MANAGE', N'訂單管理'),
+( N'PRODUCT_MANAGE', N'商品管理'),
+( N'EMPLOYEE_MANAGE', N'員工管理'),
+( N'COUPON_MANAGE', N'優惠券管理'),
+( N'VENUE_MANAGE', N'場地管理');
 GO
 
 
@@ -225,12 +229,16 @@ GO
    ========================================================= */
 INSERT INTO employee_permission (permission_id, employee_id)
 VALUES
-    -- Emp 1: 總經理 / 管理員 (擁有全部 5 項權限)
+    -- Emp 1: 總經理 / 管理員 (擁有全部 9 項權限)
     (1, 1), -- 房間管理
     (2, 1), -- 訂房管理
     (3, 1), -- 餐廳管理
     (4, 1), -- 會員管理
     (5, 1), -- 訂單管理
+    (6, 1), -- 商品管理
+    (7, 1), -- 員工管理
+    (8, 1), -- 優惠券管理
+    (9, 1), -- 場地管理
 
     -- Emp 2: 行政主管
     (4, 2),
