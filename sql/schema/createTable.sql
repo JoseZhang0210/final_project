@@ -297,6 +297,34 @@ CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED
 ) ON [PRIMARY]
 GO
 
+/****** 物件:  Table [dbo].[product_review] ******/
+CREATE TABLE [dbo].[product_review] (
+    [review_id] INT IDENTITY(1,1) NOT NULL,
+    [product_id] INT NOT NULL,
+    [member_id] INT NOT NULL,
+    [rating] INT NOT NULL,
+    [comment] NVARCHAR(1000) NOT NULL,
+    [created_at] DATETIME2 NOT NULL,
+    [updated_at] DATETIME2 NOT NULL,
+
+    CONSTRAINT [PK_product_review]
+        PRIMARY KEY ([review_id]),
+
+    CONSTRAINT [UK_product_review_product_member]
+        UNIQUE ([product_id], [member_id]),
+
+    CONSTRAINT [CK_product_review_rating]
+        CHECK ([rating] BETWEEN 1 AND 5),
+
+    CONSTRAINT [FK_product_review_product]
+        FOREIGN KEY ([product_id])
+        REFERENCES [dbo].[product]([product_id]),
+
+    CONSTRAINT [FK_product_review_member]
+        FOREIGN KEY ([member_id])
+        REFERENCES [dbo].[member]([member_id])
+);
+GO
 /****** 物件:  Table [dbo].[profile] ******/
 SET ANSI_NULLS ON
 GO

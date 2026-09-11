@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.hotel.model.dto.CreateOrderItemRequest;
 import com.hotel.model.dto.MonthlyOrderStatisticsDTO;
@@ -32,6 +34,8 @@ import com.hotel.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 
 import com.hotel.model.dto.MonthlyProductSalesDTO;
+import com.hotel.util.MailUtil;
+import com.hotel.model.dto.EmailDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +49,7 @@ public class OrderService {
         private final CouponRepository couponRepository;
         private final PaymentRepository paymentRepository;
         private final AccountRepository accountRepository;
+        private final MailUtil mailUtil;
 
         // =====================================================
         // 1. 查詢全部訂單 Entity
@@ -262,34 +267,24 @@ public class OrderService {
 
                 CustomerOrder order = new CustomerOrder();
 
-                order.setMemberId(
-                                memberId);
+                order.setMemberId(memberId);
 
-                order.setOrderDate(
-                                LocalDateTime.now());
+                order.setOrderDate(LocalDateTime.now());
 
-                order.setOriginalAmount(
-                                originalAmount);
+                order.setOriginalAmount(originalAmount);
 
-                order.setDiscountAmount(
-                                discountAmount);
+                order.setDiscountAmount(discountAmount);
 
-                order.setFinalAmount(
-                                finalAmount);
+                order.setFinalAmount(finalAmount);
 
-                order.setCouponId(
-                                couponId);
+                order.setCouponId(couponId);
 
                 // 尚未建立付款資料
-                order.setPaymentId(
-                                null);
+                order.setPaymentId(null);
 
-                order.setOrderStatus(
-                                "PENDING");
+                order.setOrderStatus("PENDING");
 
-                order = customerOrderRepository
-                                .save(
-                                                order);
+                order = customerOrderRepository.save(order);
 
                 // ==============================
                 // 建立 OrderItem + 扣庫存
@@ -298,15 +293,10 @@ public class OrderService {
                 for (CreateOrderItemRequest requestItem : items) {
 
                         Product product = productRepository
-                                        .findById(
-                                                        requestItem
-                                                                        .getProductId())
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "找不到商品"));
+                                        .findById(requestItem.getProductId())
+                                        .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
 
-                        Integer quantity = requestItem
-                                        .getQuantity();
+                        Integer quantity = requestItem.getQuantity();
 
                         Integer unitPrice = product.getPrice();
 
@@ -316,39 +306,41 @@ public class OrderService {
 
                         OrderItem item = new OrderItem();
 
-                        item.setOrderId(
-                                        order.getOrderId());
+                        item.setOrderId(order.getOrderId());
 
-                        item.setProductId(
-                                        product.getProductId());
+                        item.setProductId(product.getProductId());
 
-                        item.setQuantity(
-                                        quantity);
+                        item.setQuantity(quantity);
 
                         // 記錄下單時價格
-                        item.setUnitPrice(
-                                        unitPrice);
+                        item.setUnitPrice(unitPrice);
 
-                        item.setSubtotal(
-                                        subtotal);
+                        item.setSubtotal(subtotal);
 
-                        orderItemRepository
-                                        .save(
-                                                        item);
+                        orderItemRepository.save(item);
 
                         // 扣庫存
-                        product.setStock(
-                                        product.getStock()
-                                                        -
-                                                        quantity);
+                        product.setStock(product.getStock() - quantity);
 
-                        updateProductStockStatus(
-                                        product);
+                        updateProductStockStatus(product);
 
-                        productRepository
-                                        .save(
-                                                        product);
+                        productRepository.save(product);
                 }
+
+                // 明細與庫存成功提交後才寄信，回滾時不寄送確認信。
+                Integer confirmedOrderId = order.getOrderId();
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                                try {
+                                        mailUtil.sendOrderConfirmation(confirmedOrderId, memberId);
+                                } catch (Exception ex) {
+                                        // 訂單已提交，寄信失敗不應讓下單 API 回報失敗。
+                                        org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                                                        .error("訂單 {} 已建立，但確認信寄送失敗", confirmedOrderId, ex);
+                                }
+                        }
+                });
 
                 return order;
         }
@@ -366,9 +358,7 @@ public class OrderService {
 
                 for (CustomerOrder order : orders) {
 
-                        result.add(
-                                        convertToDTO(
-                                                        order));
+                        result.add(convertToDTO(order));
                 }
 
                 return result;
@@ -389,8 +379,7 @@ public class OrderService {
                 }
 
                 if (!memberRepository
-                                .existsById(
-                                                memberId)) {
+                                .existsById(memberId)) {
 
                         throw new IllegalArgumentException(
                                         "找不到會員");
@@ -404,9 +393,7 @@ public class OrderService {
 
                 for (CustomerOrder order : orders) {
 
-                        result.add(
-                                        convertToDTO(
-                                                        order));
+                        result.add(convertToDTO(order));
                 }
 
                 return result;

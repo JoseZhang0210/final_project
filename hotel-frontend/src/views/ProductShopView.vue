@@ -1,5 +1,5 @@
 <template>
-  <div class="shop-page">
+  <div class="product-view shop-page">
     <!-- =========================
          商城 Hero
          ========================= -->
@@ -956,4 +956,4 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped src="@/assets/product-shop.css"></style>
+<style scoped src="@/assets/product/product-shop.css"></style>
