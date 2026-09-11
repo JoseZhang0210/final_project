@@ -5,7 +5,8 @@
     "bedType": "1張雙人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐，擁有獨立海景陽台",
-    "pricePerNight": 3500
+    "pricePerNight": 3500,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 2,
@@ -13,7 +14,8 @@
     "bedType": "1張雙人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐，享受靜謐山景",
-    "pricePerNight": 3000
+    "pricePerNight": 3000,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 3,
@@ -21,7 +23,8 @@
     "bedType": "2張單人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐，海景客房，適合商務或好友",
-    "pricePerNight": 3800
+    "pricePerNight": 3800,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 4,
@@ -29,7 +32,8 @@
     "bedType": "2張單人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐，山景客房，適合商務或好友",
-    "pricePerNight": 3300
+    "pricePerNight": 3300,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 5,
@@ -37,7 +41,8 @@
     "bedType": "2張雙人床",
     "capacity": 4,
     "roomDescription": "含四人早餐，家庭出遊首選海景房",
-    "pricePerNight": 5800
+    "pricePerNight": 5800,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 6,
@@ -45,7 +50,8 @@
     "bedType": "2張雙人床",
     "capacity": 4,
     "roomDescription": "含四人早餐，空間寬敞，綠意山景",
-    "pricePerNight": 5200
+    "pricePerNight": 5200,
+    "availableRooms": 16
   },
   {
     "roomTypeId": 7,
@@ -53,7 +59,8 @@
     "bedType": "1張加大雙人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐與行政酒廊權益，高樓層無敵海景",
-    "pricePerNight": 8800
+    "pricePerNight": 8800,
+    "availableRooms": 6
   },
   {
     "roomTypeId": 8,
@@ -61,7 +68,8 @@
     "bedType": "1張加大雙人床",
     "capacity": 2,
     "roomDescription": "含雙人早餐與行政酒廊權益，高樓層環景山景",
-    "pricePerNight": 8000
+    "pricePerNight": 8000,
+    "availableRooms": 6
   },
   {
     "roomTypeId": 9,
@@ -69,7 +77,8 @@
     "bedType": "2張加大雙人床",
     "capacity": 4,
     "roomDescription": "含四人早餐，獨立會客廳，高樓層雙面海景",
-    "pricePerNight": 13800
+    "pricePerNight": 13800,
+    "availableRooms": 10
   },
   {
     "roomTypeId": 10,
@@ -77,7 +86,7 @@
     "bedType": "1張特大雙人床",
     "capacity": 2,
     "roomDescription": "含專屬管家與豪華早餐，獨立露台與私人酒廊",
-    "pricePerNight": 32000
+    "pricePerNight": 32000,
+    "availableRooms": 2
   }
 ]
-

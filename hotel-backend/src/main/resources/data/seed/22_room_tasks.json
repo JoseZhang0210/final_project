@@ -1,0 +1,21 @@
+[
+  { "taskId": 1, "roomId": 1, "employeeId": 13, "priority": "緊急", "taskType": "退房清潔", "taskStatus": "進行中", "remark": "住客已退房，需優先清潔整備供今日入住", "createdAt": "2026-09-03T11:15:00", "completedAt": null },
+  { "taskId": 2, "roomId": 2, "employeeId": 14, "priority": "緊急", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "住客已退房，待清潔更換床單", "createdAt": "2026-09-03T11:20:00", "completedAt": null },
+  { "taskId": 3, "roomId": 5, "employeeId": 15, "priority": "重要", "taskType": "退房清潔", "taskStatus": "進行中", "remark": "退房打掃與吸塵作業中", "createdAt": "2026-09-04T11:30:00", "completedAt": null },
+  { "taskId": 4, "roomId": 6, "employeeId": 16, "priority": "重要", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "待清潔海景雙床房", "createdAt": "2026-09-04T11:35:00", "completedAt": null },
+  { "taskId": 5, "roomId": 13, "employeeId": 17, "priority": "緊急", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "住客退房，需更換備品與毛巾", "createdAt": "2026-09-04T11:40:00", "completedAt": null },
+  { "taskId": 6, "roomId": 17, "employeeId": 18, "priority": "重要", "taskType": "退房清潔", "taskStatus": "進行中", "remark": "山景雙床房打掃進行中", "createdAt": "2026-09-05T11:45:00", "completedAt": null },
+  { "taskId": 7, "roomId": 49, "employeeId": 19, "priority": "緊急", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "海景家庭房退房清潔，需鋪設四人份床被", "createdAt": "2026-09-05T12:00:00", "completedAt": null },
+  { "taskId": 8, "roomId": 50, "employeeId": 20, "priority": "重要", "taskType": "退房清潔", "taskStatus": "已完成", "remark": "已完成家庭房全室清潔與備品補充", "createdAt": "2026-09-05T11:10:00", "completedAt": "2026-09-05T12:30:00" },
+  { "taskId": 9, "roomId": 97, "employeeId": 21, "priority": "緊急", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "行政海景套房深層清潔與迎賓禮品重置", "createdAt": "2026-09-05T12:15:00", "completedAt": null },
+  { "taskId": 10, "roomId": 103, "employeeId": 22, "priority": "重要", "taskType": "退房清潔", "taskStatus": "待處理", "remark": "行政山景套房待打掃", "createdAt": "2026-09-05T12:30:00", "completedAt": null },
+  { "taskId": 11, "roomId": 3, "employeeId": 23, "priority": "一般", "taskType": "日常清潔", "taskStatus": "進行中", "remark": "住客要求於下午時段進行簡易日常打掃", "createdAt": "2026-09-05T13:30:00", "completedAt": null },
+  { "taskId": 12, "roomId": 7, "employeeId": 24, "priority": "一般", "taskType": "日常清潔", "taskStatus": "待處理", "remark": "續住房間日常整理與倒垃圾", "createdAt": "2026-09-05T14:00:00", "completedAt": null },
+  { "taskId": 13, "roomId": 8, "employeeId": 26, "priority": "一般", "taskType": "補充備品", "taskStatus": "待處理", "remark": "住客要求額外補充浴巾 2 條與礦泉水", "createdAt": "2026-09-05T14:30:00", "completedAt": null },
+  { "taskId": 14, "roomId": 9, "employeeId": 13, "priority": "一般", "taskType": "補充備品", "taskStatus": "待處理", "remark": "補充盥洗備品組與茶包", "createdAt": "2026-09-05T14:45:00", "completedAt": null },
+  { "taskId": 15, "roomId": 51, "employeeId": 11, "priority": "一般", "taskType": "日常清潔", "taskStatus": "已完成", "remark": "日常清潔已完成，主管抽檢合格", "createdAt": "2026-09-05T10:00:00", "completedAt": "2026-09-05T11:00:00" },
+  { "taskId": 16, "roomId": 61, "employeeId": 12, "priority": "一般", "taskType": "補充備品", "taskStatus": "進行中", "remark": "補充家庭房專用大浴巾與拖鞋", "createdAt": "2026-09-05T15:00:00", "completedAt": null },
+  { "taskId": 17, "roomId": 98, "employeeId": 15, "priority": "重要", "taskType": "日常清潔", "taskStatus": "進行中", "remark": "行政套房貴賓續住精緻打掃", "createdAt": "2026-09-05T15:30:00", "completedAt": null },
+  { "taskId": 18, "roomId": 4, "employeeId": 27, "priority": "緊急", "taskType": "設備維修", "taskStatus": "進行中", "remark": "住客反映空調冷度不足，機電人員檢修冷媒與濾網中", "createdAt": "2026-09-05T16:00:00", "completedAt": null },
+  { "taskId": 19, "roomId": 14, "employeeId": 28, "priority": "重要", "taskType": "設備維修", "taskStatus": "待處理", "remark": "浴室馬桶沖水按鍵回彈不順，水電人員安排排程修繕", "createdAt": "2026-09-05T16:30:00", "completedAt": null }
+]
