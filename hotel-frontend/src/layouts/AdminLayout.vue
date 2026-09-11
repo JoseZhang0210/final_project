@@ -59,11 +59,40 @@
         </div>
         <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
 
-        <!-- 會員管理 -->
-        <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
+        <!-- 帳號管理群組 -->
+        <div class="sidebar-group">
+          <button type="button" class="sidebar-group-title" @click="accountOpen = !accountOpen">
+            <span class="sidebar-title-with-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide-icon"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              帳號管理
+            </span>
 
-        <!-- 員工管理 -->
-        <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
+            <span class="arrow">
+              {{ accountOpen ? "▲" : "▼" }}
+            </span>
+          </button>
+
+          <div v-show="accountOpen" class="sidebar-submenu">
+            <RouterLink to="/admin/members">會員管理</RouterLink>
+            <RouterLink to="/admin/employees">員工管理</RouterLink>
+          </div>
+        </div>
         
         <!-- 訂單管理 -->
         <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
@@ -144,9 +173,21 @@ const route = useRoute();
  */
 const restaurantOpen = ref(true);
 const roombookingOpen = ref(true);
+const accountOpen = ref(true);
 </script>
 
 <style scoped>
+.sidebar-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lucide-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
 .admin-header-actions {
   display: flex;
   align-items: center;
