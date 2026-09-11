@@ -24,7 +24,6 @@ function showMessage(text, type) {
 
 // 讀取全部付款資料
 async function loadPayments() {
-  currentPage.value = 1;
   loading.value = true;
   message.value = "";
   try {

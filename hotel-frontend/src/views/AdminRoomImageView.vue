@@ -103,7 +103,7 @@ function getRoomCover(roomTypeId) {
   if (images.length === 0) return '';
   const mainImage = images.find(img => img.isMain);
   const path = mainImage ? mainImage.path : images[0].path;
-  return path ? `http://localhost:8081${path}` : '';
+  return path ? path : '';
 }
 
 function getRoomImageCount(roomTypeId) {
@@ -333,7 +333,7 @@ function handleImageError(event) {
           <div v-else class="image-grid" style="grid-template-columns: repeat(2, 1fr);">
             <article v-for="(image, index) in currentRoomImages" :key="image.imageId" class="image-card">
               <div class="image-wrapper" style="height: 160px;">
-                <img :src="image.path ? `http://localhost:8081${image.path}` : ''" @error="handleImageError" />
+                <img :src="image.path ? image.path : ''" @error="handleImageError" />
               </div>
               <div class="image-info">
                 <p style="min-height: 20px;">{{ image.imageDescription || "沒有說明" }}</p>
@@ -399,7 +399,7 @@ function handleImageError(event) {
           </div>
 
           <div v-if="form.imageUrl" class="preview-area" style="margin-top: 15px; border-radius: 8px; overflow: hidden; height: 180px;">
-            <img :src="form.imageUrl.startsWith('/') ? `http://localhost:8081${form.imageUrl}` : form.imageUrl" alt="預覽" @error="handleImageError" style="width: 100%; height: 100%; object-fit: cover;" />
+            <img :src="form.imageUrl" alt="預覽" @error="handleImageError" style="width: 100%; height: 100%; object-fit: cover;" />
           </div>
 
           <div class="form-actions" style="margin-top: 25px; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 15px; display: flex; gap: 10px;">
@@ -424,7 +424,7 @@ function handleImageError(event) {
         <div v-else class="modal-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
           <div v-for="(img, idx) in uniqueImages" :key="'m-lib-'+idx" class="modal-img-card" style="height: 180px; display: flex; flex-direction: column;">
             <div style="flex: 1; overflow: hidden; position: relative; cursor: pointer;" @click="selectFromLibrary(img.path)">
-              <img :src="img.path ? `http://localhost:8081${img.path}` : ''" @error="handleImageError" />
+              <img :src="img.path ? img.path : ''" @error="handleImageError" />
               <div class="hover-overlay">
                 <span>點擊選取</span>
               </div>

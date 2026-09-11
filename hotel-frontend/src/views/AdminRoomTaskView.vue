@@ -145,7 +145,7 @@ function getCurrentDateTime() {
 // 前端畫面顯示用的時間格式：只保留到幾點幾分 (長度 16)
 function formatDateTimeShort(dateTimeStr) {
   if (!dateTimeStr) return "—";
-  return String(dateTimeStr).slice(0, 16);
+  return String(dateTimeStr).replace("T", " ").slice(0, 16);
 }
 
 // 確保傳給後端的時間格式包含秒數，並將空格替換為 T（Java LocalDateTime 要求）
@@ -162,7 +162,6 @@ function ensureSecondsFormat(dateTimeStr) {
 
 // 1. 載入與條件查詢房務工單 (GET /api/roomtask?...)
 async function loadRoomTasks() {
-  currentPage.value = 1;
   try {
     const params = {};
     if (searchParams.value.taskId) params.taskId = searchParams.value.taskId;
@@ -189,6 +188,7 @@ function resetSearch() {
   quickFilterType.value = "all";
   quickFilterPriority.value = "all";
   quickFilterStatus.value = "all";
+  currentPage.value = 1;
   loadRoomTasks();
 }
 
@@ -615,22 +615,22 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </select>
         </div>
         <div class="form-actions" style="margin-top: 0;">
-          <button type="button" class="btn primary" @click="loadRoomTasks">搜尋</button>
+          <button type="button" class="btn primary" @click="currentPage = 1; loadRoomTasks()">搜尋</button>
           <button type="button" class="btn secondary" @click="resetSearch">重設</button>
         </div>
       </div>
 
       <!-- 快速切換過濾 -->
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <select v-model="quickFilterType" class="quick-filter-select">
+        <select v-model="quickFilterType" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有類型</option>
           <option v-for="t in taskTypes" :key="t" :value="t">{{ t }}</option>
         </select>
-        <select v-model="quickFilterPriority" class="quick-filter-select">
+        <select v-model="quickFilterPriority" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有優先程度</option>
           <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
         </select>
-        <select v-model="quickFilterStatus" class="quick-filter-select">
+        <select v-model="quickFilterStatus" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有狀態</option>
           <option v-for="s in taskStatuses" :key="s" :value="s">{{ s }}</option>
         </select>
@@ -898,6 +898,7 @@ textarea {
 .actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .form-actions {
@@ -910,6 +911,7 @@ textarea {
   border: none;
   border-radius: 7px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .primary {

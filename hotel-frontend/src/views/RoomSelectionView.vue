@@ -39,7 +39,7 @@
         
         <div v-for="room in rooms" :key="room.roomTypeId" class="room-card">
           <div class="room-image-area">
-            <img :src="room.mainImageUrl ? `http://localhost:8081${room.mainImageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop'" :alt="room.typeName" />
+            <img :src="room.mainImageUrl ? room.mainImageUrl : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop'" :alt="room.typeName" />
             <div class="image-count">☐ 照片</div>
           </div>
           
