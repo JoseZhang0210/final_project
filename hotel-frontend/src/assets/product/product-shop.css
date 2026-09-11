@@ -172,7 +172,7 @@
    分類
    ===================================================== */
 
-.category-list {
+.category-carousel {
   width: 100%;
 
   max-width: 680px;
@@ -181,23 +181,52 @@
 
   display: flex;
 
-  gap: 9px;
+  align-items: center;
 
-  overflow-x: auto;
-
-  padding-bottom: 3px;
-
-  scrollbar-width: none;
+  gap: 10px;
 }
 
-.category-list::-webkit-scrollbar {
-  display: none;
+.category-list {
+  flex: 1;
+
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 9px;
+
+  overflow: hidden;
+}
+
+.category-page-enter-active,
+.category-page-leave-active {
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+
+.moving-next .category-page-enter-from,
+.moving-previous .category-page-leave-to {
+  opacity: 0;
+
+  transform: translateX(28px);
+}
+
+.moving-next .category-page-leave-to,
+.moving-previous .category-page-enter-from {
+  opacity: 0;
+
+  transform: translateX(-28px);
 }
 
 .category-button {
-  flex-shrink: 0;
+  min-width: 0;
 
   padding: 9px 17px;
+
+  overflow: hidden;
 
   border: 1px solid rgba(255, 255, 255, 0.32);
 
@@ -211,9 +240,67 @@
 
   font-size: 13px;
 
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
   cursor: pointer;
 
   transition: 0.2s;
+}
+
+.category-arrow {
+  width: 40px;
+
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: grid;
+
+  place-items: center;
+
+  padding: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.45);
+
+  border-radius: 50%;
+
+  background: rgba(31, 25, 18, 0.55);
+
+  color: white;
+
+  cursor: pointer;
+
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.category-arrow svg {
+  width: 20px;
+
+  height: 20px;
+
+  fill: none;
+
+  stroke: currentColor;
+
+  stroke-width: 2;
+
+  stroke-linecap: round;
+
+  stroke-linejoin: round;
+}
+
+.category-arrow:hover:not(:disabled) {
+  border-color: #dabe82;
+
+  background: #b58a46;
+}
+
+.category-arrow:disabled {
+  opacity: 0.35;
+
+  cursor: default;
 }
 
 .category-button:hover {
@@ -230,6 +317,13 @@
   background: #b58a46;
 
   color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-page-enter-active,
+  .category-page-leave-active {
+    transition: opacity 0.01ms;
+  }
 }
 
 /* =====================================================
@@ -1208,6 +1302,10 @@
     max-width: none;
   }
 
+  .category-carousel {
+    max-width: none;
+  }
+
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 
@@ -1255,7 +1353,25 @@
   }
 
   .category-button {
-    padding: 8px 14px;
+    padding: 8px 6px;
+
+    font-size: 12px;
+  }
+
+  .category-carousel {
+    gap: 6px;
+  }
+
+  .category-list {
+    gap: 6px;
+  }
+
+  .category-arrow {
+    width: 36px;
+
+    height: 36px;
+
+    flex-basis: 36px;
   }
 
   .product-grid {

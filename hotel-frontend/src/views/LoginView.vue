@@ -43,6 +43,37 @@
           </div>
         </form>
 
+        <!-- =========================================
+             第三方登入分隔線
+             ========================================= -->
+        <div class="oauth-divider">
+          <span>或使用第三方登入</span>
+        </div>
+
+        <!-- =========================================
+             Google 登入按鈕區域
+             ========================================= -->
+        <div class="oauth-buttons">
+          <div id="googleSignInButton" class="google-btn-container"></div>
+
+          <!-- 備用/自訂 Google 按鈕 (GIS 載入前或點擊喚醒) -->
+          <button
+            v-if="!gisLoaded"
+            type="button"
+            class="custom-google-button"
+            :disabled="loading"
+            @click="triggerCustomGoogleSignIn"
+          >
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>使用 Google 帳號登入</span>
+          </button>
+        </div>
+
         <div class="link-area">
           <span>還沒有會員帳號？</span>
           <RouterLink to="/register"> 立即註冊 </RouterLink>
@@ -100,7 +131,7 @@
 
 <script setup>
 import { useAuthStore } from "@/stores/auth";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { authApi } from "@/api/authApi";
 
@@ -125,6 +156,241 @@ const showLoginAnimation = ref(false);
 const message = ref("");
 const messageType = ref("");
 
+// Google Identity Services 狀態
+const gisLoaded = ref(false);
+let checkGisInterval = null;
+
+// Google Client ID (可由 .env 設定，預設為當前設定的 Client ID)
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "435883818253-r7egh6k5m1lmhglil16b9a24o6ic63qu.apps.googleusercontent.com";
+
+// =========================================
+// JWT Payload 解析工具
+// =========================================
+
+function parseJwtPayload(token) {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    console.warn("解析 Google Token 失敗：", e);
+    return null;
+  }
+}
+
+// =========================================
+// Google 登入初始化
+// =========================================
+
+function initGoogleSignIn() {
+  if (window.google?.accounts?.id) {
+    try {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      const btnContainer = document.getElementById("googleSignInButton");
+      if (btnContainer) {
+        window.google.accounts.id.renderButton(btnContainer, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: 362,
+        });
+        gisLoaded.value = true;
+      }
+    } catch (e) {
+      console.warn("Google Sign-In 初始化異常：", e);
+      gisLoaded.value = false;
+    }
+  }
+}
+
+// =========================================
+// 處理 Google 授權憑證回傳
+// =========================================
+
+async function handleGoogleCredentialResponse(response) {
+  if (!response || !response.credential) {
+    message.value = "Google 授權失敗，請重試";
+    messageType.value = "error";
+    return;
+  }
+
+  loading.value = true;
+  message.value = "Google 驗證中...";
+  messageType.value = "success";
+
+  try {
+    const payload = parseJwtPayload(response.credential);
+    const email = payload?.email || "";
+    const name = payload?.name || payload?.given_name || "";
+
+    const res = await fetch("/api/auth/google-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        credential: response.credential,
+        email: email,
+        name: name,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      message.value = data.message || "Google 登入失敗，請稍後再試";
+      messageType.value = "error";
+      return;
+    }
+
+    if (data.registered) {
+      // 已註冊：存入 Token 並執行登入
+      authStore.login(data.token, data.authorities, data.name);
+      message.value = `歡迎回來，${data.name}！`;
+      messageType.value = "success";
+
+      showLoginAnimation.value = true;
+      await delay(2200);
+
+      if (data.authorities && data.authorities.includes("ROLE_ADMIN")) {
+        await router.push("/admin");
+      } else {
+        await router.push("/");
+      }
+    } else {
+      // 未註冊：存入暫存並跳轉至註冊頁面帶入資料
+      message.value = data.message || "此 Google 帳號尚未註冊，正在為您前往註冊頁面...";
+      messageType.value = "success";
+
+      const googleSignupData = {
+        email: data.email || email,
+        name: data.name || name,
+        googleVerifiedCode: data.googleVerifiedCode || "",
+        from: "google",
+      };
+
+      sessionStorage.setItem("google_signup_data", JSON.stringify(googleSignupData));
+
+      await delay(1200);
+
+      router.push({
+        path: "/register",
+        query: {
+          from: "google",
+          email: encodeURIComponent(googleSignupData.email),
+          name: encodeURIComponent(googleSignupData.name),
+          code: googleSignupData.googleVerifiedCode,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Google 登入連線錯誤：", error);
+    message.value = "無法連接後端伺服器進行 Google 登入";
+    messageType.value = "error";
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 備用/自訂 Google 登入喚醒按鈕
+async function triggerCustomGoogleSignIn() {
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.prompt();
+  } else {
+    // 若本機尚未載入 Google SDK，彈出提示並支援測試用信箱輸入模擬登入
+    const inputEmail = window.prompt("請輸入要進行 Google 登入驗證的 Email 信箱：", "test_user@gmail.com");
+    if (!inputEmail || !inputEmail.trim()) return;
+
+    loading.value = true;
+    try {
+      const res = await fetch("/api/auth/google-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inputEmail.trim(),
+          name: inputEmail.split("@")[0],
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.registered) {
+        authStore.login(data.token, data.authorities, data.name);
+        showLoginAnimation.value = true;
+        await delay(2200);
+        if (data.authorities && data.authorities.includes("ROLE_ADMIN")) {
+          await router.push("/admin");
+        } else {
+          await router.push("/");
+        }
+      } else {
+        const googleSignupData = {
+          email: data.email || inputEmail.trim(),
+          name: data.name || inputEmail.split("@")[0],
+          googleVerifiedCode: data.googleVerifiedCode || "",
+          from: "google",
+        };
+        sessionStorage.setItem("google_signup_data", JSON.stringify(googleSignupData));
+        router.push({
+          path: "/register",
+          query: {
+            from: "google",
+            email: encodeURIComponent(googleSignupData.email),
+            name: encodeURIComponent(googleSignupData.name),
+            code: googleSignupData.googleVerifiedCode,
+          },
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      message.value = "Google 登入請求失敗";
+      messageType.value = "error";
+    } finally {
+      loading.value = false;
+    }
+  }
+}
+
+onMounted(() => {
+  initGoogleSignIn();
+  if (!gisLoaded.value) {
+    let attempts = 0;
+    checkGisInterval = setInterval(() => {
+      attempts++;
+      if (window.google?.accounts?.id) {
+        initGoogleSignIn();
+        clearInterval(checkGisInterval);
+      } else if (attempts > 20) {
+        clearInterval(checkGisInterval);
+      }
+    }, 300);
+  }
+});
+
+onUnmounted(() => {
+  if (checkGisInterval) {
+    clearInterval(checkGisInterval);
+  }
+});
+
 // =========================================
 // 延遲函式
 // =========================================
@@ -136,7 +402,7 @@ function delay(ms) {
 }
 
 // =========================================
-// 登入
+// 帳密一般登入
 // =========================================
 
 async function login() {
@@ -358,6 +624,82 @@ input:focus {
   cursor: not-allowed;
 
   transform: none;
+}
+
+/* =========================================
+   第三方登入分隔線與按鈕
+   ========================================= */
+
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  margin: 22px 0 16px;
+  color: #8c7e70;
+  font-size: 13px;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2dacd;
+}
+
+.oauth-divider span {
+  padding: 0 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.google-btn-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+}
+
+.custom-google-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 11px 16px;
+  background-color: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.custom-google-button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #c6c9ce;
+  box-shadow: 0 2px 6px rgba(60, 64, 67, 0.15);
+  transform: translateY(-1px);
+}
+
+.custom-google-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 /* =========================================
