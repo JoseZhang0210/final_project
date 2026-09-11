@@ -1,0 +1,22 @@
+[
+  { "bookingId": 1, "memberId": 1, "roomTypeId": 1, "roomId": 1, "checkInDate": "2026-09-01", "checkOutDate": "2026-09-03", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3500, "createdAt": "2026-08-15T10:00:00" },
+  { "bookingId": 2, "memberId": 2, "roomTypeId": 1, "roomId": 2, "checkInDate": "2026-09-01", "checkOutDate": "2026-09-03", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3500, "createdAt": "2026-08-15T10:30:00" },
+  { "bookingId": 3, "memberId": 3, "roomTypeId": 3, "roomId": 5, "checkInDate": "2026-09-02", "checkOutDate": "2026-09-04", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3800, "createdAt": "2026-08-16T11:00:00" },
+  { "bookingId": 4, "memberId": 4, "roomTypeId": 3, "roomId": 6, "checkInDate": "2026-09-02", "checkOutDate": "2026-09-04", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3800, "createdAt": "2026-08-16T11:30:00" },
+  { "bookingId": 5, "memberId": 5, "roomTypeId": 2, "roomId": 13, "checkInDate": "2026-09-02", "checkOutDate": "2026-09-04", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3000, "createdAt": "2026-08-17T09:00:00" },
+  { "bookingId": 6, "memberId": 6, "roomTypeId": 4, "roomId": 17, "checkInDate": "2026-09-03", "checkOutDate": "2026-09-05", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 3300, "createdAt": "2026-08-17T09:30:00" },
+  { "bookingId": 7, "memberId": 7, "roomTypeId": 5, "roomId": 49, "checkInDate": "2026-09-03", "checkOutDate": "2026-09-05", "guestNum": 4, "bookingStatus": "已退房", "bookingPrice": 5800, "createdAt": "2026-08-18T14:00:00" },
+  { "bookingId": 8, "memberId": 8, "roomTypeId": 5, "roomId": 50, "checkInDate": "2026-09-03", "checkOutDate": "2026-09-05", "guestNum": 3, "bookingStatus": "已退房", "bookingPrice": 5800, "createdAt": "2026-08-18T14:30:00" },
+  { "bookingId": 9, "memberId": 9, "roomTypeId": 7, "roomId": 97, "checkInDate": "2026-09-03", "checkOutDate": "2026-09-05", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 8800, "createdAt": "2026-08-19T10:15:00" },
+  { "bookingId": 10, "memberId": 10, "roomTypeId": 8, "roomId": 103, "checkInDate": "2026-09-03", "checkOutDate": "2026-09-05", "guestNum": 2, "bookingStatus": "已退房", "bookingPrice": 8000, "createdAt": "2026-08-19T10:45:00" },
+  { "bookingId": 11, "memberId": 11, "roomTypeId": 1, "roomId": 3, "checkInDate": "2026-09-04", "checkOutDate": "2026-09-07", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 3500, "createdAt": "2026-08-20T12:00:00" },
+  { "bookingId": 12, "memberId": 12, "roomTypeId": 1, "roomId": 4, "checkInDate": "2026-09-04", "checkOutDate": "2026-09-06", "guestNum": 1, "bookingStatus": "已入住", "bookingPrice": 3500, "createdAt": "2026-08-20T12:30:00" },
+  { "bookingId": 13, "memberId": 13, "roomTypeId": 3, "roomId": 7, "checkInDate": "2026-09-04", "checkOutDate": "2026-09-07", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 3800, "createdAt": "2026-08-21T08:00:00" },
+  { "bookingId": 14, "memberId": 14, "roomTypeId": 3, "roomId": 8, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-07", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 3800, "createdAt": "2026-08-21T08:30:00" },
+  { "bookingId": 15, "memberId": 15, "roomTypeId": 1, "roomId": 9, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-08", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 3500, "createdAt": "2026-08-22T15:20:00" },
+  { "bookingId": 16, "memberId": 16, "roomTypeId": 2, "roomId": 14, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-07", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 3000, "createdAt": "2026-08-23T09:10:00" },
+  { "bookingId": 17, "memberId": 17, "roomTypeId": 5, "roomId": 51, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-08", "guestNum": 4, "bookingStatus": "已入住", "bookingPrice": 5800, "createdAt": "2026-08-23T11:40:00" },
+  { "bookingId": 18, "memberId": 18, "roomTypeId": 6, "roomId": 61, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-07", "guestNum": 4, "bookingStatus": "已入住", "bookingPrice": 5200, "createdAt": "2026-08-24T14:20:00" },
+  { "bookingId": 19, "memberId": 19, "roomTypeId": 7, "roomId": 98, "checkInDate": "2026-09-05", "checkOutDate": "2026-09-08", "guestNum": 2, "bookingStatus": "已入住", "bookingPrice": 8800, "createdAt": "2026-08-24T16:00:00" },
+  { "bookingId": 20, "memberId": 20, "roomTypeId": 1, "roomId": 10, "checkInDate": "2026-09-06", "checkOutDate": "2026-09-08", "guestNum": 2, "bookingStatus": "已預訂", "bookingPrice": 3500, "createdAt": "2026-08-25T10:15:00" }
+]

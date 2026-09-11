@@ -62,7 +62,6 @@ import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.repository.VenueRepository;
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -130,6 +129,7 @@ public class DatabaseDataInitializer implements ApplicationRunner {
             seedReservations();
             seedOrders();
             seedBookings();
+            seedBookingPayments();
             seedRoomTasks();
 
             log.info("【資料庫初始化器】全系統資料庫初始化檢查與作業完成！");
@@ -430,45 +430,51 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     }
 
     // -------------------------------------------------------------------------
-    // 20. 訂房與付款 (Booking & BookingPayment)
+    // 20. 訂房 (Booking)
     // -------------------------------------------------------------------------
     @Transactional
     public void seedBookings() {
         if (bookingRepository.count() == 0) {
-            try {
-                ClassPathResource resource = new ClassPathResource("data/seed/20_bookings.json");
-                if (resource.exists()) {
-                    try (InputStream is = resource.getInputStream()) {
-                        BookingSeedDTO dto = objectMapper.readValue(is, BookingSeedDTO.class);
-                        if (dto.getBookings() != null) {
-                            for (Booking b : dto.getBookings()) {
-                                b.setBookingId(null);
-                                bookingRepository.save(b);
-                            }
-                            log.info("【訂房模組】已成功初始化 {} 筆訂房資料。", dto.getBookings().size());
-                        }
-                        if (dto.getPayments() != null && bookingPaymentRepository.count() == 0) {
-                            for (BookingPayment bp : dto.getPayments()) {
-                                bp.setPaymentId(null);
-                                bookingPaymentRepository.save(bp);
-                            }
-                            log.info("【訂房付款】已成功初始化 {} 筆訂房付款資料。", dto.getPayments().size());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("【訂房模組】匯入種子資料失敗: {}", e.getMessage(), e);
+            List<Booking> list = loadListFromClasspath("data/seed/20_room_bookings.json", Booking.class);
+            if (list.isEmpty()) {
+                list = loadListFromClasspath("data/seed/room_bookings.json", Booking.class);
             }
+            for (Booking b : list) {
+                b.setBookingId(null);
+                bookingRepository.save(b);
+            }
+            log.info("【訂房模組】已成功初始化 {} 筆訂房資料。", list.size());
         }
     }
 
     // -------------------------------------------------------------------------
-    // 21. 房務任務 (RoomTask)
+    // 21. 訂房付款 (BookingPayment)
+    // -------------------------------------------------------------------------
+    @Transactional
+    public void seedBookingPayments() {
+        if (bookingPaymentRepository.count() == 0) {
+            List<BookingPayment> list = loadListFromClasspath("data/seed/21_room_booking_payments.json", BookingPayment.class);
+            if (list.isEmpty()) {
+                list = loadListFromClasspath("data/seed/room_booking_payments.json", BookingPayment.class);
+            }
+            for (BookingPayment bp : list) {
+                bp.setPaymentId(null);
+                bookingPaymentRepository.save(bp);
+            }
+            log.info("【訂房付款】已成功初始化 {} 筆訂房付款資料。", list.size());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 22. 房務任務 (RoomTask)
     // -------------------------------------------------------------------------
     @Transactional
     public void seedRoomTasks() {
         if (roomTaskRepository.count() == 0) {
-            List<RoomTask> list = loadListFromClasspath("data/seed/21_room_tasks.json", RoomTask.class);
+            List<RoomTask> list = loadListFromClasspath("data/seed/22_room_tasks.json", RoomTask.class);
+            if (list.isEmpty()) {
+                list = loadListFromClasspath("data/seed/21_room_tasks.json", RoomTask.class);
+            }
             for (RoomTask rt : list) {
                 rt.setTaskId(null);
                 roomTaskRepository.save(rt);
@@ -495,12 +501,6 @@ public class DatabaseDataInitializer implements ApplicationRunner {
             log.error("讀取種子資料檔案 {} 失敗: {}", path, e.getMessage(), e);
             return Collections.emptyList();
         }
-    }
-
-    @Data
-    private static class BookingSeedDTO {
-        private List<Booking> bookings;
-        private List<BookingPayment> payments;
     }
 }
 
