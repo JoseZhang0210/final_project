@@ -13,6 +13,14 @@
   { "employeeId": 2, "permissionId": 4 },
   { "employeeId": 1, "permissionId": 5 },
   { "employeeId": 2, "permissionId": 5 },
-  { "employeeId": 5, "permissionId": 5 }
+  { "employeeId": 5, "permissionId": 5 },
+  { "employeeId": 1, "permissionId": 6 },
+  { "employeeId": 2, "permissionId": 6 },
+  { "employeeId": 1, "permissionId": 7 },
+  { "employeeId": 2, "permissionId": 7 },
+  { "employeeId": 1, "permissionId": 8 },
+  { "employeeId": 2, "permissionId": 8 },
+  { "employeeId": 1, "permissionId": 9 },
+  { "employeeId": 2, "permissionId": 9 }
 ]
 
