@@ -30,3 +30,99 @@ VALUES
 -- 5. 關閉 IDENTITY 並設定下一次新增從 11 開始
 SET IDENTITY_INSERT room_type OFF;
 DBCC CHECKIDENT ('room_type', RESEED, 10);
+
+==============================
+
+
+[
+  {
+    "roomTypeId": 1,
+    "typeName": "標準海景雙人房",
+    "bedType": "1張雙人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐，擁有獨立海景陽台",
+    "pricePerNight": 3500,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 2,
+    "typeName": "標準山景雙人房",
+    "bedType": "1張雙人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐，享受靜謐山景",
+    "pricePerNight": 3000,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 3,
+    "typeName": "雅緻海景雙床房",
+    "bedType": "2張單人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐，海景客房，適合商務或好友",
+    "pricePerNight": 3800,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 4,
+    "typeName": "雅緻山景雙床房",
+    "bedType": "2張單人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐，山景客房，適合商務或好友",
+    "pricePerNight": 3300,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 5,
+    "typeName": "溫馨海景家庭房",
+    "bedType": "2張雙人床",
+    "capacity": 4,
+    "roomDescription": "含四人早餐，家庭出遊首選海景房",
+    "pricePerNight": 5800,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 6,
+    "typeName": "溫馨山景家庭房",
+    "bedType": "2張雙人床",
+    "capacity": 4,
+    "roomDescription": "含四人早餐，空間寬敞，綠意山景",
+    "pricePerNight": 5200,
+    "availableRooms": 16
+  },
+  {
+    "roomTypeId": 7,
+    "typeName": "行政海景尊榮套房",
+    "bedType": "1張加大雙人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐與行政酒廊權益，高樓層無敵海景",
+    "pricePerNight": 8800,
+    "availableRooms": 6
+  },
+  {
+    "roomTypeId": 8,
+    "typeName": "行政山景尊榮套房",
+    "bedType": "1張加大雙人床",
+    "capacity": 2,
+    "roomDescription": "含雙人早餐與行政酒廊權益，高樓層環景山景",
+    "pricePerNight": 8000,
+    "availableRooms": 6
+  },
+  {
+    "roomTypeId": 9,
+    "typeName": "豪華全景海景四人套房",
+    "bedType": "2張加大雙人床",
+    "capacity": 4,
+    "roomDescription": "含四人早餐，獨立會客廳，高樓層雙面海景",
+    "pricePerNight": 13800,
+    "availableRooms": 10
+  },
+  {
+    "roomTypeId": 10,
+    "typeName": "頂級海景皇家總統套房",
+    "bedType": "1張特大雙人床",
+    "capacity": 2,
+    "roomDescription": "含專屬管家與豪華早餐，獨立露台與私人酒廊",
+    "pricePerNight": 32000,
+    "availableRooms": 2
+  }
+]

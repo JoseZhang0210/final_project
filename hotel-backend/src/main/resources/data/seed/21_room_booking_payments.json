@@ -1,22 +1,202 @@
 [
-  { "paymentId": 1, "bookingId": 1, "amount": 7000, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260901-001", "createdAt": "2026-08-15T10:05:00", "paidAt": "2026-08-15T10:06:00" },
-  { "paymentId": 2, "bookingId": 2, "amount": 7000, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260901-002", "createdAt": "2026-08-15T10:35:00", "paidAt": "2026-08-15T10:36:00" },
-  { "paymentId": 3, "bookingId": 3, "amount": 7600, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260902-003", "createdAt": "2026-08-16T11:05:00", "paidAt": "2026-08-16T11:06:00" },
-  { "paymentId": 4, "bookingId": 4, "amount": 7600, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260902-004", "createdAt": "2026-08-16T11:35:00", "paidAt": "2026-08-16T11:36:00" },
-  { "paymentId": 5, "bookingId": 5, "amount": 6000, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260902-005", "createdAt": "2026-08-17T09:05:00", "paidAt": "2026-08-17T09:06:00" },
-  { "paymentId": 6, "bookingId": 6, "amount": 6600, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260903-006", "createdAt": "2026-08-17T09:35:00", "paidAt": "2026-08-17T09:36:00" },
-  { "paymentId": 7, "bookingId": 7, "amount": 11600, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260903-007", "createdAt": "2026-08-18T14:05:00", "paidAt": "2026-08-18T14:06:00" },
-  { "paymentId": 8, "bookingId": 8, "amount": 11600, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260903-008", "createdAt": "2026-08-18T14:35:00", "paidAt": "2026-08-18T14:36:00" },
-  { "paymentId": 9, "bookingId": 9, "amount": 17600, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260903-009", "createdAt": "2026-08-19T10:20:00", "paidAt": "2026-08-19T10:21:00" },
-  { "paymentId": 10, "bookingId": 10, "amount": 16000, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260903-010", "createdAt": "2026-08-19T10:50:00", "paidAt": "2026-08-19T10:51:00" },
-  { "paymentId": 11, "bookingId": 11, "amount": 10500, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260904-011", "createdAt": "2026-08-20T12:05:00", "paidAt": "2026-08-20T12:06:00" },
-  { "paymentId": 12, "bookingId": 12, "amount": 7000, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260904-012", "createdAt": "2026-08-20T12:35:00", "paidAt": "2026-08-20T12:36:00" },
-  { "paymentId": 13, "bookingId": 13, "amount": 11400, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260904-013", "createdAt": "2026-08-21T08:05:00", "paidAt": "2026-08-21T08:06:00" },
-  { "paymentId": 14, "bookingId": 14, "amount": 7600, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-014", "createdAt": "2026-08-21T08:35:00", "paidAt": "2026-08-21T08:36:00" },
-  { "paymentId": 15, "bookingId": 15, "amount": 10500, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-015", "createdAt": "2026-08-22T15:25:00", "paidAt": "2026-08-22T15:26:00" },
-  { "paymentId": 16, "bookingId": 16, "amount": 6000, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-016", "createdAt": "2026-08-23T09:15:00", "paidAt": "2026-08-23T09:16:00" },
-  { "paymentId": 17, "bookingId": 17, "amount": 17400, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-017", "createdAt": "2026-08-23T11:45:00", "paidAt": "2026-08-23T11:46:00" },
-  { "paymentId": 18, "bookingId": 18, "amount": 10400, "paymentMethod": "LINE PAY", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-018", "createdAt": "2026-08-24T14:25:00", "paidAt": "2026-08-24T14:26:00" },
-  { "paymentId": 19, "bookingId": 19, "amount": 26400, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260905-019", "createdAt": "2026-08-24T16:05:00", "paidAt": "2026-08-24T16:06:00" },
-  { "paymentId": 20, "bookingId": 20, "amount": 7000, "paymentMethod": "信用卡", "paymentStatus": "已付款", "transactionId": "BOOK-TX-20260906-020", "createdAt": "2026-08-25T10:20:00", "paidAt": "2026-08-25T10:21:00" }
+  {
+    "paymentId": 1,
+    "bookingId": 1,
+    "amount": 7000,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608151005000001",
+    "createdAt": "2026-08-15T10:05:00",
+    "paidAt": "2026-08-15T10:06:00"
+  },
+  {
+    "paymentId": 2,
+    "bookingId": 2,
+    "amount": 7000,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608151035000002",
+    "createdAt": "2026-08-15T10:35:00",
+    "paidAt": "2026-08-15T10:36:00"
+  },
+  {
+    "paymentId": 3,
+    "bookingId": 3,
+    "amount": 7600,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608161105000003",
+    "createdAt": "2026-08-16T11:05:00",
+    "paidAt": "2026-08-16T11:06:00"
+  },
+  {
+    "paymentId": 4,
+    "bookingId": 4,
+    "amount": 7600,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608161135000004",
+    "createdAt": "2026-08-16T11:35:00",
+    "paidAt": "2026-08-16T11:36:00"
+  },
+  {
+    "paymentId": 5,
+    "bookingId": 5,
+    "amount": 6000,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608170905000005",
+    "createdAt": "2026-08-17T09:05:00",
+    "paidAt": "2026-08-17T09:06:00"
+  },
+  {
+    "paymentId": 6,
+    "bookingId": 6,
+    "amount": 6600,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608170935000006",
+    "createdAt": "2026-08-17T09:35:00",
+    "paidAt": "2026-08-17T09:36:00"
+  },
+  {
+    "paymentId": 7,
+    "bookingId": 7,
+    "amount": 11600,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608181405000007",
+    "createdAt": "2026-08-18T14:05:00",
+    "paidAt": "2026-08-18T14:06:00"
+  },
+  {
+    "paymentId": 8,
+    "bookingId": 8,
+    "amount": 11600,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608181435000008",
+    "createdAt": "2026-08-18T14:35:00",
+    "paidAt": "2026-08-18T14:36:00"
+  },
+  {
+    "paymentId": 9,
+    "bookingId": 9,
+    "amount": 17600,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608191020000009",
+    "createdAt": "2026-08-19T10:20:00",
+    "paidAt": "2026-08-19T10:21:00"
+  },
+  {
+    "paymentId": 10,
+    "bookingId": 10,
+    "amount": 16000,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608191050000010",
+    "createdAt": "2026-08-19T10:50:00",
+    "paidAt": "2026-08-19T10:51:00"
+  },
+  {
+    "paymentId": 11,
+    "bookingId": 11,
+    "amount": 10500,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608201205000011",
+    "createdAt": "2026-08-20T12:05:00",
+    "paidAt": "2026-08-20T12:06:00"
+  },
+  {
+    "paymentId": 12,
+    "bookingId": 12,
+    "amount": 7000,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608201235000012",
+    "createdAt": "2026-08-20T12:35:00",
+    "paidAt": "2026-08-20T12:36:00"
+  },
+  {
+    "paymentId": 13,
+    "bookingId": 13,
+    "amount": 11400,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608210805000013",
+    "createdAt": "2026-08-21T08:05:00",
+    "paidAt": "2026-08-21T08:06:00"
+  },
+  {
+    "paymentId": 14,
+    "bookingId": 14,
+    "amount": 7600,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608210835000014",
+    "createdAt": "2026-08-21T08:35:00",
+    "paidAt": "2026-08-21T08:36:00"
+  },
+  {
+    "paymentId": 15,
+    "bookingId": 15,
+    "amount": 10500,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608221525000015",
+    "createdAt": "2026-08-22T15:25:00",
+    "paidAt": "2026-08-22T15:26:00"
+  },
+  {
+    "paymentId": 16,
+    "bookingId": 16,
+    "amount": 6000,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608230915000016",
+    "createdAt": "2026-08-23T09:15:00",
+    "paidAt": "2026-08-23T09:16:00"
+  },
+  {
+    "paymentId": 17,
+    "bookingId": 17,
+    "amount": 17400,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608231145000017",
+    "createdAt": "2026-08-23T11:45:00",
+    "paidAt": "2026-08-23T11:46:00"
+  },
+  {
+    "paymentId": 18,
+    "bookingId": 18,
+    "amount": 10400,
+    "paymentMethod": "LINE PAY",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608241425000018",
+    "createdAt": "2026-08-24T14:25:00",
+    "paidAt": "2026-08-24T14:26:00"
+  },
+  {
+    "paymentId": 19,
+    "bookingId": 19,
+    "amount": 26400,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608241605000019",
+    "createdAt": "2026-08-24T16:05:00",
+    "paidAt": "2026-08-24T16:06:00"
+  },
+  {
+    "paymentId": 20,
+    "bookingId": 20,
+    "amount": 7000,
+    "paymentMethod": "信用卡",
+    "paymentStatus": "已付款",
+    "transactionId": "TXN202608251020000020",
+    "createdAt": "2026-08-25T10:20:00",
+    "paidAt": "2026-08-25T10:21:00"
+  }
 ]
