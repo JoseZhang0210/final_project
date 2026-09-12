@@ -172,10 +172,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         // 動態計算今日可用數 (從今日到明日)
         dto.setTodayAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), LocalDate.now(), LocalDate.now().plusDays(1)));
         
-        // 載入主圖
+        // 載入主圖與所有圖片
         List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;
@@ -191,10 +194,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setPricePerNight(roomType.getPricePerNight());
         dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
         
-        // 載入主圖
+        // 載入主圖與所有圖片
         List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;

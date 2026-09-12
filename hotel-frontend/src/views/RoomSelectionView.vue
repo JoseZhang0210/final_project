@@ -39,8 +39,29 @@
         
         <div v-for="room in rooms" :key="room.roomTypeId" class="room-card">
           <div class="room-image-area">
-            <img :src="room.mainImageUrl ? room.mainImageUrl : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop'" :alt="room.typeName" />
-            <div class="image-count">☐ 照片</div>
+            <img 
+              :src="(room.imageUrls && room.imageUrls.length > 0) ? room.imageUrls[room.currentImageIndex] : (room.mainImageUrl || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')" 
+              :alt="room.typeName" 
+            />
+            <div class="image-count">
+              <span v-if="room.imageUrls && room.imageUrls.length > 0">{{ room.currentImageIndex + 1 }} / {{ room.imageUrls.length }} </span>
+              <span v-else>☐ 照片</span>
+            </div>
+            
+            <button 
+              v-if="room.imageUrls && room.imageUrls.length > 1" 
+              class="slider-btn prev-btn" 
+              @click.stop="room.currentImageIndex = (room.currentImageIndex - 1 + room.imageUrls.length) % room.imageUrls.length"
+            >
+              ❮
+            </button>
+            <button 
+              v-if="room.imageUrls && room.imageUrls.length > 1" 
+              class="slider-btn next-btn" 
+              @click.stop="room.currentImageIndex = (room.currentImageIndex + 1) % room.imageUrls.length"
+            >
+              ❯
+            </button>
           </div>
           
           <div class="room-info">
@@ -138,7 +159,9 @@ async function fetchRooms() {
   try {
     const data = await roomTypeApi.getAvailableRoomTypes(checkIn.value, checkOut.value);
     // 隱藏客滿房型，且只顯示容量足夠的房型
-    rooms.value = data.filter(r => r.capacity >= guests.value && r.availableRooms > 0);
+    rooms.value = data
+      .filter(r => r.capacity >= guests.value && r.availableRooms > 0)
+      .map(r => ({ ...r, currentImageIndex: 0 }));
   } catch (error) {
     console.error("無法取得房型資料", error);
   } finally {
@@ -296,10 +319,16 @@ function goToSearch() {
 
 .room-image-area {
   width: 300px;
+  flex-shrink: 0;
   position: relative;
+  background-color: #f3f4f6;
+  overflow: hidden;
 }
 
 .room-image-area img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -314,6 +343,37 @@ function goToSearch() {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
 }
+
+.slider-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.4);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  z-index: 10;
+  opacity: 0;
+}
+
+.room-image-area:hover .slider-btn {
+  opacity: 1;
+}
+
+.slider-btn:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+.prev-btn { left: 10px; }
+.next-btn { right: 10px; }
 
 .room-info {
   flex: 1;

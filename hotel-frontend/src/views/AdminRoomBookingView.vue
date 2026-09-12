@@ -868,6 +868,16 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             </div>
 
             <div class="form-group">
+              <label>入住日期 *</label>
+              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>退房日期 *</label>
+              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
               <label>房型 *</label>
               <select v-model="form.roomTypeId" @change="changeRoomType" required>
                 <option value="" disabled>請選擇房型</option>
@@ -885,16 +895,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                   房號 {{ room.roomNumber }}
                 </option>
               </select>
-            </div>
-
-            <div class="form-group">
-              <label>入住日期 *</label>
-              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
-            </div>
-
-            <div class="form-group">
-              <label>退房日期 *</label>
-              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
             </div>
 
             <div class="form-group">
