@@ -34,9 +34,19 @@
             />
           </div>
 
-          <button type="submit" class="login-button" :disabled="loading">
-            {{ loading ? "登入中..." : "登入" }}
-          </button>
+          <div class="button-group">
+            <button type="submit" class="login-button" :disabled="loading">
+              {{ loading ? "登入中..." : "登入" }}
+            </button>
+            <button
+              type="button"
+              class="quick-fill-button"
+              :disabled="loading"
+              @click="fillDemoAccount"
+            >
+              一鍵帶入
+            </button>
+          </div>
 
           <div v-if="message" class="message" :class="messageType">
             {{ message }}
@@ -144,6 +154,12 @@ const authStore = useAuthStore();
 
 const username = ref("");
 const password = ref("");
+
+// 一鍵帶入展示帳密
+function fillDemoAccount() {
+  username.value = "customer01";
+  password.value = "123456";
+}
 
 // API 登入中
 const loading = ref(false);
@@ -608,11 +624,16 @@ input:focus {
 }
 
 /* =========================================
-   登入按鈕
+   登入按鈕與一鍵帶入按鈕
    ========================================= */
 
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
 .login-button {
-  width: 100%;
+  flex: 1;
 
   padding: 12px;
 
@@ -642,6 +663,46 @@ input:focus {
 }
 
 .login-button:disabled {
+  opacity: 0.7;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+.quick-fill-button {
+  padding: 12px 16px;
+
+  border: 1px solid #b58a46;
+
+  border-radius: 8px;
+
+  background-color: #fff8ee;
+
+  color: #b58a46;
+
+  font-size: 14px;
+
+  font-weight: bold;
+
+  font-family: inherit;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition: 0.25s;
+}
+
+.quick-fill-button:hover {
+  background-color: #b58a46;
+
+  color: white;
+
+  transform: translateY(-2px);
+}
+
+.quick-fill-button:disabled {
   opacity: 0.7;
 
   cursor: not-allowed;
