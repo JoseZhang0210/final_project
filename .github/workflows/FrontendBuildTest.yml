@@ -1,0 +1,38 @@
+name: "Vue Frontend CI"
+on: [pull_request]
+
+jobs:
+  vue-build-test:
+    name: "Vue Build & Lint Test"
+    runs-on: ubuntu-latest
+    
+    # 指定所有 run 指令預設在前端子資料夾執行
+    defaults:
+      run:
+        working-directory: ./hotel-frontend
+
+    steps:
+      # 1. 複製 PR 的程式碼到虛擬機中
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 設定專案對應的 Node.js 版本
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: 'npm'
+          # 讓快取功能正確讀取子資料夾的 package-lock.json
+          cache-dependency-path: ./hotel-frontend/package-lock.json
+
+      # 3. 安裝前端依賴套件
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. 執行程式碼風格檢查（若 package.json 中無此指令會自動跳過）
+      - name: Run Lint
+        run: npm run lint --if-present
+
+      # 5. 測試 Vue 能不能正常編譯打包
+      - name: Build Project
+        run: npm run build
