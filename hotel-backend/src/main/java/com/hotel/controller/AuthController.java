@@ -163,7 +163,27 @@ public class AuthController {
 
             // 建立完整會員資料 (Account + Member + Profile)
             MemberDTO createdMember = memberService.createMember(memberDTO);
-            return ResponseEntity.ok(createdMember);
+
+            // 註冊成功後自動生成 JWT Token 與登入資訊
+            UserDetails user = userDetailsService.loadUserByUsername(createdMember.getUsername());
+            String token = jwtUtils.generateToken(user);
+
+            java.util.List<String> authorities = user.getAuthorities().stream()
+                    .map(auth -> auth != null ? auth.getAuthority() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toList());
+
+            String displayName = (createdMember.getName() != null && !createdMember.getName().isBlank())
+                    ? createdMember.getName()
+                    : createdMember.getUsername();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("member", createdMember);
+            response.put("token", token);
+            response.put("authorities", authorities);
+            response.put("name", displayName);
+
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (DataIntegrityViolationException e) {
