@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hotel.dto.AdminRentalCreateRequest;
 import com.hotel.dto.RentalCreateRequest;
 import com.hotel.model.entity.Rental;
 import com.hotel.model.entity.Venue;
@@ -74,34 +75,81 @@ public class RentalService {
 
         Integer memberId = resolveMemberId(username);
 
+        return createForMember(
+                request,
+                memberId);
+    }
+
+    /**
+     * 管理員替既有會員建立 Rental。
+     *
+     * memberId 由管理員指定，
+     * rentalId、paymentId、rentalStatus 仍由後端產生。
+     */
+    public Rental createForManager(
+            AdminRentalCreateRequest request) {
+
+        if (request == null) {
+            throw new IllegalArgumentException(
+                    "租借資料不可空白");
+        }
+
+        if (request.memberId() == null
+                || request.memberId() <= 0) {
+            throw new IllegalArgumentException(
+                    "請選擇會員");
+        }
+
+        RentalCreateRequest createRequest =
+                new RentalCreateRequest(
+                        request.venueId(),
+                        request.eventName(),
+                        request.rentalDate(),
+                        request.guestCount());
+
+        validateCreateRequest(createRequest);
+        validateMemberExists(request.memberId());
+
+        return createForMember(
+                createRequest,
+                request.memberId());
+    }
+
+    /**
+     * 共用租借建立流程。
+     *
+     * 會員與管理員建立租借都由此處統一處理，
+     * 避免重複實作場地、付款與衝突檢查。
+     */
+    private Rental createForMember(
+            RentalCreateRequest request,
+            Integer memberId) {
+
         Venue venue = getVenue(request.venueId());
 
         Rental candidate = new Rental();
         candidate.setVenueId(request.venueId());
         candidate.setMemberId(memberId);
         candidate.setEventName(request.eventName().trim());
-        candidate.setRentalDate(request.rentalDate().toLocalDate().atStartOfDay()); // 新租借一律儲存當日零時。
+        candidate.setRentalDate(
+                request.rentalDate()
+                        .toLocalDate()
+                        .atStartOfDay());
         candidate.setGuestCount(request.guestCount());
         candidate.setRentalStatus("PENDING");
 
-        validateVenueAndGuestCount(candidate, venue);
+        validateVenueAndGuestCount(
+                candidate,
+                venue);
 
-        lockVenue(candidate.getVenueId()); // 在交易內鎖定同一場地，避免並行建立通過相同檢查。
-        if (hasCollision(candidate, -1)) { // 使用整日與有效狀態的共用查詢。
+        // 鎖定同一場地，避免並行建立時重複預約。
+        lockVenue(candidate.getVenueId());
 
+        if (hasCollision(candidate, -1)) {
             throw new IllegalArgumentException(
-                    "此場地於指定日期已被預約"); // 清楚說明整日占用限制。
+                    "此場地於指定日期已被預約");
         }
 
-        /*
-         * rental_payment 是共享資料表。
-         *
-         * 目前 main 的 Java Entity 將 payment_id 視為 IDENTITY，
-         * 但 SQL createTable.sql 仍可能是一般 int PK。
-         *
-         * 因此此處不修改共享 rental_payment Entity，
-         * 而是先檢查實際 DB schema，再採取相容寫法。
-         */
         Integer paymentId = createPendingPayment(
                 memberId,
                 venue.getPricePerDay());
@@ -116,6 +164,26 @@ public class RentalService {
                                 "租借已建立，但無法重新讀取 Rental ID：" + rentalId));
     }
 
+    /**
+     * 確認管理員指定的會員資料存在。
+     */
+    private void validateMemberExists(
+            Integer memberId) {
+
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM dbo.member
+                WHERE member_id = ?
+                """,
+                Integer.class,
+                memberId);
+
+        if (count == null || count == 0) {
+            throw new IllegalArgumentException(
+                    "找不到會員 ID：" + memberId);
+        }
+    }
     /**
      * 查詢目前登入會員自己的 Rental。
      */

@@ -1,0 +1,23 @@
+[
+  {
+    "rentalId": 1,
+    "venueId": 1,
+    "memberId": 1,
+    "eventName": "公司尾牙",
+    "rentalDate": "2026-12-20T18:00:00",
+    "guestCount": 200,
+    "paymentId": 1,
+    "rentalStatus": "已確認"
+  },
+  {
+    "rentalId": 2,
+    "venueId": 2,
+    "memberId": 2,
+    "eventName": "公司會議",
+    "rentalDate": "2026-09-15T09:00:00",
+    "guestCount": 40,
+    "paymentId": 2,
+    "rentalStatus": "已確認"
+  }
+]
+

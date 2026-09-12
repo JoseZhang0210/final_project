@@ -1346,4 +1346,42 @@ input[type="number"]::-webkit-outer-spin-button {
     width: 100% !important;
   }
 }
+
+/* ===== Venue Admin Full Width Override ===== */
+
+/*
+ * 場地管理使用後台全部可用寬度。
+ * 解除原本 1120px 的中央窄版限制。
+ */
+.venue-page {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.venue-page > .card {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* ===== Venue Admin Edge To Edge ===== */
+
+/*
+ * 抵消 AdminLayout .admin-content 左右各 30px padding。
+ * 只作用於場地管理頁。
+ */
+.venue-page {
+  width: calc(100% + 60px) !important;
+  max-width: none !important;
+  margin-left: -30px !important;
+  margin-right: -30px !important;
+}
+
+/* 所有場地管理卡片完整使用頁面寬度。 */
+.venue-page > .card {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
 </style>
