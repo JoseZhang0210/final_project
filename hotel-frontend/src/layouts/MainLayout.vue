@@ -1,9 +1,14 @@
 <script setup>
 import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from "@/stores/toast";
 
+const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 const { isLoggedIn, name, authorities } = storeToRefs(authStore);
 
 const cartCount = ref(0);
@@ -25,6 +30,91 @@ const isAdminOrEmployee = computed(() => {
     (auth) => auth && (auth.includes("ROLE_ADMIN") || auth.includes("ROLE_EMPLOYEE"))
   );
 });
+
+// =========================================
+// 成果演示專用：特定帳號切換 (customer01 ↔ admin01)
+// =========================================
+
+function parseJwtPayload(token) {
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
+// 取得當前使用者帳號 (sub)
+const currentUsername = computed(() => {
+  if (!isLoggedIn.value) return "";
+  const _ = `${name.value}_${(authorities.value || []).join(",")}`;
+  const token = localStorage.getItem("token");
+  if (!token) return "";
+  const payload = parseJwtPayload(token);
+  return payload?.sub || "";
+});
+
+// 判斷是否為演示專用帳號
+const isDemoAccount = computed(() => {
+  return currentUsername.value === "customer01" || currentUsername.value === "admin01";
+});
+
+// 判斷目前是否為員工帳號 (admin01)
+const isEmployeeMode = computed(() => {
+  return currentUsername.value === "admin01";
+});
+
+const isSwitching = ref(false);
+
+async function toggleAccount() {
+  if (isSwitching.value) return;
+
+  const targetUsername = isEmployeeMode.value ? "customer01" : "admin01";
+  const targetLabel = targetUsername === "admin01" ? "員工 (admin01)" : "會員 (customer01)";
+
+  isSwitching.value = true;
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: targetUsername,
+        password: "123456",
+      }),
+    });
+
+    if (!res.ok) {
+      toastStore.showToast("切換失敗，請確認後端服務是否正常", "error");
+      return;
+    }
+
+    const data = await res.json();
+    authStore.login(data.token, data.authorities, data.name);
+    toastStore.showToast(`已切換至${targetLabel}`, "success");
+
+    // 若切換為會員且目前在後台頁面，自動導向首頁避免權限錯誤
+    if (targetUsername === "customer01" && route.path.startsWith("/admin")) {
+      router.push("/");
+    }
+  } catch (err) {
+    console.error("切換帳號失敗:", err);
+    toastStore.showToast("網路異常，無法切換帳號", "error");
+  } finally {
+    isSwitching.value = false;
+  }
+}
 </script>
 
 <template>
@@ -33,8 +123,35 @@ const isAdminOrEmployee = computed(() => {
       <RouterLink to="/" class="logo" aria-label="星澄飯店首頁">
         <img src="/images/starlight-hotel-logo-emblem.svg" alt="星澄飯店" />
       </RouterLink>
-
+      
       <nav>
+        <!-- 成果演示切換按鈕：僅在登入特定帳號 (customer01 / admin01) 時顯示 -->
+        <div v-if="isLoggedIn && isDemoAccount" class="demo-toggle-wrapper">
+          <div
+            class="demo-toggle-switch"
+            :class="{ 'is-employee': isEmployeeMode, 'is-loading': isSwitching }"
+            :title="isEmployeeMode ? '點擊切換為會員 (customer01)' : '點擊切換為員工 (admin01)'"
+            @click="toggleAccount"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="toggleAccount"
+            @keydown.space.prevent="toggleAccount"
+          >
+            <div class="toggle-track">
+              <span class="toggle-option member" :class="{ active: !isEmployeeMode }">
+                <span class="option-text">會員</span>
+              </span>
+              <span class="toggle-option employee" :class="{ active: isEmployeeMode }">
+                <span class="option-text">員工</span>
+              </span>
+              <div class="toggle-thumb" :class="{ 'thumb-right': isEmployeeMode }">
+                <span v-if="isSwitching" class="spinner"></span>
+                <span v-else class="thumb-icon">{{ isEmployeeMode ? '👔' : '👤' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <RouterLink to="/"> 首頁 </RouterLink>
 
         <RouterLink to="/products"> 商城商品 </RouterLink>
@@ -48,6 +165,7 @@ const isAdminOrEmployee = computed(() => {
         </RouterLink>
         <!-- 場地租借：進入場地租借申請頁面。 -->
         <RouterLink to="/rentals"> 場地租借 </RouterLink>
+
 
         <!-- 未登入狀態 -->
         <template v-if="!isLoggedIn">
@@ -352,6 +470,134 @@ nav a:hover {
 .logout-item:hover {
   background-color: #fde9e7;
   color: #b3443c;
+}
+
+/* ===============================
+   演示用身分切換 Toggle Button
+   =============================== */
+.demo-toggle-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.demo-toggle-switch {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 20px;
+  background: #f3ede2;
+  border: 1.5px solid #dfd3c3;
+  padding: 3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+
+.demo-toggle-switch:focus-visible {
+  box-shadow: 0 0 0 2px #b58a46, inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.demo-toggle-switch:hover {
+  border-color: #b58a46;
+  box-shadow: 0 2px 8px rgba(181, 138, 70, 0.18), inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.demo-toggle-switch.is-employee {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.demo-toggle-switch.is-employee:hover {
+  border-color: #475569;
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.demo-toggle-switch.is-loading {
+  opacity: 0.75;
+  cursor: wait;
+  pointer-events: none;
+}
+
+.toggle-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 140px;
+  height: 28px;
+}
+
+.toggle-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 2;
+  color: #7c6f62;
+  transition: color 0.3s ease;
+  padding: 0 4px;
+}
+
+.demo-toggle-switch.is-employee .toggle-option {
+  color: #64748b;
+}
+
+.toggle-option.active {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.option-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.option-text {
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 28px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #c59b56, #a17835);
+  box-shadow: 0 2px 6px rgba(161, 120, 53, 0.35);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, box-shadow 0.3s ease;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-thumb.thumb-right {
+  transform: translateX(72px);
+  background: linear-gradient(135deg, #334155, #1e293b);
+  box-shadow: 0 2px 6px rgba(30, 41, 59, 0.35);
+}
+
+.thumb-icon {
+  display: none;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .page-content {
