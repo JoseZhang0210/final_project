@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { roomTypeApi } from "@/api/roomTypeApi";
 
 const roomTypes = ref([]);
@@ -161,8 +161,20 @@ async function loadRoomTypes() {
   }
 }
 
+let refreshInterval = null;
+
 onMounted(() => {
   loadRoomTypes();
+  // 每 30 秒自動更新剩餘房數
+  refreshInterval = setInterval(() => {
+    loadRoomTypes();
+  }, 30000);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
 const currentPage = ref(1);

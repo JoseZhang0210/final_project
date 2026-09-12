@@ -45,21 +45,13 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
         payment.setCreatedAt(LocalDateTime.now());
 
         String method = payment.getPaymentMethod();
-        boolean isCash = "現金".equals(method);
-
-        if (isCash) {
-            // 現金付款：
-            // 1. 不可有交易序號（現金沒有經過金流閘道）
-            // 2. 預設狀態為「未付款」，等顧客到現場結帳後手動改狀態
-            payment.setTransactionId(null);
-            if (payment.getPaymentStatus() == null) {
-                payment.setPaymentStatus("未付款");
-            }
-        } else if (method != null) {
-            // 非現金（信用卡、LINE PAY、Apple PAY、銀行轉帳）：
-            // 代表已透過金流閘道完成付款，自動設為「已付款」並記錄付款時間
-            // transactionId 由前端從金流回呼 (callback) 傳入，或日後由綠界 webhook 寫入
-            payment.setPaymentStatus("已付款");
+        // 若前端沒有傳入狀態，預設為未付款
+        if (payment.getPaymentStatus() == null || payment.getPaymentStatus().isEmpty()) {
+            payment.setPaymentStatus("未付款");
+        }
+        
+        // 如果狀態是「已付款」且沒有付款時間，補上時間
+        if ("已付款".equals(payment.getPaymentStatus()) && payment.getPaidAt() == null) {
             payment.setPaidAt(LocalDateTime.now());
         }
 
@@ -90,13 +82,13 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
     public BookingPaymentDTO update(Integer id, BookingPaymentDTO dto) {
         BookingPayment payment = bookingPaymentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到付款紀錄 ID: " + id));
-        
+
         payment.setAmount(dto.getAmount());
         payment.setPaymentMethod(dto.getPaymentMethod());
         payment.setPaymentStatus(dto.getPaymentStatus());
         payment.setTransactionId(dto.getTransactionId());
         payment.setPaidAt(dto.getPaidAt());
-        
+
         return convertToDTO(payment);
     }
 
