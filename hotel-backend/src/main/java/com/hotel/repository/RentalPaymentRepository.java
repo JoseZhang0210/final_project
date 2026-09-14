@@ -109,6 +109,109 @@ public class RentalPaymentRepository {
 
 
     /**
+     * 在付款仍為待付款時安全更新 MerchantTradeNo。
+     *
+     * previousTrade 必須仍與資料庫一致，
+     * 避免兩個付款準備流程互相覆蓋。
+     */
+    public void replacePendingTrade(
+        Integer id,
+        String previousTrade,
+        String trade
+    ) {
+
+        int updated;
+
+        if (previousTrade == null) {
+
+            updated = jdbc.update(
+                "UPDATE dbo.rental_payment " +
+                "SET merchant_trade_no=? " +
+                "WHERE payment_id=? " +
+                "AND payment_status=? " +
+                "AND merchant_trade_no IS NULL",
+                trade,
+                id,
+                "待付款"
+            );
+
+        } else {
+
+            updated = jdbc.update(
+                "UPDATE dbo.rental_payment " +
+                "SET merchant_trade_no=? " +
+                "WHERE payment_id=? " +
+                "AND payment_status=? " +
+                "AND merchant_trade_no=?",
+                trade,
+                id,
+                "待付款",
+                previousTrade
+            );
+        }
+
+        if (updated != 1) {
+
+            throw new IllegalStateException(
+                "付款交易編號更新失敗"
+            );
+        }
+    }
+
+    /**
+     * 本機示範付款：同步更新付款與租借狀態。
+     *
+     * 只供 VENUE_PAYMENT_DEMO=true 的本機測試流程使用，
+     * 不代表綠界真實付款驗證。
+     */
+    public int stageDemoPaid(
+        Integer paymentId,
+        Integer rentalId,
+        String trade,
+        java.time.LocalDateTime at
+    ) {
+
+        int paymentUpdated = jdbc.update(
+            "UPDATE dbo.rental_payment " +
+            "SET payment_status=?, " +
+            "payment_method=?, " +
+            "payment_time=?, " +
+            "ecpay_trade_no=? " +
+            "WHERE payment_id=? " +
+            "AND payment_status=?",
+            "已付款",
+            "測試付款",
+            at,
+            trade,
+            paymentId,
+            "待付款"
+        );
+
+        if (paymentUpdated == 0) {
+            Map<String, Object> current = read(paymentId);
+
+            if (!"已付款".equals(current.get("payment_status"))) {
+                return 0;
+            }
+        }
+
+        jdbc.update(
+            "UPDATE dbo.rental " +
+            "SET rental_status=? " +
+            "WHERE rental_id=? " +
+            "AND payment_id=? " +
+            "AND rental_status IN (?,?)",
+            "CONFIRMED",
+            rentalId,
+            paymentId,
+            "PENDING",
+            "待確認"
+        );
+
+        return 1;
+    }
+
+    /**
      * 將待付款紀錄更新為已付款。
      *
      * 僅允許從「待付款」狀態轉換，

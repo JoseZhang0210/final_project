@@ -75,16 +75,33 @@ class RentalPaymentServiceTest { // 測試簽章、金額、所有權與重送�
         assertThrows(IllegalArgumentException.class,()->service.callback(values)); // 不標記付款成功。
         verify(repository,never()).paid(any(),any(),any()); // 不更新持久化資料。
     }
-    /** 驗證結帳使用保存金額並重用交易編號。 */
-    @Test void checkoutUsesSavedAmountAndReusesTrade() { // 付款只讀歷史金額並重用交易號。
+    /** 驗證結帳使用保存金額並汰換舊版重複交易編號。 */
+    @Test void checkoutRotatesLegacyTrade() { // 舊版 MerchantTradeNo 不可再次送往綠界。
         var authentication=new UsernamePasswordAuthenticationToken("customer01",null,List.of()); // 模擬既有會員。
-        Rental rental=new Rental(); rental.setMemberId(1); rental.setPaymentId(1); rental.setRentalStatus("PENDING"); rental.setRentalDate(LocalDate.now().plusDays(10).atStartOfDay()); // 只在記憶體建立測試租借。
+        Rental rental=new Rental(); rental.setMemberId(1); rental.setPaymentId(1); rental.setRentalStatus("PENDING"); rental.setRentalDate(LocalDate.now().plusDays(10).atStartOfDay()); // 建立未來有效租借。
         when(rentals.findAccessible(1,authentication)).thenReturn(rental); when(rentals.resolveMemberId("customer01")).thenReturn(1); when(repository.lock(1)).thenReturn(payment); // 對應本人與待付款。
-        var result=service.checkout(1,authentication); var parameters=(Map<?,?>)result.get("parameters"); // 檢查公開表單參數。
-        assertEquals("5000",parameters.get("TotalAmount")); assertEquals("VRexisting123",parameters.get("MerchantTradeNo")); // 使用歷史金額與原編號。
-        verify(repository,never()).assign(any(),any()); // 重新準備不配置第二個交易編號。
-        payment.put("payment_status","已付款"); // 模擬回呼完成後再次按付款。
-        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.checkout(1,authentication)); // 已付款不可重付。
+        var result=service.checkout(1,authentication); var parameters=(Map<?,?>)result.get("parameters"); // 建立新的 Stage 表單參數。
+        String generated=(String)parameters.get("MerchantTradeNo"); // 取得本次新交易編號。
+        assertEquals("5000",parameters.get("TotalAmount")); // 金額仍必須使用歷史付款金額。
+        assertNotEquals("VRexisting123",generated); // 舊交易編號不可再次送出。
+        assertTrue(generated.matches("VR\\d{12}[A-Fa-f0-9]{6}")); // 新格式維持綠界二十字元英數限制。
+        verify(repository).replacePendingTrade(1,"VRexisting123",generated); // 待付款資料原子替換成新編號。
+        payment.put("payment_status","已付款"); // 模擬付款完成。
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.checkout(1,authentication)); // 已付款仍不可再次付款。
+    }
+
+    /** 驗證返回會員頁後重新付款會建立新的綠界交易編號。 */
+    @Test void checkoutRotatesRecentTrade() { // 尚未付款時重新發起結帳必須避免 ECPay 訂單編號重複。
+        var authentication=new UsernamePasswordAuthenticationToken("customer01",null,List.of()); // 模擬既有會員。
+        Rental rental=new Rental(); rental.setMemberId(1); rental.setPaymentId(1); rental.setRentalStatus("PENDING"); rental.setRentalDate(LocalDate.now().plusDays(10).atStartOfDay()); // 建立有效未來租借。
+        String recent="VR"+LocalDateTime.now(ZoneId.of("Asia/Taipei")).format(java.time.format.DateTimeFormatter.ofPattern("yyMMddHHmmss"))+"ABCDEF"; // 模擬上一個已送出的 Stage 訂單編號。
+        payment.put("merchant_trade_no",recent); // 付款仍是待付款，因此允許重新建立新的 Stage 訂單。
+        when(rentals.findAccessible(1,authentication)).thenReturn(rental); when(rentals.resolveMemberId("customer01")).thenReturn(1); when(repository.lock(1)).thenReturn(payment); // 驗證本人與付款關聯。
+        var result=service.checkout(1,authentication); var parameters=(Map<?,?>)result.get("parameters"); // 再次建立 Stage 付款資料。
+        String generated=(String)parameters.get("MerchantTradeNo"); // 取得新的交易編號。
+        assertNotEquals(recent,generated); // 不可重送已經交給綠界的 MerchantTradeNo。
+        assertTrue(generated.matches("VR\\d{12}[A-Fa-f0-9]{6}")); // 維持二十字元英數格式。
+        verify(repository).replacePendingTrade(1,recent,generated); // 資料庫只保留目前有效的付款嘗試。
     }
     /** 驗證會員無法支付他人的租借。 */
     @Test void checkoutRejectsOtherMember() { // 即使能取得實體仍須驗證付款本人。

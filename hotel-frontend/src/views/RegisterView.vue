@@ -300,10 +300,12 @@
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToastStore } from "@/stores/toast";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const toastStore = useToastStore();
+const authStore = useAuthStore();
 
 // =====================================================
 // Google 註冊帶入狀態
@@ -627,11 +629,36 @@ async function register() {
     // 註冊成功，清除暫存
     sessionStorage.removeItem("google_signup_data");
 
-    toastStore.showToast("🎉 註冊成功！即將前往登入頁面...", "success");
+    // 自動登入：優先使用註冊 API 回傳之 Token；若無則自動呼叫登入 API
+    if (data.token && data.authorities) {
+      authStore.login(data.token, data.authorities, data.name);
+    } else {
+      try {
+        const loginResponse = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: payload.username,
+            password: payload.password,
+          }),
+        });
 
-    // 1.5 秒後跳轉至登入頁
+        if (loginResponse.ok) {
+          const loginData = await loginResponse.json();
+          authStore.login(loginData.token, loginData.authorities, loginData.name);
+        }
+      } catch (loginError) {
+        console.error("自動登入失敗：", loginError);
+      }
+    }
+
+    toastStore.showToast("🎉 註冊成功！已為您自動登入，即將前往首頁...", "success");
+
+    const targetPath = route.query.redirect || "/";
     setTimeout(() => {
-      router.push("/login");
+      router.push(targetPath);
     }, 1500);
   } catch (error) {
     console.error("註冊錯誤：", error);
