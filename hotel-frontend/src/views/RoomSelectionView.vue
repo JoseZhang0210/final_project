@@ -42,26 +42,15 @@
             <img 
               :src="(room.imageUrls && room.imageUrls.length > 0) ? room.imageUrls[room.currentImageIndex] : (room.mainImageUrl || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop')" 
               :alt="room.typeName" 
+              @click="openModal(room)"
+              class="clickable-image"
             />
             <div class="image-count">
               <span v-if="room.imageUrls && room.imageUrls.length > 0">{{ room.currentImageIndex + 1 }} / {{ room.imageUrls.length }} </span>
               <span v-else>☐ 照片</span>
             </div>
             
-            <button 
-              v-if="room.imageUrls && room.imageUrls.length > 1" 
-              class="slider-btn prev-btn" 
-              @click.stop="room.currentImageIndex = (room.currentImageIndex - 1 + room.imageUrls.length) % room.imageUrls.length"
-            >
-              ❮
-            </button>
-            <button 
-              v-if="room.imageUrls && room.imageUrls.length > 1" 
-              class="slider-btn next-btn" 
-              @click.stop="room.currentImageIndex = (room.currentImageIndex + 1) % room.imageUrls.length"
-            >
-              ❯
-            </button>
+
           </div>
           
           <div class="room-info">
@@ -119,6 +108,26 @@
       </div>
 
     </div>
+
+    <!-- Image Modal -->
+    <div v-if="isModalOpen" class="image-modal" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <button class="modal-close" @click="closeModal">×</button>
+        <img :src="currentModalImages[currentModalIndex]" alt="Room Image Preview" class="modal-image" />
+        <div class="modal-counter">{{ currentModalIndex + 1 }} / {{ currentModalImages.length }}</div>
+        
+        <button 
+          v-if="currentModalImages.length > 1" 
+          class="modal-btn modal-prev" 
+          @click="prevModalImage"
+        >❮</button>
+        <button 
+          v-if="currentModalImages.length > 1" 
+          class="modal-btn modal-next" 
+          @click="nextModalImage"
+        >❯</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -145,6 +154,36 @@ const isSameDayBooking = computed(() => {
   const localToday = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
   return checkIn.value === localToday;
 });
+
+// Modal State
+const isModalOpen = ref(false);
+const currentModalImages = ref([]);
+const currentModalIndex = ref(0);
+
+function openModal(room) {
+  if (room.imageUrls && room.imageUrls.length > 0) {
+    currentModalImages.value = room.imageUrls;
+    currentModalIndex.value = room.currentImageIndex;
+  } else {
+    currentModalImages.value = [room.mainImageUrl || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2070&auto=format&fit=crop'];
+    currentModalIndex.value = 0;
+  }
+  isModalOpen.value = true;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  isModalOpen.value = false;
+  document.body.style.overflow = '';
+}
+
+function prevModalImage() {
+  currentModalIndex.value = (currentModalIndex.value - 1 + currentModalImages.value.length) % currentModalImages.value.length;
+}
+
+function nextModalImage() {
+  currentModalIndex.value = (currentModalIndex.value + 1) % currentModalImages.value.length;
+}
 
 onMounted(async () => {
   if (!checkIn.value || !checkOut.value) {
@@ -344,36 +383,84 @@ function goToSearch() {
   font-size: 0.75rem;
 }
 
-.slider-btn {
+/* Image Modal Styles */
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-image {
+  width: 80vw;
+  max-width: 1000px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.modal-close:hover {
+  opacity: 1;
+}
+
+.modal-counter {
+  color: white;
+  margin-top: 15px;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.modal-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border-radius: 50%;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  z-index: 10;
-  opacity: 0;
+  font-size: 24px;
+  transition: background 0.3s ease;
 }
 
-.room-image-area:hover .slider-btn {
-  opacity: 1;
+.modal-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
 }
 
-.slider-btn:hover {
-  background: rgba(0,0,0,0.8);
-}
-
-.prev-btn { left: 10px; }
-.next-btn { right: 10px; }
+.modal-prev { left: 20px; }
+.modal-next { right: 20px; }
 
 .room-info {
   flex: 1;

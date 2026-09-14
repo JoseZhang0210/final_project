@@ -55,7 +55,7 @@ function createEmptyForm() {
     imageId: null,
     roomTypeId: "",
     imageUrl: "",
-    imageFile: null,
+    imageFiles: [],
     imageSource: "upload", // "upload", "url", "library"
     imageDescription: "",
     isMain: false
@@ -155,12 +155,12 @@ async function selectFromLibrary(path) {
 }
 
 function handleFileChange(event) {
-  const file = event.target.files[0];
-  if (file) {
-    form.value.imageFile = file;
-    form.value.imageUrl = URL.createObjectURL(file);
+  const files = event.target.files;
+  if (files && files.length > 0) {
+    form.value.imageFiles = Array.from(files);
+    form.value.imageUrl = URL.createObjectURL(files[0]); // 預覽第一張圖
   } else {
-    form.value.imageFile = null;
+    form.value.imageFiles = [];
     form.value.imageUrl = "";
   }
 }
@@ -172,26 +172,33 @@ async function saveImage() {
       return;
     }
 
-    const formData = new FormData();
-    if (form.value.imageSource === "upload" && form.value.imageFile) {
-      formData.append("file", form.value.imageFile);
+    if (form.value.imageSource === "upload" && form.value.imageFiles && form.value.imageFiles.length > 0) {
+      // 支援多選，逐一上傳
+      for (const file of form.value.imageFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (form.value.imageDescription) {
+          formData.append("imageDescription", form.value.imageDescription);
+        }
+        if (form.value.roomTypeId) {
+          formData.append("roomTypeId", form.value.roomTypeId);
+        }
+        await roomImageApi.createImage(formData, true);
+      }
     } else if ((form.value.imageSource === "url" || form.value.imageSource === "library") && form.value.imageUrl) {
+      const formData = new FormData();
       formData.append("staticPath", form.value.imageUrl.trim());
+      if (form.value.imageDescription) {
+        formData.append("imageDescription", form.value.imageDescription);
+      }
+      if (form.value.roomTypeId) {
+        formData.append("roomTypeId", form.value.roomTypeId);
+      }
+      await roomImageApi.createImage(formData, true);
     } else {
       showMessage("請上傳圖片、填寫網址或從媒體庫選取", "error");
       return;
     }
-    
-    if (form.value.imageDescription) {
-      formData.append("imageDescription", form.value.imageDescription);
-    }
-
-    // 若有選擇房型，則綁定給該房型
-    if (form.value.roomTypeId) {
-      formData.append("roomTypeId", form.value.roomTypeId);
-    }
-
-    await roomImageApi.createImage(formData, true);
     showMessage("圖片新增成功", "success");
     
     showUploadModal.value = false;
@@ -386,7 +393,7 @@ function handleImageError(event) {
             
             <!-- 檔案上傳區 -->
             <div v-if="form.imageSource === 'upload'" style="margin-bottom: 15px;">
-              <input id="imageFile" type="file" accept="image/*" @change="handleFileChange" :required="form.imageSource === 'upload'" style="width: 100%" />
+              <input id="imageFile" type="file" multiple accept="image/*" @change="handleFileChange" :required="form.imageSource === 'upload'" style="width: 100%" />
             </div>
           </div>
 
