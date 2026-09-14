@@ -48,7 +48,7 @@ public class RoomImageController {
             @RequestParam(value = "staticPath", required = false) String staticPath,
             @RequestParam(value = "imageDescription", required = false) String imageDescription,
             @RequestParam(value = "roomTypeId", required = false) Integer roomTypeId) throws IOException {
-        
+
         String dbPath = "";
 
         if (file != null && !file.isEmpty()) {
@@ -100,7 +100,8 @@ public class RoomImageController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RoomImageDTO> updateImage(@PathVariable Integer id, @RequestBody RoomImageDTO updatedImageDTO) {
+    public ResponseEntity<RoomImageDTO> updateImage(@PathVariable Integer id,
+            @RequestBody RoomImageDTO updatedImageDTO) {
         return ResponseEntity.ok(imageService.update(id, updatedImageDTO));
     }
 
