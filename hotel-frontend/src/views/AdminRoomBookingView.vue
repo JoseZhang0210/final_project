@@ -636,8 +636,7 @@ onUnmounted(() => {
     clearInterval(refreshInterval);
   }
 });
-
-const currentFilter = ref("待入住"); // 預設顯示待入住的訂單
+const currentFilter = ref("all"); // 預設顯示全部的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
