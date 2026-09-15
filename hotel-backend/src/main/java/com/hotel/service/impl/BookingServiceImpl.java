@@ -16,6 +16,7 @@ import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
+import com.hotel.repository.BookingPaymentRepository;
 import com.hotel.model.entity.RoomTask;
 import com.hotel.repository.specification.BookingSpecification;
 import com.hotel.service.BookingService;
@@ -32,13 +33,16 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final RoomTaskRepository roomTaskRepository;
+    private final BookingPaymentRepository bookingPaymentRepository;
 
     public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository,
-            RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository) {
+            RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository,
+            BookingPaymentRepository bookingPaymentRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.roomTypeRepository = roomTypeRepository;
         this.roomTaskRepository = roomTaskRepository;
+        this.bookingPaymentRepository = bookingPaymentRepository;
     }
 
     @Override
@@ -210,6 +214,12 @@ public class BookingServiceImpl implements BookingService {
         if (!bookingRepository.existsById(id)) {
             throw new EntityNotFoundException("欲刪除的預約 ID: " + id + " 不存在");
         }
+        
+        // 刪除關聯的付款記錄
+        bookingPaymentRepository.findByBookingId(id).ifPresent(payment -> {
+            bookingPaymentRepository.delete(payment);
+        });
+        
         bookingRepository.deleteById(id);
     }
 
