@@ -76,7 +76,8 @@ public class SecurityConfig {
                                                                                 "/api/products", "/api/products/search",
                                                                                 "/api/products/{id:[0-9]+}",
                                                                                 "/api/products/{id:[0-9]+}/reviews",
-                                                                                "/api/categories", "/upload/products/**")
+                                                                                "/api/categories",
+                                                                                "/upload/products/**")
                                                                 .permitAll()
                                                                 // -------------------------
                                                                 // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼
@@ -88,7 +89,10 @@ public class SecurityConfig {
                                                                 // Spring Boot error
                                                                 // -------------------------
                                                                 .requestMatchers("/error").permitAll()
-                                                                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/rental-payments/ecpay/return").permitAll() // 僅放行場地付款綠界伺服器通知，由付款服務驗證簽章。
+                                                                .requestMatchers(
+                                                                                org.springframework.http.HttpMethod.POST,
+                                                                                "/api/rental-payments/ecpay/return")
+                                                                .permitAll() // 僅放行場地付款綠界伺服器通知，由付款服務驗證簽章。
                                                                 // -------------------------
                                                                 // 其他 API
                                                                 // 需要 JWT

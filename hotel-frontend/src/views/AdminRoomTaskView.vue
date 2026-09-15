@@ -454,7 +454,7 @@ async function autoCompleteStaleTasks() {
   const staleTasks = roomTasks.value.filter((task) => {
     const status = task.taskStatus ?? task.task_status;
     const createdAt = task.createdAt ?? task.created_at;
-    if (status !== '進行中' || !createdAt) return false;
+    if (status === '已完成' || status === '已取消' || !createdAt) return false;
 
     const diffMins = (currentTime.value - new Date(createdAt)) / 60000;
     return diffMins > 30; // 測試用，超過 30 分鐘就自動完成

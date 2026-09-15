@@ -55,7 +55,7 @@ function createEmptyForm() {
     imageId: null,
     roomTypeId: "",
     imageUrl: "",
-    imageFile: null,
+    imageFiles: [],
     imageSource: "upload", // "upload", "url", "library"
     imageDescription: "",
     isMain: false
@@ -155,12 +155,12 @@ async function selectFromLibrary(path) {
 }
 
 function handleFileChange(event) {
-  const file = event.target.files[0];
-  if (file) {
-    form.value.imageFile = file;
-    form.value.imageUrl = URL.createObjectURL(file);
+  const files = event.target.files;
+  if (files && files.length > 0) {
+    form.value.imageFiles = Array.from(files);
+    form.value.imageUrl = URL.createObjectURL(files[0]); // 預覽第一張圖
   } else {
-    form.value.imageFile = null;
+    form.value.imageFiles = [];
     form.value.imageUrl = "";
   }
 }
@@ -172,29 +172,33 @@ async function saveImage() {
       return;
     }
 
-    const formData = new FormData();
-    if (form.value.imageSource === "upload" && form.value.imageFile) {
-      formData.append("file", form.value.imageFile);
+    if (form.value.imageSource === "upload" && form.value.imageFiles && form.value.imageFiles.length > 0) {
+      // 支援多選，逐一上傳
+      for (const file of form.value.imageFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (form.value.imageDescription) {
+          formData.append("imageDescription", form.value.imageDescription);
+        }
+        if (form.value.roomTypeId) {
+          formData.append("roomTypeId", form.value.roomTypeId);
+        }
+        await roomImageApi.createImage(formData, true);
+      }
     } else if ((form.value.imageSource === "url" || form.value.imageSource === "library") && form.value.imageUrl) {
+      const formData = new FormData();
       formData.append("staticPath", form.value.imageUrl.trim());
+      if (form.value.imageDescription) {
+        formData.append("imageDescription", form.value.imageDescription);
+      }
+      if (form.value.roomTypeId) {
+        formData.append("roomTypeId", form.value.roomTypeId);
+      }
+      await roomImageApi.createImage(formData, true);
     } else {
       showMessage("請上傳圖片、填寫網址或從媒體庫選取", "error");
       return;
     }
-    
-    if (form.value.imageDescription) {
-      formData.append("imageDescription", form.value.imageDescription);
-    }
-
-    // 若有選擇房型，則綁定給該房型
-    if (form.value.roomTypeId) {
-      formData.append("roomTypeId", form.value.roomTypeId);
-    } else if (roomTypes.value.length > 0) {
-      // 避免後端資料庫限制 room_type_id 不能為 null，如果是單純上傳素材，預設綁給第一個房型當作暫存
-      formData.append("roomTypeId", roomTypes.value[0].roomTypeId);
-    }
-
-    await roomImageApi.createImage(formData, true);
     showMessage("圖片新增成功", "success");
     
     showUploadModal.value = false;
@@ -290,10 +294,7 @@ function handleImageError(event) {
 
     <!-- 房型列表 -->
     <section class="admin-card">
-      <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #e4e7ec; padding-bottom: 10px;">
-        <button type="button" class="tab-btn active">房型列表</button>
-        <button type="button" class="tab-btn" @click="showLibraryModal = true">查看總媒體庫 ({{ uniqueImages.length }})</button>
-      </div>
+
 
       <div v-if="roomTypes.length === 0" class="empty">目前沒有任何房型</div>
       <div v-else class="image-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
@@ -336,6 +337,9 @@ function handleImageError(event) {
                 <img :src="image.path ? image.path : ''" @error="handleImageError" />
               </div>
               <div class="image-info">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-weight: bold; color: #007bff; font-size: 14px; background: #e6f2ff; padding: 2px 8px; border-radius: 4px;">第 {{ index + 1 }} 張</span>
+                </div>
                 <p style="min-height: 20px;">{{ image.imageDescription || "沒有說明" }}</p>
                 <div class="sort-actions" style="display: flex; gap: 10px; margin-bottom: 12px; justify-content: center;">
                   <button class="btn secondary small-btn" style="flex:1;" :disabled="index === 0" @click="moveImage(image, -1)">⬆️ 上移</button>
@@ -389,7 +393,7 @@ function handleImageError(event) {
             
             <!-- 檔案上傳區 -->
             <div v-if="form.imageSource === 'upload'" style="margin-bottom: 15px;">
-              <input id="imageFile" type="file" accept="image/*" @change="handleFileChange" :required="form.imageSource === 'upload'" style="width: 100%" />
+              <input id="imageFile" type="file" multiple accept="image/*" @change="handleFileChange" :required="form.imageSource === 'upload'" style="width: 100%" />
             </div>
           </div>
 
@@ -423,9 +427,9 @@ function handleImageError(event) {
         <div v-if="uniqueImages.length === 0" class="empty">目前總媒體庫沒有任何圖片。您可以點擊「上傳圖片至總庫」來新增。</div>
         <div v-else class="modal-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
           <div v-for="(img, idx) in uniqueImages" :key="'m-lib-'+idx" class="modal-img-card" style="height: 180px; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow: hidden; position: relative; cursor: pointer;" @click="selectFromLibrary(img.path)">
+            <div style="flex: 1; overflow: hidden; position: relative;" :style="{ cursor: (selectedRoom || showUploadModal) ? 'pointer' : 'default' }" @click="(selectedRoom || showUploadModal) ? selectFromLibrary(img.path) : null">
               <img :src="img.path ? img.path : ''" @error="handleImageError" />
-              <div class="hover-overlay">
+              <div v-if="selectedRoom || showUploadModal" class="hover-overlay">
                 <span>點擊選取</span>
               </div>
             </div>

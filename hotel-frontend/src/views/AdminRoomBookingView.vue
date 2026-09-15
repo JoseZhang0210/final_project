@@ -636,8 +636,7 @@ onUnmounted(() => {
     clearInterval(refreshInterval);
   }
 });
-
-const currentFilter = ref("待入住"); // 預設顯示待入住的訂單
+const currentFilter = ref("all"); // 預設顯示全部的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
@@ -868,6 +867,16 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             </div>
 
             <div class="form-group">
+              <label>入住日期 *</label>
+              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>退房日期 *</label>
+              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
               <label>房型 *</label>
               <select v-model="form.roomTypeId" @change="changeRoomType" required>
                 <option value="" disabled>請選擇房型</option>
@@ -885,16 +894,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                   房號 {{ room.roomNumber }}
                 </option>
               </select>
-            </div>
-
-            <div class="form-group">
-              <label>入住日期 *</label>
-              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
-            </div>
-
-            <div class="form-group">
-              <label>退房日期 *</label>
-              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
             </div>
 
             <div class="form-group">
