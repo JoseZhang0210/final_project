@@ -114,10 +114,19 @@
 
       <!-- 會員表格 -->
       <div v-else class="admin-table-wrapper">
-        <table class="admin-table">
+        <table class="admin-table admin-table-fixed member-table">
+          <colgroup>
+            <col style="width: 48px;" />
+            <col style="width: 75px;" />
+            <col style="width: 200px;" />
+            <col style="width: 230px;" />
+            <col style="width: 80px;" />
+            <col style="width: 90px;" />
+            <col style="width: 175px;" />
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 44px; text-align: center;">
+              <th style="text-align: center;">
                 <input
                   type="checkbox"
                   :checked="isAllSelected(paginatedMembers, (m) => m.memberId ?? m.id)"
@@ -138,17 +147,17 @@
 
               <th>聯絡方式</th>
 
-              <th class="sortable" @click="changeSort('gender', resetPage)">
+              <th class="sortable" style="text-align: center;" @click="changeSort('gender', resetPage)">
                 性別
                 <span class="sort-icon">{{ getSortIcon("gender") }}</span>
               </th>
 
-              <th class="sortable" @click="changeSort('status', resetPage)">
+              <th class="sortable" style="text-align: center;" @click="changeSort('status', resetPage)">
                 狀態
                 <span class="sort-icon">{{ getSortIcon("status") }}</span>
               </th>
 
-              <th>操作</th>
+              <th style="text-align: center;">操作</th>
             </tr>
           </thead>
 
@@ -187,11 +196,11 @@
                 </div>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <span class="gender-text">{{ member.gender || "—" }}</span>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <span
                   class="status-badge"
                   :class="isActiveStatus(member.status) ? 'status-active' : 'status-inactive'"

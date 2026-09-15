@@ -42,6 +42,34 @@
 
         <button
           type="button"
+          class="admin-btn admin-btn-secondary admin-icon-btn"
+          @click="openDepartmentModal"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide-icon"
+          >
+            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+            <path d="M10 6h4" />
+            <path d="M10 10h4" />
+            <path d="M10 14h4" />
+            <path d="M10 18h4" />
+          </svg>
+          <span>部門管理</span>
+        </button>
+
+        <button
+          type="button"
           class="admin-btn admin-btn-secondary"
           @click="openPermissionModal"
         >
@@ -131,20 +159,26 @@
         </div>
       </div>
 
-      <!-- 訊息 -->
-      <div v-if="message" class="admin-message" :class="messageType">
-        {{ message }}
-      </div>
-
       <!-- Loading -->
       <div v-if="loading" class="loading-message">員工資料讀取中...</div>
 
       <!-- 員工表格 -->
       <div v-else class="admin-table-wrapper">
-        <table class="admin-table">
+        <table class="admin-table admin-table-fixed employee-table">
+          <colgroup>
+            <col style="width: 48px;" />
+            <col style="width: 65px;" />
+            <col style="width: 160px;" />
+            <col style="width: 150px;" />
+            <col style="width: 185px;" />
+            <col style="width: 200px;" />
+            <col style="width: 75px;" />
+            <col style="width: 85px;" />
+            <col style="width: 165px;" />
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 44px; text-align: center;">
+              <th style="text-align: center;">
                 <input
                   type="checkbox"
                   :checked="isAllSelected(paginatedEmployees, (e) => e.employeeId ?? e.id)"
@@ -171,17 +205,17 @@
               <th>權限</th>
               <th>聯絡方式</th>
 
-              <th class="sortable" @click="changeSort('gender', resetPage)">
+              <th class="sortable" style="text-align: center;" @click="changeSort('gender', resetPage)">
                 性別
                 <span class="sort-icon">{{ getSortIcon("gender") }}</span>
               </th>
 
-              <th class="sortable" @click="changeSort('status', resetPage)">
+              <th class="sortable" style="text-align: center;" @click="changeSort('status', resetPage)">
                 狀態
                 <span class="sort-icon">{{ getSortIcon("status") }}</span>
               </th>
 
-              <th>操作</th>
+              <th style="text-align: center;">操作</th>
             </tr>
           </thead>
 
@@ -207,49 +241,78 @@
 
               <td>
                 <div class="name-cell">
-                  <span class="item-name">
+                  <span class="item-name" :title="employee.name">
                     {{ employee.name || "未填姓名" }}
                     <span v-if="isSelf(employee)" class="self-tag">(本人)</span>
                   </span>
-                  <span class="item-username">(@{{ employee.username }})</span>
+                  <span class="item-username" :title="'@' + employee.username">(@{{ employee.username }})</span>
                 </div>
               </td>
 
               <td>
                 <div class="dept-pos-cell">
-                  <span class="dept-badge">
+                  <span class="dept-badge" :title="getDepartmentName(employee.departmentId, employee.departmentName)">
                     {{ getDepartmentName(employee.departmentId, employee.departmentName) }}
                   </span>
-                  <span class="position-text">{{ employee.position || "未設定職位" }}</span>
+                  <span class="position-text" :title="employee.position">{{ employee.position || "未設定職位" }}</span>
                 </div>
               </td>
 
-              <td>
-                <div v-if="employee.permissionNames && employee.permissionNames.length > 0" class="employee-perms-tags">
-                  <span
-                    v-for="(pName, pIdx) in employee.permissionNames"
-                    :key="pIdx"
-                    class="perm-badge"
-                  >
-                    {{ pName }}
-                  </span>
+              <td class="perms-td">
+                <div
+                  v-if="employee.permissionNames && employee.permissionNames.length > 0"
+                  class="employee-perms-container"
+                  :title="employee.permissionNames.join('、')"
+                >
+                  <div class="employee-perms-tags">
+                    <span
+                      v-for="(pName, pIdx) in employee.permissionNames.slice(0, 3)"
+                      :key="pIdx"
+                      class="perm-badge"
+                    >
+                      {{ pName }}
+                    </span>
+                    <span
+                      v-if="employee.permissionNames.length > 3"
+                      class="perm-more-badge"
+                    >
+                      +{{ employee.permissionNames.length - 3 }}
+                    </span>
+                  </div>
+
+                  <!-- 懸停顯示完整權限 Tooltip Popover -->
+                  <div class="perms-hover-popover">
+                    <div class="perms-popover-header">
+                      <span>全部權限</span>
+                      <span class="perms-popover-count">{{ employee.permissionNames.length }} 項</span>
+                    </div>
+                    <div class="perms-popover-tags">
+                      <span
+                        v-for="(pName, pIdx) in employee.permissionNames"
+                        :key="pIdx"
+                        class="perm-badge"
+                      >
+                        {{ pName }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <span v-else class="text-muted">—</span>
               </td>
 
               <td>
                 <div class="contact-info">
-                  <div v-if="employee.phone" class="contact-item">📞 {{ employee.phone }}</div>
-                  <div v-if="employee.email" class="contact-item">✉️ {{ employee.email }}</div>
+                  <div v-if="employee.phone" class="contact-item" :title="employee.phone">📞 {{ employee.phone }}</div>
+                  <div v-if="employee.email" class="contact-item" :title="employee.email">✉️ {{ employee.email }}</div>
                   <span v-if="!employee.phone && !employee.email" class="text-muted">未填寫</span>
                 </div>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <span class="gender-text">{{ employee.gender || "—" }}</span>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <span
                   class="status-badge"
                   :class="isActiveStatus(employee.status) ? 'status-active' : 'status-inactive'"
@@ -263,8 +326,6 @@
                   <button
                     type="button"
                     class="admin-btn admin-btn-status"
-                    :disabled="isSelf(employee) && isActiveStatus(employee.status)"
-                    :title="isSelf(employee) && isActiveStatus(employee.status) ? '無法停用目前登入中的帳號' : ''"
                     @click="toggleStatus(employee)"
                   >
                     {{ isActiveStatus(employee.status) ? "停用" : "啟用" }}
@@ -281,8 +342,6 @@
                   <button
                     type="button"
                     class="admin-btn admin-btn-delete"
-                    :disabled="isSelf(employee)"
-                    :title="isSelf(employee) ? '無法刪除目前登入中的帳號' : ''"
                     @click="deleteEmployee(employee)"
                   >
                     刪除
@@ -578,6 +637,101 @@
       </div>
     </div>
 
+    <!-- 部門管理 Modal -->
+    <div
+      v-if="departmentModalOpen"
+      class="category-modal"
+      @click.self="closeDepartmentModal"
+    >
+      <div class="category-manage-card">
+        <div class="category-modal-header">
+          <div>
+            <h2>部門管理</h2>
+            <p>新增、修改或刪除系統員工部門</p>
+          </div>
+          <button type="button" class="modal-close" @click="closeDepartmentModal">×</button>
+        </div>
+
+        <div class="category-create-area">
+          <label> 新增部門 </label>
+          <div class="perm-create-row">
+            <input
+              id="newDepartmentName"
+              v-model="newDepartmentName"
+              type="text"
+              placeholder="部門名稱，例如：行銷部"
+              maxlength="50"
+              @keyup.enter="addDepartment"
+            />
+            <button
+              type="button"
+              class="admin-btn admin-btn-primary"
+              :disabled="departmentSaving"
+              @click="addDepartment"
+            >
+              {{ departmentSaving ? "新增中..." : "＋ 新增" }}
+            </button>
+          </div>
+        </div>
+
+        <div class="category-divider"></div>
+
+        <div class="category-list-area">
+          <div class="category-list-title">
+            <span> 目前部門種類 </span>
+            <span class="category-count"> {{ departments.length }} 種 </span>
+          </div>
+
+          <div v-if="departments.length === 0" class="category-empty">尚無部門資料</div>
+
+          <div
+            v-for="dept in departments"
+            :key="dept.id"
+            class="category-manage-row"
+          >
+            <template v-if="editingDepartmentId !== dept.id">
+              <div class="category-info perm-info-row">
+                <span class="category-id"> #{{ dept.id }} </span>
+                <strong class="perm-title">{{ dept.name }}</strong>
+              </div>
+              <div class="category-actions">
+                <button type="button" class="category-edit-button" @click="startEditDepartment(dept)">修改</button>
+                <button type="button" class="category-delete-button" @click="deleteDepartment(dept)">刪除</button>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="perm-edit-row">
+                <input
+                  v-model="editingDepartmentName"
+                  type="text"
+                  class="category-edit-input"
+                  placeholder="部門名稱"
+                  maxlength="50"
+                  @keyup.enter="updateDepartment(dept.id)"
+                />
+              </div>
+              <div class="category-actions">
+                <button
+                  type="button"
+                  class="category-save-button"
+                  :disabled="departmentUpdating"
+                  @click="updateDepartment(dept.id)"
+                >
+                  {{ departmentUpdating ? "儲存中" : "儲存" }}
+                </button>
+                <button type="button" class="category-cancel-button" @click="cancelEditDepartment">取消</button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="category-modal-footer">
+          <button type="button" class="admin-btn admin-btn-secondary" @click="closeDepartmentModal">關閉</button>
+        </div>
+      </div>
+    </div>
+
     <!-- JSON 匯出 Modal -->
     <AdminJsonExportModal
       :open="exportModalOpen"
@@ -620,6 +774,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from "@/stores/toast";
 import { getAuthHeaders } from "@/utils/auth";
 import { useAdminPagination } from "@/composables/useAdminPagination";
 import { useTableSort } from "@/composables/useTableSort";
@@ -629,10 +785,12 @@ import AdminJsonExportModal from "@/components/admin/AdminJsonExportModal.vue";
 import AdminJsonImportModal from "@/components/admin/AdminJsonImportModal.vue";
 import "@/assets/admin-manage.css";
 
+const authStore = useAuthStore();
+const toastStore = useToastStore();
+
 const API_URL = "/api/employees";
 const DEPT_API_URL = "/api/departments";
 const PERM_API_URL = "/api/permissions";
-const DEFAULT_DEPARTMENTS = ["櫃檯部", "客房部", "餐飲部", "行政部"];
 
 const departments = ref([]);
 const employees = ref([]);
@@ -642,8 +800,6 @@ const selectedDepartment = ref("");
 const selectedStatus = ref("");
 const loading = ref(false);
 const saving = ref(false);
-const message = ref("");
-const messageType = ref("");
 
 // 權限種類 Modal
 const permissionModalOpen = ref(false);
@@ -654,6 +810,14 @@ const editingPermissionId = ref(null);
 const editingPermissionName = ref("");
 const editingPermissionCode = ref("");
 const permissionUpdating = ref(false);
+
+// 部門管理 Modal
+const departmentModalOpen = ref(false);
+const newDepartmentName = ref("");
+const departmentSaving = ref(false);
+const editingDepartmentId = ref(null);
+const editingDepartmentName = ref("");
+const departmentUpdating = ref(false);
 
 // 排序與多選
 const { sortKey, sortDirection, changeSort, getSortIcon, sortList } = useTableSort("employeeId", "asc");
@@ -689,12 +853,8 @@ const importModalOpen = ref(false);
 const importing = ref(false);
 const importResult = ref(null);
 
-function showMessage(text, type, duration = 3000) {
-  message.value = text;
-  messageType.value = type;
-  setTimeout(() => {
-    message.value = "";
-  }, duration);
+function showMessage(text, type = "success", duration = 3000) {
+  toastStore.showToast(text, type === "error" ? "error" : "success", duration);
 }
 
 function getStatusLabel(status) {
@@ -736,8 +896,20 @@ const currentUsername = computed(() => {
 });
 
 function isSelf(employee) {
-  if (!employee || !currentUsername.value) return false;
-  return String(employee.username || "").toLowerCase() === String(currentUsername.value).toLowerCase();
+  if (!employee) return false;
+  const username = (currentUsername.value || "").trim().toLowerCase();
+  if (!username) return false;
+
+  if (typeof employee === "object") {
+    const empUser = String(employee.username || "").trim().toLowerCase();
+    return !!empUser && empUser === username;
+  } else {
+    const found = employees.value.find((e) => (e.employeeId ?? e.id) === employee);
+    if (found) {
+      return String(found.username || "").trim().toLowerCase() === username;
+    }
+  }
+  return false;
 }
 
 const isEditingSelf = computed(() => {
@@ -820,53 +992,15 @@ async function loadDepartments() {
 
     if (response.ok) {
       const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         departments.value = data.map((d) => ({
           id: d.departmentId ?? d.id,
           name: d.departmentName ?? d.name,
         }));
-        return;
       }
     }
-    await autoSeedDefaultDepartments();
   } catch (error) {
-    console.error("載入部門失敗，使用備用預設部門：", error);
-    if (departments.value.length === 0) {
-      departments.value = DEFAULT_DEPARTMENTS.map((name, idx) => ({
-        id: idx + 1,
-        name,
-      }));
-    }
-  }
-}
-
-async function autoSeedDefaultDepartments() {
-  const createdList = [];
-  for (const name of DEFAULT_DEPARTMENTS) {
-    try {
-      const res = await fetch(DEPT_API_URL, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ departmentName: name }),
-      });
-      if (res.ok) {
-        const item = await res.json();
-        createdList.push({
-          id: item.departmentId ?? item.id,
-          name: item.departmentName ?? item.name ?? name,
-        });
-      }
-    } catch (e) {
-      console.error(`自動建立預設部門 ${name} 失敗：`, e);
-    }
-  }
-  if (createdList.length > 0) {
-    departments.value = createdList;
-  } else {
-    departments.value = DEFAULT_DEPARTMENTS.map((name, idx) => ({
-      id: idx + 1,
-      name,
-    }));
+    console.error("載入部門失敗：", error);
   }
 }
 
@@ -1093,7 +1227,7 @@ async function toggleStatus(employee) {
   const actionText = nextStatus === "1" ? "啟用" : "停用";
 
   if (isSelf(employee) && nextStatus === "0") {
-    showMessage("無法停用目前登入中的帳號", "error");
+    showMessage("無法停用目前登入中的自身帳號", "error");
     return;
   }
 
@@ -1142,7 +1276,7 @@ async function deleteEmployee(employeeOrId) {
       : employees.value.find((e) => (e.employeeId ?? e.id) === employeeId);
 
   if (targetEmployee && isSelf(targetEmployee)) {
-    showMessage("無法刪除目前登入中的帳號", "error");
+    showMessage("無法刪除目前登入中的自身帳號", "error");
     return;
   }
 
@@ -1354,6 +1488,148 @@ async function deletePermission(perm) {
   }
 }
 
+// 部門 CRUD
+function openDepartmentModal() {
+  newDepartmentName.value = "";
+  cancelEditDepartment();
+  departmentModalOpen.value = true;
+  setTimeout(() => {
+    document.getElementById("newDepartmentName")?.focus();
+  }, 50);
+}
+
+function closeDepartmentModal() {
+  departmentModalOpen.value = false;
+  newDepartmentName.value = "";
+  cancelEditDepartment();
+}
+
+async function addDepartment() {
+  const deptName = newDepartmentName.value.trim();
+
+  if (!deptName) {
+    showMessage("請輸入部門名稱", "error");
+    return;
+  }
+
+  departmentSaving.value = true;
+  try {
+    const response = await fetch(DEPT_API_URL, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        departmentName: deptName,
+      }),
+    });
+
+    if (response.status === 409) {
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "這個部門名稱已經存在", "error");
+      return;
+    }
+    if (!response.ok) {
+      showMessage("新增部門失敗", "error");
+      return;
+    }
+
+    newDepartmentName.value = "";
+    await loadDepartments();
+    showMessage("部門新增成功", "success");
+  } catch (error) {
+    console.error("新增部門失敗：", error);
+    showMessage("新增部門失敗", "error");
+  } finally {
+    departmentSaving.value = false;
+  }
+}
+
+function startEditDepartment(dept) {
+  editingDepartmentId.value = dept.id;
+  editingDepartmentName.value = dept.name;
+}
+
+function cancelEditDepartment() {
+  editingDepartmentId.value = null;
+  editingDepartmentName.value = "";
+}
+
+async function updateDepartment(departmentId) {
+  const deptName = editingDepartmentName.value.trim();
+
+  if (!deptName) {
+    showMessage("部門名稱不能為空", "error");
+    return;
+  }
+
+  departmentUpdating.value = true;
+  try {
+    const response = await fetch(`${DEPT_API_URL}/${departmentId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        departmentName: deptName,
+      }),
+    });
+
+    if (response.status === 409) {
+      const data = await response.json().catch(() => ({}));
+      showMessage(data.message || "這個部門名稱已經存在", "error");
+      return;
+    }
+    if (!response.ok) {
+      showMessage("修改部門失敗", "error");
+      return;
+    }
+
+    cancelEditDepartment();
+    await loadDepartments();
+    await loadEmployees();
+    showMessage("部門修改成功", "success");
+  } catch (error) {
+    console.error("修改部門失敗：", error);
+    showMessage("修改部門失敗", "error");
+  } finally {
+    departmentUpdating.value = false;
+  }
+}
+
+async function deleteDepartment(dept) {
+  if (!window.confirm(`確定要刪除部門「${dept.name}」嗎？`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${DEPT_API_URL}/${dept.id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 409) {
+      let errorMessage = "此部門仍有員工使用，請先調整員工所屬部門後再刪除";
+      try {
+        const data = await response.json();
+        if (data.message) errorMessage = data.message;
+      } catch {}
+      showMessage(errorMessage, "error");
+      return;
+    }
+    if (!response.ok) {
+      showMessage("刪除部門失敗", "error");
+      return;
+    }
+
+    if (form.departmentId === dept.id) {
+      form.departmentId = departments.value.length > 0 ? departments.value[0].id : "";
+    }
+    await loadDepartments();
+    await loadEmployees();
+    showMessage("部門刪除成功", "success");
+  } catch (error) {
+    console.error("刪除部門失敗：", error);
+    showMessage("刪除部門失敗", "error");
+  }
+}
+
 // 匯出 / 匯入邏輯
 function openExportModal() {
   if (selectedEmployeeIds.value.length > 0) {
@@ -1515,10 +1791,117 @@ onMounted(async () => {
   width: 100%;
 }
 
+.perms-td {
+  position: relative;
+}
+
+.employee-perms-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  cursor: default;
+}
+
+.employee-perms-container:hover {
+  z-index: 120;
+}
+
 .employee-perms-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  max-height: 44px;
+  overflow: hidden;
+  align-content: flex-start;
+}
+
+/* 懸停向下平滑浮現 Popover / Tooltip */
+.perms-hover-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  min-width: 200px;
+  max-width: 280px;
+  background-color: #ffffff;
+  border: 1px solid #dfd7cb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(74, 59, 42, 0.18), 0 3px 8px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  pointer-events: none;
+  z-index: 999;
+  text-align: left;
+}
+
+.employee-perms-container:hover .perms-hover-popover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.perms-hover-popover::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent #f7f3ec transparent;
+}
+
+.perms-hover-popover::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 7px 7px;
+  border-style: solid;
+  border-color: transparent transparent #dfd7cb transparent;
+  margin-bottom: 1px;
+}
+
+.perms-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  background-color: #f7f3ec;
+  border-bottom: 1px solid #ece4d7;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #554432;
+}
+
+.perms-popover-count {
+  font-size: 11px;
+  color: #9b7435;
+  background-color: #eee4d5;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.perms-popover-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 10px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.perms-popover-tags::-webkit-scrollbar {
+  width: 4px;
+}
+
+.perms-popover-tags::-webkit-scrollbar-thumb {
+  background-color: #d8d0c5;
+  border-radius: 4px;
 }
 
 .perm-badge {
@@ -1530,6 +1913,18 @@ onMounted(async () => {
   font-size: 11px;
   font-weight: 500;
   border: 1px solid #ebdcc5;
+  white-space: nowrap;
+}
+
+.perm-more-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #f1e5d4;
+  color: #8a5d24;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #dfcfb8;
   white-space: nowrap;
 }
 
@@ -1855,5 +2250,17 @@ onMounted(async () => {
   justify-content: flex-end;
   padding: 15px 24px;
   border-top: 1px solid #eee8df;
+}
+
+.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.admin-icon-btn .lucide-icon {
+  flex-shrink: 0;
 }
 </style>

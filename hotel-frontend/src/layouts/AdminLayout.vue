@@ -127,8 +127,8 @@
 
         <div class="admin-header-actions">
           <div class="admin-user">
-            {{ authStore.name || "管理員" }}
-            <span v-if="authStore.userPosition" class="admin-user-pos">({{ authStore.userPosition }})</span>
+            <span class="user-avatar-mini">{{ userInitial }}</span>
+            <span class="user-greeting-text">{{ displayName }} 您好</span>
           </div>
 
           <RouterLink
@@ -163,12 +163,23 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const authStore = useAuthStore();
+
+const displayName = computed(() => {
+  return authStore.name || "管理員";
+});
+
+const userInitial = computed(() => {
+  if (authStore.name && authStore.name.trim().length > 0) {
+    return authStore.name.trim().charAt(0);
+  }
+  return "管";
+});
 
 /*
  * 控制餐廳管理選單展開 / 收合
@@ -200,11 +211,38 @@ const accountOpen = ref(true);
   white-space: nowrap;
 }
 
-.admin-user-pos {
-  font-size: 12px;
-  opacity: 0.85;
-  margin-left: 4px;
-  font-weight: 500;
+.admin-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fdfbf7;
+  border: 1px solid #ebd9bf;
+  padding: 6px 14px 6px 8px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a3b2a;
+}
+
+.user-avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b58a46, #8f692f);
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-greeting-text {
+  max-width: 180px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .admin-home-button {
