@@ -655,10 +655,10 @@ function canCancelRental(rental) {
 }
 function rentalStatusLabel(status) {
   const labels = {
-    PENDING: "待付款",
-    CONFIRMED: "已付款",
-    "待確認": "待付款",
-    "已確認": "已付款",
+    PENDING: "待確認",
+    CONFIRMED: "已確認",
+    "待確認": "待確認",
+    "已確認": "已確認",
     CANCELLED: "已取消",
     COMPLETED: "已完成",
   };
@@ -932,9 +932,9 @@ function money(value) {
               <th>日期</th>
               <th>人數</th>
               <th class="technical-id">付款編號</th>
-              <th>狀態</th>
               <!-- 付款金額永遠讀取歷史保存值。 -->
-              <th>歷史金額／付款</th>
+              <th class="payment-column">金額/付款</th>
+              <th class="status-column">狀態</th>
             </tr>
           </thead>
 
@@ -946,8 +946,10 @@ function money(value) {
               <td class="technical-id">{{ rental.rentalId }}</td>
               <td>
                 <!-- 租借紀錄同樣提供場地圖片或本地預設圖。 -->
-                <img class="rental-thumb" :src="venues.find(item => item.venueId === rental.venueId)?.imageUrl || '/images/venue-placeholder.svg'" alt="場地圖片" @error="$event.target.src = '/images/venue-placeholder.svg'" />
-                {{ venueName(rental.venueId) }}
+                <div class="venue-cell-content">
+                  <span class="venue-name">{{ venueName(rental.venueId) }}</span>
+                  <img class="rental-thumb" :src="venues.find(item => item.venueId === rental.venueId)?.imageUrl || '/images/venue-placeholder.svg'" alt="場地圖片" @error="$event.target.src = '/images/venue-placeholder.svg'" />
+                </div>
               </td>
               <td>
                 {{ rental.eventName }}
@@ -963,40 +965,47 @@ function money(value) {
                 {{ rental.guestCount }}
               </td>
               <td class="technical-id">{{ rental.paymentId }}</td>
-              <td>
-                {{
-                  rentalStatusLabel(
-                    rental.rentalStatus,
-                  )
-                }}
-              </td>
               <!-- 僅待付款且有效的本人租借提供付款按鈕。 -->
-              <td>
-                <!-- 金額與狀態皆來自付款 API。 -->
-                <p>{{ money(payments[rental.rentalId]?.totalPrice) }}｜{{ payments[rental.rentalId]?.paymentStatus || '尚未載入' }}</p>
-                <!-- 已付款、取消、完成及過去日期不再次開啟付款。 -->
-                <!-- 本機 Tampermonkey 會辨識此 class，只有此按鈕啟用自動填表。 -->
-                <button
-                  v-if="payments[rental.rentalId]?.paymentStatus === '待付款' && ['PENDING', 'CONFIRMED', '待確認', '已確認'].includes(rental.rentalStatus) && String(rental.rentalDate).slice(0,10) >= today()"
-                  type="button"
-                  class="stage-test-pay-button"
-                  :disabled="loading"
-                  @click="demoPay(rental)"
-                >
-                  多元付款
-                </button> <!-- 僅本人有效且待付款的租借可以結帳。 -->
-                <!--
-                  只有本人、有效狀態且尚未付款時顯示取消。
-                  真正的付款與所有權限制仍由後端驗證。
-                -->
-                <button
-                  v-if="canCancelRental(rental)" type="button"
-                  class="cancel-rental-button"
-                  :disabled="loading"
-                  @click="cancelRental(rental)"
-                >
-                  取消預約
-                </button>
+              <td class="payment-column">
+                <div class="payment-cell-content">
+
+                  <!-- 金額與付款狀態皆來自付款 API。 -->
+                  <p class="payment-summary">
+                    {{ money(payments[rental.rentalId]?.totalPrice) }}
+                  </p>
+
+                  <!-- 已付款、取消、完成及過去日期不再次開啟付款。 -->
+                  <!-- 本機 Tampermonkey 會辨識此 class，只有此按鈕啟用自動填表。 -->
+                  <button
+                    v-if="payments[rental.rentalId]?.paymentStatus === '待付款' && ['PENDING', 'CONFIRMED', '待確認', '已確認'].includes(rental.rentalStatus) && String(rental.rentalDate).slice(0,10) >= today()"
+                    type="button"
+                    class="stage-test-pay-button"
+                    :disabled="loading"
+                    @click="demoPay(rental)"
+                  >
+                    多元付款
+                  </button>
+
+                </div>
+              </td>
+
+              <td class="status-column">
+                <div class="status-cell-content">
+                  <span class="payment-status-in-status-column">
+                    {{ payments[rental.rentalId]?.paymentStatus || '尚未載入' }}
+                  </span>
+
+                  <button
+                    v-if="canCancelRental(rental)"
+                    type="button"
+                    class="cancel-rental-button"
+                    :disabled="loading"
+                    @click="cancelRental(rental)"
+                  >
+                    取消預約
+                  </button>
+
+                </div>
               </td>
             </tr>
           </tbody>
@@ -3430,4 +3439,386 @@ select {
     font-size: 23px;
   }
 }
+
+/* 場地租借付款欄位排版修正 */
+.payment-summary {
+  margin: 0 0 0.75rem;
+  white-space: nowrap;
+}
+
+.table-wrap th:nth-child(7),
+.table-wrap td:nth-child(7) {
+  min-width: 110px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table-wrap th:nth-child(8),
+.table-wrap td:nth-child(8) {
+  min-width: 250px;
+  width: 250px;
+  vertical-align: middle;
+}
+
+.table-wrap td:nth-child(8) .stage-test-pay-button,
+.table-wrap td:nth-child(8) .cancel-rental-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  margin-top: 0.25rem;
+}
+
+.table-wrap td:nth-child(8) .stage-test-pay-button {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 1200px) {
+  .table-wrap th:nth-child(8),
+  .table-wrap td:nth-child(8) {
+    min-width: 220px;
+    width: 220px;
+  }
+}
+
+
+
+
+
+
+
+/* ===== 我的場地預約：六欄平均 FINAL ===== */
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-wrap table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/*
+ * 技術 ID 欄位仍存在但 display:none。
+ * 六個可見欄位全部平均分配 100%。
+ */
+.table-wrap thead th:not(.technical-id),
+.table-wrap tbody td:not(.technical-id) {
+  width: 16.6667% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  box-sizing: border-box !important;
+
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* 場地欄內容保留左對齊，欄寬仍然是 1/6。 */
+.table-wrap tbody td:nth-child(2) {
+  text-align: left !important;
+}
+
+/* 第五欄：金額 / 付款 */
+.table-wrap th.payment-column,
+.table-wrap td.payment-column {
+  width: 16.6667% !important;
+  text-align: center !important;
+}
+
+/* 第六欄：狀態 */
+.table-wrap th.status-column,
+.table-wrap td.status-column {
+  width: 16.6667% !important;
+  text-align: center !important;
+}
+
+/* 金額 / 付款欄 */
+.payment-cell-content {
+  width: 100% !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 7px !important;
+}
+
+.payment-summary,
+.payment-status-text {
+  margin: 0 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.payment-summary {
+  font-weight: 600 !important;
+}
+
+/* 狀態欄 */
+.status-cell-content {
+  width: 100% !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 10px !important;
+}
+
+.rental-status-text {
+  display: block !important;
+
+  min-height: 24px;
+
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* 第五、第六欄的操作按鈕大小一致 */
+.payment-cell-content .stage-test-pay-button,
+.status-cell-content .cancel-rental-button {
+  width: 85% !important;
+  min-width: 110px !important;
+  max-width: 180px !important;
+
+  height: 44px !important;
+
+  margin: 0 !important;
+  padding: 0 14px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-sizing: border-box !important;
+
+  font-size: 14px !important;
+  font-weight: 600 !important;
+
+  white-space: nowrap !important;
+}
+
+/* 資料列增加適當高度 */
+.table-wrap tbody td {
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+}
+
+/* 小螢幕不壓縮六欄，改成水平捲動 */
+@media (max-width: 1100px) {
+  .table-wrap table {
+    min-width: 1050px !important;
+  }
+}
+
+/* ===== END 六欄平均 FINAL ===== */
+
+/* ===== 場地圖片名稱對齊 ===== */
+
+.venue-cell-content {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.venue-cell-content .rental-thumb {
+  display: block;
+  flex: 0 0 auto;
+  margin: 0 !important;
+}
+
+.venue-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  white-space: nowrap;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* ===== END 場地圖片名稱對齊 ===== */
+
+/* ===== 第五六欄橫向對齊 FINAL ===== */
+
+/*
+ * 第 5、6 欄維持相同寬度，
+ * 並與各自表頭中心對齊。
+ */
+.table-wrap th.payment-column,
+.table-wrap td.payment-column,
+.table-wrap th.status-column,
+.table-wrap td.status-column {
+  width: 16.6667% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+
+  text-align: center !important;
+  vertical-align: middle !important;
+
+  box-sizing: border-box !important;
+}
+
+
+/* ===== 第五欄：金額/付款 ===== */
+
+/*
+ * 金額文字放左邊，
+ * 多元付款按鈕放右邊。
+ */
+.table-wrap td.payment-column .payment-cell-content {
+  width: 100% !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 14px !important;
+}
+
+/* $50,000｜待付款 */
+.table-wrap td.payment-column .payment-summary {
+  width: auto !important;
+  flex: 0 0 auto !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  text-align: right !important;
+
+  white-space: nowrap !important;
+  line-height: 44px !important;
+}
+
+/* 多元付款 */
+.table-wrap td.payment-column .stage-test-pay-button {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+
+  height: 44px !important;
+
+  margin: 0 !important;
+  padding: 0 16px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+
+/* ===== 第六欄：狀態 ===== */
+
+/*
+ * 「已確認」不再顯示，
+ * 只留下取消預約並在整欄置中。
+ */
+.table-wrap td.status-column .status-cell-content {
+  width: 100% !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 0 !important;
+}
+
+/* 取消預約與多元付款相同尺寸 */
+.table-wrap td.status-column .cancel-rental-button {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+
+  height: 44px !important;
+
+  margin: 0 !important;
+  padding: 0 16px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  box-sizing: border-box !important;
+
+  white-space: nowrap !important;
+}
+
+
+/*
+ * 表頭與資料格均置中。
+ */
+.table-wrap th.payment-column,
+.table-wrap th.status-column {
+  text-align: center !important;
+}
+
+/* ===== END 第五六欄橫向對齊 FINAL ===== */
+
+/* ===== 付款狀態移至狀態欄 ===== */
+
+/* 第 5 欄：金額在左、付款按鈕在右 */
+.table-wrap td.payment-column .payment-cell-content {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+}
+
+.table-wrap td.payment-column .payment-summary {
+  margin: 0 !important;
+  white-space: nowrap !important;
+  line-height: 44px !important;
+}
+
+/* 第 6 欄：待付款在左、取消預約在右 */
+.table-wrap td.status-column .status-cell-content {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+}
+
+.payment-status-in-status-column {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin: 0 !important;
+  white-space: nowrap !important;
+  line-height: 44px !important;
+}
+
+/* 兩顆按鈕大小一致 */
+.table-wrap td.payment-column .stage-test-pay-button,
+.table-wrap td.status-column .cancel-rental-button {
+  width: 140px !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  height: 44px !important;
+  margin: 0 !important;
+}
+
+/* ===== END 付款狀態移至狀態欄 ===== */
 </style>
