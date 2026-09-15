@@ -133,27 +133,45 @@
   background-color: white;
 }
 
+.admin-table.admin-table-fixed {
+  table-layout: fixed;
+}
+
+.employee-table {
+  min-width: 1130px;
+}
+
+.member-table {
+  min-width: 900px;
+}
+
 .admin-table thead {
   background-color: #4a3b2a;
   color: white;
 }
 
+.admin-table thead th {
+  height: 48px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
 .admin-table th,
 .admin-table td {
-  padding: 14px 12px;
+  padding: 10px 12px;
   text-align: left;
   border-bottom: 1px solid #eee7dd;
   vertical-align: middle;
-}
-
-.admin-table th {
-  font-size: 14px;
-  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .admin-table td {
   color: #555;
   font-size: 14px;
+}
+
+.admin-table tbody td {
+  height: 68px;
 }
 
 .admin-table tbody tr:hover {
@@ -172,9 +190,11 @@
 
 .sort-icon {
   display: inline-block;
+  width: 14px;
+  text-align: center;
   margin-left: 4px;
   color: #b58a46;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .row-selected {
@@ -184,17 +204,25 @@
 .name-cell {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
+  max-height: 48px;
 }
 
 .item-name {
   color: #5b4632;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-username {
   color: #8c7b6d;
   font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .self-tag {
@@ -207,7 +235,9 @@
 .dept-pos-cell {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 3px;
+  max-height: 48px;
 }
 
 .dept-badge {
@@ -219,23 +249,34 @@
   color: #6f5328;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .position-text {
   color: #555;
   font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .contact-info {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 3px;
   font-size: 13px;
   color: #555;
+  max-height: 48px;
 }
 
 .contact-item {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gender-text {
