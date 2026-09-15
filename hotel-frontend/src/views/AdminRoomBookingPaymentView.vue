@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, ref, computed } from "vue";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
+import { bookingApi } from "@/api/bookingApi";
 
 const payments = ref([]);
+const bookings = ref([]);
 const loading = ref(false);
 const message = ref("");
 const messageType = ref("");
@@ -22,18 +24,27 @@ function showMessage(text, type) {
   setTimeout(() => { message.value = ""; }, 3000);
 }
 
-// 讀取全部付款資料
+// 讀取全部付款資料與訂房資料以取得會員 ID
 async function loadPayments() {
   loading.value = true;
   message.value = "";
   try {
-    const data = await bookingPaymentApi.getAllPayments();
-    payments.value = Array.isArray(data) ? data : data.content || [];
+    const [paymentData, bookingData] = await Promise.all([
+      bookingPaymentApi.getAllPayments(),
+      bookingApi.getAllBookings().catch(() => []) // 容錯處理
+    ]);
+    payments.value = Array.isArray(paymentData) ? paymentData : paymentData.content || [];
+    bookings.value = Array.isArray(bookingData) ? bookingData : bookingData.content || [];
   } catch (error) {
     showMessage(error.message || "無法連線至付款 API", "error");
   } finally {
     loading.value = false;
   }
+}
+
+function getMemberIdForPayment(bookingId) {
+  const booking = bookings.value.find(b => b.bookingId === bookingId || b.booking_id === bookingId);
+  return booking ? (booking.memberId ?? booking.member_id) : "—";
 }
 
 // 前端篩選後的資料
@@ -214,6 +225,7 @@ function prevPage() {
               <th @click="toggleSort('bookingId')" class="sortable">
                 訂單 ID <span v-if="sortKey === 'bookingId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
+              <th>會員ID</th>
               <th>金額</th>
               <th>付款方式</th>
               <th>狀態</th>
@@ -235,6 +247,7 @@ function prevPage() {
               <tr v-for="payment in paginatedData" :key="payment.paymentId">
                 <td>{{ payment.paymentId }}</td>
                 <td>{{ payment.bookingId }}</td>
+                <td>{{ getMemberIdForPayment(payment.bookingId) }}</td>
                 <td>{{ formatPrice(payment.amount) }}</td>
                 <td>{{ payment.paymentMethod }}</td>
                 <td>

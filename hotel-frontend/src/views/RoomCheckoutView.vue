@@ -16,7 +16,10 @@
     <div class="content-grid">
       <!-- 訂房資料填寫 -->
       <div class="form-section">
-        <h3>1. 訂房聯絡人資訊</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #eaeaea; padding-bottom: 0.5rem;">
+          <h3 style="margin: 0; border: none; padding: 0;">1. 訂房聯絡人資訊</h3>
+          <button type="button" class="btn-demo-fill" @click="fillDemoData">✨ 一鍵帶入</button>
+        </div>
         <form class="checkout-form">
           <div class="form-group">
             <label>姓名 *</label>
@@ -80,6 +83,29 @@
           </div>
         </div>
       </div>
+      <!-- 等待付款視窗 (Modal) -->
+      <div v-if="showPaymentModal" class="payment-modal-overlay">
+        <div class="payment-modal">
+          <h3>💳 等待付款完成中...</h3>
+          <p>已在**新分頁**開啟綠界結帳畫面</p>
+          <p>請在綠界畫面完成付款！</p>
+          
+          <div class="spinner"></div>
+
+          <div class="dev-tools mt-4">
+            <p style="font-size: 0.85rem; color: #888;">開發測試用：</p>
+            <button @click="forceMockSuccess" class="btn-mock">
+              🚀 [開發測試用] 強制模擬付款成功
+            </button>
+            <button @click="forceMockFail" class="btn-mock-fail mt-2">
+              ❌ [開發測試用] 強制模擬付款失敗
+            </button>
+            <button @click="cancelPaymentWait" class="btn-cancel mt-2">
+              返回修改訂單
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -118,12 +144,102 @@ function goToSelection() {
 }
 
 const isProcessing = ref(false);
+const showPaymentModal = ref(false);
+const pollingInterval = ref(null);
+const currentBookingId = ref(null);
 
 const form = ref({
   name: '',
   phone: '',
   remark: ''
 });
+
+function fillDemoData() {
+  form.value.name = 'Demo User';
+  form.value.phone = '0912345678';
+  form.value.remark = '這是一筆綠界測試金流的 Demo 訂單';
+}
+
+function startPolling(bookingId) {
+  currentBookingId.value = bookingId;
+  showPaymentModal.value = true;
+  
+  // 每 3 秒詢問一次後端狀態
+  pollingInterval.value = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/payments/ecpay/status/${bookingId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === '已付款') {
+          clearInterval(pollingInterval.value);
+          alert("付款成功！即將為您跳轉至首頁。");
+          router.push('/');
+        }
+      }
+    } catch (e) {
+      console.error("輪詢狀態失敗", e);
+    }
+  }, 3000);
+}
+
+async function cancelPaymentWait() {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
+  showPaymentModal.value = false;
+
+  // 使用者放棄結帳，刪除剛建立的訂單與付款記錄
+  if (currentBookingId.value) {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/bookings/${currentBookingId.value}`, {
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      console.log(`已刪除未完成之訂單 ID: ${currentBookingId.value}`);
+    } catch (e) {
+      console.error("刪除未完成訂單失敗", e);
+    }
+    currentBookingId.value = null; // 清空
+  }
+}
+
+async function forceMockSuccess() {
+  if (!currentBookingId.value) return;
+  try {
+    const res = await fetch(`/api/payments/ecpay/mock-pay/${currentBookingId.value}`, {
+      method: 'POST'
+    });
+    if (res.ok) {
+      // 輪詢會自動抓到並跳轉，或者我們直接跳轉
+      alert("開發模式：已強制模擬付款成功！");
+      clearInterval(pollingInterval.value);
+      router.push('/');
+    } else {
+      alert("模擬失敗！");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function forceMockFail() {
+  if (!currentBookingId.value) return;
+  try {
+    const res = await fetch(`/api/payments/ecpay/mock-fail/${currentBookingId.value}`, {
+      method: 'POST'
+    });
+    if (res.ok) {
+      alert("開發模式：已強制模擬付款失敗！");
+      clearInterval(pollingInterval.value);
+      router.push('/');
+    } else {
+      alert("模擬失敗！");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 onMounted(() => {
   // 如果缺少必要參數，導回首頁
@@ -141,9 +257,28 @@ async function submitCheckout() {
 
   isProcessing.value = true;
   try {
+    // 0. 獲取當前登入使用者的會員 ID
+    let currentMemberId = 1; // 預設值 (給未登入或測試用)
+    if (authStore.isLoggedIn) {
+      try {
+        const token = localStorage.getItem('token');
+        const profileRes = await fetch("/api/members/me", {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          if (profileData && profileData.memberId) {
+            currentMemberId = profileData.memberId;
+          }
+        }
+      } catch (err) {
+        console.warn("無法取得會員資料，使用預設 ID", err);
+      }
+    }
+
     // 1. 建立訂單 (呼叫 Backend POST /api/bookings)
     const bookingPayload = {
-      memberId: authStore.memberId, // 從登入狀態取會員 ID
+      memberId: currentMemberId, // 使用抓取到的會員 ID
       roomTypeId: roomTypeId.value,
       checkInDate: checkIn.value,
       checkOutDate: checkOut.value,
@@ -168,15 +303,21 @@ async function submitCheckout() {
 
     const htmlForm = await res.text();
 
-    // 3. 建立一個虛擬容器並 submit 表單，跳轉至綠界
+    // 3. 建立一個虛擬容器並 submit 表單，跳轉至綠界 (新分頁)
     const div = document.createElement('div');
     div.innerHTML = htmlForm;
     document.body.appendChild(div);
-    div.querySelector('form').submit();
+    const formElement = div.querySelector('form');
+    formElement.target = '_blank'; // ★ 關鍵：新開分頁
+    formElement.submit();
+
+    // 4. 開始在本地輪詢付款狀態
+    startPolling(bookingId);
 
   } catch (error) {
     console.error("Checkout failed:", error);
     alert("結帳發生錯誤，請稍後再試！");
+  } finally {
     isProcessing.value = false;
   }
 }
@@ -244,11 +385,20 @@ async function submitCheckout() {
   flex: 1;
 }
 
-.form-section h3 {
-  font-size: 1.1rem;
-  border-bottom: 1px solid #eaeaea;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
+.btn-demo-fill {
+  background: #fdfaf6;
+  color: #C9A96E;
+  border: 1px solid #C9A96E;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-demo-fill:hover {
+  background: #C9A96E;
+  color: #fff;
 }
 
 .mt-4 {
@@ -406,4 +556,87 @@ async function submitCheckout() {
     width: 100%;
   }
 }
+
+/* Modal Styles */
+.payment-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.payment-modal {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.payment-modal h3 {
+  color: #2C1810;
+  margin-bottom: 1rem;
+}
+
+.spinner {
+  margin: 2rem auto;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #C9A96E;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.dev-tools {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #ccc;
+}
+
+.btn-mock {
+  background: #C9A96E;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-mock:hover { background: #b54708; }
+
+.btn-mock-fail {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-mock-fail:hover { background: #c82333; }
+
+.btn-cancel {
+  background: transparent;
+  color: #666;
+  border: 1px solid #ccc;
+  padding: 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.btn-cancel:hover { background: #f5f5f5; }
 </style>
