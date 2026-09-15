@@ -114,15 +114,12 @@ import '@vuepic/vue-datepicker/dist/main.css';
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Date validation - fix timezone issue
-const now = new Date();
-const offset = now.getTimezoneOffset() * 60000;
-const localNow = new Date(now.getTime() - offset);
-localNow.setHours(0, 0, 0, 0); // Strip time
-const today = localNow;
+// Use standard local time for today
+const today = new Date();
+today.setHours(0, 0, 0, 0); // Strip time
 
-const tomorrowDate = new Date(localNow.getTime() + 86400000);
-tomorrowDate.setHours(0, 0, 0, 0); // Strip time
+const tomorrowDate = new Date(today);
+tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
 const dateRange = ref([today, tomorrowDate]);
 
@@ -174,8 +171,11 @@ function handleSearch() {
     return;
   }
 
-  const checkIn = new Date(dateRange.value[0].getTime() - offset).toISOString().split('T')[0];
-  const checkOut = new Date(dateRange.value[1].getTime() - offset).toISOString().split('T')[0];
+  const start = dateRange.value[0];
+  const end = dateRange.value[1];
+
+  const checkIn = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  const checkOut = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
 
   router.push({
     name: 'room-selection',

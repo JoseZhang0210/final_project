@@ -610,6 +610,18 @@ function getBookingStatusClass(status) {
   return map[status] || "";
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
 function formatPrice(price) {
 
   return new Intl.NumberFormat("zh-TW", {
@@ -677,6 +689,20 @@ const filteredBookings = computed(() => {
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const totalPages = computed(() => Math.ceil(filteredBookings.value.length / itemsPerPage));
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - 2);
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+  return pages;
+});
 const sortKey = ref("bookingId");
 const sortOrder = ref("desc"); // 預設從新到舊
 
@@ -790,7 +816,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <th>入住</th>
               <th>退房</th>
               <th>人數</th>
-              <th>價格</th>
+              <th>建立時間</th>
               <th>狀態</th>
 
               <th>操作</th>
@@ -816,7 +842,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>{{ booking.checkOutDate ?? booking.check_out_date }}</td>
               <td>{{ booking.guestNum ?? booking.guest_num }} 人</td>
               <td>
-                {{ formatPrice(booking.bookingPrice ?? booking.booking_price) }}
+                {{ formatDateTime(booking.createdAt ?? booking.created_at) }}
               </td>
               <td>
                 <span :class="['booking-status', getBookingStatusClass(booking.bookingStatus ?? booking.booking_status)]">
@@ -839,10 +865,29 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      <div class="pagination-area" v-if="totalPages > 1">
+        <div class="pagination-info">
+          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
+        </div>
+
+        <div class="pagination">
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page" 
+            type="button" 
+            class="page-button" 
+            :class="{ active: currentPage === page }" 
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+          
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
+        </div>
       </div>
   
 
@@ -1148,7 +1193,14 @@ th {
     grid-template-columns: 1fr;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
+.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
+.pagination-info { color: #857a70; font-size: 13px; }
+.pagination-info strong { color: #9b7435; }
+.pagination { display: flex; align-items: center; gap: 6px; }
+.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
+.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
+.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
+.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 .booking-status {
   display: inline-block;
   padding: 4px 12px;

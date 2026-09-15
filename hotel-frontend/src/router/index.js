@@ -318,6 +318,11 @@ const router = createRouter({
               name: "member-wishlist",
               component: ProductWishlistView,
             },
+            {
+              path: "room-bookings",
+              name: "member-room-bookings",
+              component: () => import('../views/MemberRoomBookingView.vue'),
+            },
             { // 新增會員專屬場地預約入口。
               path: "rentals", // 完整網址為 /member/rentals。
               name: "member-rentals", // 提供場地頁面辨識會員模式。
