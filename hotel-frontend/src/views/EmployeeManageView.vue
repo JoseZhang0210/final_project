@@ -70,10 +70,25 @@
 
         <button
           type="button"
-          class="admin-btn admin-btn-secondary"
+          class="admin-btn admin-btn-secondary admin-icon-btn"
           @click="openPermissionModal"
         >
-          ⚙ 權限種類管理
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide-icon"
+          >
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <span>權限種類管理</span>
         </button>
       </div>
     </div>
@@ -302,8 +317,41 @@
 
               <td>
                 <div class="contact-info">
-                  <div v-if="employee.phone" class="contact-item" :title="employee.phone">📞 {{ employee.phone }}</div>
-                  <div v-if="employee.email" class="contact-item" :title="employee.email">✉️ {{ employee.email }}</div>
+                  <div v-if="employee.phone" class="contact-item" :title="employee.phone">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon inline-icon"
+                    >
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    <span>{{ employee.phone }}</span>
+                  </div>
+                  <div v-if="employee.email" class="contact-item" :title="employee.email">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon inline-icon"
+                    >
+                      <rect width="20" height="16" x="2" y="4" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                    <span>{{ employee.email }}</span>
+                  </div>
                   <span v-if="!employee.phone && !employee.email" class="text-muted">未填寫</span>
                 </div>
               </td>
@@ -377,7 +425,24 @@
 
         <form class="admin-modal-body" @submit.prevent="saveEmployee">
           <!-- 帳號設定 -->
-          <div class="form-section-title">🔐 帳號設定</div>
+          <div class="form-section-title">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide-icon section-icon"
+            >
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>帳號設定</span>
+          </div>
           <div class="admin-form-grid">
             <div class="admin-form-group">
               <label> 帳號 <span class="required">*</span> </label>
@@ -408,7 +473,33 @@
           </div>
 
           <!-- 部門與職位 -->
-          <div class="form-section-title">🏢 部門與職位設定</div>
+          <div class="form-section-title">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide-icon section-icon"
+            >
+              <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
+              <path d="M9 22v-4h6v4" />
+              <path d="M8 6h.01" />
+              <path d="M16 6h.01" />
+              <path d="M12 6h.01" />
+              <path d="M12 10h.01" />
+              <path d="M12 14h.01" />
+              <path d="M16 10h.01" />
+              <path d="M16 14h.01" />
+              <path d="M8 10h.01" />
+              <path d="M8 14h.01" />
+            </svg>
+            <span>部門與職位設定</span>
+          </div>
           <div class="admin-form-grid">
             <div class="admin-form-group">
               <label> 所屬部門 </label>
@@ -432,7 +523,24 @@
           </div>
 
           <!-- 個人基本資料 -->
-          <div class="form-section-title">👤 個人基本資料</div>
+          <div class="form-section-title">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide-icon section-icon"
+            >
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span>個人基本資料</span>
+          </div>
           <div class="admin-form-grid">
             <div class="admin-form-group">
               <label> 姓名 </label>
@@ -486,7 +594,23 @@
 
           <!-- 權限設定 -->
           <div class="form-section-title perm-section-header">
-            <span>🛡️ 權限設定</span>
+            <div class="section-title-content">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide-icon section-icon"
+              >
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+              </svg>
+              <span>權限設定</span>
+            </div>
             <div class="perm-header-actions">
               <button type="button" class="link-action-btn" @click="selectAllPermissions">全選</button>
               <button type="button" class="link-action-btn" @click="clearAllPermissions">清空</button>
