@@ -84,7 +84,13 @@
             </div>
           </div>
           
-          <button class="btn-check-rates" @click="handleSearch">
+          <button 
+            class="btn-check-rates" 
+            :class="{ 'disabled-btn': authStore.isEmployee }"
+            :disabled="authStore.isEmployee"
+            :title="authStore.isEmployee ? '員工無法使用前台訂房功能，請至後台操作' : ''"
+            @click="handleSearch"
+          >
             CHECK RATES
           </button>
         </div>
@@ -152,6 +158,11 @@ function handleInternalModelChange(val) {
 }
 
 function handleSearch() {
+  if (authStore.isEmployee) {
+    alert("員工無法使用前台訂房功能，請至後台管理系統操作。");
+    return;
+  }
+
   if (!authStore.isLoggedIn) {
     alert("請先登入會員以進行訂房");
     router.push({ name: 'login', query: { redirect: '/room-booking/select' } });
@@ -415,8 +426,15 @@ function handleSearch() {
   margin-left: 1rem;
 }
 
-.btn-check-rates:hover {
+.btn-check-rates:hover:not(:disabled) {
   background: #f0f0f0;
+}
+
+.disabled-btn {
+  background: #cccccc !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
 }
 
 .search-footer {
