@@ -247,7 +247,7 @@ async function toggleAccount() {
     </main>
 
     <footer>
-      <p>© 2026 Hotel Shop 星澄飯店｜All Rights Reserved</p>
+      <p>© 2026 Hotel Shop 星澄飯店｜僅供報告展示用 無商業用途行為</p>
     </footer>
   </div>
 </template>
