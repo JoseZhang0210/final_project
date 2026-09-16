@@ -274,9 +274,17 @@
 }
 
 .contact-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.inline-icon {
+  flex-shrink: 0;
+  color: #8c7b6d;
 }
 
 .gender-text {
@@ -456,12 +464,26 @@
 }
 
 .form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 15px;
   font-weight: bold;
   color: #6f5328;
   margin: 16px 0 10px;
   padding-bottom: 6px;
   border-bottom: 2px solid #f3ede2;
+}
+
+.section-icon {
+  flex-shrink: 0;
+  color: #6f5328;
+}
+
+.section-title-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .form-section-title:first-child {
