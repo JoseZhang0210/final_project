@@ -19,7 +19,11 @@ import com.hotel.model.entity.Product;
 import com.hotel.repository.OrderItemRepository;
 import com.hotel.repository.ProductRepository;
 import com.hotel.repository.CustomerOrderRepository;
+import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomTypeRepository;
 import com.hotel.model.entity.CustomerOrder;
+import com.hotel.model.entity.Booking;
+import com.hotel.model.entity.RoomType;
 import java.util.List;
 
 import java.io.File;
@@ -35,6 +39,8 @@ public class MailUtil {
         private final OrderItemRepository orderItemRepository;
         private final ProductRepository productRepository;
         private final CustomerOrderRepository customerOrderRepository;
+        private final BookingRepository bookingRepository;
+        private final RoomTypeRepository roomTypeRepository;
 
     // 自動讀取 application.properties 裡的發信人設定
     @Value("${spring.mail.username}")
@@ -42,13 +48,16 @@ public class MailUtil {
 
         MailUtil(JavaMailSender mailSender, ProfileRepository profileRepository, MemberRepository memberRepository,
                         OrderItemRepository orderItemRepository, ProductRepository productRepository,
-                        CustomerOrderRepository customerOrderRepository) {
+                        CustomerOrderRepository customerOrderRepository, BookingRepository bookingRepository,
+                        RoomTypeRepository roomTypeRepository) {
                 this.mailSender = mailSender;
                 this.profileRepository = profileRepository;
                 this.memberRepository = memberRepository;
                 this.orderItemRepository = orderItemRepository;
                 this.productRepository = productRepository;
                 this.customerOrderRepository = customerOrderRepository;
+                this.bookingRepository = bookingRepository;
+                this.roomTypeRepository = roomTypeRepository;
         }
 
     /**
@@ -110,6 +119,30 @@ public class MailUtil {
                 String subject = "【星澄飯店】訂單確認 - 訂單編號 " + orderId;
                 String htmlBody = buildOrderHtml(orderId, memberId);
                 // 4. 建立 DTO 並發送
+                EmailDTO dto = new EmailDTO(toEmail, subject, htmlBody, true);
+                sendEmail(dto);
+        }
+
+        /**
+         * 發送訂房確認信件 (非同步)。
+         * 
+         * @param bookingId 訂單編號
+         */
+        @Async
+        public void sendBookingConfirmation(Integer bookingId) {
+                Booking booking = bookingRepository.findById(bookingId)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到訂房編號 " + bookingId));
+
+                String toEmail = profileRepository.findByAccountId(
+                                memberRepository.findById(booking.getMemberId())
+                                                .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
+                                                .getAccountId())
+                                .map(Profile::getEmail)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
+
+                String subject = "【星澄飯店】訂房確認 - 訂單編號 " + bookingId;
+                String htmlBody = buildBookingHtml(bookingId);
+                
                 EmailDTO dto = new EmailDTO(toEmail, subject, htmlBody, true);
                 sendEmail(dto);
         }
@@ -612,6 +645,168 @@ public class MailUtil {
 
                 sb.append("</body>");
                 sb.append("</html>");
+
+                return sb.toString();
+        }
+
+        /**
+         * 產生正式飯店風格的訂房確認 Email
+         */
+        private String buildBookingHtml(Integer bookingId) {
+                Booking booking = bookingRepository.findById(bookingId)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到訂房編號 " + bookingId));
+
+                RoomType roomType = roomTypeRepository.findById(booking.getRoomTypeId())
+                                .orElseThrow(() -> new IllegalArgumentException("找不到房型"));
+
+                String memberInfo = profileRepository.findByAccountId(
+                                memberRepository.findById(booking.getMemberId())
+                                                .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
+                                                .getAccountId())
+                                .map(Profile::getEmail)
+                                .orElse("會員資訊不可用");
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("<!DOCTYPE html>");
+                sb.append("<html>");
+                sb.append("<head>");
+                sb.append("<meta charset='UTF-8'>");
+                sb.append("<style>");
+                sb.append("body{margin:0;padding:0;background-color:#f4f1ea;");
+                sb.append("font-family:'Microsoft JhengHei',Arial,sans-serif;color:#333333;}");
+                sb.append("a{text-decoration:none;}");
+                sb.append("</style>");
+                sb.append("</head>");
+                sb.append("<body>");
+
+                sb.append("<table role='presentation' width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='background-color:#f4f1ea;padding:35px 10px;'>");
+                sb.append("<tr>");
+                sb.append("<td align='center'>");
+
+                sb.append("<table role='presentation' width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='max-width:680px;background-color:#ffffff;");
+                sb.append("border-radius:12px;overflow:hidden;'>");
+
+                // HEADER
+                sb.append("<tr>");
+                sb.append("<td style='background-color:#2b2219;padding:35px 25px;text-align:center;'>");
+                sb.append("<div style='color:#d4af37;font-size:28px;font-weight:bold;letter-spacing:5px;'>星澄飯店</div>");
+                sb.append("<div style='margin-top:8px;color:#eae5dc;font-size:13px;letter-spacing:2px;'>GRAND ASTER HOTEL & RESORTS</div>");
+                sb.append("</td>");
+                sb.append("</tr>");
+
+                sb.append("<tr>");
+                sb.append("<td style='height:4px;background-color:#d4af37;'></td>");
+                sb.append("</tr>");
+
+                // CONTENT
+                sb.append("<tr>");
+                sb.append("<td style='padding:40px 35px;'>");
+
+                sb.append("<div style='text-align:center;margin-bottom:30px;'>");
+                sb.append("<div style='display:inline-block;background-color:#f4ead5;border:1px solid #e1c98a;border-radius:30px;padding:9px 22px;color:#8c692e;font-size:14px;font-weight:bold;'>");
+                sb.append("✓　訂房確認成功");
+                sb.append("</div>");
+                sb.append("</div>");
+
+                sb.append("<h1 style='margin:0;text-align:center;font-size:24px;font-weight:bold;color:#2b2219;'>感謝您的預訂</h1>");
+                sb.append("<p style='text-align:center;font-size:15px;line-height:1.8;color:#666666;margin:14px 0 32px 0;'>");
+                sb.append("親愛的貴賓您好，<br>");
+                sb.append("感謝您選擇星澄飯店。您的訂房已成功保留，<br>");
+                sb.append("以下為本次訂單的詳細資訊，敬請查閱。");
+                sb.append("</p>");
+
+                // ORDER INFO CARD
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='background-color:#faf7f2;border:1px solid #eee5d8;border-radius:8px;overflow:hidden;margin-bottom:30px;'>");
+                
+                sb.append("<tr>");
+                sb.append("<td colspan='2' style='padding:15px 20px;background-color:#4a3b2a;color:#ffffff;font-size:16px;font-weight:bold;'>");
+                sb.append("訂單資訊");
+                sb.append("</td>");
+                sb.append("</tr>");
+
+                sb.append("<tr>");
+                sb.append("<td style='padding:20px;width:50%;'>");
+                sb.append("<div style='font-size:12px;color:#888888;margin-bottom:5px;'>訂單編號</div>");
+                sb.append("<div style='font-size:22px;font-weight:bold;color:#9b7435;letter-spacing:1px;'>#").append(bookingId).append("</div>");
+                sb.append("</td>");
+                sb.append("<td style='padding:20px;width:50%;'>");
+                sb.append("<div style='font-size:12px;color:#888888;margin-bottom:5px;'>會員 Email</div>");
+                sb.append("<div style='font-size:14px;color:#444444;'>").append(memberInfo).append("</div>");
+                sb.append("</td>");
+                sb.append("</tr>");
+
+                sb.append("</table>");
+
+                // BOOKING DETAILS TITLE
+                sb.append("<h2 style='font-size:19px;color:#2b2219;margin:0 0 15px 0;padding-bottom:10px;border-bottom:2px solid #d4af37;'>");
+                sb.append("入住明細");
+                sb.append("</h2>");
+
+                // BOOKING TABLE
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='border-collapse:collapse;font-size:14px;margin-bottom:30px;'>");
+
+                // Check-in / Check-out
+                sb.append("<tr style='background-color:#ffffff;'>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#333333;width:25%;'>入住日期</td>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#555555;font-weight:bold;width:25%;'>").append(booking.getCheckInDate()).append(" 15:00</td>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#333333;width:25%;'>退房日期</td>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#555555;font-weight:bold;width:25%;'>").append(booking.getCheckOutDate()).append(" 11:00</td>");
+                sb.append("</tr>");
+
+                // Room Type & Guest Num
+                sb.append("<tr style='background-color:#faf7f2;'>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#333333;'>房型</td>");
+                sb.append("<td colspan='3' style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#555555;'>").append(roomType.getTypeName()).append("</td>");
+                sb.append("</tr>");
+
+                sb.append("<tr style='background-color:#ffffff;'>");
+                sb.append("<td style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#333333;'>入住人數</td>");
+                sb.append("<td colspan='3' style='padding:14px 10px;border-bottom:1px solid #eee8df;color:#555555;'>").append(booking.getGuestNum()).append(" 人</td>");
+                sb.append("</tr>");
+
+                sb.append("</table>");
+
+                // PRICE
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0' style='margin-top:20px;'>");
+                sb.append("<tr>");
+                sb.append("<td style='text-align:right;padding:15px 10px;color:#555555;font-size:15px;'>付款總金額</td>");
+                sb.append("<td width='150' style='text-align:right;padding:15px 10px;color:#9b7435;font-size:24px;font-weight:bold;'>$").append(booking.getBookingPrice()).append("</td>");
+                sb.append("</tr>");
+                sb.append("</table>");
+
+                // REMINDER
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='margin-top:30px;background-color:#faf7f2;border-left:4px solid #d4af37;'>");
+                sb.append("<tr><td style='padding:18px 20px;'>");
+                sb.append("<div style='font-size:15px;font-weight:bold;color:#4a3b2a;margin-bottom:8px;'>入住提醒</div>");
+                sb.append("<div style='font-size:13px;line-height:1.8;color:#777777;'>");
+                sb.append("請記得於入住當日攜帶有照片之身分證件。<br>若需延遲入住或有其他特殊需求，歡迎隨時與櫃檯聯繫。");
+                sb.append("</div>");
+                sb.append("</td></tr></table>");
+
+                // FOOTER GREETING
+                sb.append("<div style='text-align:center;margin-top:35px;'>");
+                sb.append("<div style='font-size:15px;font-weight:bold;color:#4a3b2a;margin-bottom:8px;'>期待您的蒞臨</div>");
+                sb.append("<div style='font-size:13px;line-height:1.7;color:#888888;'>感謝您選擇星澄飯店，<br>我們期待為您提供舒適而愉快的住宿體驗。</div>");
+                sb.append("</div>");
+
+                sb.append("</td></tr>");
+
+                // FOOTER BAR
+                sb.append("<tr>");
+                sb.append("<td style='background-color:#2b2219;padding:25px 20px;text-align:center;'>");
+                sb.append("<div style='color:#d4af37;font-size:15px;font-weight:bold;letter-spacing:2px;margin-bottom:8px;'>星澄飯店</div>");
+                sb.append("<div style='color:#c8c1b8;font-size:11px;line-height:1.6;'>Grand Aster Hotel & Resorts<br>© 2026 星澄飯店. All rights reserved.</div>");
+                sb.append("</td></tr>");
+
+                sb.append("</table>");
+                sb.append("</td></tr></table>");
+                sb.append("</body></html>");
 
                 return sb.toString();
         }

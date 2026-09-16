@@ -106,7 +106,23 @@
           </div>
         </div>
       </div>
-    </div>
+  </div>
+
+    <!-- 美化版提示 Modal -->
+    <Transition name="fade">
+      <div v-if="alertConfig.show" class="alert-overlay">
+        <div class="alert-modal">
+          <div class="alert-icon" :class="alertConfig.type">
+            <span v-if="alertConfig.type === 'success'">✓</span>
+            <span v-if="alertConfig.type === 'error'">✕</span>
+          </div>
+          <h3 class="alert-title">{{ alertConfig.title }}</h3>
+          <p class="alert-message">{{ alertConfig.message }}</p>
+          <button class="btn-alert" @click="closeAlert">我知道了</button>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -118,6 +134,24 @@ import { useAuthStore } from '../stores/auth';
 
 const route = useRoute();
 const router = useRouter();
+
+const alertConfig = ref({
+  show: false,
+  type: 'success',
+  title: '',
+  message: '',
+  onClose: null
+});
+
+function showAlert(type, title, message, onClose = null) {
+  alertConfig.value = { show: true, type, title, message, onClose };
+}
+
+function closeAlert() {
+  const onClose = alertConfig.value.onClose;
+  alertConfig.value.show = false;
+  if (onClose) onClose();
+}
 const authStore = useAuthStore();
 
 // 從 URL Query 取得選擇的資料
@@ -172,8 +206,9 @@ function startPolling(bookingId) {
         const data = await res.json();
         if (data.status === '已付款') {
           clearInterval(pollingInterval.value);
-          alert("付款成功！即將為您跳轉至首頁。");
-          router.push('/');
+          showAlert('success', '付款成功', '即將為您跳轉至首頁。', () => {
+            router.push('/');
+          });
         }
       }
     } catch (e) {
@@ -212,11 +247,12 @@ async function forceMockSuccess() {
     });
     if (res.ok) {
       // 輪詢會自動抓到並跳轉，或者我們直接跳轉
-      alert("開發模式：已強制模擬付款成功！");
       clearInterval(pollingInterval.value);
-      router.push('/');
+      showAlert('success', '開發模式：付款成功', '已強制模擬付款成功！即將為您跳轉至首頁。', () => {
+        router.push('/');
+      });
     } else {
-      alert("模擬失敗！");
+      showAlert('error', '模擬失敗', '無法完成強制模擬付款！');
     }
   } catch (e) {
     console.error(e);
@@ -230,11 +266,12 @@ async function forceMockFail() {
       method: 'POST'
     });
     if (res.ok) {
-      alert("開發模式：已強制模擬付款失敗！");
       clearInterval(pollingInterval.value);
-      router.push('/');
+      showAlert('error', '開發模式：付款失敗', '已強制模擬付款失敗！即將為您跳轉至首頁。', () => {
+        router.push('/');
+      });
     } else {
-      alert("模擬失敗！");
+      showAlert('error', '模擬失敗', '無法完成強制模擬付款！');
     }
   } catch (e) {
     console.error(e);
@@ -244,14 +281,15 @@ async function forceMockFail() {
 onMounted(() => {
   // 如果缺少必要參數，導回首頁
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
-    alert("缺少訂房參數，請重新選擇房型");
-    router.push('/room-booking');
+    showAlert('error', '缺少參數', '缺少訂房參數，請重新選擇房型', () => {
+      router.push('/room-booking');
+    });
   }
 });
 
 async function submitCheckout() {
   if (!form.value.name || !form.value.phone) {
-    alert("請填寫姓名與手機號碼！");
+    showAlert('error', '表單未完成', '請填寫姓名與手機號碼！');
     return;
   }
 
@@ -316,7 +354,7 @@ async function submitCheckout() {
 
   } catch (error) {
     console.error("Checkout failed:", error);
-    alert("結帳發生錯誤，請稍後再試！");
+    showAlert('error', '結帳錯誤', '結帳發生錯誤，請稍後再試！');
   } finally {
     isProcessing.value = false;
   }
@@ -602,6 +640,9 @@ async function submitCheckout() {
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px dashed #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .btn-mock {
@@ -639,4 +680,95 @@ async function submitCheckout() {
   margin-top: 0.5rem;
 }
 .btn-cancel:hover { background: #f5f5f5; }
+
+/* 美化提示 Modal */
+.alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.alert-modal {
+  background: white;
+  width: 90%;
+  max-width: 320px;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  animation: modalScaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.alert-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
+  color: white;
+}
+
+.alert-icon.success {
+  background: #C9A96E;
+  box-shadow: 0 4px 12px rgba(201, 169, 110, 0.3);
+}
+
+.alert-icon.error {
+  background: #e74c3c;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.alert-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px;
+}
+
+.alert-message {
+  font-size: 15px;
+  color: #666;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.btn-alert {
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-alert:hover {
+  background: #555;
+}
+
+@keyframes modalScaleUp {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>
