@@ -20,6 +20,7 @@ import com.hotel.model.dto.BookingPaymentDTO;
 import com.hotel.service.BookingPaymentService;
 import com.hotel.service.BookingService;
 import com.hotel.service.RoomBookingEcpayService;
+import com.hotel.util.MailUtil;
 
 @RestController
 @RequestMapping("/api/payments/ecpay")
@@ -28,11 +29,13 @@ public class RoomBookingEcpayController {
     private final RoomBookingEcpayService ecpayService;
     private final BookingService bookingService;
     private final BookingPaymentService bookingPaymentService;
+    private final MailUtil mailUtil;
 
-    public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService, BookingPaymentService bookingPaymentService) {
+    public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService, BookingPaymentService bookingPaymentService, MailUtil mailUtil) {
         this.ecpayService = ecpayService;
         this.bookingService = bookingService;
         this.bookingPaymentService = bookingPaymentService;
+        this.mailUtil = mailUtil;
     }
 
     // 1. 前端結帳時呼叫，取得綠界 HTML 表單
@@ -160,6 +163,13 @@ public class RoomBookingEcpayController {
                 payment.setTransactionId(tradeNo);
                 payment.setPaidAt(LocalDateTime.now());
                 bookingPaymentService.update(payment.getPaymentId(), payment);
+
+                // 發送訂房確認信
+                try {
+                    mailUtil.sendBookingConfirmation(bookingId);
+                } catch (Exception e) {
+                    System.err.println("寄信失敗：" + e.getMessage());
+                }
             }
             Map<String, String> response = new HashMap<>();
             response.put("message", "模擬付款成功");
