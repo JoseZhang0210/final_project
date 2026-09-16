@@ -52,6 +52,14 @@
             </div>
           </div>
 
+          <div class="service-section" v-if="canCheckIn(selectedBooking)">
+            <h3>辦理入住</h3>
+            <p class="service-desc">您可以線上產生入住 QR Code，並至櫃檯或自助機完成驗證。</p>
+            <button class="service-btn" @click="generateQrCode">
+              產生入住 QR Code
+            </button>
+          </div>
+
           <div class="service-section" v-if="selectedBooking.bookingStatus === '已入住' && selectedBooking.roomId">
             <h3>🧽 需要房務服務嗎？</h3>
             <p class="service-desc">由於您目前正在入住期間，您可以直接向櫃檯申請房務服務。</p>
@@ -72,8 +80,8 @@
             v-for="booking in paginatedBookings" 
             :key="booking.bookingId" 
             class="booking-card"
-            :class="{ 'clickable-card': booking.bookingStatus === '已入住' }"
-            @click="booking.bookingStatus === '已入住' ? (selectedBooking = booking) : null"
+            :class="{ 'clickable-card': booking.bookingStatus === '已入住' || canCheckIn(booking) }"
+            @click="(booking.bookingStatus === '已入住' || canCheckIn(booking)) ? (selectedBooking = booking) : null"
           >
             <div class="booking-header">
               <span class="booking-id">第 {{ getBookingIndex(booking) }} 次訂房</span>
@@ -139,6 +147,26 @@
         </div>
       </div>
 
+      <!-- 入住 QR Code Modal -->
+      <div v-if="showQrModal" class="modal-overlay">
+        <div class="modal-content qr-modal-content">
+          <h3>您的入住驗證碼</h3>
+          <p class="qr-desc">請向櫃檯人員或自助報到機出示此 QR Code</p>
+          <div class="qr-code-wrapper">
+            <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${verificationCode}`" alt="Check-in QR Code" />
+          </div>
+          <div class="verification-code">
+            驗證碼：<strong>{{ verificationCode }}</strong>
+          </div>
+          <div class="modal-actions qr-actions">
+            <button type="button" class="btn-cancel" @click="showQrModal = false">關閉</button>
+            <button type="button" class="btn-submit" @click="performCheckIn" :disabled="checkingIn">
+              {{ checkingIn ? '驗證中...' : '模擬掃描完成入住' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- 美化版提示 Modal -->
       <Transition name="fade">
         <div v-if="alertConfig.show" class="alert-overlay">
@@ -166,6 +194,9 @@ const bookings = ref([])
 const rooms = ref([])
 const roomTypes = ref([])
 const selectedBooking = ref(null)
+const checkingIn = ref(false)
+const showQrModal = ref(false)
+const verificationCode = ref('')
 
 const showServiceModal = ref(false)
 const submittingTask = ref(false)
@@ -333,6 +364,80 @@ async function submitRoomTask() {
     console.error('Submit task failed:', e)
   } finally {
     submittingTask.value = false
+  }
+}
+
+function canCheckIn(booking) {
+  if (!booking || booking.bookingStatus !== '待入住') return false;
+  
+  const now = new Date();
+  const checkInDateObj = new Date(booking.checkInDate + 'T15:00:00');
+  
+  return now >= checkInDateObj;
+}
+
+function generateQrCode() {
+  if (!selectedBooking.value) return;
+  // 產生一組隨機的臨時驗證碼
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  verificationCode.value = `CKIN-${selectedBooking.value.bookingId}-${randomStr}`;
+  showQrModal.value = true;
+}
+
+async function performCheckIn() {
+  if (!selectedBooking.value) return;
+  checkingIn.value = true;
+  
+  try {
+    const token = localStorage.getItem('token');
+    
+    // 找出該房型的空房 (此處為前端模擬分配房號，實際應由後端處理)
+    const availableRooms = rooms.value.filter(r => r.roomTypeId === selectedBooking.value.roomTypeId);
+    let assignedRoomId = selectedBooking.value.roomId;
+    
+    if (!assignedRoomId) {
+      if (availableRooms.length > 0) {
+        const randIndex = Math.floor(Math.random() * availableRooms.length);
+        assignedRoomId = availableRooms[randIndex].roomId;
+      } else {
+        assignedRoomId = Math.floor(Math.random() * 100) + 1;
+      }
+    }
+
+    const payload = {
+      ...selectedBooking.value,
+      roomId: assignedRoomId,
+      bookingStatus: '已入住'
+    };
+
+    const res = await fetch(`/api/bookings/${selectedBooking.value.bookingId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const updatedBooking = await res.json();
+      
+      const index = bookings.value.findIndex(b => b.bookingId === selectedBooking.value.bookingId);
+      if (index !== -1) {
+        bookings.value[index] = updatedBooking;
+      }
+      selectedBooking.value = updatedBooking;
+      
+      showQrModal.value = false;
+      showAlert('success', '入住成功', `已完成驗證，為您分配的房號為 ${getRoomNumber(assignedRoomId)}`);
+    } else {
+      showAlert('error', '入住失敗', '驗證失敗，請聯絡櫃檯人員');
+    }
+  } catch (e) {
+    console.error('Check-in failed:', e);
+    showAlert('error', '系統錯誤', '驗證發生錯誤');
+  } finally {
+    checkingIn.value = false;
   }
 }
 
@@ -615,6 +720,37 @@ function getStatusClass(status) {
 .btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.qr-modal-content {
+  text-align: center;
+}
+.qr-desc {
+  color: #666;
+  margin-bottom: 20px;
+}
+.qr-code-wrapper {
+  margin: 20px auto;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  display: inline-block;
+}
+.qr-code-wrapper img {
+  display: block;
+}
+.verification-code {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+.verification-code strong {
+  color: #C9A96E;
+  letter-spacing: 2px;
+}
+.qr-actions {
+  justify-content: center;
 }
 
 .pagination-controls {
