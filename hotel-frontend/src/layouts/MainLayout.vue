@@ -156,7 +156,7 @@ async function toggleAccount() {
 
         <RouterLink to="/products"> 商城商品 </RouterLink>
 
-        <RouterLink to="/room-booking"> 訂房管理 </RouterLink>
+        <RouterLink to="/room-booking"> 預訂訂房 </RouterLink>
 
         <RouterLink to="/restaurant-menu"> 餐廳 </RouterLink>
 

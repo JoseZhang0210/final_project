@@ -18,7 +18,7 @@ const loading = ref(false);
 // 下拉選單選項（與資料庫值對應）
 const priorities = ["一般", "重要", "緊急"];
 const taskStatuses = ["待處理", "進行中", "已完成", "已取消"];
-const taskTypes = ["退房清潔", "日常清潔", "設備維修", "停用維護", "補充備品", "其他"];
+const taskTypes = ["退房清潔", "日常清潔", "設備報修", "停用維護", "備品補充", "其他"];
 
 // 工單「進行中」時房間狀態 / 工單「已完成」時房間狀態
 // 對應 AdminRoomView 的房間狀態：可預訂、已預訂、已入住、退房待清潔、清潔中、維修中、停用
@@ -56,12 +56,16 @@ function closeFormModal() {
 }
 
 const filteredEmployees = computed(() => {
-  if (!form.value || !form.value.taskType) return employees.value;
+  if (!form.value || !form.value.taskType) return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
   if (form.value.taskType.includes("清潔")) {
     return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
   } else {
     return employees.value.filter(e => Number(e.employeeId) >= 25 && Number(e.employeeId) <= 28);
   }
+});
+
+const taskSearchEmployees = computed(() => {
+  return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
 });
 
 function createEmptyForm() {
@@ -436,9 +440,9 @@ function getTaskReminder(task) {
 
   const diffMins = Math.floor((currentTime.value.getTime() - expected.getTime()) / 60000);
   if (diffMins > 0) {
-    return `⚠️ 逾時 ${diffMins} 分`;
+    return `⚠️ 逾時\n${diffMins} 分`;
   } else {
-    return `剩餘 ${Math.abs(diffMins)} 分`;
+    return `剩餘\n${Math.abs(diffMins)} 分`;
   }
 }
 
@@ -513,6 +517,20 @@ const filteredTasks = computed(() => {
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const totalPages = computed(() => Math.ceil(filteredTasks.value.length / itemsPerPage));
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - 2);
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+  return pages;
+});
 const sortKey = ref("taskId");
 const sortOrder = ref("desc");
 
@@ -604,7 +622,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <label>負責員工</label>
           <select v-model="searchParams.employeeId">
             <option value="">全部</option>
-            <option v-for="employee in employees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeName }}</option>
+            <option v-for="employee in taskSearchEmployees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeId }} - {{ employee.employeeName }}</option>
           </select>
         </div>
         <div class="form-group" style="flex: 1; min-width: 150px;">
@@ -691,7 +709,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
             <div class="form-group">
               <label>建立時間</label>
-              <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
+              <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" :disabled="form.taskId !== null" />
             </div>
 
             <div class="form-group full-width">
@@ -714,10 +732,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <table>
           <thead>
             <tr>
-              <th @click="toggleSort('taskId')" class="sortable">
+              <th @click="toggleSort('taskId')" class="sortable" style="width: 60px;">
                 ID <span v-if="sortKey === 'taskId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th>房號</th>
+              <th style="width: 70px;">房號</th>
               <th>負責員工</th>
               <th>類型</th>
               <th>優先程度</th>
@@ -726,8 +744,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                 提醒狀態 <span v-if="sortKey === 'reminder'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th>建立時間</th>
-              <th>完成時間</th>
-              <th>備註</th>
+              <th class="narrow-col">完成時間</th>
+              <th class="narrow-col">備註</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -763,7 +781,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               </td>
 
               <td>
-                <span v-if="getTaskReminder(task)" :class="{'late-text': isTaskLate(task), 'safe-text': !isTaskLate(task)}" style="font-weight: bold;">
+                <span v-if="getTaskReminder(task)" :class="{'late-text': isTaskLate(task), 'safe-text': !isTaskLate(task)}" style="font-weight: bold; white-space: pre-line;">
                   {{ getTaskReminder(task) }}
                 </span>
                 <span v-else>-</span>
@@ -772,26 +790,27 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>
                 {{ formatDateTimeShort(task.createdAt ?? task.created_at) }}
               </td>
-              <td>
+              <td class="narrow-col">
                 {{ formatDateTimeShort(task.completedAt ?? task.completed_at) }}
               </td>
-              <td>{{ task.remark || "—" }}</td>
+              <td class="narrow-col">{{ task.remark || "—" }}</td>
 
               <td class="actions">
-                <button class="btn edit" @click="editRoomTask(task)">
-                  修改
-                </button>
-
                 <button
-                  v-if="(task.taskStatus ?? task.task_status) !== '已完成'"
-                  class="btn finish"
+                  v-if="!['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)"
+                  class="btn finish btn-condensed"
                   @click="completeRoomTask(task)"
                 >
                   完成
                 </button>
 
+                <button class="btn edit" :class="{'btn-condensed': !['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)}" @click="editRoomTask(task)">
+                  修改
+                </button>
+
                 <button
                   class="btn delete"
+                  :class="{'btn-condensed': !['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)}"
                   @click="deleteRoomTask(task.taskId ?? task.task_id)"
                 >
                   刪除
@@ -801,10 +820,29 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      <div class="pagination-area" v-if="totalPages > 1">
+        <div class="pagination-info">
+          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
+        </div>
+
+        <div class="pagination">
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page" 
+            type="button" 
+            class="page-button" 
+            :class="{ active: currentPage === page }" 
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+          
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
+        </div>
       </div>
   
 
@@ -894,11 +932,36 @@ textarea {
   border-radius: 7px;
 }
 
-.form-actions,
-.actions {
+textarea {
+  resize: none;
+  overflow-y: auto;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f5f5f5;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.form-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.actions .btn {
+  margin-right: 8px;
+}
+
+.actions .btn:last-child {
+  margin-right: 0;
 }
 
 .form-actions {
@@ -912,6 +975,10 @@ textarea {
   border-radius: 7px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.btn-condensed {
+  padding: 6px 8px !important;
 }
 
 .primary {
@@ -968,8 +1035,8 @@ table {
 
 th,
 td {
-  min-width: 90px;
-  padding: 12px;
+  min-width: 50px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid #e4e7ec;
 }
@@ -982,6 +1049,14 @@ th {
   display: inline-block;
   padding: 5px 9px;
   border-radius: 20px;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 58px;
+}
+
+.narrow-col {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 
 .low,
@@ -1025,7 +1100,14 @@ tr.late-warning:hover td {
     grid-column: auto;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
+.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
+.pagination-info { color: #857a70; font-size: 13px; }
+.pagination-info strong { color: #9b7435; }
+.pagination { display: flex; align-items: center; gap: 6px; }
+.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
+.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
+.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
+.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 
 .quick-filter-select {
   padding: 6px 10px;
