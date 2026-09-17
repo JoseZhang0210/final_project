@@ -183,10 +183,8 @@
 
               <td>
                 <div class="name-cell">
-                  <div class="name-text-group">
-                    <span class="item-name">{{ member.name || "未填姓名" }}</span>
-                    <span class="item-username">(@{{ member.username }})</span>
-                  </div>
+                  <span class="item-name" :title="member.name">{{ member.name || "未填姓名" }}</span>
+                  <span class="item-username" :title="'@' + member.username">(@{{ member.username }})</span>
                 </div>
               </td>
 
@@ -1020,39 +1018,6 @@ onMounted(async () => {
 <style scoped>
 .member-manage-page {
   width: 100%;
-}
-
-.name-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.table-avatar-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #b58a46, #8f692f);
-  color: #fff;
-  font-size: 14px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.table-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.name-text-group {
-  display: flex;
-  flex-direction: column;
 }
 
 .admin-avatar-upload-box {
