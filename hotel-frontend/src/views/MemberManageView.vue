@@ -183,8 +183,14 @@
 
               <td>
                 <div class="name-cell">
-                  <span class="item-name">{{ member.name || "未填姓名" }}</span>
-                  <span class="item-username">(@{{ member.username }})</span>
+                  <div class="table-avatar-circle">
+                    <img v-if="member.avatarUrl" :src="member.avatarUrl" alt="Avatar" class="table-avatar-img" />
+                    <span v-else>{{ (member.name || member.username || "客").charAt(0) }}</span>
+                  </div>
+                  <div class="name-text-group">
+                    <span class="item-name">{{ member.name || "未填姓名" }}</span>
+                    <span class="item-username">(@{{ member.username }})</span>
+                  </div>
                 </div>
               </td>
 
@@ -409,6 +415,27 @@
               <label> 詳細地址 </label>
               <input v-model="form.address" type="text" placeholder="請輸入詳細街道地址" />
             </div>
+
+            <div class="admin-form-group full-width">
+              <label> 會員頭像 </label>
+              <div class="admin-avatar-upload-box">
+                <div class="admin-avatar-preview-circle">
+                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <span v-else>{{ (form.name || form.username || "客").charAt(0) }}</span>
+                </div>
+                <div v-if="editingMemberId !== null" class="admin-avatar-input-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="admin-avatar-file-input"
+                    :disabled="uploadingAvatar"
+                    @change="handleAdminAvatarUpload"
+                  />
+                  <span class="input-hint-text">{{ uploadingAvatar ? "上傳中..." : "選擇圖片上傳更新頭像" }}</span>
+                </div>
+                <span v-else class="input-hint-text">（新增會員完成後即可進行頭像上傳）</span>
+              </div>
+            </div>
           </div>
 
           <div class="admin-modal-footer">
@@ -489,6 +516,7 @@ const { selectedIds: selectedMemberIds, isAllSelected, toggleSelectAll, clearSel
 // 表單
 const modalOpen = ref(false);
 const editingMemberId = ref(null);
+const uploadingAvatar = ref(false);
 const form = reactive({
   username: "",
   password: "",
@@ -502,6 +530,7 @@ const form = reactive({
   city: "",
   district: "",
   address: "",
+  avatarUrl: "",
 });
 
 // 匯出 / 匯入
@@ -625,6 +654,7 @@ function openCreateModal() {
   form.city = "";
   form.district = "";
   form.address = "";
+  form.avatarUrl = "";
   modalOpen.value = true;
 }
 
@@ -642,7 +672,53 @@ function openEditModal(member) {
   form.city = member.city || "";
   form.district = member.district || "";
   form.address = member.address || "";
+  form.avatarUrl = member.avatarUrl || "";
   modalOpen.value = true;
+}
+
+async function handleAdminAvatarUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || editingMemberId.value === null) return;
+
+  if (!file.type.startsWith("image/")) {
+    showMessage("請選擇有效的圖片檔案", "error");
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) headers.Authorization = "Bearer " + token;
+
+    const res = await fetch(`${API_URL}/${editingMemberId.value}/avatar`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showMessage(err.message || "頭像上傳失敗", "error");
+      return;
+    }
+
+    const updated = await res.json();
+    if (updated && updated.avatarUrl) {
+      form.avatarUrl = updated.avatarUrl;
+      showMessage("會員頭像上傳成功", "success");
+      await loadMembers();
+    }
+  } catch (err) {
+    console.error("管理員上傳頭像錯誤：", err);
+    showMessage("頭像上傳失敗", "error");
+  } finally {
+    uploadingAvatar.value = false;
+    event.target.value = "";
+  }
 }
 
 function closeModal() {
@@ -948,5 +1024,83 @@ onMounted(async () => {
 <style scoped>
 .member-manage-page {
   width: 100%;
+}
+
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b58a46, #8f692f);
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.table-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.name-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-avatar-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.admin-avatar-preview-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b58a46, #8f692f);
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #eee7dd;
+}
+
+.admin-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.admin-avatar-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-avatar-file-input {
+  font-size: 13px;
+}
+
+.input-hint-text {
+  font-size: 12px;
+  color: #887864;
 }
 </style>

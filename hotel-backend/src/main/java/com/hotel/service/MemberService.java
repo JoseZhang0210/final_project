@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.MemberDTO;
 import com.hotel.model.entity.Account;
@@ -144,6 +146,9 @@ public class MemberService {
         profile.setAddress(dto.getAddress());
         profile.setBirthday(dto.getBirthday());
         profile.setGender(dto.getGender());
+        if (dto.getAvatarUrl() != null) {
+            profile.setAvatarUrl(dto.getAvatarUrl());
+        }
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
         Profile savedProfile = profileRepository.save(profile);
@@ -205,6 +210,8 @@ public class MemberService {
                 profile.setBirthday(dto.getBirthday());
             if (dto.getGender() != null)
                 profile.setGender(dto.getGender());
+            if (dto.getAvatarUrl() != null)
+                profile.setAvatarUrl(dto.getAvatarUrl());
             profile.setUpdatedAt(LocalDateTime.now());
             profile = profileRepository.save(profile);
         }
@@ -327,6 +334,78 @@ public class MemberService {
     }
 
     // =========================================
+    // 10. 上傳/更新會員頭像
+    // =========================================
+    public MemberDTO updateAvatarByUsername(String username, MultipartFile file) {
+        Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            throw new IllegalArgumentException("查無此帳號");
+        }
+        Member member = memberRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (member == null) {
+            throw new IllegalArgumentException("查無會員資料");
+        }
+        return saveAvatarFile(member, account, file);
+    }
+
+    public MemberDTO updateAvatarByMemberId(Integer memberId, MultipartFile file) {
+        Member member = memberRepository.findById(memberId).orElse(null);
+        if (member == null) {
+            throw new IllegalArgumentException("查無會員資料");
+        }
+        Account account = accountRepository.findById(member.getAccountId()).orElse(null);
+        return saveAvatarFile(member, account, file);
+    }
+
+    private MemberDTO saveAvatarFile(Member member, Account account, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("請選擇要上傳的頭像圖片");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("圖片檔案大小不能超過 5MB");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("請上傳有效的圖片檔案 (JPG, PNG, WEBP, GIF 等)");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String ext = "jpg";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            ext = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+        }
+
+        String fileName = "avatar-" + member.getAccountId() + "-" + System.currentTimeMillis() + "." + ext;
+
+        try {
+            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "avatars").toAbsolutePath().normalize();
+            if (!java.nio.file.Files.exists(uploadDir)) {
+                java.nio.file.Files.createDirectories(uploadDir);
+            }
+
+            java.nio.file.Path targetPath = uploadDir.resolve(fileName);
+            java.nio.file.Files.copy(file.getInputStream(), targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            Profile profile = profileRepository.findByAccountId(member.getAccountId()).orElse(null);
+            if (profile == null) {
+                profile = new Profile();
+                profile.setAccountId(member.getAccountId());
+                profile.setCreatedAt(LocalDateTime.now());
+            }
+            String avatarUrl = "/uploads/avatars/" + fileName;
+            profile.setAvatarUrl(avatarUrl);
+            profile.setUpdatedAt(LocalDateTime.now());
+            profile = profileRepository.save(profile);
+
+            return toDTO(member, account, profile);
+        } catch (IOException e) {
+            throw new RuntimeException("頭像圖片儲存失敗：" + e.getMessage(), e);
+        }
+    }
+
+    // =========================================
     // 輔助方法：Entity -> DTO 轉換
     // =========================================
     private MemberDTO toDTO(Member member, Account account, Profile profile) {
@@ -353,6 +432,7 @@ public class MemberService {
             dto.setBirthday(profile.getBirthday());
             dto.setGender(profile.getGender());
             dto.setUpdatedAt(profile.getUpdatedAt());
+            dto.setAvatarUrl(profile.getAvatarUrl());
         }
         return dto;
     }

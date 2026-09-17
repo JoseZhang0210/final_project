@@ -29,6 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
             : []
     )
     const name = ref(localStorage.getItem('name') || '')
+    const avatarUrl = ref(localStorage.getItem('avatarUrl') || '')
 
     let refreshTimer = null
     let refreshPromise = null
@@ -95,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // 登入成功時呼叫
-    function login(token, userAuthorities, userName) {
+    function login(token, userAuthorities, userName, userAvatarUrl) {
         // 確保傳進來的 userAuthorities 是一組陣列（防呆）
         const authArray = Array.isArray(userAuthorities) ? userAuthorities : [userAuthorities];
 
@@ -108,14 +109,19 @@ export const useAuthStore = defineStore('auth', () => {
         // 儲存使用者姓名
         const displayName = userName || ''
         localStorage.setItem('name', displayName)
+
+        // 儲存使用者頭像網址
+        const userAvatar = userAvatarUrl || ''
+        localStorage.setItem('avatarUrl', userAvatar)
         
         // 更新 Pinia 狀態
         isLoggedIn.value = true
         authorities.value = authArray // 直接賦值陣列，千萬不要用 JSON.parse()
         name.value = displayName
+        avatarUrl.value = userAvatar
         
         startAutoRefreshTimer();
-        console.log("Pinia 權限與使用者資訊更新成功：", { authorities: authorities.value, name: name.value });
+        console.log("Pinia 權限與使用者資訊更新成功：", { authorities: authorities.value, name: name.value, avatarUrl: avatarUrl.value });
     }
 
     // 登出時呼叫
@@ -125,12 +131,14 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem("token");
         // 清除角色 / 權限
         localStorage.removeItem("authorities");
-        // 清除姓名
+        // 清除姓名與頭像
         localStorage.removeItem("name");
+        localStorage.removeItem("avatarUrl");
 
         isLoggedIn.value = false
         authorities.value = []
         name.value = ''
+        avatarUrl.value = ''
         console.log("已登出，JWT 已清除");
     }
 
@@ -139,6 +147,13 @@ export const useAuthStore = defineStore('auth', () => {
         const displayName = newName || ''
         localStorage.setItem('name', displayName)
         name.value = displayName
+    }
+
+    // 更新使用者頭像網址
+    function updateAvatarUrl(newAvatarUrl) {
+        const userAvatar = newAvatarUrl || ''
+        localStorage.setItem('avatarUrl', userAvatar)
+        avatarUrl.value = userAvatar
     }
 
     // 主動向後端刷新 Token
@@ -163,7 +178,7 @@ export const useAuthStore = defineStore('auth', () => {
                 if (res.ok) {
                     const data = await res.json();
                     if (data.token) {
-                        login(data.token, data.authorities || authorities.value, data.name || name.value);
+                        login(data.token, data.authorities || authorities.value, data.name || name.value, data.avatarUrl || avatarUrl.value);
                         console.log("Token 自動續期成功");
                         return true;
                     }
@@ -213,6 +228,7 @@ export const useAuthStore = defineStore('auth', () => {
         isLoggedIn, 
         authorities, 
         name, 
+        avatarUrl,
         isEmployee,
         isSuperAdmin,
         userPosition,
@@ -221,6 +237,7 @@ export const useAuthStore = defineStore('auth', () => {
         login, 
         logout, 
         updateName, 
+        updateAvatarUrl,
         refreshToken, 
         checkAndRefreshToken,
         startAutoRefreshTimer,

@@ -182,6 +182,7 @@ public class AuthController {
             response.put("token", token);
             response.put("authorities", authorities);
             response.put("name", displayName);
+            response.put("avatarUrl", createdMember.getAvatarUrl());
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -218,13 +219,16 @@ public class AuthController {
                 .collect(java.util.stream.Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
-        String name = profileRepository.findByUsername(user.getUsername())
-                .map(Profile::getName)
-                .orElse(user.getUsername());
+        Profile userProfile = profileRepository.findByUsername(user.getUsername()).orElse(null);
+        String name = (userProfile != null && userProfile.getName() != null && !userProfile.getName().isBlank())
+                ? userProfile.getName()
+                : user.getUsername();
+        String avatarUrl = userProfile != null ? userProfile.getAvatarUrl() : null;
 
         response.put("token", token);
         response.put("authorities", authorities);
         response.put("name", name);
+        response.put("avatarUrl", avatarUrl);
         return ResponseEntity.ok(response);
     }
 
@@ -296,6 +300,7 @@ public class AuthController {
             response.put("token", token);
             response.put("authorities", authorities);
             response.put("name", displayName);
+            response.put("avatarUrl", profile != null ? profile.getAvatarUrl() : null);
             response.put("username", user.getUsername());
             return ResponseEntity.ok(response);
         } else {
@@ -348,14 +353,17 @@ public class AuthController {
                     .filter(java.util.Objects::nonNull)
                     .collect(java.util.stream.Collectors.toList());
 
-            String name = profileRepository.findByUsername(user.getUsername())
-                    .map(Profile::getName)
-                    .orElse(user.getUsername());
+            Profile userProfile = profileRepository.findByUsername(user.getUsername()).orElse(null);
+            String name = (userProfile != null && userProfile.getName() != null && !userProfile.getName().isBlank())
+                    ? userProfile.getName()
+                    : user.getUsername();
+            String avatarUrl = userProfile != null ? userProfile.getAvatarUrl() : null;
 
             Map<String, Object> response = new HashMap<>();
             response.put("token", newToken);
             response.put("authorities", authorities);
             response.put("name", name);
+            response.put("avatarUrl", avatarUrl);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
