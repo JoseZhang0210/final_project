@@ -9,7 +9,18 @@
 
         <!-- Google 帳號帶入提示橫幅 -->
         <div v-if="isGoogleSignup" class="google-notice-banner">
-          <div class="google-badge-icon">
+          <div v-if="googleInfo.avatarUrl" class="google-avatar-wrapper">
+            <img :src="googleInfo.avatarUrl" alt="Google Avatar" class="google-avatar-preview" />
+            <div class="google-badge-sub-icon">
+              <svg viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+            </div>
+          </div>
+          <div v-else class="google-badge-icon">
             <svg viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -20,7 +31,7 @@
           <div class="google-notice-content">
             <div class="google-notice-title">Google 帳號資料已自動帶入</div>
             <div class="google-notice-desc">
-              已由 Google 帶入信箱 <strong>{{ googleInfo.email }}</strong> 與姓名 <strong>{{ googleInfo.name }}</strong>。請設定您的帳號密碼與個人資料即可完成註冊。
+              已由 Google 帶入信箱 <strong>{{ googleInfo.email }}</strong>、姓名 <strong>{{ googleInfo.name }}</strong><span v-if="googleInfo.avatarUrl"> 與<strong>個人頭像</strong></span>。請設定您的帳號密碼與個人資料即可完成註冊。
             </div>
           </div>
         </div>
@@ -394,6 +405,7 @@ const isGoogleSignup = ref(false);
 const googleInfo = reactive({
   email: "",
   name: "",
+  avatarUrl: "",
 });
 
 // 表單與錯誤訊息
@@ -404,6 +416,7 @@ const form = reactive({
   email: "",
   verificationCode: "",
   name: "",
+  avatarUrl: "",
   gender: "其他",
   phone: "",
   birthday: "",
@@ -439,12 +452,14 @@ onMounted(() => {
   const queryFrom = route.query.from;
   const queryEmail = route.query.email ? decodeURIComponent(route.query.email) : "";
   const queryName = route.query.name ? decodeURIComponent(route.query.name) : "";
+  const queryAvatarUrl = route.query.avatarUrl ? decodeURIComponent(route.query.avatarUrl) : "";
   const queryCode = route.query.code || "";
 
   if (queryFrom === "google" || (googleData && googleData.from === "google")) {
     isGoogleSignup.value = true;
     const targetEmail = queryEmail || googleData?.email || "";
     const targetName = queryName || googleData?.name || "";
+    const targetAvatarUrl = queryAvatarUrl || googleData?.avatarUrl || "";
     const targetCode = queryCode || googleData?.googleVerifiedCode || "";
 
     if (targetEmail) {
@@ -454,6 +469,10 @@ onMounted(() => {
     if (targetName) {
       form.name = targetName;
       googleInfo.name = targetName;
+    }
+    if (targetAvatarUrl) {
+      form.avatarUrl = targetAvatarUrl;
+      googleInfo.avatarUrl = targetAvatarUrl;
     }
     if (targetCode) {
       form.verificationCode = targetCode;
@@ -609,6 +628,7 @@ async function register() {
     email: form.email.trim(),
     verificationCode: form.verificationCode.trim(),
     name: form.name.trim(),
+    avatarUrl: form.avatarUrl ? form.avatarUrl.trim() : null,
     gender: form.gender,
     phone: form.phone.trim(),
     birthday: form.birthday || null,
@@ -645,7 +665,7 @@ async function register() {
     sessionStorage.removeItem("google_signup_data");
 
     if (data.token && data.authorities) {
-      authStore.login(data.token, data.authorities, data.name);
+      authStore.login(data.token, data.authorities, data.name, data.avatarUrl || form.avatarUrl);
     } else {
       try {
         const loginResponse = await fetch("/api/auth/login", {
@@ -658,7 +678,7 @@ async function register() {
         });
         if (loginResponse.ok) {
           const loginData = await loginResponse.json();
-          authStore.login(loginData.token, loginData.authorities, loginData.name);
+          authStore.login(loginData.token, loginData.authorities, loginData.name, loginData.avatarUrl || form.avatarUrl);
         }
       } catch (loginError) {
         console.error("自動登入失敗：", loginError);

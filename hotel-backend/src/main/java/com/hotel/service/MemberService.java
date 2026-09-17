@@ -1,5 +1,6 @@
 package com.hotel.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.MemberDTO;
 import com.hotel.model.entity.Account;
@@ -26,16 +28,19 @@ public class MemberService {
     private final AccountRepository accountRepository;
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvatarStorageService avatarStorageService;
 
     public MemberService(
             MemberRepository memberRepository,
             AccountRepository accountRepository,
             ProfileRepository profileRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AvatarStorageService avatarStorageService) {
         this.memberRepository = memberRepository;
         this.accountRepository = accountRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.avatarStorageService = avatarStorageService;
     }
 
     // =========================================
@@ -144,6 +149,9 @@ public class MemberService {
         profile.setAddress(dto.getAddress());
         profile.setBirthday(dto.getBirthday());
         profile.setGender(dto.getGender());
+        if (dto.getAvatarUrl() != null) {
+            profile.setAvatarUrl(dto.getAvatarUrl());
+        }
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
         Profile savedProfile = profileRepository.save(profile);
@@ -205,6 +213,8 @@ public class MemberService {
                 profile.setBirthday(dto.getBirthday());
             if (dto.getGender() != null)
                 profile.setGender(dto.getGender());
+            if (dto.getAvatarUrl() != null)
+                profile.setAvatarUrl(dto.getAvatarUrl());
             profile.setUpdatedAt(LocalDateTime.now());
             profile = profileRepository.save(profile);
         }
@@ -327,6 +337,36 @@ public class MemberService {
     }
 
     // =========================================
+    // 10. 上傳/更新會員頭像
+    // =========================================
+    public MemberDTO updateAvatarByUsername(String username, MultipartFile file) {
+        Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            throw new IllegalArgumentException("查無此帳號");
+        }
+        Member member = memberRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (member == null) {
+            throw new IllegalArgumentException("查無會員資料");
+        }
+        return saveAvatarFile(member, account, file);
+    }
+
+    public MemberDTO updateAvatarByMemberId(Integer memberId, MultipartFile file) {
+        Member member = memberRepository.findById(memberId).orElse(null);
+        if (member == null) {
+            throw new IllegalArgumentException("查無會員資料");
+        }
+        Account account = accountRepository.findById(member.getAccountId()).orElse(null);
+        return saveAvatarFile(member, account, file);
+    }
+
+    private MemberDTO saveAvatarFile(Member member, Account account, MultipartFile file) {
+        avatarStorageService.storeAvatar(member.getAccountId(), file);
+        Profile profile = profileRepository.findByAccountId(member.getAccountId()).orElse(null);
+        return toDTO(member, account, profile);
+    }
+
+    // =========================================
     // 輔助方法：Entity -> DTO 轉換
     // =========================================
     private MemberDTO toDTO(Member member, Account account, Profile profile) {
@@ -353,6 +393,7 @@ public class MemberService {
             dto.setBirthday(profile.getBirthday());
             dto.setGender(profile.getGender());
             dto.setUpdatedAt(profile.getUpdatedAt());
+            dto.setAvatarUrl(profile.getAvatarUrl());
         }
         return dto;
     }

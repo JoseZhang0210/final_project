@@ -36,4 +36,5 @@ public class Profile {
     private LocalDate birthday;
     private String gender;
     private LocalDateTime updatedAt;
+    private String avatarUrl;
 }

@@ -9,7 +9,7 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const toastStore = useToastStore();
-const { isLoggedIn, name, authorities } = storeToRefs(authStore);
+const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
 
 const cartCount = ref(0);
 
@@ -101,7 +101,7 @@ async function toggleAccount() {
     }
 
     const data = await res.json();
-    authStore.login(data.token, data.authorities, data.name);
+    authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
     toastStore.showToast(`已切換至${targetLabel}`, "success");
 
     // 若切換為會員且目前在後台頁面，自動導向首頁避免權限錯誤
@@ -176,7 +176,10 @@ async function toggleAccount() {
         <!-- 已登入狀態：<使用者名字> 您好 下拉選單 -->
         <div v-else class="user-dropdown-container">
           <button type="button" class="user-dropdown-btn">
-            <span class="user-avatar-mini">{{ userInitial }}</span>
+            <span class="user-avatar-mini">
+              <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <span v-else>{{ userInitial }}</span>
+            </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>
             <span class="dropdown-arrow">▾</span>
           </button>
@@ -352,6 +355,14 @@ nav a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.avatar-mini-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-greeting-text {
