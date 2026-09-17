@@ -1019,49 +1019,4 @@ onMounted(async () => {
 .member-manage-page {
   width: 100%;
 }
-
-.admin-avatar-upload-box {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.admin-avatar-preview-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #b58a46, #8f692f);
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 2px solid #eee7dd;
-}
-
-.admin-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.admin-avatar-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.admin-avatar-file-input {
-  font-size: 13px;
-}
-
-.input-hint-text {
-  font-size: 12px;
-  color: #887864;
-}
 </style>

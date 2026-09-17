@@ -590,6 +590,27 @@
               <label> 詳細地址 </label>
               <input v-model="form.address" type="text" placeholder="請輸入詳細街道地址" />
             </div>
+
+            <div class="admin-form-group full-width">
+              <label> 員工頭像 </label>
+              <div class="admin-avatar-upload-box">
+                <div class="admin-avatar-preview-circle">
+                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <span v-else>{{ (form.name || form.username || "員").charAt(0) }}</span>
+                </div>
+                <div v-if="editingEmployeeId !== null" class="admin-avatar-input-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="admin-avatar-file-input"
+                    :disabled="uploadingAvatar"
+                    @change="handleAdminAvatarUpload"
+                  />
+                  <span class="input-hint-text">{{ uploadingAvatar ? "上傳中..." : "選擇圖片上傳更新頭像" }}</span>
+                </div>
+                <span v-else class="input-hint-text">（新增員工完成後即可進行頭像上傳）</span>
+              </div>
+            </div>
           </div>
 
           <!-- 權限設定 -->
@@ -950,6 +971,7 @@ const { selectedIds: selectedEmployeeIds, isAllSelected, toggleSelectAll, clearS
 // 表單
 const modalOpen = ref(false);
 const editingEmployeeId = ref(null);
+const uploadingAvatar = ref(false);
 const form = reactive({
   username: "",
   password: "",
@@ -959,6 +981,7 @@ const form = reactive({
   position: "",
   permissionIds: [],
   name: "",
+  avatarUrl: "",
   email: "",
   phone: "",
   gender: "男",
@@ -1198,6 +1221,7 @@ function openCreateModal() {
   form.position = "";
   form.permissionIds = [];
   form.name = "";
+  form.avatarUrl = "";
   form.email = "";
   form.phone = "";
   form.gender = "男";
@@ -1233,6 +1257,7 @@ function openEditModal(employee) {
   form.position = employee.position || "";
   form.permissionIds = Array.isArray(employee.permissionIds) ? [...employee.permissionIds] : [];
   form.name = employee.name || "";
+  form.avatarUrl = employee.avatarUrl || "";
   form.email = employee.email || "";
   form.phone = employee.phone || "";
   form.gender = employee.gender || "男";
@@ -1242,6 +1267,59 @@ function openEditModal(employee) {
   form.district = employee.district || "";
   form.address = employee.address || "";
   modalOpen.value = true;
+}
+
+async function handleAdminAvatarUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || editingEmployeeId.value === null) return;
+
+  if (!file.type.startsWith("image/")) {
+    showMessage("請選擇有效的圖片檔案 (JPG, PNG, WEBP 等)", "error");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showMessage("圖片檔案大小不能超過 5MB", "error");
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) headers.Authorization = "Bearer " + token;
+
+    const res = await fetch(`${API_URL}/${editingEmployeeId.value}/avatar`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showMessage(err.message || "頭像上傳失敗", "error");
+      return;
+    }
+
+    const updated = await res.json();
+    if (updated && updated.avatarUrl) {
+      form.avatarUrl = updated.avatarUrl;
+      if (isEditingSelf.value) {
+        authStore.updateAvatarUrl(updated.avatarUrl);
+      }
+      showMessage("員工頭像上傳成功", "success");
+      await loadEmployees();
+    }
+  } catch (err) {
+    console.error("管理員上傳員工頭像錯誤：", err);
+    showMessage("頭像上傳失敗", "error");
+  } finally {
+    uploadingAvatar.value = false;
+    event.target.value = "";
+  }
 }
 
 function closeModal() {
@@ -1289,6 +1367,7 @@ async function saveEmployee() {
     position: form.position.trim(),
     permissionIds: Array.isArray(form.permissionIds) ? form.permissionIds : [],
     name: form.name.trim(),
+    avatarUrl: form.avatarUrl || null,
     email: form.email.trim(),
     phone: form.phone.trim(),
     gender: form.gender,

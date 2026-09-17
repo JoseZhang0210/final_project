@@ -28,16 +28,19 @@ public class MemberService {
     private final AccountRepository accountRepository;
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvatarStorageService avatarStorageService;
 
     public MemberService(
             MemberRepository memberRepository,
             AccountRepository accountRepository,
             ProfileRepository profileRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AvatarStorageService avatarStorageService) {
         this.memberRepository = memberRepository;
         this.accountRepository = accountRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
+        this.avatarStorageService = avatarStorageService;
     }
 
     // =========================================
@@ -358,51 +361,9 @@ public class MemberService {
     }
 
     private MemberDTO saveAvatarFile(Member member, Account account, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("請選擇要上傳的頭像圖片");
-        }
-
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("圖片檔案大小不能超過 5MB");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("請上傳有效的圖片檔案 (JPG, PNG, WEBP, GIF 等)");
-        }
-
-        String originalFilename = file.getOriginalFilename();
-        String ext = "jpg";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            ext = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
-        }
-
-        String fileName = "avatar-" + member.getAccountId() + "-" + System.currentTimeMillis() + "." + ext;
-
-        try {
-            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "avatars").toAbsolutePath().normalize();
-            if (!java.nio.file.Files.exists(uploadDir)) {
-                java.nio.file.Files.createDirectories(uploadDir);
-            }
-
-            java.nio.file.Path targetPath = uploadDir.resolve(fileName);
-            java.nio.file.Files.copy(file.getInputStream(), targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            Profile profile = profileRepository.findByAccountId(member.getAccountId()).orElse(null);
-            if (profile == null) {
-                profile = new Profile();
-                profile.setAccountId(member.getAccountId());
-                profile.setCreatedAt(LocalDateTime.now());
-            }
-            String avatarUrl = "/uploads/avatars/" + fileName;
-            profile.setAvatarUrl(avatarUrl);
-            profile.setUpdatedAt(LocalDateTime.now());
-            profile = profileRepository.save(profile);
-
-            return toDTO(member, account, profile);
-        } catch (IOException e) {
-            throw new RuntimeException("頭像圖片儲存失敗：" + e.getMessage(), e);
-        }
+        avatarStorageService.storeAvatar(member.getAccountId(), file);
+        Profile profile = profileRepository.findByAccountId(member.getAccountId()).orElse(null);
+        return toDTO(member, account, profile);
     }
 
     // =========================================
