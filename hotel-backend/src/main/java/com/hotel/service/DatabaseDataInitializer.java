@@ -62,9 +62,6 @@ import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.repository.VenueRepository;
-import com.hotel.service.RoomService;
-import com.hotel.service.RoomTypeService;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -280,7 +277,8 @@ public class DatabaseDataInitializer implements ApplicationRunner {
         if (productRepository.count() == 0) {
             List<ProductJsonDTO> list = loadListFromClasspath("data/seed/09_products.json", ProductJsonDTO.class);
             Map<Integer, Category> categoryMap = categoryRepository.findAll().stream()
-                    .collect(Collectors.toMap(Category::getCategoryId, c -> c));
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toMap(c -> c != null ? c.getCategoryId() : null, c -> c));
 
             int count = 0;
             for (ProductJsonDTO dto : list) {
@@ -455,15 +453,14 @@ public class DatabaseDataInitializer implements ApplicationRunner {
         if (bookingRepository.count() == 0) {
             java.time.LocalDate today = java.time.LocalDate.now();
             int currentHour = java.time.LocalDateTime.now().getHour();
-            int bookingIdCounter = 1;
-
             dynamicPayments.clear();
             dynamicTasks.clear();
 
             java.util.Random rand = new java.util.Random();
             java.util.List<com.hotel.model.entity.Room> allRooms = roomRepository.findAll();
             java.util.Map<Integer, java.util.List<com.hotel.model.entity.Room>> roomsByType = allRooms.stream()
-                    .collect(java.util.stream.Collectors.groupingBy(com.hotel.model.entity.Room::getRoomTypeId));
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.groupingBy(r -> r != null ? r.getRoomTypeId() : null));
             java.util.Map<Integer, java.time.LocalDate> roomAvailableFrom = new java.util.HashMap<>();
 
             for (int dayOffset = -5; dayOffset <= 5; dayOffset++) {
