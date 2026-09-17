@@ -1,8 +1,13 @@
 package com.hotel.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.dto.MemberDTO;
+import com.hotel.model.dto.MemberDemographicsDTO;
 import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Member;
 import com.hotel.model.entity.Profile;
@@ -355,5 +361,203 @@ public class MemberService {
             dto.setUpdatedAt(profile.getUpdatedAt());
         }
         return dto;
+    }
+
+    // =========================================
+    // 10. 會員人口統計分佈（地區、年齡、性別）
+    // =========================================
+    @Transactional(readOnly = true)
+    public MemberDemographicsDTO getMemberDemographics() {
+        List<Member> members = memberRepository.findAll();
+        long totalMembers = members.size();
+
+        if (totalMembers == 0) {
+            return MemberDemographicsDTO.builder()
+                    .totalMembers(0L)
+                    .profileCount(0L)
+                    .profileCompletionRate(0.0)
+                    .topCity("無資料")
+                    .topCityPercentage(0.0)
+                    .topAgeGroup("無資料")
+                    .topAgeGroupPercentage(0.0)
+                    .cityDistribution(new ArrayList<>())
+                    .ageDistribution(new ArrayList<>())
+                    .genderDistribution(new ArrayList<>())
+                    .build();
+        }
+
+        List<Profile> allProfiles = profileRepository.findAll();
+        Map<Integer, Profile> profileMap = allProfiles.stream()
+                .filter(p -> p.getAccountId() != null)
+                .collect(Collectors.toMap(Profile::getAccountId, p -> p, (existing, replacement) -> existing));
+
+        long profileCount = 0;
+        Map<String, Long> cityCounts = new HashMap<>();
+        long age18to24 = 0;
+        long age25to34 = 0;
+        long age35to44 = 0;
+        long age45to54 = 0;
+        long age55plus = 0;
+        long ageUnknown = 0;
+
+        long maleCount = 0;
+        long femaleCount = 0;
+        long otherGenderCount = 0;
+
+        LocalDate today = LocalDate.now();
+
+        for (Member member : members) {
+            Profile p = member.getAccountId() != null ? profileMap.get(member.getAccountId()) : null;
+            if (p != null) {
+                profileCount++;
+
+                // 縣市資料處理與正規化
+                String city = p.getCity();
+                if (city == null || city.trim().isBlank()) {
+                    city = "未填寫";
+                } else {
+                    city = city.trim();
+                    if (city.startsWith("臺")) {
+                        city = "台" + city.substring(1);
+                    }
+                }
+                cityCounts.put(city, cityCounts.getOrDefault(city, 0L) + 1);
+
+                // 年齡計算與分組
+                if (p.getBirthday() != null) {
+                    int age = Period.between(p.getBirthday(), today).getYears();
+                    if (age >= 18 && age <= 24) {
+                        age18to24++;
+                    } else if (age >= 25 && age <= 34) {
+                        age25to34++;
+                    } else if (age >= 35 && age <= 44) {
+                        age35to44++;
+                    } else if (age >= 45 && age <= 54) {
+                        age45to54++;
+                    } else if (age >= 55) {
+                        age55plus++;
+                    } else {
+                        ageUnknown++;
+                    }
+                } else {
+                    ageUnknown++;
+                }
+
+                // 性別統計
+                String gender = p.getGender();
+                if (gender != null) {
+                    gender = gender.trim().toUpperCase();
+                    if ("M".equals(gender) || "男".equals(gender) || "MALE".equals(gender)) {
+                        maleCount++;
+                    } else if ("F".equals(gender) || "女".equals(gender) || "FEMALE".equals(gender)) {
+                        femaleCount++;
+                    } else {
+                        otherGenderCount++;
+                    }
+                } else {
+                    otherGenderCount++;
+                }
+            } else {
+                cityCounts.put("未填寫", cityCounts.getOrDefault("未填寫", 0L) + 1);
+                ageUnknown++;
+                otherGenderCount++;
+            }
+        }
+
+        double profileCompletionRate = Math.round((double) profileCount / totalMembers * 1000.0) / 10.0;
+
+        // 地區分佈排序
+        List<MemberDemographicsDTO.CityStatDTO> cityList = cityCounts.entrySet().stream()
+                .map(e -> {
+                    double pct = Math.round((double) e.getValue() / totalMembers * 1000.0) / 10.0;
+                    return MemberDemographicsDTO.CityStatDTO.builder()
+                            .city(e.getKey())
+                            .count(e.getValue())
+                            .percentage(pct)
+                            .build();
+                })
+                .sorted((a, b) -> {
+                    if ("未填寫".equals(a.getCity())) return 1;
+                    if ("未填寫".equals(b.getCity())) return -1;
+                    return Long.compare(b.getCount(), a.getCount());
+                })
+                .collect(Collectors.toList());
+
+        String topCity = "無資料";
+        double topCityPct = 0.0;
+        Optional<MemberDemographicsDTO.CityStatDTO> topCityOpt = cityList.stream()
+                .filter(c -> !"未填寫".equals(c.getCity()))
+                .findFirst();
+        if (topCityOpt.isPresent()) {
+            topCity = topCityOpt.get().getCity();
+            topCityPct = topCityOpt.get().getPercentage();
+        } else if (!cityList.isEmpty()) {
+            topCity = cityList.get(0).getCity();
+            topCityPct = cityList.get(0).getPercentage();
+        }
+
+        // 年齡層分組
+        List<MemberDemographicsDTO.AgeGroupStatDTO> ageList = new ArrayList<>();
+        ageList.add(createAgeGroupStat("18-24 歲", 18, 24, age18to24, totalMembers));
+        ageList.add(createAgeGroupStat("25-34 歲", 25, 34, age25to34, totalMembers));
+        ageList.add(createAgeGroupStat("35-44 歲", 35, 44, age35to44, totalMembers));
+        ageList.add(createAgeGroupStat("45-54 歲", 45, 54, age45to54, totalMembers));
+        ageList.add(createAgeGroupStat("55 歲以上", 55, 120, age55plus, totalMembers));
+        ageList.add(createAgeGroupStat("未填寫", null, null, ageUnknown, totalMembers));
+
+        String topAgeGroup = "無資料";
+        double topAgeGroupPct = 0.0;
+        Optional<MemberDemographicsDTO.AgeGroupStatDTO> topAgeOpt = ageList.stream()
+                .filter(a -> !"未填寫".equals(a.getGroupName()))
+                .max((a, b) -> Long.compare(a.getCount(), b.getCount()));
+        if (topAgeOpt.isPresent() && topAgeOpt.get().getCount() > 0) {
+            topAgeGroup = topAgeOpt.get().getGroupName();
+            topAgeGroupPct = topAgeOpt.get().getPercentage();
+        }
+
+        // 性別比例
+        List<MemberDemographicsDTO.GenderStatDTO> genderList = new ArrayList<>();
+        genderList.add(MemberDemographicsDTO.GenderStatDTO.builder()
+                .gender("M")
+                .label("男")
+                .count(maleCount)
+                .percentage(Math.round((double) maleCount / totalMembers * 1000.0) / 10.0)
+                .build());
+        genderList.add(MemberDemographicsDTO.GenderStatDTO.builder()
+                .gender("F")
+                .label("女")
+                .count(femaleCount)
+                .percentage(Math.round((double) femaleCount / totalMembers * 1000.0) / 10.0)
+                .build());
+        genderList.add(MemberDemographicsDTO.GenderStatDTO.builder()
+                .gender("OTHER")
+                .label("其他 / 未填寫")
+                .count(otherGenderCount)
+                .percentage(Math.round((double) otherGenderCount / totalMembers * 1000.0) / 10.0)
+                .build());
+
+        return MemberDemographicsDTO.builder()
+                .totalMembers(totalMembers)
+                .profileCount(profileCount)
+                .profileCompletionRate(profileCompletionRate)
+                .topCity(topCity)
+                .topCityPercentage(topCityPct)
+                .topAgeGroup(topAgeGroup)
+                .topAgeGroupPercentage(topAgeGroupPct)
+                .cityDistribution(cityList)
+                .ageDistribution(ageList)
+                .genderDistribution(genderList)
+                .build();
+    }
+
+    private MemberDemographicsDTO.AgeGroupStatDTO createAgeGroupStat(String groupName, Integer minAge, Integer maxAge, long count, long total) {
+        double pct = total > 0 ? Math.round((double) count / total * 1000.0) / 10.0 : 0.0;
+        return MemberDemographicsDTO.AgeGroupStatDTO.builder()
+                .groupName(groupName)
+                .minAge(minAge)
+                .maxAge(maxAge)
+                .count(count)
+                .percentage(pct)
+                .build();
     }
 }
