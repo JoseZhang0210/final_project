@@ -41,6 +41,7 @@ public class EmployeeDTO {
     private LocalDate birthday;
     private String gender;
     private LocalDateTime updatedAt;
+    private String avatarUrl;
 
     // 權限清單
     private List<Integer> permissionIds;

@@ -9,7 +9,18 @@
 
         <!-- Google 帳號帶入提示橫幅 -->
         <div v-if="isGoogleSignup" class="google-notice-banner">
-          <div class="google-badge-icon">
+          <div v-if="googleInfo.avatarUrl" class="google-avatar-wrapper">
+            <img :src="googleInfo.avatarUrl" alt="Google Avatar" class="google-avatar-preview" />
+            <div class="google-badge-sub-icon">
+              <svg viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+            </div>
+          </div>
+          <div v-else class="google-badge-icon">
             <svg viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -20,7 +31,7 @@
           <div class="google-notice-content">
             <div class="google-notice-title">Google 帳號資料已自動帶入</div>
             <div class="google-notice-desc">
-              已由 Google 帶入信箱 <strong>{{ googleInfo.email }}</strong> 與姓名 <strong>{{ googleInfo.name }}</strong>。請設定您的帳號密碼與個人資料即可完成註冊。
+              已由 Google 帶入信箱 <strong>{{ googleInfo.email }}</strong>、姓名 <strong>{{ googleInfo.name }}</strong><span v-if="googleInfo.avatarUrl"> 與<strong>個人頭像</strong></span>。請設定您的帳號密碼與個人資料即可完成註冊。
             </div>
           </div>
         </div>
@@ -29,7 +40,7 @@
           <!-- 區塊 1: 帳號安全 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <Lock :size="18" class="lucide-icon" />
               帳號安全設定
             </div>
 
@@ -77,42 +88,17 @@
                     :title="showPassword ? '隱藏密碼' : '顯示密碼'"
                     @click="showPassword = !showPassword"
                   >
-                    <!-- Lucide Eye (密碼可見時顯示) -->
-                    <svg
+                    <!-- Lucide Eye / EyeOff -->
+                    <Eye
                       v-if="showPassword"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
-                    <svg
+                    />
+                    <EyeOff
                       v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye-off"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
+                    />
                   </button>
                 </div>
                 <div v-if="errors.password" class="field-error">
@@ -143,42 +129,17 @@
                     :title="showConfirmPassword ? '隱藏密碼' : '顯示密碼'"
                     @click="showConfirmPassword = !showConfirmPassword"
                   >
-                    <!-- Lucide Eye (密碼可見時顯示) -->
-                    <svg
+                    <!-- Lucide Eye / EyeOff -->
+                    <Eye
                       v-if="showConfirmPassword"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
-                    <svg
+                    />
+                    <EyeOff
                       v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye-off"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
+                    />
                   </button>
                 </div>
                 <div v-if="errors.confirmPassword" class="field-error">
@@ -191,7 +152,7 @@
           <!-- 區塊 2: 信箱驗證 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <Mail :size="18" class="lucide-icon" />
               電子信箱與身份驗證
             </div>
 
@@ -252,7 +213,7 @@
           <!-- 區塊 3: 個人基本資料 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <User :size="18" class="lucide-icon" />
               個人基本資料
             </div>
 
@@ -305,7 +266,7 @@
           <!-- 區塊 4: 通訊地址 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <MapPin :size="18" class="lucide-icon" />
               通訊地址 (選填)
             </div>
 
@@ -378,6 +339,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { Lock, Eye, EyeOff, Mail, User, MapPin } from "@lucide/vue";
 import { useToastStore } from "@/stores/toast";
 import { useAuthStore } from "@/stores/auth";
 import { useVerificationCode } from "@/composables/useVerificationCode";
@@ -394,6 +356,7 @@ const isGoogleSignup = ref(false);
 const googleInfo = reactive({
   email: "",
   name: "",
+  avatarUrl: "",
 });
 
 // 表單與錯誤訊息
@@ -404,6 +367,7 @@ const form = reactive({
   email: "",
   verificationCode: "",
   name: "",
+  avatarUrl: "",
   gender: "其他",
   phone: "",
   birthday: "",
@@ -439,12 +403,14 @@ onMounted(() => {
   const queryFrom = route.query.from;
   const queryEmail = route.query.email ? decodeURIComponent(route.query.email) : "";
   const queryName = route.query.name ? decodeURIComponent(route.query.name) : "";
+  const queryAvatarUrl = route.query.avatarUrl ? decodeURIComponent(route.query.avatarUrl) : "";
   const queryCode = route.query.code || "";
 
   if (queryFrom === "google" || (googleData && googleData.from === "google")) {
     isGoogleSignup.value = true;
     const targetEmail = queryEmail || googleData?.email || "";
     const targetName = queryName || googleData?.name || "";
+    const targetAvatarUrl = queryAvatarUrl || googleData?.avatarUrl || "";
     const targetCode = queryCode || googleData?.googleVerifiedCode || "";
 
     if (targetEmail) {
@@ -454,6 +420,10 @@ onMounted(() => {
     if (targetName) {
       form.name = targetName;
       googleInfo.name = targetName;
+    }
+    if (targetAvatarUrl) {
+      form.avatarUrl = targetAvatarUrl;
+      googleInfo.avatarUrl = targetAvatarUrl;
     }
     if (targetCode) {
       form.verificationCode = targetCode;
@@ -609,6 +579,7 @@ async function register() {
     email: form.email.trim(),
     verificationCode: form.verificationCode.trim(),
     name: form.name.trim(),
+    avatarUrl: form.avatarUrl ? form.avatarUrl.trim() : null,
     gender: form.gender,
     phone: form.phone.trim(),
     birthday: form.birthday || null,
@@ -645,7 +616,7 @@ async function register() {
     sessionStorage.removeItem("google_signup_data");
 
     if (data.token && data.authorities) {
-      authStore.login(data.token, data.authorities, data.name);
+      authStore.login(data.token, data.authorities, data.name, data.avatarUrl || form.avatarUrl);
     } else {
       try {
         const loginResponse = await fetch("/api/auth/login", {
@@ -658,7 +629,7 @@ async function register() {
         });
         if (loginResponse.ok) {
           const loginData = await loginResponse.json();
-          authStore.login(loginData.token, loginData.authorities, loginData.name);
+          authStore.login(loginData.token, loginData.authorities, loginData.name, loginData.avatarUrl || form.avatarUrl);
         }
       } catch (loginError) {
         console.error("自動登入失敗：", loginError);

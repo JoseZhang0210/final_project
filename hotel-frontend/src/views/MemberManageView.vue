@@ -14,9 +14,7 @@
           :disabled="exporting || importing"
           @click="openExportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" />
-          </svg>
+          <Download :size="16" aria-hidden="true" />
           {{ exporting ? "匯出中..." : "匯出 JSON" }}
         </button>
 
@@ -26,9 +24,7 @@
           :disabled="exporting || importing"
           @click="openImportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 21V9m0 0 4 4m-4-4-4 4M5 3h14a2 2 0 0 1 2 2v3M3 8V5a2 2 0 0 1 2-2" />
-          </svg>
+          <Upload :size="16" aria-hidden="true" />
           {{ importing ? "匯入中..." : "匯入 JSON" }}
         </button>
 
@@ -183,46 +179,19 @@
 
               <td>
                 <div class="name-cell">
-                  <span class="item-name">{{ member.name || "未填姓名" }}</span>
-                  <span class="item-username">(@{{ member.username }})</span>
+                  <span class="item-name" :title="member.name">{{ member.name || "未填姓名" }}</span>
+                  <span class="item-username" :title="'@' + member.username">(@{{ member.username }})</span>
                 </div>
               </td>
 
               <td>
                 <div class="contact-info">
-                  <div v-if="member.phone" class="contact-item">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
+                  <div v-if="member.phone" class="contact-item" :title="member.phone">
+                    <Phone :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.phone }}</span>
                   </div>
-                  <div v-if="member.email" class="contact-item">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
+                  <div v-if="member.email" class="contact-item" :title="member.email">
+                    <Mail :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.email }}</span>
                   </div>
                   <span v-if="!member.phone && !member.email" class="text-muted">未填寫</span>
@@ -242,7 +211,7 @@
                 </span>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <div class="action-buttons">
                   <button
                     type="button"
@@ -299,21 +268,7 @@
         <form class="admin-modal-body" @submit.prevent="saveMember">
           <!-- 帳號設定 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+            <Lock :size="18" class="lucide-icon section-icon" />
             <span>帳號設定</span>
           </div>
           <div class="admin-form-grid">
@@ -343,21 +298,7 @@
 
           <!-- 個人基本資料 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User :size="18" class="lucide-icon section-icon" />
             <span>個人基本資料</span>
           </div>
           <div class="admin-form-grid">
@@ -408,6 +349,27 @@
             <div class="admin-form-group full-width">
               <label> 詳細地址 </label>
               <input v-model="form.address" type="text" placeholder="請輸入詳細街道地址" />
+            </div>
+
+            <div class="admin-form-group full-width">
+              <label> 會員頭像 </label>
+              <div class="admin-avatar-upload-box">
+                <div class="admin-avatar-preview-circle">
+                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <span v-else>{{ (form.name || form.username || "客").charAt(0) }}</span>
+                </div>
+                <div v-if="editingMemberId !== null" class="admin-avatar-input-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="admin-avatar-file-input"
+                    :disabled="uploadingAvatar"
+                    @change="handleAdminAvatarUpload"
+                  />
+                  <span class="input-hint-text">{{ uploadingAvatar ? "上傳中..." : "選擇圖片上傳更新頭像" }}</span>
+                </div>
+                <span v-else class="input-hint-text">（新增會員完成後即可進行頭像上傳）</span>
+              </div>
             </div>
           </div>
 
@@ -463,6 +425,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { Download, Upload, Phone, Mail, Lock, User } from "@lucide/vue";
 import { getAuthHeaders } from "@/utils/auth";
 import { useAdminPagination } from "@/composables/useAdminPagination";
 import { useTableSort } from "@/composables/useTableSort";
@@ -489,6 +452,7 @@ const { selectedIds: selectedMemberIds, isAllSelected, toggleSelectAll, clearSel
 // 表單
 const modalOpen = ref(false);
 const editingMemberId = ref(null);
+const uploadingAvatar = ref(false);
 const form = reactive({
   username: "",
   password: "",
@@ -502,6 +466,7 @@ const form = reactive({
   city: "",
   district: "",
   address: "",
+  avatarUrl: "",
 });
 
 // 匯出 / 匯入
@@ -625,6 +590,7 @@ function openCreateModal() {
   form.city = "";
   form.district = "";
   form.address = "";
+  form.avatarUrl = "";
   modalOpen.value = true;
 }
 
@@ -642,7 +608,53 @@ function openEditModal(member) {
   form.city = member.city || "";
   form.district = member.district || "";
   form.address = member.address || "";
+  form.avatarUrl = member.avatarUrl || "";
   modalOpen.value = true;
+}
+
+async function handleAdminAvatarUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || editingMemberId.value === null) return;
+
+  if (!file.type.startsWith("image/")) {
+    showMessage("請選擇有效的圖片檔案", "error");
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) headers.Authorization = "Bearer " + token;
+
+    const res = await fetch(`${API_URL}/${editingMemberId.value}/avatar`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showMessage(err.message || "頭像上傳失敗", "error");
+      return;
+    }
+
+    const updated = await res.json();
+    if (updated && updated.avatarUrl) {
+      form.avatarUrl = updated.avatarUrl;
+      showMessage("會員頭像上傳成功", "success");
+      await loadMembers();
+    }
+  } catch (err) {
+    console.error("管理員上傳頭像錯誤：", err);
+    showMessage("頭像上傳失敗", "error");
+  } finally {
+    uploadingAvatar.value = false;
+    event.target.value = "";
+  }
 }
 
 function closeModal() {

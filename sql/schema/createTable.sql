@@ -344,6 +344,7 @@ CREATE TABLE [dbo].[profile](
 	[birthday] [date] NULL,
 	[gender] [varchar](10) NULL,
 	[updated_at] [datetime] NOT NULL,
+	[avatar_url] [varchar](255) NULL,
  CONSTRAINT [PK__user_pro__AEBB701F9EBA1518] PRIMARY KEY CLUSTERED 
 (
 	[profile_id] ASC

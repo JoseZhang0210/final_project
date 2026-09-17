@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import com.hotel.model.dto.EmailDTO;
 import com.hotel.repository.MemberRepository;
 import com.hotel.repository.ProfileRepository;
-import com.hotel.model.entity.Profile;
 import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.Product;
 import com.hotel.repository.OrderItemRepository;
@@ -109,7 +108,7 @@ public class MailUtil {
                                 memberRepository.findById(memberId)
                                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
                                                 .getAccountId())
-                                .map(Profile::getEmail)
+                                .map(p -> p != null ? p.getEmail() : null)
                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
                 // 2. 取得訂單金額 (若需要，可改為傳入 amount)
                 // 這裡示範簡單取回金額，實務上可直接把 amount 當參數傳入
@@ -137,7 +136,7 @@ public class MailUtil {
                                 memberRepository.findById(booking.getMemberId())
                                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
                                                 .getAccountId())
-                                .map(Profile::getEmail)
+                                .map(p -> p != null ? p.getEmail() : null)
                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
 
                 String subject = "【星澄飯店】訂房確認 - 訂單編號 " + bookingId;
@@ -159,7 +158,7 @@ public class MailUtil {
                                 memberRepository.findById(memberId)
                                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
                                                 .getAccountId())
-                                .map(Profile::getEmail)
+                                .map(p -> p != null ? p.getEmail() : null)
                                 .orElse("會員資訊不可用");
 
                 // =========================================================
@@ -663,7 +662,7 @@ public class MailUtil {
                                 memberRepository.findById(booking.getMemberId())
                                                 .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
                                                 .getAccountId())
-                                .map(Profile::getEmail)
+                                .map(p -> p != null ? p.getEmail() : null)
                                 .orElse("會員資訊不可用");
 
                 StringBuilder sb = new StringBuilder();

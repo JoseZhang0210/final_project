@@ -14,9 +14,7 @@
           :disabled="exporting || importing"
           @click="openExportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" />
-          </svg>
+          <Download :size="16" aria-hidden="true" />
           {{ exporting ? "匯出中..." : "匯出 JSON" }}
         </button>
 
@@ -26,9 +24,7 @@
           :disabled="exporting || importing"
           @click="openImportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 21V9m0 0 4 4m-4-4-4 4M5 3h14a2 2 0 0 1 2 2v3M3 8V5a2 2 0 0 1 2-2" />
-          </svg>
+          <Upload :size="16" aria-hidden="true" />
           {{ importing ? "匯入中..." : "匯入 JSON" }}
         </button>
 
@@ -45,26 +41,7 @@
           class="admin-btn admin-btn-secondary admin-icon-btn"
           @click="openDepartmentModal"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide-icon"
-          >
-            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-            <path d="M10 6h4" />
-            <path d="M10 10h4" />
-            <path d="M10 14h4" />
-            <path d="M10 18h4" />
-          </svg>
+          <Building2 :size="17" class="lucide-icon" />
           <span>部門管理</span>
         </button>
 
@@ -73,21 +50,7 @@
           class="admin-btn admin-btn-secondary admin-icon-btn"
           @click="openPermissionModal"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide-icon"
-          >
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
+          <Settings :size="17" class="lucide-icon" />
           <span>權限種類管理</span>
         </button>
       </div>
@@ -318,38 +281,11 @@
               <td>
                 <div class="contact-info">
                   <div v-if="employee.phone" class="contact-item" :title="employee.phone">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
+                    <Phone :size="14" class="lucide-icon inline-icon" />
                     <span>{{ employee.phone }}</span>
                   </div>
                   <div v-if="employee.email" class="contact-item" :title="employee.email">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
+                    <Mail :size="14" class="lucide-icon inline-icon" />
                     <span>{{ employee.email }}</span>
                   </div>
                   <span v-if="!employee.phone && !employee.email" class="text-muted">未填寫</span>
@@ -426,21 +362,7 @@
         <form class="admin-modal-body" @submit.prevent="saveEmployee">
           <!-- 帳號設定 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+            <Lock :size="18" class="lucide-icon section-icon" />
             <span>帳號設定</span>
           </div>
           <div class="admin-form-grid">
@@ -474,30 +396,7 @@
 
           <!-- 部門與職位 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
-              <path d="M9 22v-4h6v4" />
-              <path d="M8 6h.01" />
-              <path d="M16 6h.01" />
-              <path d="M12 6h.01" />
-              <path d="M12 10h.01" />
-              <path d="M12 14h.01" />
-              <path d="M16 10h.01" />
-              <path d="M16 14h.01" />
-              <path d="M8 10h.01" />
-              <path d="M8 14h.01" />
-            </svg>
+            <Building :size="18" class="lucide-icon section-icon" />
             <span>部門與職位設定</span>
           </div>
           <div class="admin-form-grid">
@@ -524,21 +423,7 @@
 
           <!-- 個人基本資料 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User :size="18" class="lucide-icon section-icon" />
             <span>個人基本資料</span>
           </div>
           <div class="admin-form-grid">
@@ -590,25 +475,33 @@
               <label> 詳細地址 </label>
               <input v-model="form.address" type="text" placeholder="請輸入詳細街道地址" />
             </div>
+
+            <div class="admin-form-group full-width">
+              <label> 員工頭像 </label>
+              <div class="admin-avatar-upload-box">
+                <div class="admin-avatar-preview-circle">
+                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <span v-else>{{ (form.name || form.username || "員").charAt(0) }}</span>
+                </div>
+                <div v-if="editingEmployeeId !== null" class="admin-avatar-input-group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="admin-avatar-file-input"
+                    :disabled="uploadingAvatar"
+                    @change="handleAdminAvatarUpload"
+                  />
+                  <span class="input-hint-text">{{ uploadingAvatar ? "上傳中..." : "選擇圖片上傳更新頭像" }}</span>
+                </div>
+                <span v-else class="input-hint-text">（新增員工完成後即可進行頭像上傳）</span>
+              </div>
+            </div>
           </div>
 
           <!-- 權限設定 -->
           <div class="form-section-title perm-section-header">
             <div class="section-title-content">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide-icon section-icon"
-              >
-                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-              </svg>
+              <Shield :size="18" class="lucide-icon section-icon" />
               <span>權限設定</span>
             </div>
             <div class="perm-header-actions">
@@ -898,6 +791,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { Download, Upload, Building2, Settings, Phone, Mail, Lock, Building, User, Shield } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
 import { getAuthHeaders } from "@/utils/auth";
@@ -950,6 +844,7 @@ const { selectedIds: selectedEmployeeIds, isAllSelected, toggleSelectAll, clearS
 // 表單
 const modalOpen = ref(false);
 const editingEmployeeId = ref(null);
+const uploadingAvatar = ref(false);
 const form = reactive({
   username: "",
   password: "",
@@ -959,6 +854,7 @@ const form = reactive({
   position: "",
   permissionIds: [],
   name: "",
+  avatarUrl: "",
   email: "",
   phone: "",
   gender: "男",
@@ -1198,6 +1094,7 @@ function openCreateModal() {
   form.position = "";
   form.permissionIds = [];
   form.name = "";
+  form.avatarUrl = "";
   form.email = "";
   form.phone = "";
   form.gender = "男";
@@ -1233,6 +1130,7 @@ function openEditModal(employee) {
   form.position = employee.position || "";
   form.permissionIds = Array.isArray(employee.permissionIds) ? [...employee.permissionIds] : [];
   form.name = employee.name || "";
+  form.avatarUrl = employee.avatarUrl || "";
   form.email = employee.email || "";
   form.phone = employee.phone || "";
   form.gender = employee.gender || "男";
@@ -1242,6 +1140,59 @@ function openEditModal(employee) {
   form.district = employee.district || "";
   form.address = employee.address || "";
   modalOpen.value = true;
+}
+
+async function handleAdminAvatarUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file || editingEmployeeId.value === null) return;
+
+  if (!file.type.startsWith("image/")) {
+    showMessage("請選擇有效的圖片檔案 (JPG, PNG, WEBP 等)", "error");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    showMessage("圖片檔案大小不能超過 5MB", "error");
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) headers.Authorization = "Bearer " + token;
+
+    const res = await fetch(`${API_URL}/${editingEmployeeId.value}/avatar`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showMessage(err.message || "頭像上傳失敗", "error");
+      return;
+    }
+
+    const updated = await res.json();
+    if (updated && updated.avatarUrl) {
+      form.avatarUrl = updated.avatarUrl;
+      if (isEditingSelf.value) {
+        authStore.updateAvatarUrl(updated.avatarUrl);
+      }
+      showMessage("員工頭像上傳成功", "success");
+      await loadEmployees();
+    }
+  } catch (err) {
+    console.error("管理員上傳員工頭像錯誤：", err);
+    showMessage("頭像上傳失敗", "error");
+  } finally {
+    uploadingAvatar.value = false;
+    event.target.value = "";
+  }
 }
 
 function closeModal() {
@@ -1289,6 +1240,7 @@ async function saveEmployee() {
     position: form.position.trim(),
     permissionIds: Array.isArray(form.permissionIds) ? form.permissionIds : [],
     name: form.name.trim(),
+    avatarUrl: form.avatarUrl || null,
     email: form.email.trim(),
     phone: form.phone.trim(),
     gender: form.gender,

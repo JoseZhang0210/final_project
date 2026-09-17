@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hotel.model.entity.Reservation;
 import com.hotel.model.entity.Restaurant;
 import com.hotel.model.entity.RestaurantTime;
@@ -120,7 +121,6 @@ public class RestaurantBackupController {
             ReservationData item = new ReservationData();
             item.setMemberId(reservation.getMemberId());
             item.setContactName(reservation.getContactName());
-            item.setContactPhone(reservation.getContactPhone());
             item.setRestaurantName(restaurant.getRestaurantName());
             item.setMealType(time.getMealType());
             item.setOpenTime(time.getOpenTime());
@@ -225,7 +225,6 @@ public class RestaurantBackupController {
             String restaurantName = text(source.getRestaurantName());
             String mealType = text(source.getMealType());
             String contactName = text(source.getContactName());
-            String contactPhone = text(source.getContactPhone());
             String status = text(source.getStatus());
 
             if (restaurantName == null
@@ -266,10 +265,7 @@ public class RestaurantBackupController {
                 result.setMemberConvertedToGuest(result.getMemberConvertedToGuest() + 1);
             }
 
-            if (memberId == null
-                    && (contactName == null
-                            || contactPhone == null
-                            || !contactPhone.matches("^09\\d{8}$"))) {
+            if (memberId == null && contactName == null) {
                 result.setSkippedReservations(result.getSkippedReservations() + 1);
                 continue;
             }
@@ -277,7 +273,6 @@ public class RestaurantBackupController {
             Reservation reservation = new Reservation();
             reservation.setMemberId(memberId);
             reservation.setContactName(contactName);
-            reservation.setContactPhone(contactPhone);
             reservation.setRestaurantId(restaurant.getRestaurantId());
             reservation.setTimeId(time.getTimeId());
             reservation.setReservationDate(source.getReservationDate());
@@ -323,10 +318,10 @@ public class RestaurantBackupController {
                 .orElse(null);
     }
 
-    // 相同人、餐廳、時段、日期與人數視為重複訂位。
+    // 相同會員／訂位人、餐廳、時段、日期與人數視為重複訂位。
     private boolean hasSameReservation(List<Reservation> reservations, Reservation target) {
         return reservations.stream().anyMatch(item -> Objects.equals(item.getMemberId(), target.getMemberId())
-                && normalized(item.getContactPhone()).equals(normalized(target.getContactPhone()))
+                && normalized(item.getContactName()).equals(normalized(target.getContactName()))
                 && Objects.equals(item.getRestaurantId(), target.getRestaurantId())
                 && Objects.equals(item.getTimeId(), target.getTimeId())
                 && Objects.equals(item.getReservationDate(), target.getReservationDate())
@@ -392,10 +387,10 @@ public class RestaurantBackupController {
 
     @Data
     @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ReservationData {
         private Integer memberId;
         private String contactName;
-        private String contactPhone;
         private String restaurantName;
         private String mealType;
         private LocalTime openTime;

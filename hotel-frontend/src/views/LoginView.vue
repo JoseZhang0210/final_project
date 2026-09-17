@@ -36,42 +36,17 @@
                 :title="showPassword ? '隱藏密碼' : '顯示密碼'"
                 @click="showPassword = !showPassword"
               >
-                <!-- Lucide Eye (密碼可見時顯示) -->
-                <svg
+                <!-- Lucide Eye / EyeOff -->
+                <Eye
                   v-if="showPassword"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :size="18"
                   class="lucide-icon lucide-eye"
-                >
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
-                <svg
+                />
+                <EyeOff
                   v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :size="18"
                   class="lucide-icon lucide-eye-off"
-                >
-                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                  <line x1="2" x2="22" y1="2" y2="22" />
-                </svg>
+                />
               </button>
             </div>
           </div>
@@ -171,6 +146,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { Eye, EyeOff } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 import "@/assets/auth-form.css";
 
@@ -261,6 +237,7 @@ async function handleGoogleCredentialResponse(response) {
     const payload = parseJwtPayload(response.credential);
     const email = payload?.email || "";
     const name = payload?.name || payload?.given_name || "";
+    const avatarUrl = payload?.picture || "";
 
     const res = await fetch("/api/auth/google-login", {
       method: "POST",
@@ -269,6 +246,7 @@ async function handleGoogleCredentialResponse(response) {
         credential: response.credential,
         email,
         name,
+        avatarUrl,
       }),
     });
 
@@ -281,7 +259,7 @@ async function handleGoogleCredentialResponse(response) {
     }
 
     if (data.registered) {
-      authStore.login(data.token, data.authorities, data.name);
+      authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
       message.value = `歡迎回來，${data.name}！`;
       messageType.value = "success";
 
@@ -300,6 +278,7 @@ async function handleGoogleCredentialResponse(response) {
       const googleSignupData = {
         email: data.email || email,
         name: data.name || name,
+        avatarUrl: data.avatarUrl || avatarUrl || "",
         googleVerifiedCode: data.googleVerifiedCode || "",
         from: "google",
       };
@@ -313,6 +292,7 @@ async function handleGoogleCredentialResponse(response) {
           from: "google",
           email: encodeURIComponent(googleSignupData.email),
           name: encodeURIComponent(googleSignupData.name),
+          avatarUrl: googleSignupData.avatarUrl ? encodeURIComponent(googleSignupData.avatarUrl) : "",
           code: googleSignupData.googleVerifiedCode,
         },
       });
@@ -345,7 +325,7 @@ async function triggerCustomGoogleSignIn() {
       });
       const data = await res.json().catch(() => ({}));
       if (data.registered) {
-        authStore.login(data.token, data.authorities, data.name);
+        authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
         showLoginAnimation.value = true;
         await delay(2200);
         if (data.authorities && data.authorities.includes("ROLE_ADMIN")) {
@@ -357,6 +337,7 @@ async function triggerCustomGoogleSignIn() {
         const googleSignupData = {
           email: data.email || inputEmail.trim(),
           name: data.name || inputEmail.split("@")[0],
+          avatarUrl: data.avatarUrl || "",
           googleVerifiedCode: data.googleVerifiedCode || "",
           from: "google",
         };
@@ -367,6 +348,7 @@ async function triggerCustomGoogleSignIn() {
             from: "google",
             email: encodeURIComponent(googleSignupData.email),
             name: encodeURIComponent(googleSignupData.name),
+            avatarUrl: googleSignupData.avatarUrl ? encodeURIComponent(googleSignupData.avatarUrl) : "",
             code: googleSignupData.googleVerifiedCode,
           },
         });
@@ -411,7 +393,7 @@ async function login() {
     }
 
     const data = await response.json();
-    authStore.login(data.token, data.authorities, data.name);
+    authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
     message.value = "登入成功";
     messageType.value = "success";
 

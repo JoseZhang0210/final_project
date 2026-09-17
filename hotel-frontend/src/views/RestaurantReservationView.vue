@@ -20,7 +20,7 @@ function createEmptyForm() {
     return {
         memberId: null,
         contactName: "",
-        contactPhone: "",
+        contactEmail: "",
         restaurantId: "",
         timeId: "",
         reservationDate: "",
@@ -162,7 +162,7 @@ async function loadMemberProfile() {
 
         form.value.memberId = data.memberId;
         form.value.contactName = data.name ?? "";
-        form.value.contactPhone = data.phone ?? "";
+        form.value.contactEmail = data.email ?? "";
     } catch (error) {
         console.error(error);
         showMessage("無法讀取會員資料。", "error");
@@ -176,7 +176,7 @@ function resetForm() {
     if (memberLoaded.value && memberProfile.value) {
         form.value.memberId = memberProfile.value.memberId;
         form.value.contactName = memberProfile.value.name ?? "";
-        form.value.contactPhone = memberProfile.value.phone ?? "";
+        form.value.contactEmail = memberProfile.value.email ?? "";
     }
 }
 
@@ -188,14 +188,14 @@ async function saveReservation() {
         !form.value.timeId ||
         !form.value.reservationDate ||
         !form.value.contactName.trim() ||
-        !form.value.contactPhone.trim()
+        !form.value.contactEmail.trim()
     ) {
         showMessage("請完整填寫訂位資料。", "error");
         return;
     }
 
-    if (!/^09\d{8}$/.test(form.value.contactPhone.trim())) {
-        showMessage("電話請填寫 09 開頭的 10 碼手機號碼。", "error");
+    if (!isValidEmail(form.value.contactEmail)) {
+        showMessage("請填寫正確的 Email 格式。", "error");
         return;
     }
 
@@ -204,7 +204,7 @@ async function saveReservation() {
     const payload = {
         memberId: memberLoaded.value ? form.value.memberId : null,
         contactName: form.value.contactName.trim(),
-        contactPhone: form.value.contactPhone.trim(),
+        contactEmail: form.value.contactEmail.trim(),
         restaurantId: Number(form.value.restaurantId),
         timeId: Number(form.value.timeId),
         reservationDate: form.value.reservationDate,
@@ -240,6 +240,10 @@ async function saveReservation() {
     } finally {
         saving.value = false;
     }
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 onMounted(async () => {
@@ -296,7 +300,7 @@ onMounted(async () => {
                     <strong>訪客訂位</strong>
                     <span>
                         已經是會員？
-                        <RouterLink to="/login">登入後可自動帶入姓名與電話</RouterLink>
+                        <RouterLink to="/login">登入後可自動帶入姓名與信箱</RouterLink>
                     </span>
                 </div>
 
@@ -371,9 +375,9 @@ onMounted(async () => {
                         </label>
 
                         <label>
-                            聯絡電話
-                            <input v-model="form.contactPhone" type="tel" placeholder="例如：0912345678"
-                                :readonly="memberLoaded" required />
+                            聯絡信箱
+                            <input v-model="form.contactEmail" type="email" placeholder="例如：name@example.com"
+                                required />
                         </label>
                     </div>
 
