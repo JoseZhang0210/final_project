@@ -1,6 +1,7 @@
 package com.hotel.service;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,8 @@ import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.repository.VenueRepository;
+import com.hotel.service.RoomService;
+import com.hotel.service.RoomTypeService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +71,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 全系統資料庫種子資料自動初始化器 (Universal Database Data Initializer)。
  * 
- * 在 Spring Boot 啟動且 Hibernate 完成 DDL 更新 (spring.jpa.hibernate.ddl-auto=update) 後執行。
+ * 在 Spring Boot 啟動且 Hibernate 完成 DDL 更新 (spring.jpa.hibernate.ddl-auto=update)
+ * 後執行。
  * 檢查各模組資料表是否為空，若為空則依序讀取 resources/data/seed/ 下的模組化 JSON 檔案自動初始化資料。
  * 每個步驟具備冪等性 (Idempotent)，若資料表已有資料則自動跳過，避免重複插入。
  */
@@ -103,6 +107,12 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     private final BookingPaymentRepository bookingPaymentRepository;
     private final RoomTaskRepository roomTaskRepository;
     private final ObjectMapper objectMapper;
+    private final RoomService roomService;
+    private final RoomTypeService roomTypeService;
+
+    // 存放動態生成的付款與房務工單，以便在對應的 seed 方法中寫入資料庫
+    private List<BookingPayment> dynamicPayments = new ArrayList<>();
+    private List<RoomTask> dynamicTasks = new ArrayList<>();
 
     @Override
     public void run(ApplicationArguments args) {
@@ -132,7 +142,13 @@ public class DatabaseDataInitializer implements ApplicationRunner {
             seedBookingPayments();
             seedRoomTasks();
 
-            log.info("【資料庫初始化器】全系統資料庫初始化檢查與作業完成！");
+            log.info("【資料庫初始化器】全系統資料庫初始化檢查與作業完成！正在同步房間即時狀態...");
+            
+            // 初始化完成後，立即同步最新狀態，避免前端剛啟動時資料未更新
+            roomService.syncRoomStatuses();
+            roomTypeService.syncAvailableRooms();
+
+            log.info("【資料庫初始化器】房間即時狀態同步完成！系統已就緒。");
         } catch (Exception e) {
             log.error("【資料庫初始化器】初始化過程中發生未預期錯誤: {}", e.getMessage(), e);
         }
@@ -234,7 +250,8 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     @Transactional
     public void seedEmployeePermissions() {
         if (employeePermissionRepository.count() == 0) {
-            List<EmployeePermission> list = loadListFromClasspath("data/seed/07_employee_permissions.json", EmployeePermission.class);
+            List<EmployeePermission> list = loadListFromClasspath("data/seed/07_employee_permissions.json",
+                    EmployeePermission.class);
             employeePermissionRepository.saveAll(list);
             log.info("【員工權限】已成功初始化 {} 筆員工權限對應資料。", list.size());
         }
@@ -391,7 +408,8 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     @Transactional
     public void seedRestaurantTimes() {
         if (restaurantTimeRepository.count() == 0) {
-            List<RestaurantTime> list = loadListFromClasspath("data/seed/17_restaurant_times.json", RestaurantTime.class);
+            List<RestaurantTime> list = loadListFromClasspath("data/seed/17_restaurant_times.json",
+                    RestaurantTime.class);
             for (RestaurantTime rt : list) {
                 rt.setTimeId(null);
                 restaurantTimeRepository.save(rt);
@@ -435,15 +453,108 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     @Transactional
     public void seedBookings() {
         if (bookingRepository.count() == 0) {
-            List<Booking> list = loadListFromClasspath("data/seed/20_room_bookings.json", Booking.class);
-            if (list.isEmpty()) {
-                list = loadListFromClasspath("data/seed/room_bookings.json", Booking.class);
+            java.time.LocalDate today = java.time.LocalDate.now();
+            int currentHour = java.time.LocalDateTime.now().getHour();
+            int bookingIdCounter = 1;
+
+            dynamicPayments.clear();
+            dynamicTasks.clear();
+
+            java.util.Random rand = new java.util.Random();
+            java.util.List<com.hotel.model.entity.Room> allRooms = roomRepository.findAll();
+            java.util.Map<Integer, java.util.List<com.hotel.model.entity.Room>> roomsByType = allRooms.stream()
+                    .collect(java.util.stream.Collectors.groupingBy(com.hotel.model.entity.Room::getRoomTypeId));
+            java.util.Map<Integer, java.time.LocalDate> roomAvailableFrom = new java.util.HashMap<>();
+
+            for (int dayOffset = -5; dayOffset <= 5; dayOffset++) {
+                java.time.LocalDate checkInDate = today.plusDays(dayOffset);
+                for (int i = 0; i < 5; i++) {
+                    int memberId = rand.nextInt(60) + 1; // 隨機 1~60
+                    int stayNights = 1 + rand.nextInt(3); // 隨機 1~3 晚
+                    java.time.LocalDate checkOutDate = checkInDate.plusDays(stayNights);
+
+                    // 循環嘗試找空房 (隨機房型 1~10)
+                    com.hotel.model.entity.Room selectedRoom = null;
+                    java.util.List<Integer> typesToTry = new java.util.ArrayList<>();
+                    for (int t = 1; t <= 10; t++) typesToTry.add(t);
+                    java.util.Collections.shuffle(typesToTry);
+
+                    for (int type : typesToTry) {
+                        java.util.List<com.hotel.model.entity.Room> typeRooms = roomsByType.getOrDefault(type, new java.util.ArrayList<>());
+                        java.util.Collections.shuffle(typeRooms); // 讓同房型的房間隨機輪替
+                        for (com.hotel.model.entity.Room r : typeRooms) {
+                            java.time.LocalDate availDate = roomAvailableFrom.getOrDefault(r.getRoomId(), java.time.LocalDate.MIN);
+                            // 只要入住日大於等於該房間上次的退房日，代表可用
+                            if (!checkInDate.isBefore(availDate)) {
+                                selectedRoom = r;
+                                break;
+                            }
+                        }
+                        if (selectedRoom != null) break;
+                    }
+
+                    if (selectedRoom == null) continue; // 若極端情況真的全滿則跳過此筆
+
+                    roomAvailableFrom.put(selectedRoom.getRoomId(), checkOutDate);
+                    int roomId = selectedRoom.getRoomId();
+                    int roomTypeId = selectedRoom.getRoomTypeId();
+
+                    Booking b = new Booking();
+                    b.setMemberId(memberId);
+                    b.setRoomId(roomId);
+                    b.setRoomTypeId(roomTypeId);
+                    b.setCheckInDate(checkInDate);
+                    b.setCheckOutDate(checkOutDate);
+                    b.setGuestNum(2);
+                    b.setBookingPrice(3500 * stayNights);
+                    b.setCreatedAt(checkInDate.minusDays(10).atTime(10, 0));
+
+                    // 狀態判定邏輯
+                    boolean isCheckoutPassed = checkOutDate.isBefore(today)
+                            || (checkOutDate.isEqual(today) && currentHour >= 12);
+                    boolean isCheckInStarted = checkInDate.isBefore(today) || checkInDate.isEqual(today);
+
+                    if (isCheckoutPassed) {
+                        b.setBookingStatus("已完成");
+                    } else if (isCheckInStarted) {
+                        if (checkInDate.isEqual(today) && currentHour < 15) {
+                            b.setBookingStatus("待入住");
+                        } else {
+                            b.setBookingStatus(i % 2 == 0 ? "已入住" : "待入住");
+                        }
+                    } else {
+                        b.setBookingStatus("待入住");
+                    }
+
+                    Booking savedBooking = bookingRepository.save(b);
+
+                    // 產生對應付款紀錄
+                    BookingPayment bp = new BookingPayment();
+                    bp.setBookingId(savedBooking.getBookingId());
+                    bp.setAmount(savedBooking.getBookingPrice());
+                    bp.setPaymentMethod("信用卡");
+                    bp.setPaymentStatus("已付款");
+                    bp.setCreatedAt(savedBooking.getCreatedAt());
+                    bp.setPaidAt(savedBooking.getCreatedAt().plusMinutes(5));
+                    bp.setTransactionId("TXN-" + System.currentTimeMillis() + "-" + savedBooking.getBookingId());
+                    dynamicPayments.add(bp);
+
+                    // 若為已完成，產生 12:00 ~ 15:00 之間的退房清潔工單
+                    if ("已完成".equals(savedBooking.getBookingStatus())) {
+                        RoomTask rt = new RoomTask();
+                        rt.setRoomId(savedBooking.getRoomId());
+                        rt.setEmployeeId(13 + (i % 5));
+                        rt.setPriority("一般");
+                        rt.setTaskType("退房清潔");
+                        rt.setTaskStatus("已完成");
+                        rt.setRemark("系統動態生成：退房清潔");
+                        rt.setCreatedAt(checkOutDate.atTime(12, 0));
+                        rt.setCompletedAt(checkOutDate.atTime(12 + (i % 3), (i * 15) % 60));
+                        dynamicTasks.add(rt);
+                    }
+                }
             }
-            for (Booking b : list) {
-                b.setBookingId(null);
-                bookingRepository.save(b);
-            }
-            log.info("【訂房模組】已成功初始化 {} 筆訂房資料。", list.size());
+            log.info("【訂房模組】已成功初始化 {} 筆動態訂房資料。", bookingRepository.count());
         }
     }
 
@@ -452,16 +563,9 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     // -------------------------------------------------------------------------
     @Transactional
     public void seedBookingPayments() {
-        if (bookingPaymentRepository.count() == 0) {
-            List<BookingPayment> list = loadListFromClasspath("data/seed/21_room_booking_payments.json", BookingPayment.class);
-            if (list.isEmpty()) {
-                list = loadListFromClasspath("data/seed/room_booking_payments.json", BookingPayment.class);
-            }
-            for (BookingPayment bp : list) {
-                bp.setPaymentId(null);
-                bookingPaymentRepository.save(bp);
-            }
-            log.info("【訂房付款】已成功初始化 {} 筆訂房付款資料。", list.size());
+        if (bookingPaymentRepository.count() == 0 && !dynamicPayments.isEmpty()) {
+            bookingPaymentRepository.saveAll(dynamicPayments);
+            log.info("【訂房付款】已成功初始化 {} 筆動態訂房付款資料。", dynamicPayments.size());
         }
     }
 
@@ -475,11 +579,18 @@ public class DatabaseDataInitializer implements ApplicationRunner {
             if (list.isEmpty()) {
                 list = loadListFromClasspath("data/seed/21_room_tasks.json", RoomTask.class);
             }
+            // 只載入非退房清潔的基礎工單
             for (RoomTask rt : list) {
-                rt.setTaskId(null);
-                roomTaskRepository.save(rt);
+                if (!"退房清潔".equals(rt.getTaskType())) {
+                    rt.setTaskId(null);
+                    roomTaskRepository.save(rt);
+                }
             }
-            log.info("【房務任務】已成功初始化 {} 筆房務清潔與維修任務資料。", list.size());
+            // 寫入對應的動態退房清潔工單
+            if (!dynamicTasks.isEmpty()) {
+                roomTaskRepository.saveAll(dynamicTasks);
+            }
+            log.info("【房務任務】已成功初始化 {} 筆動態與基礎房務任務資料。", roomTaskRepository.count());
         }
     }
 
@@ -503,4 +614,3 @@ public class DatabaseDataInitializer implements ApplicationRunner {
         }
     }
 }
-

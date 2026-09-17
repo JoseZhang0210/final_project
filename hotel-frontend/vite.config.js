@@ -16,6 +16,7 @@ export default defineConfig({
     },
   },
   server:{
+    host: true, // 允許透過區域網路 IP 連線
     proxy:{
       "/api":{
         target:"http://localhost:8081",

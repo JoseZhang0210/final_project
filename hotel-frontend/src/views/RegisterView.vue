@@ -70,16 +70,62 @@
                 <label for="password">
                   密碼 <span class="required">*</span>
                 </label>
-                <input
-                  id="password"
-                  v-model="form.password"
-                  type="password"
-                  placeholder="請輸入密碼 (至少 6 碼)"
-                  autocomplete="new-password"
-                  :class="{ 'is-invalid': errors.password }"
-                  @blur="validatePassword"
-                  required
-                />
+                <div class="password-input-wrapper">
+                  <input
+                    id="password"
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="請輸入密碼 (至少 6 碼)"
+                    autocomplete="new-password"
+                    :class="{ 'is-invalid': errors.password }"
+                    @blur="validatePassword"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="toggle-pwd-btn"
+                    tabindex="-1"
+                    :title="showPassword ? '隱藏密碼' : '顯示密碼'"
+                    @click="showPassword = !showPassword"
+                  >
+                    <!-- Lucide Eye (密碼可見時顯示) -->
+                    <svg
+                      v-if="showPassword"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon lucide-eye"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
+                    <svg
+                      v-else
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon lucide-eye-off"
+                    >
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  </button>
+                </div>
                 <div v-if="errors.password" class="field-error">
                   {{ errors.password }}
                 </div>
@@ -90,16 +136,62 @@
                 <label for="confirmPassword">
                   確認密碼 <span class="required">*</span>
                 </label>
-                <input
-                  id="confirmPassword"
-                  v-model="form.confirmPassword"
-                  type="password"
-                  placeholder="請再次輸入密碼"
-                  autocomplete="new-password"
-                  :class="{ 'is-invalid': errors.confirmPassword }"
-                  @blur="validateConfirmPassword"
-                  required
-                />
+                <div class="password-input-wrapper">
+                  <input
+                    id="confirmPassword"
+                    v-model="form.confirmPassword"
+                    :type="showConfirmPassword ? 'text' : 'password'"
+                    placeholder="請再次輸入密碼"
+                    autocomplete="new-password"
+                    :class="{ 'is-invalid': errors.confirmPassword }"
+                    @blur="validateConfirmPassword"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="toggle-pwd-btn"
+                    tabindex="-1"
+                    :title="showConfirmPassword ? '隱藏密碼' : '顯示密碼'"
+                    @click="showConfirmPassword = !showConfirmPassword"
+                  >
+                    <!-- Lucide Eye (密碼可見時顯示) -->
+                    <svg
+                      v-if="showConfirmPassword"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon lucide-eye"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
+                    <svg
+                      v-else
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="lucide-icon lucide-eye-off"
+                    >
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  </button>
+                </div>
                 <div v-if="errors.confirmPassword" class="field-error">
                   {{ errors.confirmPassword }}
                 </div>
@@ -341,6 +433,8 @@ const errors = reactive({
   email: "",
 });
 
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const loading = ref(false);
 const { sendingCode, countdown, startCountdown } = useVerificationCode();
 
@@ -604,3 +698,36 @@ async function register() {
   }
 }
 </script>
+
+<style scoped>
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.toggle-pwd-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c7d6e;
+  transition: color 0.2s, opacity 0.2s;
+  user-select: none;
+}
+
+.toggle-pwd-btn:hover {
+  color: #4a3b2a;
+}
+</style>

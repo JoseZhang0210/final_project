@@ -5,7 +5,7 @@ import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const BOOKING_API_URL = "/api/bookings";
 const BOOKING_ORDER_API_URL = "/api/orders";
@@ -16,6 +16,7 @@ const roomTypes = ref([]);
 const rooms = ref([]);
 const payments = ref([]);
 const router = useRouter();
+const route = useRoute();
 
 // 核心資料
 const bookings = ref([]);
@@ -634,6 +635,9 @@ function formatPrice(price) {
 let refreshInterval = null;
 
 onMounted(async () => {
+  if (route.query.filter) {
+    currentFilter.value = route.query.filter;
+  }
   await loadSelectOptions();
   await loadBookings();
 
