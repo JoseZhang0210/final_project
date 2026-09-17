@@ -40,116 +40,138 @@
 
     <!-- 會員管理卡片 -->
     <section class="admin-card">
-      <!-- 篩選列 -->
-      <div class="admin-toolbar">
-        <div class="search-box">
-          <input
-            v-model.trim="keyword"
-            type="text"
-            placeholder="搜尋姓名、帳號、信箱或電話..."
-            @keyup.enter="handleSearch"
-          />
+      <!-- 搜尋 / 篩選 -->
+      <div class="admin-search-bar">
+        <input
+          v-model="keyword"
+          type="text"
+          class="admin-input search-input"
+          placeholder="搜尋帳號、姓名、信箱、電話..."
+          @keyup.enter="resetPage"
+        />
+
+        <select v-model="selectedStatus" class="admin-input filter-select" @change="resetPage">
+          <option value="">全部狀態</option>
+          <option value="1">啟用</option>
+          <option value="0">停用</option>
+        </select>
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-primary"
+          @click="resetPage"
+        >
+          搜尋
+        </button>
+
+        <button
+          type="button"
+          class="admin-btn admin-btn-secondary"
+          @click="resetSearch"
+        >
+          重設
+        </button>
+      </div>
+
+      <!-- 資料控制列 -->
+      <div class="table-control-bar">
+        <div class="filter-summary">
+          目前共有
+          <strong>{{ sortedMembers.length }}</strong>
+          位會員
+          <span v-if="sortedMembers.length !== members.length" class="total-hint">
+            （全體共 {{ members.length }} 位）
+          </span>
+          <span v-if="selectedMemberIds.length > 0" class="selected-hint">
+            已選取 <strong>{{ selectedMemberIds.length }}</strong> 位會員
+            <button type="button" class="link-btn" @click="clearSelection">清除選取</button>
+          </span>
         </div>
 
-        <div class="filter-group">
-          <select v-model="selectedStatus" class="status-select">
-            <option value="">全部狀態</option>
-            <option value="1">啟用</option>
-            <option value="0">停用</option>
+        <div class="page-size-area">
+          <label> 每頁顯示 </label>
+          <select v-model.number="pageSize" class="page-size-select">
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
           </select>
-
-          <button
-            type="button"
-            class="admin-btn admin-btn-secondary"
-            @click="handleSearch"
-          >
-            搜尋
-          </button>
-
-          <button
-            type="button"
-            class="admin-btn admin-btn-outline"
-            @click="resetFilter"
-          >
-            重設
-          </button>
+          <span> 筆 </span>
         </div>
       </div>
 
-      <!-- 批次操作列 -->
-      <div v-if="selectedMemberIds.length > 0" class="admin-batch-bar">
-        <span class="batch-count">已選取 <strong>{{ selectedMemberIds.length }}</strong> 筆會員</span>
-        <div class="batch-actions">
-          <button
-            type="button"
-            class="admin-btn admin-btn-sm admin-btn-success"
-            @click="batchUpdateStatus('1')"
-          >
-            批次啟用
-          </button>
-          <button
-            type="button"
-            class="admin-btn admin-btn-sm admin-btn-warning"
-            @click="batchUpdateStatus('0')"
-          >
-            批次停用
-          </button>
-          <button
-            type="button"
-            class="admin-btn admin-btn-sm admin-btn-danger"
-            @click="batchDelete"
-          >
-            批次刪除
-          </button>
-          <button
-            type="button"
-            class="admin-btn admin-btn-sm admin-btn-outline"
-            @click="clearSelection"
-          >
-            取消選取
-          </button>
-        </div>
+      <!-- 訊息 -->
+      <div v-if="message" class="admin-message" :class="messageType">
+        {{ message }}
       </div>
 
-      <!-- 表格 -->
-      <div class="table-responsive">
-        <table class="admin-table">
+      <!-- Loading -->
+      <div v-if="loading" class="loading-message">會員資料讀取中...</div>
+
+      <!-- 會員表格 -->
+      <div v-else class="admin-table-wrapper">
+        <table class="admin-table admin-table-fixed member-table">
+          <colgroup>
+            <col style="width: 48px;" />
+            <col style="width: 75px;" />
+            <col style="width: 200px;" />
+            <col style="width: 230px;" />
+            <col style="width: 80px;" />
+            <col style="width: 90px;" />
+            <col style="width: 175px;" />
+          </colgroup>
           <thead>
             <tr>
-              <th class="col-checkbox">
+              <th style="text-align: center;">
                 <input
                   type="checkbox"
-                  :checked="isAllSelected"
-                  @change="toggleSelectAll"
+                  :checked="isAllSelected(paginatedMembers, (m) => m.memberId ?? m.id)"
+                  @change="(ev) => toggleSelectAll(ev, paginatedMembers, (m) => m.memberId ?? m.id)"
+                  title="全選 / 取消全選本頁"
                 />
               </th>
-              <th class="sortable-th col-id" @click="changeSort('memberId')">
-                <span>編號</span>
-                <span class="sort-icon">{{ getSortIcon('memberId') }}</span>
+
+              <th class="sortable" @click="changeSort('memberId', resetPage)">
+                ID
+                <span class="sort-icon">{{ getSortIcon("memberId") }}</span>
               </th>
-              <th class="col-name">會員姓名 / 帳號</th>
-              <th class="col-contact">聯絡資訊</th>
-              <th class="sortable-th col-created" @click="changeSort('createdAt')">
-                <span>註冊時間</span>
-                <span class="sort-icon">{{ getSortIcon('createdAt') }}</span>
+
+              <th class="sortable" @click="changeSort('username', resetPage)">
+                帳號 / 姓名
+                <span class="sort-icon">{{ getSortIcon("username") }}</span>
               </th>
-              <th class="col-status">狀態</th>
-              <th class="col-actions">操作</th>
+
+              <th>聯絡方式</th>
+
+              <th class="sortable" style="text-align: center;" @click="changeSort('gender', resetPage)">
+                性別
+                <span class="sort-icon">{{ getSortIcon("gender") }}</span>
+              </th>
+
+              <th class="sortable" style="text-align: center;" @click="changeSort('status', resetPage)">
+                狀態
+                <span class="sort-icon">{{ getSortIcon("status") }}</span>
+              </th>
+
+              <th style="text-align: center;">操作</th>
             </tr>
           </thead>
+
           <tbody>
-            <tr v-if="loading">
-              <td colspan="7" class="text-center py-4">載入中...</td>
+            <tr v-if="paginatedMembers.length === 0">
+              <td colspan="7" class="empty-message">查無符合條件的會員</td>
             </tr>
-            <tr v-else-if="paginatedMembers.length === 0">
-              <td colspan="7" class="text-center py-4">查無符合條件的會員資料</td>
-            </tr>
-            <tr v-for="member in paginatedMembers" :key="member.memberId ?? member.id">
-              <td>
+
+            <tr
+              v-for="member in paginatedMembers"
+              :key="member.memberId ?? member.id"
+              :class="{ 'row-selected': selectedMemberIds.includes(member.memberId ?? member.id) }"
+            >
+              <td style="text-align: center;">
                 <input
                   type="checkbox"
-                  :checked="selectedMemberIds.includes(member.memberId ?? member.id)"
-                  @change="toggleSelectMember(member.memberId ?? member.id)"
+                  :value="member.memberId ?? member.id"
+                  v-model="selectedMemberIds"
                 />
               </td>
 
@@ -164,11 +186,11 @@
 
               <td>
                 <div class="contact-info">
-                  <div v-if="member.phone" class="contact-item">
+                  <div v-if="member.phone" class="contact-item" :title="member.phone">
                     <Phone :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.phone }}</span>
                   </div>
-                  <div v-if="member.email" class="contact-item">
+                  <div v-if="member.email" class="contact-item" :title="member.email">
                     <Mail :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.email }}</span>
                   </div>
@@ -189,7 +211,7 @@
                 </span>
               </td>
 
-              <td>
+              <td style="text-align: center;">
                 <div class="action-buttons">
                   <button
                     type="button"
