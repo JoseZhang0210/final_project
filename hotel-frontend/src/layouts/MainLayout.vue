@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
+import { User, Package, Heart, Settings, LogOut } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
 
@@ -193,39 +194,28 @@ async function toggleAccount() {
 
             <RouterLink v-if="!isAdminOrEmployee" to="/member" class="dropdown-item">
               <span class="dropdown-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-                </svg>
+                <User :size="16" />
               </span>
               <span>會員中心</span>
             </RouterLink>
 
             <RouterLink v-if="!isAdminOrEmployee" to="/member/orders" class="dropdown-item">
               <span class="dropdown-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="m4 7 8-4 8 4-8 4-8-4Z" />
-                  <path d="M4 7v10l8 4 8-4V7M12 11v10" />
-                </svg>
+                <Package :size="16" />
               </span>
               <span>我的訂單</span>
             </RouterLink>
 
             <RouterLink v-if="!isAdminOrEmployee" to="/member/wishlist" class="dropdown-item">
               <span class="dropdown-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z" />
-                </svg>
+                <Heart :size="16" />
               </span>
               <span>願望清單</span>
             </RouterLink>
 
             <RouterLink v-if="isAdminOrEmployee" to="/admin" class="dropdown-item">
               <span class="dropdown-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
-                </svg>
+                <Settings :size="16" />
               </span>
               <span>管理後台</span>
             </RouterLink>
@@ -234,9 +224,7 @@ async function toggleAccount() {
 
             <RouterLink to="/logout" class="dropdown-item logout-item">
               <span class="dropdown-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10" />
-                </svg>
+                <LogOut :size="16" />
               </span>
               <span>登出</span>
             </RouterLink>

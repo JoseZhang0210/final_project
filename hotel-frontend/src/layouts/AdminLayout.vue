@@ -63,23 +63,7 @@
         <div v-if="authStore.hasAnyPermission(['MEMBER_MANAGE', 'EMPLOYEE_MANAGE'])" class="sidebar-group">
           <button type="button" class="sidebar-group-title" @click="accountOpen = !accountOpen">
             <span class="sidebar-title-with-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide-icon"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <Users :size="18" class="lucide-icon" />
               帳號管理
             </span>
 
@@ -138,20 +122,7 @@
             to="/"
             class="admin-home-button"
           >
-            <svg
-              class="admin-home-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m3 11 9-8 9 8" />
-              <path d="M5 10v10h14V10" />
-              <path d="M9 20v-6h6v6" />
-            </svg>
+            <Home class="admin-home-icon" :size="18" aria-hidden="true" />
             <span>回首頁</span>
           </RouterLink>
         </div>
@@ -168,6 +139,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
+import { Users, Home } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();

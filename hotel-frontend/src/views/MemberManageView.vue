@@ -14,9 +14,7 @@
           :disabled="exporting || importing"
           @click="openExportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" />
-          </svg>
+          <Download :size="16" aria-hidden="true" />
           {{ exporting ? "匯出中..." : "匯出 JSON" }}
         </button>
 
@@ -26,9 +24,7 @@
           :disabled="exporting || importing"
           @click="openImportModal"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 21V9m0 0 4 4m-4-4-4 4M5 3h14a2 2 0 0 1 2 2v3M3 8V5a2 2 0 0 1 2-2" />
-          </svg>
+          <Upload :size="16" aria-hidden="true" />
           {{ importing ? "匯入中..." : "匯入 JSON" }}
         </button>
 
@@ -43,139 +39,117 @@
     </div>
 
     <!-- 會員管理卡片 -->
-    <section class="admin-card">
-      <!-- 搜尋 / 篩選 -->
-      <div class="admin-search-bar">
-        <input
-          v-model="keyword"
-          type="text"
-          class="admin-input search-input"
-          placeholder="搜尋帳號、姓名、信箱、電話..."
-          @keyup.enter="resetPage"
-        />
-
-        <select v-model="selectedStatus" class="admin-input filter-select" @change="resetPage">
-          <option value="">全部狀態</option>
-          <option value="1">啟用</option>
-          <option value="0">停用</option>
-        </select>
-
-        <button
-          type="button"
-          class="admin-btn admin-btn-primary"
-          @click="resetPage"
-        >
-          搜尋
-        </button>
-
-        <button
-          type="button"
-          class="admin-btn admin-btn-secondary"
-          @click="resetSearch"
-        >
-          重設
-        </button>
-      </div>
-
-      <!-- 資料控制列 -->
-      <div class="table-control-bar">
-        <div class="filter-summary">
-          目前共有
-          <strong>{{ sortedMembers.length }}</strong>
-          位會員
-          <span v-if="sortedMembers.length !== members.length" class="total-hint">
-            （全體共 {{ members.length }} 位）
-          </span>
-          <span v-if="selectedMemberIds.length > 0" class="selected-hint">
-            已選取 <strong>{{ selectedMemberIds.length }}</strong> 位會員
-            <button type="button" class="link-btn" @click="clearSelection">清除選取</button>
-          </span>
+    <div class="admin-card">
+      <!-- 篩選列 -->
+      <div class="admin-toolbar">
+        <div class="search-box">
+          <input
+            v-model.trim="keyword"
+            type="text"
+            placeholder="搜尋姓名、帳號、信箱或電話..."
+            @keyup.enter="handleSearch"
+          />
         </div>
 
-        <div class="page-size-area">
-          <label> 每頁顯示 </label>
-          <select v-model.number="pageSize" class="page-size-select">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-            <option :value="50">50</option>
+        <div class="filter-group">
+          <select v-model="selectedStatus" class="status-select">
+            <option value="">全部狀態</option>
+            <option value="1">啟用</option>
+            <option value="0">停用</option>
           </select>
-          <span> 筆 </span>
+
+          <button
+            type="button"
+            class="admin-btn admin-btn-secondary"
+            @click="handleSearch"
+          >
+            搜尋
+          </button>
+
+          <button
+            type="button"
+            class="admin-btn admin-btn-outline"
+            @click="resetFilter"
+          >
+            重設
+          </button>
         </div>
       </div>
 
-      <!-- 訊息 -->
-      <div v-if="message" class="admin-message" :class="messageType">
-        {{ message }}
+      <!-- 批次操作列 -->
+      <div v-if="selectedMemberIds.length > 0" class="admin-batch-bar">
+        <span class="batch-count">已選取 <strong>{{ selectedMemberIds.length }}</strong> 筆會員</span>
+        <div class="batch-actions">
+          <button
+            type="button"
+            class="admin-btn admin-btn-sm admin-btn-success"
+            @click="batchUpdateStatus('1')"
+          >
+            批次啟用
+          </button>
+          <button
+            type="button"
+            class="admin-btn admin-btn-sm admin-btn-warning"
+            @click="batchUpdateStatus('0')"
+          >
+            批次停用
+          </button>
+          <button
+            type="button"
+            class="admin-btn admin-btn-sm admin-btn-danger"
+            @click="batchDelete"
+          >
+            批次刪除
+          </button>
+          <button
+            type="button"
+            class="admin-btn admin-btn-sm admin-btn-outline"
+            @click="clearSelection"
+          >
+            取消選取
+          </button>
+        </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="loading-message">會員資料讀取中...</div>
-
-      <!-- 會員表格 -->
-      <div v-else class="admin-table-wrapper">
-        <table class="admin-table admin-table-fixed member-table">
-          <colgroup>
-            <col style="width: 48px;" />
-            <col style="width: 75px;" />
-            <col style="width: 200px;" />
-            <col style="width: 230px;" />
-            <col style="width: 80px;" />
-            <col style="width: 90px;" />
-            <col style="width: 175px;" />
-          </colgroup>
+      <!-- 表格 -->
+      <div class="table-responsive">
+        <table class="admin-table">
           <thead>
             <tr>
-              <th style="text-align: center;">
+              <th class="col-checkbox">
                 <input
                   type="checkbox"
-                  :checked="isAllSelected(paginatedMembers, (m) => m.memberId ?? m.id)"
-                  @change="(ev) => toggleSelectAll(ev, paginatedMembers, (m) => m.memberId ?? m.id)"
-                  title="全選 / 取消全選本頁"
+                  :checked="isAllSelected"
+                  @change="toggleSelectAll"
                 />
               </th>
-
-              <th class="sortable" @click="changeSort('memberId', resetPage)">
-                ID
-                <span class="sort-icon">{{ getSortIcon("memberId") }}</span>
+              <th class="sortable-th col-id" @click="changeSort('memberId')">
+                <span>編號</span>
+                <span class="sort-icon">{{ getSortIcon('memberId') }}</span>
               </th>
-
-              <th class="sortable" @click="changeSort('username', resetPage)">
-                帳號 / 姓名
-                <span class="sort-icon">{{ getSortIcon("username") }}</span>
+              <th class="col-name">會員姓名 / 帳號</th>
+              <th class="col-contact">聯絡資訊</th>
+              <th class="sortable-th col-created" @click="changeSort('createdAt')">
+                <span>註冊時間</span>
+                <span class="sort-icon">{{ getSortIcon('createdAt') }}</span>
               </th>
-
-              <th>聯絡方式</th>
-
-              <th class="sortable" style="text-align: center;" @click="changeSort('gender', resetPage)">
-                性別
-                <span class="sort-icon">{{ getSortIcon("gender") }}</span>
-              </th>
-
-              <th class="sortable" style="text-align: center;" @click="changeSort('status', resetPage)">
-                狀態
-                <span class="sort-icon">{{ getSortIcon("status") }}</span>
-              </th>
-
-              <th style="text-align: center;">操作</th>
+              <th class="col-status">狀態</th>
+              <th class="col-actions">操作</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-if="paginatedMembers.length === 0">
-              <td colspan="7" class="empty-message">查無符合條件的會員</td>
+            <tr v-if="loading">
+              <td colspan="7" class="text-center py-4">載入中...</td>
             </tr>
-
-            <tr
-              v-for="member in paginatedMembers"
-              :key="member.memberId ?? member.id"
-              :class="{ 'row-selected': selectedMemberIds.includes(member.memberId ?? member.id) }"
-            >
-              <td style="text-align: center;">
+            <tr v-else-if="paginatedMembers.length === 0">
+              <td colspan="7" class="text-center py-4">查無符合條件的會員資料</td>
+            </tr>
+            <tr v-for="member in paginatedMembers" :key="member.memberId ?? member.id">
+              <td>
                 <input
                   type="checkbox"
-                  :value="member.memberId ?? member.id"
-                  v-model="selectedMemberIds"
+                  :checked="selectedMemberIds.includes(member.memberId ?? member.id)"
+                  @change="toggleSelectMember(member.memberId ?? member.id)"
                 />
               </td>
 
@@ -191,38 +165,11 @@
               <td>
                 <div class="contact-info">
                   <div v-if="member.phone" class="contact-item">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
+                    <Phone :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.phone }}</span>
                   </div>
                   <div v-if="member.email" class="contact-item">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide-icon inline-icon"
-                    >
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
+                    <Mail :size="14" class="lucide-icon inline-icon" />
                     <span>{{ member.email }}</span>
                   </div>
                   <span v-if="!member.phone && !member.email" class="text-muted">未填寫</span>
@@ -299,21 +246,7 @@
         <form class="admin-modal-body" @submit.prevent="saveMember">
           <!-- 帳號設定 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+            <Lock :size="18" class="lucide-icon section-icon" />
             <span>帳號設定</span>
           </div>
           <div class="admin-form-grid">
@@ -343,21 +276,7 @@
 
           <!-- 個人基本資料 -->
           <div class="form-section-title">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide-icon section-icon"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User :size="18" class="lucide-icon section-icon" />
             <span>個人基本資料</span>
           </div>
           <div class="admin-form-grid">
@@ -484,6 +403,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import { Download, Upload, Phone, Mail, Lock, User } from "@lucide/vue";
 import { getAuthHeaders } from "@/utils/auth";
 import { useAdminPagination } from "@/composables/useAdminPagination";
 import { useTableSort } from "@/composables/useTableSort";

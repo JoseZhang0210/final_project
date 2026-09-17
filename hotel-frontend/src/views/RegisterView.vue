@@ -40,7 +40,7 @@
           <!-- 區塊 1: 帳號安全 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <Lock :size="18" class="lucide-icon" />
               帳號安全設定
             </div>
 
@@ -88,42 +88,17 @@
                     :title="showPassword ? '隱藏密碼' : '顯示密碼'"
                     @click="showPassword = !showPassword"
                   >
-                    <!-- Lucide Eye (密碼可見時顯示) -->
-                    <svg
+                    <!-- Lucide Eye / EyeOff -->
+                    <Eye
                       v-if="showPassword"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
-                    <svg
+                    />
+                    <EyeOff
                       v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye-off"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
+                    />
                   </button>
                 </div>
                 <div v-if="errors.password" class="field-error">
@@ -154,42 +129,17 @@
                     :title="showConfirmPassword ? '隱藏密碼' : '顯示密碼'"
                     @click="showConfirmPassword = !showConfirmPassword"
                   >
-                    <!-- Lucide Eye (密碼可見時顯示) -->
-                    <svg
+                    <!-- Lucide Eye / EyeOff -->
+                    <Eye
                       v-if="showConfirmPassword"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    <!-- Lucide Eye-Off (密碼隱藏時顯示) -->
-                    <svg
+                    />
+                    <EyeOff
                       v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      :size="18"
                       class="lucide-icon lucide-eye-off"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
+                    />
                   </button>
                 </div>
                 <div v-if="errors.confirmPassword" class="field-error">
@@ -202,7 +152,7 @@
           <!-- 區塊 2: 信箱驗證 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <Mail :size="18" class="lucide-icon" />
               電子信箱與身份驗證
             </div>
 
@@ -263,7 +213,7 @@
           <!-- 區塊 3: 個人基本資料 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <User :size="18" class="lucide-icon" />
               個人基本資料
             </div>
 
@@ -316,7 +266,7 @@
           <!-- 區塊 4: 通訊地址 -->
           <div class="form-section">
             <div class="section-title">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <MapPin :size="18" class="lucide-icon" />
               通訊地址 (選填)
             </div>
 
@@ -389,6 +339,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { Lock, Eye, EyeOff, Mail, User, MapPin } from "@lucide/vue";
 import { useToastStore } from "@/stores/toast";
 import { useAuthStore } from "@/stores/auth";
 import { useVerificationCode } from "@/composables/useVerificationCode";
