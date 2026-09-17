@@ -1,5 +1,6 @@
 <script setup>
 import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
+import { Bed, ChevronRight, Utensils, ShoppingBag, Landmark, Star, ShieldCheck, Heart } from "@lucide/vue";
 </script>
 
 <template>
@@ -20,74 +21,53 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
         <div class="home-services__grid">
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M4 19v-8m16 8v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6m0-3h16M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"
-                />
-              </svg>
+              <Bed :size="24" />
             </div>
             <p class="service-card__number">01</p>
             <h3>舒適住宿</h3>
             <p>選擇適合你的房型與日期，輕鬆安排下一段悠閒旅程。</p>
             <RouterLink to="/room-booking" class="service-card__link">
               查看房型
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
 
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M7 3v8m-3-8v5a3 3 0 0 0 6 0V3m-3 8v10M17 3v18m0-18c2 2 3 4 3 7h-3"
-                />
-              </svg>
+              <Utensils :size="24" />
             </div>
             <p class="service-card__number">02</p>
             <h3>精緻餐飲</h3>
             <p>以當季食材與細緻料理，為相聚時光增添值得回味的風景。</p>
             <RouterLink to="/restaurant-menu" class="service-card__link">
               瀏覽餐廳
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
 
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M6 8h12l1 13H5L6 8Zm3 2V6a3 3 0 0 1 6 0v4" />
-              </svg>
+              <ShoppingBag :size="24" />
             </div>
             <p class="service-card__number">03</p>
             <h3>飯店嚴選</h3>
             <p>精選寢具、香氛與特色商品，讓旅途中的舒適延續到日常。</p>
             <RouterLink to="/products" class="service-card__link">
               前往商城
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
 
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M4 20V8l8-4 8 4v12M4 10h16M8 20v-6h8v6" />
-                <path d="M9 7.5h.01M15 7.5h.01" />
-              </svg>
+              <Landmark :size="24" />
             </div>
             <p class="service-card__number">04</p>
             <h3>場地租借</h3>
             <p>從會議、聚會到慶祝活動，找到符合人數與需求的理想空間。</p>
             <RouterLink to="/rentals" class="service-card__link">
               查看場地
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
         </div>
@@ -101,11 +81,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
 
         <div class="home-promise__items">
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 3Z"
-              />
-            </svg>
+            <Star :size="24" aria-hidden="true" />
             <div>
               <h3>品質嚴選</h3>
               <p>從住宿到商品，維持一致的品質標準。</p>
@@ -113,9 +89,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
           </div>
 
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M20 12a8 8 0 1 1-3-6.2M20 4v6h-6m-5 2 2 2 4-5" />
-            </svg>
+            <ShieldCheck :size="24" aria-hidden="true" />
             <div>
               <h3>安心服務</h3>
               <p>清楚的流程與資訊，讓每次選擇更放心。</p>
@@ -123,11 +97,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
           </div>
 
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="M12 21s-8-4.7-8-11a4 4 0 0 1 7-2.6L12 9l1-1.6A4 4 0 0 1 20 10c0 6.3-8 11-8 11Z"
-              />
-            </svg>
+            <Heart :size="24" aria-hidden="true" />
             <div>
               <h3>真誠款待</h3>
               <p>以貼近需求的服務，陪你創造美好回憶。</p>

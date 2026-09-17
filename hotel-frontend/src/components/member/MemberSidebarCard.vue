@@ -11,10 +11,7 @@
         <span v-else>{{ userInitial }}</span>
 
         <div v-if="allowUpload" class="avatar-overlay">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-            <circle cx="12" cy="13" r="3"/>
-          </svg>
+          <Camera :size="20" />
           <span class="overlay-text">{{ uploading ? '上傳中' : '更換頭像' }}</span>
         </div>
       </div>
@@ -35,11 +32,7 @@
         :disabled="uploading"
         @click="triggerFileInput"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-icon">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" x2="12" y1="3" y2="15"/>
-        </svg>
+        <Upload :size="14" class="inline-icon" />
         <span>{{ uploading ? '上傳中...' : '上傳頭像' }}</span>
       </button>
     </div>
@@ -52,6 +45,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
+import { Camera, Upload } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 
 const props = defineProps({
