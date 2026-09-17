@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { roomApi } from "@/api/roomApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
-import { fetchClient } from "@/api/apiClient";
+import { fetchClient } from "@/api/apiClient"; // syncRoomStatuses 用到
+import { useAdminPagination } from "@/composables/useAdminPagination";
 
 // 從 API 載入真實房型清單
 const roomTypes = ref([]);
@@ -67,7 +68,6 @@ async function loadRooms() {
   try {
     const data = await roomApi.getAllRooms();
     rooms.value = Array.isArray(data) ? data : data.content || [];
-    console.log("SQL room 資料：", rooms.value);
   } catch (error) {
     console.error("讀取房間錯誤：", error);
     showMessage(error.message || "無法連線至房間 API", "error");
@@ -192,9 +192,7 @@ onMounted(async () => {
   loadRooms();
 });
 
-const currentPage = ref(1);
 const currentFilter = ref('all');
-const itemsPerPage = 20;
 
 // 各狀態筆數統計
 const statusCount = computed(() => {
@@ -205,35 +203,18 @@ const statusCount = computed(() => {
   return counts;
 });
 
-// 依籾選過濾後的房間列表
+// 依過濾條件篩選後的房間列表
 const filteredRooms = computed(() => {
   if (currentFilter.value === 'all') return rooms.value;
   return rooms.value.filter(r => (r.roomStatus ?? r.room_status) === currentFilter.value);
 });
 
-const totalPages = computed(() => Math.ceil(filteredRooms.value.length / itemsPerPage));
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage.value - 2);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  for (let page = start; page <= end; page++) {
-    pages.push(page);
-  }
-  return pages;
-});
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredRooms.value.slice(start, start + itemsPerPage);
-});
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, resetPage } = useAdminPagination(filteredRooms, 20);
 
 function setFilter(status) {
   currentFilter.value = status;
-  currentPage.value = 1;
+  resetPage();
 }
 
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
