@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, ref, computed } from "vue";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
+import { bookingApi } from "@/api/bookingApi";
 
 const payments = ref([]);
+const bookings = ref([]);
 const loading = ref(false);
 const message = ref("");
 const messageType = ref("");
@@ -22,18 +24,27 @@ function showMessage(text, type) {
   setTimeout(() => { message.value = ""; }, 3000);
 }
 
-// 讀取全部付款資料
+// 讀取全部付款資料與訂房資料以取得會員 ID
 async function loadPayments() {
   loading.value = true;
   message.value = "";
   try {
-    const data = await bookingPaymentApi.getAllPayments();
-    payments.value = Array.isArray(data) ? data : data.content || [];
+    const [paymentData, bookingData] = await Promise.all([
+      bookingPaymentApi.getAllPayments(),
+      bookingApi.getAllBookings().catch(() => []) // 容錯處理
+    ]);
+    payments.value = Array.isArray(paymentData) ? paymentData : paymentData.content || [];
+    bookings.value = Array.isArray(bookingData) ? bookingData : bookingData.content || [];
   } catch (error) {
     showMessage(error.message || "無法連線至付款 API", "error");
   } finally {
     loading.value = false;
   }
+}
+
+function getMemberIdForPayment(bookingId) {
+  const booking = bookings.value.find(b => b.bookingId === bookingId || b.booking_id === bookingId);
+  return booking ? (booking.memberId ?? booking.member_id) : "—";
 }
 
 // 前端篩選後的資料
@@ -108,9 +119,21 @@ onMounted(() => {
 // 分頁（基於篩選後的資料）
 const currentPage = ref(1);
 const itemsPerPage = 20;
-const totalPages = computed(() =>
-  Math.ceil(filteredPayments.value.length / itemsPerPage)
-);
+const totalPages = computed(() => Math.ceil(filteredPayments.value.length / itemsPerPage));
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - 2);
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+  return pages;
+});
 const sortKey = ref("paymentId");
 const sortOrder = ref("desc");
 
@@ -214,6 +237,7 @@ function prevPage() {
               <th @click="toggleSort('bookingId')" class="sortable">
                 訂單 ID <span v-if="sortKey === 'bookingId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
+              <th>會員ID</th>
               <th>金額</th>
               <th>付款方式</th>
               <th>狀態</th>
@@ -235,6 +259,7 @@ function prevPage() {
               <tr v-for="payment in paginatedData" :key="payment.paymentId">
                 <td>{{ payment.paymentId }}</td>
                 <td>{{ payment.bookingId }}</td>
+                <td>{{ getMemberIdForPayment(payment.bookingId) }}</td>
                 <td>{{ formatPrice(payment.amount) }}</td>
                 <td>{{ payment.paymentMethod }}</td>
                 <td>
@@ -268,10 +293,29 @@ function prevPage() {
         </table>
       </div>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      <div class="pagination-area" v-if="totalPages > 1">
+        <div class="pagination-info">
+          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
+        </div>
+
+        <div class="pagination">
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page" 
+            type="button" 
+            class="page-button" 
+            :class="{ active: currentPage === page }" 
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+          
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
+        </div>
       </div>
     </section>
   </main>
@@ -509,38 +553,14 @@ tbody tr:hover td {
   font-size: 13px;
 }
 
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  gap: 15px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background-color: #315b7d;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #264a63;
-}
-
-.page-btn:disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.page-info {
-  font-weight: 500;
-  color: #374151;
-}
+.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
+.pagination-info { color: #857a70; font-size: 13px; }
+.pagination-info strong { color: #9b7435; }
+.pagination { display: flex; align-items: center; gap: 6px; }
+.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
+.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
+.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
+.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 
 @media (max-width: 768px) {
   .payment-page {

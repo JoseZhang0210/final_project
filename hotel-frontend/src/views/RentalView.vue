@@ -14,6 +14,7 @@ import {
 
 const router = useRouter();
 const route = useRoute(); // 讀取目前前台或管理模式。
+const isMemberMode = computed(() => route.name === "member-rentals" || route.path.startsWith("/member"));
 const occupied = ref([]); // 只儲存不含私人資訊的占用日期。
 const payments = ref({}); // 以租借編號對應歷史付款資訊。
 watch(() => route.name, () => { rentals.value = []; payments.value = {}; if (token.value) loadData(); }); // 同一元件切換前後台時先清空資料再重新查詢。
@@ -680,7 +681,7 @@ function money(value) {
 
 <template>
   <main class="rental-page">
-    <section class="hero">
+    <section v-if="!isMemberMode" class="hero">
       <div>
         <p class="eyebrow">VENUE RENTAL V2.0</p>
         <h1>場地租借</h1>
@@ -691,7 +692,7 @@ function money(value) {
       </div>
     </section>
 
-    <section class="venue-cards">
+    <section v-if="!isMemberMode" class="venue-cards">
       <!-- 每個場地保留自己的圖片與日期。 -->
       <article v-for="venue in venues" :key="venue.venueId" class="card">
         <!-- 無圖片或載入失敗使用本地中性預設圖。 -->
@@ -712,7 +713,7 @@ function money(value) {
       </article>
     </section>
     <!-- 會員前台固定顯示新增表單，後台使用獨立管理元件。 -->
-    <section class="card">
+    <section v-if="!isMemberMode" class="card">
       <h2>新增租借</h2>
 
       <div class="form-grid">

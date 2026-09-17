@@ -156,7 +156,7 @@ async function toggleAccount() {
 
         <RouterLink to="/products"> 商城商品 </RouterLink>
 
-        <RouterLink to="/room-booking"> 訂房管理 </RouterLink>
+        <RouterLink to="/room-booking"> 預訂訂房 </RouterLink>
 
         <RouterLink to="/restaurant-menu"> 餐廳 </RouterLink>
 
@@ -247,7 +247,7 @@ async function toggleAccount() {
     </main>
 
     <footer>
-      <p>© 2026 Hotel Shop 星澄飯店｜All Rights Reserved</p>
+      <p>© 2026 Hotel Shop 星澄飯店｜僅供報告展示用 無商業用途行為</p>
     </footer>
   </div>
 </template>
