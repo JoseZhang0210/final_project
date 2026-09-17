@@ -698,8 +698,6 @@ function money(value) {
         <img class="venue-image" :src="venue.imageUrl || '/images/venue-placeholder.svg'" :alt="venue.venueName" @error="$event.target.src = '/images/venue-placeholder.svg'" />
         <!-- 顯示資料庫中的名稱與規格。 -->
         <h2>{{ venue.venueName }}</h2>
-        <!-- 不編造不存在的場地介紹。 -->
-        <p>場地說明尚未設定</p>
         <!-- 容量與價格都以後端場地資料為準。 -->
         <p>{{ venue.capacity }} 人｜{{ money(venue.pricePerDay) }}／日</p>
         <!-- 顏色與文字共同傳達場地狀態。 -->
