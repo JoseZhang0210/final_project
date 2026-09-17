@@ -101,7 +101,7 @@ async function toggleAccount() {
     }
 
     const data = await res.json();
-    authStore.login(data.token, data.authorities, data.name);
+    authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
     toastStore.showToast(`已切換至${targetLabel}`, "success");
 
     // 若切換為會員且目前在後台頁面，自動導向首頁避免權限錯誤

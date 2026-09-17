@@ -261,6 +261,7 @@ async function handleGoogleCredentialResponse(response) {
     const payload = parseJwtPayload(response.credential);
     const email = payload?.email || "";
     const name = payload?.name || payload?.given_name || "";
+    const avatarUrl = payload?.picture || "";
 
     const res = await fetch("/api/auth/google-login", {
       method: "POST",
@@ -269,6 +270,7 @@ async function handleGoogleCredentialResponse(response) {
         credential: response.credential,
         email,
         name,
+        avatarUrl,
       }),
     });
 
@@ -281,7 +283,7 @@ async function handleGoogleCredentialResponse(response) {
     }
 
     if (data.registered) {
-      authStore.login(data.token, data.authorities, data.name);
+      authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
       message.value = `歡迎回來，${data.name}！`;
       messageType.value = "success";
 
@@ -300,6 +302,7 @@ async function handleGoogleCredentialResponse(response) {
       const googleSignupData = {
         email: data.email || email,
         name: data.name || name,
+        avatarUrl: data.avatarUrl || avatarUrl || "",
         googleVerifiedCode: data.googleVerifiedCode || "",
         from: "google",
       };
@@ -313,6 +316,7 @@ async function handleGoogleCredentialResponse(response) {
           from: "google",
           email: encodeURIComponent(googleSignupData.email),
           name: encodeURIComponent(googleSignupData.name),
+          avatarUrl: googleSignupData.avatarUrl ? encodeURIComponent(googleSignupData.avatarUrl) : "",
           code: googleSignupData.googleVerifiedCode,
         },
       });
@@ -345,7 +349,7 @@ async function triggerCustomGoogleSignIn() {
       });
       const data = await res.json().catch(() => ({}));
       if (data.registered) {
-        authStore.login(data.token, data.authorities, data.name);
+        authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
         showLoginAnimation.value = true;
         await delay(2200);
         if (data.authorities && data.authorities.includes("ROLE_ADMIN")) {
@@ -357,6 +361,7 @@ async function triggerCustomGoogleSignIn() {
         const googleSignupData = {
           email: data.email || inputEmail.trim(),
           name: data.name || inputEmail.split("@")[0],
+          avatarUrl: data.avatarUrl || "",
           googleVerifiedCode: data.googleVerifiedCode || "",
           from: "google",
         };
@@ -367,6 +372,7 @@ async function triggerCustomGoogleSignIn() {
             from: "google",
             email: encodeURIComponent(googleSignupData.email),
             name: encodeURIComponent(googleSignupData.name),
+            avatarUrl: googleSignupData.avatarUrl ? encodeURIComponent(googleSignupData.avatarUrl) : "",
             code: googleSignupData.googleVerifiedCode,
           },
         });
@@ -411,7 +417,7 @@ async function login() {
     }
 
     const data = await response.json();
-    authStore.login(data.token, data.authorities, data.name);
+    authStore.login(data.token, data.authorities, data.name, data.avatarUrl);
     message.value = "登入成功";
     messageType.value = "success";
 

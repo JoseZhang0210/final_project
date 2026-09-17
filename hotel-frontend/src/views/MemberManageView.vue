@@ -183,10 +183,6 @@
 
               <td>
                 <div class="name-cell">
-                  <div class="table-avatar-circle">
-                    <img v-if="member.avatarUrl" :src="member.avatarUrl" alt="Avatar" class="table-avatar-img" />
-                    <span v-else>{{ (member.name || member.username || "客").charAt(0) }}</span>
-                  </div>
                   <div class="name-text-group">
                     <span class="item-name">{{ member.name || "未填姓名" }}</span>
                     <span class="item-username">(@{{ member.username }})</span>

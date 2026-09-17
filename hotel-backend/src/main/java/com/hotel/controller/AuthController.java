@@ -241,8 +241,9 @@ public class AuthController {
         String credential = request.get("credential");
         String email = request.get("email");
         String name = request.get("name");
+        String avatarUrl = request.get("avatarUrl");
 
-        // 若傳入 Google Credential (JWT)，解析 Payload 取得 email 與 name
+        // 若傳入 Google Credential (JWT)，解析 Payload 取得 email, name 與 picture (avatarUrl)
         if (credential != null && !credential.isBlank()) {
             try {
                 String[] parts = credential.split("\\.");
@@ -257,10 +258,13 @@ public class AuthController {
                         if (payload.get("name") != null && (name == null || name.isBlank())) {
                             name = String.valueOf(payload.get("name"));
                         }
+                        if (payload.get("picture") != null && (avatarUrl == null || avatarUrl.isBlank())) {
+                            avatarUrl = String.valueOf(payload.get("picture"));
+                        }
                     }
                 }
             } catch (Exception e) {
-                // 解析失敗時使用原本傳入的 email 與 name
+                // 解析失敗時使用原本傳入的 email、name 與 avatarUrl
             }
         }
 
@@ -313,6 +317,7 @@ public class AuthController {
             response.put("registered", false);
             response.put("email", email);
             response.put("name", name != null ? name : "");
+            response.put("avatarUrl", avatarUrl != null ? avatarUrl : "");
             response.put("googleVerifiedCode", googleVerifiedCode);
             response.put("message", "此 Google 帳號尚未註冊，即將為您引導至註冊頁面並帶入資料");
             return ResponseEntity.ok(response);
