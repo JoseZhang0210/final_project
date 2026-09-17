@@ -354,7 +354,7 @@ public class MemberController {
 
         // 依 accountId 批次查詢 Account 密碼
         List<Integer> accountIds = members.stream()
-                .map(MemberDTO::getAccountId)
+                .map(m -> m != null ? m.getAccountId() : null)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());

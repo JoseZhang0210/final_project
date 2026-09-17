@@ -4,7 +4,6 @@
  */
 package com.hotel.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,11 +22,9 @@ import java.util.Collections;
 @RequestMapping("/api/test")
 public class TestController {
 
-    @Autowired
-    private HotelScheduler hotelScheduler;
+    private final HotelScheduler hotelScheduler;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @GetMapping("/cleanup-images")
     public String cleanupImages() {
@@ -44,8 +41,10 @@ public class TestController {
     private final MailUtil mailUtil;
 
     // 使用構造器注入
-    public TestController(MailUtil mailUtil) {
+    public TestController(MailUtil mailUtil, HotelScheduler hotelScheduler, JdbcTemplate jdbcTemplate) {
         this.mailUtil = mailUtil;
+        this.hotelScheduler = hotelScheduler;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**

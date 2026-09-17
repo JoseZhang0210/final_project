@@ -23,6 +23,7 @@ public class OrderDataSeeder {
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderDataExchangeService orderDataExchangeService;
 
+    @Deprecated
     public void run(ApplicationArguments args) {
         long couponCount = couponRepository.count();
         long orderCount = customerOrderRepository.count();

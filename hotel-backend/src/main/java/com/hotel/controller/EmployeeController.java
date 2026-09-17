@@ -343,7 +343,7 @@ public class EmployeeController {
 
         // 依 accountId 批次查詢 Account 密碼
         List<Integer> accountIds = employees.stream()
-                .map(EmployeeDTO::getAccountId)
+                .map(emp -> emp != null ? emp.getAccountId() : null)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());

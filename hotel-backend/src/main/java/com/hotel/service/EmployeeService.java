@@ -67,7 +67,8 @@ public class EmployeeService {
         List<EmployeeDTO> list = new ArrayList<>();
 
         Map<Integer, String> permissionNameMap = permissionRepository.findAll().stream()
-                .collect(Collectors.toMap(Permission::getPermissionId, Permission::getPermissionName, (v1, v2) -> v1));
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toMap(p -> p != null ? p.getPermissionId() : null, p -> p != null ? p.getPermissionName() : null, (v1, v2) -> v1));
 
         List<EmployeePermission> allEmployeePermissions = employeePermissionRepository.findAll();
         Map<Integer, List<Integer>> empPermMap = new java.util.HashMap<>();
@@ -441,12 +442,12 @@ public class EmployeeService {
             return;
         }
         List<EmployeePermission> epList = employeePermissionRepository.findByEmployeeId(employeeId);
-        List<Integer> permIds = epList.stream().map(EmployeePermission::getPermissionId).collect(Collectors.toList());
+        List<Integer> permIds = epList.stream().map(ep -> ep != null ? ep.getPermissionId() : null).filter(java.util.Objects::nonNull).collect(Collectors.toList());
         dto.setPermissionIds(permIds);
 
         if (!permIds.isEmpty()) {
             List<Permission> perms = permissionRepository.findAllById(permIds);
-            List<String> permNames = perms.stream().map(Permission::getPermissionName).collect(Collectors.toList());
+            List<String> permNames = perms.stream().map(p -> p != null ? p.getPermissionName() : null).filter(java.util.Objects::nonNull).collect(Collectors.toList());
             dto.setPermissionNames(permNames);
         } else {
             dto.setPermissionNames(new ArrayList<>());
