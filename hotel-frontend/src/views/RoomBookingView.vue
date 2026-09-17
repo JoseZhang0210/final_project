@@ -114,9 +114,15 @@ import '@vuepic/vue-datepicker/dist/main.css';
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Use standard local time for today
+// 取得當前時間
+const now = new Date();
 const today = new Date();
-today.setHours(0, 0, 0, 0); // Strip time
+
+// 如果還沒超過退房時間 (12:00)，允許選擇「昨天」作為入住日 (因應凌晨入住)
+if (now.getHours() < 12) {
+  today.setDate(today.getDate() - 1);
+}
+today.setHours(0, 0, 0, 0); // 歸零時間，純比較日期
 
 const tomorrowDate = new Date(today);
 tomorrowDate.setDate(tomorrowDate.getDate() + 1);

@@ -153,7 +153,7 @@
           <h3>您的入住驗證碼</h3>
           <p class="qr-desc">請向櫃檯人員或自助報到機出示此 QR Code</p>
           <div class="qr-code-wrapper">
-            <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${verificationCode}`" alt="Check-in QR Code" />
+            <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ACTIVE_WIFI_IP + '/mobile-pass?code=' + verificationCode + '&room=' + getRoomNumber(selectedBooking.roomId))}`" alt="Check-in QR Code" />
           </div>
           <div class="verification-code">
             驗證碼：<strong>{{ verificationCode }}</strong>
@@ -189,6 +189,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
+// ==========================================
+// 手機端測試 Wifi IP 切換區 (Demo 專用)
+// ==========================================
+const ACTIVE_WIFI_IP = 'http://172.22.45.103:5173'; // R201 Wifi
+// const ACTIVE_WIFI_IP = 'http://172.22.41.173:5173'; // R301 Wifi
+
+const currentDomain = window.location.origin;
 const loading = ref(true)
 const bookings = ref([])
 const rooms = ref([])
@@ -376,12 +383,32 @@ function canCheckIn(booking) {
   return now >= checkInDateObj;
 }
 
-function generateQrCode() {
+async function generateQrCode() {
   if (!selectedBooking.value) return;
-  // 產生一組隨機的臨時驗證碼
-  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-  verificationCode.value = `CKIN-${selectedBooking.value.bookingId}-${randomStr}`;
-  showQrModal.value = true;
+  
+  try {
+    const bookingInfo = `${selectedBooking.value.bookingId}-${selectedBooking.value.memberId || 'M'}-${selectedBooking.value.checkInDate}`;
+    let numericCode = '';
+
+    if (window.crypto && window.crypto.subtle) {
+      const msgBuffer = new TextEncoder().encode(bookingInfo);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      numericCode = BigInt('0x' + hashHex.substring(0, 12)).toString();
+    } else {
+      // 在非 HTTPS 環境下 (例如手機連內網 IP 測試時)，crypto.subtle 會是 undefined
+      // 我們使用簡單的隨機數作為 Fallback
+      numericCode = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
+    }
+    
+    verificationCode.value = numericCode;
+    showQrModal.value = true;
+  } catch (err) {
+    console.error("產生 QR Code 時發生錯誤:", err);
+    verificationCode.value = Math.floor(10000000000000 + Math.random() * 90000000000000).toString();
+    showQrModal.value = true;
+  }
 }
 
 async function performCheckIn() {

@@ -157,15 +157,10 @@ async function deleteRoom(id) {
 }
 
 async function syncRoomStatuses() {
-  if (!window.confirm("確定要手動同步今日訂房狀態與房間狀態嗎？")) {
-    return;
-  }
-  
   loading.value = true;
   message.value = "";
   try {
     await fetchClient('/api/rooms/sync-status', { method: 'POST' });
-    showMessage("今日房間狀態已成功同步！", "success");
     await loadRooms();
   } catch (error) {
     showMessage("狀態同步發生例外錯誤", "error");

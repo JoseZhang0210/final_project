@@ -56,6 +56,11 @@ const router = createRouter({
 
   routes: [
     {
+      path: "/mobile-pass",
+      name: "mobile-pass",
+      component: () => import("../views/MobilePassView.vue"),
+    },
+    {
       path: "/admin",
       component: AdminLayout,
       meta: { requiresAuth: true, requiresEmployee: true },

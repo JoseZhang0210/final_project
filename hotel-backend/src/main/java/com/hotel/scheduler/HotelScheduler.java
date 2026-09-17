@@ -70,21 +70,8 @@ public class HotelScheduler {
                     boolean isCheckInTimeToday = today.isEqual(b.getCheckInDate()) && currentHour >= 15;
 
                     if (isCheckoutOverdue) {
-                        if ("待入住".equals(currentStatus)) {
-                            log.info("自動修正：訂單 ID {} 過期未入住，轉為已取消", b.getBookingId());
-                            updateDto.setBookingStatus("已取消");
-                        } else {
-                            log.info("自動修正：訂單 ID {} 退房時間已過 (12:00)，轉為已完成", b.getBookingId());
-                            updateDto.setBookingStatus("已完成");
-                        }
-                        isUpdated = true;
-                    } else if (isPastCheckInDate && "待入住".equals(currentStatus)) {
-                        log.info("自動修正：訂單 ID {} 逾期未入住 (No-show)，轉為已取消", b.getBookingId());
-                        updateDto.setBookingStatus("已取消");
-                        isUpdated = true;
-                    } else if (isCheckInTimeToday && "待入住".equals(currentStatus)) {
-                        log.info("自動修正：訂單 ID {} 達到今日入住時間 (15:00)，轉為已入住", b.getBookingId());
-                        updateDto.setBookingStatus("已入住");
+                        log.info("自動修正：訂單 ID {} 退房時間已過，轉為已完成", b.getBookingId());
+                        updateDto.setBookingStatus("已完成");
                         isUpdated = true;
                     }
                 }

@@ -33,6 +33,10 @@ export const roomTypeApi = {
     return fetchClient(`${BASE_URL}/${id}`, { method: "DELETE" });
   },
 
+  syncAvailableRooms() {
+    return fetchClient(`${BASE_URL}/sync-available`, { method: "POST" });
+  },
+
   importJson(data, isFile = false) {
     if (isFile) {
       return fetchClient(`${BASE_URL}/import/json/file`, {
