@@ -13,23 +13,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hotel.model.dto.EmailDTO;
 import com.hotel.model.entity.Reservation;
 import com.hotel.service.ReservationService;
-import com.hotel.service.SmsService;
+import com.hotel.util.MailUtil;
 
 @RestController
 @RequestMapping("/api/reservations")
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final SmsService smsService;
+    private final MailUtil mailUtil;
 
     public ReservationController(
             ReservationService reservationService,
-            SmsService smsService) {
+            MailUtil mailUtil) {
 
         this.reservationService = reservationService;
-        this.smsService = smsService;
+        this.mailUtil = mailUtil;
     }
 
     @GetMapping
@@ -60,24 +61,28 @@ public class ReservationController {
     }
 
     @PostMapping
-    public ResponseEntity<Reservation> create(
-            @RequestBody Reservation reservation) {
+    public ResponseEntity<?> create(@RequestBody Reservation reservation) {
+        if (isContactIncomplete(reservation)) {
+            return ResponseEntity.badRequest()
+                    .body("請填寫訂位人姓名與聯絡信箱。");
+        }
 
-        if (isGuestWithoutContact(reservation)) {
-            return ResponseEntity.badRequest().build();
+        if (!isValidEmail(reservation.getContactEmail())) {
+            return ResponseEntity.badRequest()
+                    .body("請填寫正確的 Email 格式。");
         }
 
         reservation.setReservationId(null);
         setDefaultStatus(reservation);
 
         Reservation savedReservation = reservationService.save(reservation);
-        sendReservationSms(savedReservation);
+        sendReservationEmail(savedReservation);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Reservation> update(
+    public ResponseEntity<?> update(
             @PathVariable Integer id,
             @RequestBody Reservation formReservation) {
 
@@ -87,13 +92,14 @@ public class ReservationController {
             return ResponseEntity.notFound().build();
         }
 
-        if (isGuestWithoutContact(formReservation)) {
-            return ResponseEntity.badRequest().build();
+        if (formReservation.getContactName() == null
+                || formReservation.getContactName().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body("請填寫訂位人姓名。");
         }
 
         reservation.setMemberId(formReservation.getMemberId());
         reservation.setContactName(formReservation.getContactName());
-        reservation.setContactPhone(formReservation.getContactPhone());
         reservation.setRestaurantId(formReservation.getRestaurantId());
         reservation.setReservationDate(formReservation.getReservationDate());
         reservation.setTimeId(formReservation.getTimeId());
@@ -114,12 +120,15 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
-    private boolean isGuestWithoutContact(Reservation reservation) {
-        return reservation.getMemberId() == null
-                && (reservation.getContactName() == null
-                        || reservation.getContactName().isBlank()
-                        || reservation.getContactPhone() == null
-                        || reservation.getContactPhone().isBlank());
+    private boolean isContactIncomplete(Reservation reservation) {
+        return reservation.getContactName() == null
+                || reservation.getContactName().isBlank()
+                || reservation.getContactEmail() == null
+                || reservation.getContactEmail().isBlank();
+    }
+
+    private boolean isValidEmail(String email) {
+        return email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     }
 
     private void setDefaultStatus(Reservation reservation) {
@@ -128,20 +137,40 @@ public class ReservationController {
         }
     }
 
-    // 會員訂位成功後通知；簡訊失敗不影響訂位成立。
-    private void sendReservationSms(Reservation reservation) {
-        if (reservation.getContactPhone() == null
-                || reservation.getContactPhone().isBlank()) {
-            return;
-        }
-
-        String message = "【星澄飯店】您的訂位已完成，訂位編號 #"
-                + reservation.getReservationId();
+    private void sendReservationEmail(Reservation reservation) {
+        String subject = "【星澄飯店】訂位確認 #" + reservation.getReservationId();
+        String content = """
+                <h2>訂位已完成</h2>
+                <p>親愛的 %s，您好：</p>
+                <p>感謝您的訂位，以下是您的訂位資訊。</p>
+                <ul>
+                    <li>訂位編號：#%s</li>
+                    <li>訂位日期：%s</li>
+                    <li>訂位人數：%s 人</li>
+                </ul>
+                <p>星澄飯店期待您的蒞臨。</p>
+                """.formatted(
+                escapeHtml(reservation.getContactName()),
+                reservation.getReservationId(),
+                reservation.getReservationDate(),
+                reservation.getPeopleCount());
 
         try {
-            smsService.send(reservation.getContactPhone(), message);
+            mailUtil.sendEmail(new EmailDTO(
+                    reservation.getContactEmail(), subject, content, true));
+
+            System.out.println("會員訂位確認信已加入寄送佇列："
+                    + reservation.getContactEmail());
         } catch (Exception e) {
-            System.out.println("訂位簡訊發送失敗：" + e.getMessage());
+            // 寄信失敗不可影響訂位成立。
+            System.err.println("會員訂位確認信發送失敗：" + e.getMessage());
         }
+    }
+
+    private String escapeHtml(String value) {
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 }
