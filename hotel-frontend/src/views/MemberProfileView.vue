@@ -162,10 +162,15 @@
         </div>
 
         <!-- 右側：會員頭像與等級卡 -->
-        <MemberSidebarCard :name="form.name || authStore.name">
+        <MemberSidebarCard
+          :name="form.name || authStore.name"
+          :avatar-url="form.avatarUrl || authStore.avatarUrl"
+          :uploading="uploadingAvatar"
+          @upload-avatar="handleAvatarUpload"
+        >
           <p class="sidebar-hint-text">
             星澄飯店會員專屬資料中心<br />
-            隨時更新以享有最即時的住宿禮遇
+            點擊大頭貼可隨時更新您的個人頭像
           </p>
         </MemberSidebarCard>
       </form>
@@ -186,6 +191,7 @@ const toastStore = useToastStore();
 
 const loading = ref(false);
 const saving = ref(false);
+const uploadingAvatar = ref(false);
 
 const form = reactive({
   memberId: null,
@@ -200,6 +206,7 @@ const form = reactive({
   city: "",
   district: "",
   address: "",
+  avatarUrl: "",
 });
 
 const formErrors = reactive({
@@ -239,9 +246,13 @@ async function fetchProfile() {
     form.city = data.city || "";
     form.district = data.district || "";
     form.address = data.address || "";
+    form.avatarUrl = data.avatarUrl || "";
 
     if (data.name) {
       authStore.updateName(data.name);
+    }
+    if (data.avatarUrl) {
+      authStore.updateAvatarUrl(data.avatarUrl);
     }
   } catch (err) {
     console.error("取得個人資料錯誤：", err);
@@ -282,6 +293,61 @@ function validateForm() {
   }
 
   return valid;
+}
+
+async function handleAvatarUpload(file) {
+  if (!file) return;
+
+  // 驗證檔案類型與大小 (大小不超過 5MB)
+  if (!file.type.startsWith("image/")) {
+    toastStore.showToast("請選擇有效的圖片檔案 (JPG, PNG, WEBP 等)", "error");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toastStore.showToast("頭像圖片大小不能超過 5MB", "error");
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const token = localStorage.getItem("token");
+    const headers = {};
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+
+    const res = await fetch("/api/members/me/avatar", {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      toastStore.showToast("登入狀態已過期，請重新登入", "error");
+      return;
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      toastStore.showToast(errData.message || "頭像上傳失敗，請稍後再試", "error");
+      return;
+    }
+
+    const updated = await res.json();
+    if (updated && updated.avatarUrl) {
+      form.avatarUrl = updated.avatarUrl;
+      authStore.updateAvatarUrl(updated.avatarUrl);
+      toastStore.showToast("大頭貼更新成功！", "success");
+    }
+  } catch (err) {
+    console.error("上傳大頭貼錯誤：", err);
+    toastStore.showToast("網路連線異常，請稍後再試", "error");
+  } finally {
+    uploadingAvatar.value = false;
+  }
 }
 
 async function saveProfile() {

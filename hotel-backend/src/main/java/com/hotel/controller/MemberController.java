@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.MemberDTO;
+import com.hotel.model.dto.MemberDemographicsDTO;
 import com.hotel.model.entity.Account;
 import com.hotel.repository.AccountRepository;
 import com.hotel.service.MemberService;
@@ -135,6 +136,50 @@ public class MemberController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "修改密碼失敗：" + e.getMessage()));
+        }
+    }
+
+    // =========================================
+    // 4-2. 會員上傳/更新自己的頭像照片（使用 JWT 識別）
+    // POST /api/members/me/avatar
+    // =========================================
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadMyAvatar(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "尚未登入或認證已失效"));
+        }
+
+        try {
+            MemberDTO updated = memberService.updateAvatarByUsername(authentication.getName(), file);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "上傳頭像失敗：" + e.getMessage()));
+        }
+    }
+
+    // =========================================
+    // 4-3. 管理員或指定 ID 上傳/更新會員頭像照片
+    // POST /api/members/{id}/avatar
+    // =========================================
+    @PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadMemberAvatar(
+            @PathVariable Integer id,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            MemberDTO updated = memberService.updateAvatarByMemberId(id, file);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "上傳頭像失敗：" + e.getMessage()));
         }
     }
 
@@ -493,5 +538,16 @@ public class MemberController {
                 "failureCount", failureCount,
                 "errors", errors));
     }
+
+    // =========================================
+    // 11. 會員人口統計分佈（地區、年齡、性別、資料完善率）
+    // GET /api/members/statistics/demographics
+    // =========================================
+    @GetMapping("/statistics/demographics")
+    public ResponseEntity<MemberDemographicsDTO> getMemberDemographics() {
+        MemberDemographicsDTO demographics = memberService.getMemberDemographics();
+        return ResponseEntity.ok(demographics);
+    }
 }
+
 
