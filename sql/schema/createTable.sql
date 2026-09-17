@@ -33,7 +33,7 @@ CREATE TABLE [dbo].[booking](
 	[check_in_date] [datetime] NOT NULL,
 	[check_out_date] [datetime] NOT NULL,
 	[guest_num] [int] NOT NULL,
-	[booking_status] [nvarchar](20) NOT NULL,
+	[booking_status] [varchar](20) NOT NULL,
 	[room_id] [int] NULL,
 	[room_type_id] [int] NOT NULL,
 	[member_id] [int] NOT NULL,
@@ -54,9 +54,9 @@ CREATE TABLE [dbo].[booking_payment](
 	[payment_id] [int] IDENTITY(1,1) NOT NULL,
 	[booking_id] [int] NOT NULL,
 	[amount] [int] NOT NULL,
-	[payment_method] [nvarchar](50) NULL,
-	[payment_status] [nvarchar](20) NOT NULL,
-	[transaction_id] [nvarchar](50) NULL,
+	[payment_method] [varchar](50) NULL,
+	[payment_status] [varchar](20) NOT NULL,
+	[transaction_id] [varchar](50) NULL,
 	[created_at] [datetime2] NOT NULL,
 	[paid_at] [datetime2] NULL,
  CONSTRAINT [PK_booking_payment] PRIMARY KEY CLUSTERED 
@@ -73,7 +73,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[category](
 	[category_id] INT IDENTITY(1,1) NOT NULL,
-	[category_name] [nvarchar](50) NULL,
+	[category_name] [varchar](50) NULL,
  CONSTRAINT [PK_category] PRIMARY KEY CLUSTERED 
 (
 	[category_id] ASC
@@ -88,7 +88,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[department](
 	[department_id] [int] IDENTITY(1,1) NOT NULL,
-	[department_name] [nvarchar](50) NOT NULL,
+	[department_name] [varchar](50) NOT NULL,
  CONSTRAINT [PK__departme__C2232422F090623A] PRIMARY KEY CLUSTERED 
 (
 	[department_id] ASC
@@ -105,7 +105,7 @@ CREATE TABLE [dbo].[employee](
 	[employee_id] [int] IDENTITY(1,1) NOT NULL,
 	[department_id] [int] NOT NULL,
 	[account_id] [int] NOT NULL,
-	[position] [nvarchar](50) NOT NULL,
+	[position] [varchar](50) NOT NULL,
  CONSTRAINT [PK__employee__C52E0BA88F0B8D0D] PRIMARY KEY CLUSTERED 
 (
 	[employee_id] ASC
@@ -141,7 +141,7 @@ GO
 CREATE TABLE [dbo].[room_image](
 	[image_id] [int] IDENTITY(1,1) NOT NULL,
 	[path] [varchar](255) NOT NULL,
-	[image_description] [nvarchar](255) NULL,
+	[image_description] [varchar](255) NULL,
 	[room_type_id] [int] NOT NULL,
  CONSTRAINT [PK_room_image] PRIMARY KEY CLUSTERED 
 (
@@ -177,10 +177,10 @@ GO
 CREATE TABLE [dbo].[payment](
 	[payment_id] [int] IDENTITY(1, 1) NOT NULL,
 	[member_id] [int] NULL,
-	[payment_method] [nvarchar](50) NULL,
-	[transaction_id] [nvarchar](100) NULL,
+	[payment_method] [varchar](50) NULL,
+	[transaction_id] [varchar](100) NULL,
 	[total_price] [int] NOT NULL,
-	[payment_status] [nvarchar](20) NOT NULL CONSTRAINT [DF_payment_status] DEFAULT (N'PENDING'),
+	[payment_status] [varchar](20) NOT NULL CONSTRAINT [DF_payment_status] DEFAULT (N'PENDING'),
 	[payment_time] [datetime] NULL,
 	[created_at] [datetime] NOT NULL CONSTRAINT [DF_payment_created_at] DEFAULT (GETDATE()),
  CONSTRAINT [PK_payment] PRIMARY KEY CLUSTERED ([payment_id] ASC),
@@ -198,14 +198,14 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[coupon](
 	[coupon_id] [int] IDENTITY(1, 1) NOT NULL,
-	[coupon_code] [nvarchar](50) NOT NULL,
-	[coupon_name] [nvarchar](100) NOT NULL,
-	[discount_type] [nvarchar](20) NOT NULL,
+	[coupon_code] [varchar](50) NOT NULL,
+	[coupon_name] [varchar](100) NOT NULL,
+	[discount_type] [varchar](20) NOT NULL,
 	[discount_value] [int] NOT NULL,
 	[minimum_amount] [int] NOT NULL CONSTRAINT [DF_coupon_minimum_amount] DEFAULT ((0)),
 	[start_date] [datetime] NOT NULL,
 	[end_date] [datetime] NOT NULL,
-	[status] [nvarchar](20) NOT NULL CONSTRAINT [DF_coupon_status] DEFAULT (N'ACTIVE'),
+	[status] [varchar](20) NOT NULL CONSTRAINT [DF_coupon_status] DEFAULT (N'ACTIVE'),
  CONSTRAINT [PK_coupon] PRIMARY KEY CLUSTERED ([coupon_id] ASC),
  CONSTRAINT [UQ_coupon_code] UNIQUE ([coupon_code]),
  CONSTRAINT [CK_coupon_discount_type] CHECK ([discount_type] IN (N'PERCENT', N'FIXED')),
@@ -229,7 +229,7 @@ CREATE TABLE [dbo].[order](
 	[final_amount] [int] NOT NULL CONSTRAINT [DF_order_final_amount] DEFAULT ((0)),
 	[coupon_id] [int] NULL,
 	[payment_id] [int] NULL,
-	[order_status] [nvarchar](20) NOT NULL CONSTRAINT [DF_order_status] DEFAULT (N'PENDING'),
+	[order_status] [varchar](20) NOT NULL CONSTRAINT [DF_order_status] DEFAULT (N'PENDING'),
  CONSTRAINT [PK_order] PRIMARY KEY CLUSTERED ([order_id] ASC),
  CONSTRAINT [CK_order_status] CHECK (
 	[order_status] IN (N'PENDING', N'COMPLETED', N'CANCELLED')
@@ -267,8 +267,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[permission](
 	[permission_id] [int] IDENTITY(1,1) NOT NULL,
-	[permission_code] [nvarchar](50) NOT NULL,
-	[permission_name] [nvarchar](50) NOT NULL,
+	[permission_code] [varchar](50) NOT NULL,
+	[permission_name] [varchar](50) NOT NULL,
  CONSTRAINT [PK_permission] PRIMARY KEY CLUSTERED 
 (
 	[permission_id] ASC
@@ -283,13 +283,13 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[product](
     [product_id] INT IDENTITY(1,1) NOT NULL,
-    [product_name] [nvarchar](50) NOT NULL,
+    [product_name] [varchar](50) NOT NULL,
     [category_id] [int] NOT NULL,
-    [description] NVARCHAR(255) NULL,
+    [description] varchar(255) NULL,
     [price] [int] NOT NULL,
     [stock] [int] NOT NULL,
-    [ImageURL] NVARCHAR(255),
-    [status] [nvarchar](50) NULL,
+    [ImageURL] varchar(255),
+    [status] [varchar](50) NULL,
 CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED 
 (
     [product_id] ASC
@@ -364,11 +364,11 @@ CREATE TABLE [dbo].[rental](
 	[rental_id] [int] IDENTITY(1,1) NOT NULL,
 	[venue_id] [int] NOT NULL,
 	[member_id] [int] NOT NULL,
-	[event_name] [nvarchar](50) NOT NULL,
+	[event_name] [varchar](50) NOT NULL,
 	[rental_date] [datetime] NOT NULL,
 	[guest_count] [int] NOT NULL,
 	[payment_id] [int] NOT NULL,
-	[rental_status] [nvarchar](50) NOT NULL,
+	[rental_status] [varchar](50) NOT NULL,
  CONSTRAINT [PK_rental] PRIMARY KEY CLUSTERED 
 (
 	[rental_id] ASC
@@ -383,11 +383,11 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[restaurant] (
     [restaurant_id] INT IDENTITY(1,1) NOT NULL,
-    [restaurant_name] NVARCHAR(50) NOT NULL,
-    [address] NVARCHAR(100) NOT NULL,
+    [restaurant_name] varchar(50) NOT NULL,
+    [address] varchar(100) NOT NULL,
     [phone] VARCHAR(20) NOT NULL,
     [capacity] INT NOT NULL,
-    [description] NVARCHAR(255) NULL,
+    [description] varchar(255) NULL,
     CONSTRAINT [PK_restaurant] PRIMARY KEY CLUSTERED ([restaurant_id] ASC)
 );
 GO
@@ -400,7 +400,7 @@ GO
 CREATE TABLE [dbo].[restaurant_time] (
     [time_id] INT IDENTITY(1,1) NOT NULL,
     [restaurant_id] INT NOT NULL,
-    [meal_type] NVARCHAR(20) NOT NULL,
+    [meal_type] varchar(20) NOT NULL,
     [open_time] TIME(0) NOT NULL,
     [close_time] TIME(0) NOT NULL,
     CONSTRAINT [PK_restaurant_time] PRIMARY KEY CLUSTERED ([time_id] ASC)
@@ -415,13 +415,13 @@ GO
 CREATE TABLE [dbo].[reservation] (
     [reservation_id]   INT IDENTITY(1,1) NOT NULL,
     [member_id]        INT NULL,
-    [contact_name]     NVARCHAR(50) NULL,
+    [contact_name]     varchar(50) NULL,
     [contact_phone]    VARCHAR(20) NULL,
     [restaurant_id]    INT NOT NULL,
     [reservation_date] DATE NOT NULL,
     [time_id]          INT NOT NULL,
     [people_count]     INT NOT NULL,
-    [status]           NVARCHAR(20) NOT NULL
+    [status]           varchar(20) NOT NULL
         CONSTRAINT [DF_reservation_status] DEFAULT (N'已訂位'),
     [create_time]      DATETIME NOT NULL
         CONSTRAINT [DF_reservation_create_time] DEFAULT (GETDATE()),
@@ -459,10 +459,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[room](
 	[room_id] [int] IDENTITY(1,1) NOT NULL,
-	[room_number] [NVARCHAR](20) NOT NULL,
+	[room_number] [varchar](20) NOT NULL,
 	[room_type_id] [int] NOT NULL,
 	[floor] [int] NOT NULL,
-	[room_status] [nvarchar](20) NOT NULL,
+	[room_status] [varchar](20) NOT NULL,
  CONSTRAINT [PK__room__19675A8A9D13DCA5] PRIMARY KEY CLUSTERED 
 (
 	[room_id] ASC
@@ -483,10 +483,10 @@ CREATE TABLE [dbo].[room_task](
 	[task_id] [int] IDENTITY(1,1) NOT NULL,
 	[room_id] [int] NOT NULL,
 	[employee_id] [int] NOT NULL,
-	[priority] [nvarchar](20) NOT NULL,
-	[task_type] [nvarchar](20) NOT NULL,
-	[task_status] [nvarchar](20) NOT NULL,
-	[remark] [nvarchar](100) NULL,
+	[priority] [varchar](20) NOT NULL,
+	[task_type] [varchar](20) NOT NULL,
+	[task_status] [varchar](20) NOT NULL,
+	[remark] [varchar](100) NULL,
 	[created_at] [datetime] NOT NULL,
 	[completed_at] [datetime] NULL,
  CONSTRAINT [PK__room_tas__0492148D9F40B673] PRIMARY KEY CLUSTERED 
@@ -503,10 +503,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[room_type](
 	[room_type_id] [int] IDENTITY(1,1) NOT NULL,
-	[type_name] [nvarchar](20) NOT NULL,
-	[bed_type] [nvarchar](20) NOT NULL,
+	[type_name] [varchar](50) NOT NULL,
+	[bed_type] [varchar](50) NOT NULL,
 	[capacity] [int] NOT NULL,
-	[room_description] [nvarchar](100) NULL,
+	[room_description] [varchar](100) NULL,
 	[price_per_night] [int] NOT NULL,
 	[available_rooms] [int] NOT NULL,
  CONSTRAINT [PK_room_type] PRIMARY KEY CLUSTERED 
@@ -523,10 +523,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[venue](
 	[venue_id] [int] NOT NULL,
-	[venue_name] [nvarchar](50) NOT NULL,
+	[venue_name] [varchar](50) NOT NULL,
 	[capacity] [int] NOT NULL,
 	[price_per_day] [int] NOT NULL,
-	[venue_status] [nvarchar](50) NOT NULL,
+	[venue_status] [varchar](50) NOT NULL,
  CONSTRAINT [PK_venue] PRIMARY KEY CLUSTERED 
 (
 	[venue_id] ASC
@@ -541,10 +541,10 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[rental_payment](
     [payment_id] [int] IDENTITY(1,1) NOT NULL,
-    [payment_method] [nvarchar](50) NULL,
+    [payment_method] [varchar](50) NULL,
     [payment_time] [datetime2] NULL,
     [total_price] [int] NOT NULL,
-    [payment_status] [nvarchar](20) NOT NULL,
+    [payment_status] [varchar](20) NOT NULL,
     [member_id] [int] NULL,
  CONSTRAINT [PK_rental_payment] PRIMARY KEY CLUSTERED ([payment_id] ASC)
 ) ON [PRIMARY]

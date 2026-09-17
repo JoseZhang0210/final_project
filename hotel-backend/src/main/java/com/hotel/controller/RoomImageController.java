@@ -46,8 +46,9 @@ public class RoomImageController {
     public ResponseEntity<RoomImageDTO> createImage(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "staticPath", required = false) String staticPath,
-            @RequestParam(value = "imageDescription", required = false) String imageDescription) throws IOException {
-        
+            @RequestParam(value = "imageDescription", required = false) String imageDescription,
+            @RequestParam(value = "roomTypeId", required = false) Integer roomTypeId) throws IOException {
+
         String dbPath = "";
 
         if (file != null && !file.isEmpty()) {
@@ -74,6 +75,7 @@ public class RoomImageController {
         RoomImageDTO imageDTO = new RoomImageDTO();
         imageDTO.setPath(dbPath);
         imageDTO.setImageDescription(imageDescription != null ? imageDescription : "");
+        imageDTO.setRoomTypeId(roomTypeId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(imageService.insert(imageDTO));
     }
@@ -82,7 +84,7 @@ public class RoomImageController {
     public ResponseEntity<RoomImageDTO> uploadimagesroompic(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "imageDescription", required = false) String imageDescription) throws IOException {
-        return createImage(file, null, imageDescription);
+        return createImage(file, null, imageDescription, null);
     }
 
     @GetMapping
@@ -98,7 +100,8 @@ public class RoomImageController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RoomImageDTO> updateImage(@PathVariable Integer id, @RequestBody RoomImageDTO updatedImageDTO) {
+    public ResponseEntity<RoomImageDTO> updateImage(@PathVariable Integer id,
+            @RequestBody RoomImageDTO updatedImageDTO) {
         return ResponseEntity.ok(imageService.update(id, updatedImageDTO));
     }
 

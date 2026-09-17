@@ -13,4 +13,5 @@ public class RoomTypeDTO {
     private Integer availableRooms; // 原始設定房間總數
     private Integer todayAvailableRooms; // 今日剩餘可用房間數
     private String mainImageUrl; // 房型主圖 (封面圖)
+    private java.util.List<String> imageUrls; // 房型所有圖片
 }

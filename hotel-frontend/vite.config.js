@@ -16,6 +16,7 @@ export default defineConfig({
     },
   },
   server:{
+    host: true, // 允許透過區域網路 IP 連線
     proxy:{
       "/api":{
         target:"http://localhost:8081",
@@ -27,10 +28,6 @@ export default defineConfig({
         changeOrigin:true
       }
     }
-  },
-  // 修改打包輸出路徑hotel-backend\src\main\resources\static
-  build: {
-    outDir: '../hotel-backend/src/main/resources/static', // 指向 Spring Boot 靜態資料夾
-    emptyOutDir: false // 打包時自動清空舊檔案
-  },
+  }
 })
+

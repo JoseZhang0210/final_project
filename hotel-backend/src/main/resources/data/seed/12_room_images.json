@@ -1,0 +1,302 @@
+[
+  {
+    "imageId": 1,
+    "path": "/images/room/roomtype.1.jpg",
+    "imageDescription": "海景標準雙人房",
+    "roomTypeId": 1
+  },
+  {
+    "imageId": 2,
+    "path": "/images/room/roomtype.2.jpg",
+    "imageDescription": "山景標準雙人房",
+    "roomTypeId": 2
+  },
+  {
+    "imageId": 3,
+    "path": "/images/room/roomtype.3.jpg",
+    "imageDescription": "海景雅緻雙床房",
+    "roomTypeId": 3
+  },
+  {
+    "imageId": 4,
+    "path": "/images/room/roomtype.4.jpg",
+    "imageDescription": "山景雅緻雙床房",
+    "roomTypeId": 4
+  },
+  {
+    "imageId": 5,
+    "path": "/images/room/roomtype.5.jpg",
+    "imageDescription": "海景溫馨家庭房",
+    "roomTypeId": 5
+  },
+  {
+    "imageId": 6,
+    "path": "/images/room/roomtype.6.jpg",
+    "imageDescription": "山景溫馨家庭房",
+    "roomTypeId": 6
+  },
+  {
+    "imageId": 7,
+    "path": "/images/room/roomtype.7.jpg",
+    "imageDescription": "海景行政尊榮套房",
+    "roomTypeId": 7
+  },
+  {
+    "imageId": 8,
+    "path": "/images/room/roomtype.8.jpg",
+    "imageDescription": "山景行政尊榮套房",
+    "roomTypeId": 8
+  },
+  {
+    "imageId": 9,
+    "path": "/images/room/roomtype.9.jpg",
+    "imageDescription": "海景豪華全景四人套房",
+    "roomTypeId": 9
+  },
+  {
+    "imageId": 10,
+    "path": "/images/room/roomtype.10.jpg",
+    "imageDescription": "海景頂級皇家總統套房",
+    "roomTypeId": 10
+  },
+  {
+    "imageId": 11,
+    "path": "/images/room/air_conditioning.jpg",
+    "imageDescription": "Air Conditioning",
+    "roomTypeId": 1
+  },
+  {
+    "imageId": 12,
+    "path": "/images/room/bathroom_bathtub.jpg",
+    "imageDescription": "Bathroom Bathtub",
+    "roomTypeId": 1
+  },
+  {
+    "imageId": 13,
+    "path": "/images/room/desk.jpg",
+    "imageDescription": "Desk",
+    "roomTypeId": 1
+  },
+  {
+    "imageId": 14,
+    "path": "/images/room/usb_power.jpg",
+    "imageDescription": "Usb Power",
+    "roomTypeId": 1
+  },
+  {
+    "imageId": 15,
+    "path": "/images/room/tv_smart.jpg",
+    "imageDescription": "Tv Smart",
+    "roomTypeId": 2
+  },
+  {
+    "imageId": 16,
+    "path": "/images/room/bathroom_shower.jpg",
+    "imageDescription": "Bathroom Shower",
+    "roomTypeId": 2
+  },
+  {
+    "imageId": 17,
+    "path": "/images/room/wifi.jpg",
+    "imageDescription": "Wifi",
+    "roomTypeId": 2
+  },
+  {
+    "imageId": 18,
+    "path": "/images/room/bathroom_toilet.jpg",
+    "imageDescription": "Bathroom Toilet",
+    "roomTypeId": 2
+  },
+  {
+    "imageId": 19,
+    "path": "/images/room/bathroom_hairdryer.jpg",
+    "imageDescription": "Bathroom Hairdryer",
+    "roomTypeId": 3
+  },
+  {
+    "imageId": 20,
+    "path": "/images/room/bathroom_bathtub.jpg",
+    "imageDescription": "Bathroom Bathtub",
+    "roomTypeId": 3
+  },
+  {
+    "imageId": 21,
+    "path": "/images/room/usb_power.jpg",
+    "imageDescription": "Usb Power",
+    "roomTypeId": 3
+  },
+  {
+    "imageId": 22,
+    "path": "/images/room/wifi.jpg",
+    "imageDescription": "Wifi",
+    "roomTypeId": 3
+  },
+  {
+    "imageId": 23,
+    "path": "/images/room/bathroom_sink.jpg",
+    "imageDescription": "Bathroom Sink",
+    "roomTypeId": 4
+  },
+  {
+    "imageId": 24,
+    "path": "/images/room/bathroom_toiletries.jpg",
+    "imageDescription": "Bathroom Toiletries",
+    "roomTypeId": 4
+  },
+  {
+    "imageId": 25,
+    "path": "/images/room/wifi.jpg",
+    "imageDescription": "Wifi",
+    "roomTypeId": 4
+  },
+  {
+    "imageId": 26,
+    "path": "/images/room/air_conditioning.jpg",
+    "imageDescription": "Air Conditioning",
+    "roomTypeId": 4
+  },
+  {
+    "imageId": 27,
+    "path": "/images/room/room_overview.jpg",
+    "imageDescription": "Room Overview",
+    "roomTypeId": 5
+  },
+  {
+    "imageId": 28,
+    "path": "/images/room/bathroom_toilet.jpg",
+    "imageDescription": "Bathroom Toilet",
+    "roomTypeId": 5
+  },
+  {
+    "imageId": 29,
+    "path": "/images/room/tv_smart.jpg",
+    "imageDescription": "Tv Smart",
+    "roomTypeId": 5
+  },
+  {
+    "imageId": 30,
+    "path": "/images/room/bathroom_hairdryer.jpg",
+    "imageDescription": "Bathroom Hairdryer",
+    "roomTypeId": 5
+  },
+  {
+    "imageId": 31,
+    "path": "/images/room/bathroom_sink.jpg",
+    "imageDescription": "Bathroom Sink",
+    "roomTypeId": 6
+  },
+  {
+    "imageId": 32,
+    "path": "/images/room/bathroom_shower.jpg",
+    "imageDescription": "Bathroom Shower",
+    "roomTypeId": 6
+  },
+  {
+    "imageId": 33,
+    "path": "/images/room/bathroom_hairdryer.jpg",
+    "imageDescription": "Bathroom Hairdryer",
+    "roomTypeId": 6
+  },
+  {
+    "imageId": 34,
+    "path": "/images/room/desk.jpg",
+    "imageDescription": "Desk",
+    "roomTypeId": 6
+  },
+  {
+    "imageId": 35,
+    "path": "/images/room/bathroom_bathtub.jpg",
+    "imageDescription": "Bathroom Bathtub",
+    "roomTypeId": 7
+  },
+  {
+    "imageId": 36,
+    "path": "/images/room/bathroom_shower.jpg",
+    "imageDescription": "Bathroom Shower",
+    "roomTypeId": 7
+  },
+  {
+    "imageId": 37,
+    "path": "/images/room/bathroom_toiletries.jpg",
+    "imageDescription": "Bathroom Toiletries",
+    "roomTypeId": 7
+  },
+  {
+    "imageId": 38,
+    "path": "/images/room/bathroom_sink.jpg",
+    "imageDescription": "Bathroom Sink",
+    "roomTypeId": 7
+  },
+  {
+    "imageId": 39,
+    "path": "/images/room/air_conditioning.jpg",
+    "imageDescription": "Air Conditioning",
+    "roomTypeId": 8
+  },
+  {
+    "imageId": 40,
+    "path": "/images/room/coffee_machine.jpg",
+    "imageDescription": "Coffee Machine",
+    "roomTypeId": 8
+  },
+  {
+    "imageId": 41,
+    "path": "/images/room/bathroom_bathtub.jpg",
+    "imageDescription": "Bathroom Bathtub",
+    "roomTypeId": 8
+  },
+  {
+    "imageId": 42,
+    "path": "/images/room/bathroom_toilet.jpg",
+    "imageDescription": "Bathroom Toilet",
+    "roomTypeId": 8
+  },
+  {
+    "imageId": 43,
+    "path": "/images/room/bathroom_toiletries.jpg",
+    "imageDescription": "Bathroom Toiletries",
+    "roomTypeId": 9
+  },
+  {
+    "imageId": 44,
+    "path": "/images/room/desk.jpg",
+    "imageDescription": "Desk",
+    "roomTypeId": 9
+  },
+  {
+    "imageId": 45,
+    "path": "/images/room/safe.jpg",
+    "imageDescription": "Safe",
+    "roomTypeId": 9
+  },
+  {
+    "imageId": 46,
+    "path": "/images/room/coffee_machine.jpg",
+    "imageDescription": "Coffee Machine",
+    "roomTypeId": 9
+  },
+  {
+    "imageId": 47,
+    "path": "/images/room/desk.jpg",
+    "imageDescription": "Desk",
+    "roomTypeId": 10
+  },
+  {
+    "imageId": 48,
+    "path": "/images/room/coffee_machine.jpg",
+    "imageDescription": "Coffee Machine",
+    "roomTypeId": 10
+  },
+  {
+    "imageId": 49,
+    "path": "/images/room/bathroom_toiletries.jpg",
+    "imageDescription": "Bathroom Toiletries",
+    "roomTypeId": 10
+  },
+  {
+    "imageId": 50,
+    "path": "/images/room/bathroom_bathtub.jpg",
+    "imageDescription": "Bathroom Bathtub",
+    "roomTypeId": 10
+  }
+]

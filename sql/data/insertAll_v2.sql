@@ -1162,11 +1162,35 @@ INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]
 GO
 INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]) VALUES (5, N'ORDER_MANAGE', N'訂單管理')
 GO
+INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]) VALUES (6, N'PRODUCT_MANAGE', N'商品管理')
+GO
+INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]) VALUES (7, N'EMPLOYEE_MANAGE', N'員工管理')
+GO
+INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]) VALUES (8, N'COUPON_MANAGE', N'優惠券管理')
+GO
+INSERT [dbo].[permission] ([permission_id], [permission_code], [permission_name]) VALUES (9, N'VENUE_MANAGE', N'場地管理')
+GO
 SET IDENTITY_INSERT [dbo].[permission] OFF
 GO
 SET IDENTITY_INSERT [dbo].[employee_permission] ON 
 GO
 INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (1, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (2, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (3, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (4, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (5, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (6, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (7, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (8, 1)
+GO
+INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (9, 1)
 GO
 INSERT [dbo].[employee_permission] ([permission_id], [employee_id]) VALUES (1, 2)
 GO

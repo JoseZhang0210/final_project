@@ -1,0 +1,19 @@
+[
+  {
+    "departmentId": 1,
+    "departmentName": "櫃檯部"
+  },
+  {
+    "departmentId": 2,
+    "departmentName": "客房部"
+  },
+  {
+    "departmentId": 3,
+    "departmentName": "餐飲部"
+  },
+  {
+    "departmentId": 4,
+    "departmentName": "行政部"
+  }
+]
+

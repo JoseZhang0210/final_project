@@ -13,5 +13,6 @@ public interface RoomTypeService {
     RoomTypeDTO insert(RoomTypeDTO roomTypeDTO);
     RoomTypeDTO update(Integer id, RoomTypeDTO updatedRoomTypeDTO);
     void deleteById(Integer id);
+    void syncAvailableRooms();
     java.util.Map<String, Object> importRoomTypes(List<RoomTypeDTO> dtoList);
 }

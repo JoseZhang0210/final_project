@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,19 +17,94 @@ import com.hotel.model.entity.Category;
 import com.hotel.model.entity.Product;
 import com.hotel.repository.CategoryRepository;
 import com.hotel.repository.ProductRepository;
+import com.hotel.repository.ProductReviewRepository;
+
+import jakarta.persistence.EntityManager;
 
 @Service
 public class ProductService {
 
+    private static final List<DemoProduct> DEMO_PRODUCTS = List.of(
+            new DemoProduct(
+                    "星澄舒眠羽絨枕",
+                    "飯店寢具",
+                    "支撐頸部曲線的飯店規格羽絨枕，將旅途中的舒適帶回家。",
+                    1680,
+                    25,
+                    "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "雲感純棉浴袍",
+                    "飯店寢具",
+                    "柔軟親膚的純棉浴袍，提供舒適且放鬆的居家體驗。",
+                    2280,
+                    12,
+                    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "星澄經典馬克杯",
+                    "旅宿紀念",
+                    "以星澄品牌色打造的日常馬克杯，適合咖啡與茶飲。",
+                    580,
+                    30,
+                    "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "城市夜光行李吊牌",
+                    "旅宿紀念",
+                    "簡約耐用的行李識別吊牌，陪伴每一趟安心旅程。",
+                    420,
+                    4,
+                    "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "靜謐森林擴香",
+                    "香氛沐浴",
+                    "融合木質與草本氣息，重現星澄客房沉靜放鬆的香氣。",
+                    1280,
+                    18,
+                    "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "晨曦沐浴禮盒",
+                    "香氛沐浴",
+                    "包含沐浴露、洗髮露與潤膚乳的旅行沐浴組合。",
+                    980,
+                    0,
+                    "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=900&q=80",
+                    "OUT_OF_STOCK"),
+            new DemoProduct(
+                    "主廚手工餅乾",
+                    "餐飲選品",
+                    "飯店主廚每日手工烘焙，奶油香氣酥脆而不甜膩。",
+                    360,
+                    40,
+                    "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=80",
+                    "ACTIVE"),
+            new DemoProduct(
+                    "星澄精品咖啡豆",
+                    "餐飲選品",
+                    "中度烘焙精品咖啡豆，帶有堅果、焦糖與淡雅果香。",
+                    680,
+                    20,
+                    "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80",
+                    "INACTIVE"));
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductReviewRepository productReviewRepository;
+    private final EntityManager entityManager;
 
     public ProductService(
             ProductRepository productRepository,
-            CategoryRepository categoryRepository) {
+            CategoryRepository categoryRepository,
+            ProductReviewRepository productReviewRepository,
+            EntityManager entityManager) {
 
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.productReviewRepository = productReviewRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -70,9 +146,32 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public void deleteById(Integer id) {
+    @Transactional
+    public ProductDeleteResult deleteById(Integer id) {
 
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id).orElse(null);
+
+        if (product == null) {
+            return null;
+        }
+
+        if (hasOrderItems(id)) {
+            product.setStatus("DISCONTINUED");
+            productRepository.save(product);
+
+            return new ProductDeleteResult(
+                    false,
+                    true,
+                    "此商品已有訂單紀錄，為保留交易明細，已改為停售並從前台隱藏。");
+        }
+
+        productReviewRepository.deleteByProductId(id);
+        productRepository.delete(product);
+
+        return new ProductDeleteResult(
+                true,
+                false,
+                "商品刪除成功。");
     }
 
     public List<ProductJsonDTO> getProductsForExport() {
@@ -205,6 +304,73 @@ public class ProductService {
                 List.of());
     }
 
+    @Transactional
+    public ProductDemoSeedResult seedDemoProducts() {
+
+        Set<String> existingProductNames = new HashSet<>();
+        productRepository.findAll().forEach(product -> {
+            if (product.getProductName() != null) {
+                existingProductNames.add(product.getProductName().trim().toLowerCase(Locale.ROOT));
+            }
+        });
+
+        Map<String, Category> categoryMap = new HashMap<>();
+        int createdCategoryCount = 0;
+        int skippedCount = 0;
+        List<Product> productsToCreate = new ArrayList<>();
+
+        for (DemoProduct demoProduct : DEMO_PRODUCTS) {
+            String productNameKey = demoProduct.productName().toLowerCase(Locale.ROOT);
+
+            if (existingProductNames.contains(productNameKey)) {
+                skippedCount++;
+                continue;
+            }
+
+            Category category = categoryMap.get(demoProduct.categoryName());
+            if (category == null) {
+                category = categoryRepository
+                        .findByCategoryNameIgnoreCase(demoProduct.categoryName())
+                        .orElse(null);
+
+                if (category == null) {
+                    category = new Category();
+                    category.setCategoryName(demoProduct.categoryName());
+                    category = categoryRepository.save(category);
+                    createdCategoryCount++;
+                }
+
+                categoryMap.put(demoProduct.categoryName(), category);
+            }
+
+            Product product = new Product();
+            product.setProductName(demoProduct.productName());
+            product.setCategory(category);
+            product.setDescription(demoProduct.description());
+            product.setPrice(demoProduct.price());
+            product.setStock(demoProduct.stock());
+            product.setImageUrl(demoProduct.imageUrl());
+            product.setStatus(demoProduct.status());
+            productsToCreate.add(product);
+            existingProductNames.add(productNameKey);
+        }
+
+        productRepository.saveAll(productsToCreate);
+
+        int createdCount = productsToCreate.size();
+        String message = createdCount == 0
+                ? "展示商品已經存在，沒有新增重複資料。"
+                : "展示資料建立完成：新增 " + createdCount + " 筆商品、"
+                        + createdCategoryCount + " 個分類，略過 " + skippedCount + " 筆既有商品。";
+
+        return new ProductDemoSeedResult(
+                DEMO_PRODUCTS.size(),
+                createdCount,
+                skippedCount,
+                createdCategoryCount,
+                message);
+    }
+
     private String normalizeStatus(String status) {
         return status == null || status.isBlank()
                 ? "ACTIVE"
@@ -222,6 +388,39 @@ public class ProductService {
         }
 
         return value.trim();
+    }
+
+    private boolean hasOrderItems(Integer productId) {
+        Number count = (Number) entityManager
+                .createNativeQuery("SELECT COUNT(*) FROM order_item WHERE product_id = :productId")
+                .setParameter("productId", productId)
+                .getSingleResult();
+
+        return count.longValue() > 0;
+    }
+
+    public record ProductDeleteResult(
+            boolean deleted,
+            boolean archived,
+            String message) {
+    }
+
+    public record ProductDemoSeedResult(
+            int totalCount,
+            int createdCount,
+            int skippedCount,
+            int createdCategoryCount,
+            String message) {
+    }
+
+    private record DemoProduct(
+            String productName,
+            String categoryName,
+            String description,
+            int price,
+            int stock,
+            String imageUrl,
+            String status) {
     }
 
 }

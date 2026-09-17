@@ -5,7 +5,7 @@ import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const BOOKING_API_URL = "/api/bookings";
 const BOOKING_ORDER_API_URL = "/api/orders";
@@ -16,6 +16,7 @@ const roomTypes = ref([]);
 const rooms = ref([]);
 const payments = ref([]);
 const router = useRouter();
+const route = useRoute();
 
 // 核心資料
 const bookings = ref([]);
@@ -103,7 +104,7 @@ const currentNewBooking = ref(null);
 const isSubmittingPayment = ref(false); // 防止重複提交
 const paymentForm = ref({
   amount: 0,
-  paymentMethod: '現金',
+  paymentMethod: '信用卡',
   paymentStatus: '已付款',
   transactionId: ''
 });
@@ -610,6 +611,18 @@ function getBookingStatusClass(status) {
   return map[status] || "";
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
 function formatPrice(price) {
 
   return new Intl.NumberFormat("zh-TW", {
@@ -622,6 +635,9 @@ function formatPrice(price) {
 let refreshInterval = null;
 
 onMounted(async () => {
+  if (route.query.filter) {
+    currentFilter.value = route.query.filter;
+  }
   await loadSelectOptions();
   await loadBookings();
 
@@ -636,8 +652,7 @@ onUnmounted(() => {
     clearInterval(refreshInterval);
   }
 });
-
-const currentFilter = ref("待入住"); // 預設顯示待入住的訂單
+const currentFilter = ref("all"); // 預設顯示全部的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
@@ -666,7 +681,7 @@ const filteredBookings = computed(() => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
       const status = b.bookingStatus ?? b.booking_status;
-      return cin <= todayStr && cout >= todayStr && status !== "已取消";
+      return cin <= todayStr && cout >= todayStr && status !== "已取消" && status !== "已完成";
     });
   } else if (currentFilter.value !== "all") {
     result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
@@ -678,6 +693,20 @@ const filteredBookings = computed(() => {
 const currentPage = ref(1);
 const itemsPerPage = 20;
 const totalPages = computed(() => Math.ceil(filteredBookings.value.length / itemsPerPage));
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage.value - 2);
+  let end = Math.min(totalPages.value, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+  return pages;
+});
 const sortKey = ref("bookingId");
 const sortOrder = ref("desc"); // 預設從新到舊
 
@@ -791,7 +820,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <th>入住</th>
               <th>退房</th>
               <th>人數</th>
-              <th>價格</th>
+              <th>建立時間</th>
               <th>狀態</th>
 
               <th>操作</th>
@@ -817,7 +846,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>{{ booking.checkOutDate ?? booking.check_out_date }}</td>
               <td>{{ booking.guestNum ?? booking.guest_num }} 人</td>
               <td>
-                {{ formatPrice(booking.bookingPrice ?? booking.booking_price) }}
+                {{ formatDateTime(booking.createdAt ?? booking.created_at) }}
               </td>
               <td>
                 <span :class="['booking-status', getBookingStatusClass(booking.bookingStatus ?? booking.booking_status)]">
@@ -840,10 +869,29 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
+      <div class="pagination-area" v-if="totalPages > 1">
+        <div class="pagination-info">
+          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
+        </div>
+
+        <div class="pagination">
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
+          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
+          
+          <button 
+            v-for="page in visiblePages" 
+            :key="page" 
+            type="button" 
+            class="page-button" 
+            :class="{ active: currentPage === page }" 
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+          
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
+          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
+        </div>
       </div>
   
 
@@ -868,6 +916,16 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             </div>
 
             <div class="form-group">
+              <label>入住日期 *</label>
+              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>退房日期 *</label>
+              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
               <label>房型 *</label>
               <select v-model="form.roomTypeId" @change="changeRoomType" required>
                 <option value="" disabled>請選擇房型</option>
@@ -885,16 +943,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                   房號 {{ room.roomNumber }}
                 </option>
               </select>
-            </div>
-
-            <div class="form-group">
-              <label>入住日期 *</label>
-              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
-            </div>
-
-            <div class="form-group">
-              <label>退房日期 *</label>
-              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
             </div>
 
             <div class="form-group">
@@ -940,7 +988,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <div class="form-group">
             <label>付款方式</label>
             <select v-model="paymentForm.paymentMethod" required>
-              <option value="現金">現金</option>
               <option value="信用卡">信用卡</option>
               <option value="銀行轉帳">銀行轉帳</option>
               <option value="LINE PAY">LINE PAY</option>
@@ -952,9 +999,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <label>付款狀態</label>
             <select v-model="paymentForm.paymentStatus" required>
               <option value="已付款">已付款</option>
-              <option value="待付款">待付款</option>
+              <option value="未付款">未付款</option>
               <option value="已退款">已退款</option>
-              <option value="已取消">已取消</option>
+              <option value="付款失敗">付款失敗</option>
             </select>
           </div>
 
@@ -1150,7 +1197,14 @@ th {
     grid-template-columns: 1fr;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
+.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
+.pagination-info { color: #857a70; font-size: 13px; }
+.pagination-info strong { color: #9b7435; }
+.pagination { display: flex; align-items: center; gap: 6px; }
+.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
+.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
+.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
+.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 .booking-status {
   display: inline-block;
   padding: 4px 12px;

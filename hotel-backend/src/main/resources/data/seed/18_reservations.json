@@ -1,0 +1,36 @@
+[
+  {
+    "reservationId": 1,
+    "memberId": 1,
+    "contactName": "王小明",
+    "contactPhone": "0912345678",
+    "restaurantId": 1,
+    "reservationDate": "2026-08-21",
+    "timeId": 3,
+    "peopleCount": 2,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 2,
+    "memberId": 2,
+    "contactName": "陳小華",
+    "contactPhone": "0923456789",
+    "restaurantId": 1,
+    "reservationDate": "2026-08-22",
+    "timeId": 1,
+    "peopleCount": 3,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 3,
+    "memberId": null,
+    "contactName": "張先生",
+    "contactPhone": "0945678901",
+    "restaurantId": 2,
+    "reservationDate": "2026-08-23",
+    "timeId": 4,
+    "peopleCount": 2,
+    "status": "已訂位"
+  }
+]
+

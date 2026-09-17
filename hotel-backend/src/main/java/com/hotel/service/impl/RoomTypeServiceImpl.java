@@ -92,13 +92,29 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Integer id) {
         if (!roomTypeRepository.existsById(id)) {
-            throw new EntityNotFoundException("欲刪除的房型 ID: " + id + " 不存在");
+            throw new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料");
         }
         roomTypeRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public void syncAvailableRooms() {
+        List<RoomType> allRoomTypes = roomTypeRepository.findAll();
+        for (RoomType rt : allRoomTypes) {
+            // 同步計算該房型在資料庫中的實體房間總數 (預設房間數)
+            int totalPhysicalRooms = roomRepository.findByRoomTypeId(rt.getRoomTypeId()).size();
+            rt.setAvailableRooms(totalPhysicalRooms);
+            roomTypeRepository.save(rt);
+        }
+    }
+
+    // ==========================================
+    // JSON 匯入邏輯
+    // ==========================================
     @Override
     public java.util.Map<String, Object> importRoomTypes(List<RoomTypeDTO> dtos) {
         int successCount = 0;
@@ -172,10 +188,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         // 動態計算今日可用數 (從今日到明日)
         dto.setTodayAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), LocalDate.now(), LocalDate.now().plusDays(1)));
         
-        // 載入主圖
+        // 載入主圖與所有圖片
         List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;
@@ -191,10 +210,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setPricePerNight(roomType.getPricePerNight());
         dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
         
-        // 載入主圖
+        // 載入主圖與所有圖片
         List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;

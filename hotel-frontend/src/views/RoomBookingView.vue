@@ -84,7 +84,13 @@
             </div>
           </div>
           
-          <button class="btn-check-rates" @click="handleSearch">
+          <button 
+            class="btn-check-rates" 
+            :class="{ 'disabled-btn': authStore.isEmployee }"
+            :disabled="authStore.isEmployee"
+            :title="authStore.isEmployee ? '員工無法使用前台訂房功能，請至後台操作' : ''"
+            @click="handleSearch"
+          >
             CHECK RATES
           </button>
         </div>
@@ -108,15 +114,18 @@ import '@vuepic/vue-datepicker/dist/main.css';
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Date validation - fix timezone issue
+// 取得當前時間
 const now = new Date();
-const offset = now.getTimezoneOffset() * 60000;
-const localNow = new Date(now.getTime() - offset);
-localNow.setHours(0, 0, 0, 0); // Strip time
-const today = localNow;
+const today = new Date();
 
-const tomorrowDate = new Date(localNow.getTime() + 86400000);
-tomorrowDate.setHours(0, 0, 0, 0); // Strip time
+// 如果還沒超過退房時間 (12:00)，允許選擇「昨天」作為入住日 (因應凌晨入住)
+if (now.getHours() < 12) {
+  today.setDate(today.getDate() - 1);
+}
+today.setHours(0, 0, 0, 0); // 歸零時間，純比較日期
+
+const tomorrowDate = new Date(today);
+tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
 const dateRange = ref([today, tomorrowDate]);
 
@@ -152,6 +161,11 @@ function handleInternalModelChange(val) {
 }
 
 function handleSearch() {
+  if (authStore.isEmployee) {
+    alert("員工無法使用前台訂房功能，請至後台管理系統操作。");
+    return;
+  }
+
   if (!authStore.isLoggedIn) {
     alert("請先登入會員以進行訂房");
     router.push({ name: 'login', query: { redirect: '/room-booking/select' } });
@@ -163,8 +177,11 @@ function handleSearch() {
     return;
   }
 
-  const checkIn = new Date(dateRange.value[0].getTime() - offset).toISOString().split('T')[0];
-  const checkOut = new Date(dateRange.value[1].getTime() - offset).toISOString().split('T')[0];
+  const start = dateRange.value[0];
+  const end = dateRange.value[1];
+
+  const checkIn = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+  const checkOut = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
 
   router.push({
     name: 'room-selection',
@@ -415,8 +432,15 @@ function handleSearch() {
   margin-left: 1rem;
 }
 
-.btn-check-rates:hover {
+.btn-check-rates:hover:not(:disabled) {
   background: #f0f0f0;
+}
+
+.disabled-btn {
+  background: #cccccc !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
 }
 
 .search-footer {

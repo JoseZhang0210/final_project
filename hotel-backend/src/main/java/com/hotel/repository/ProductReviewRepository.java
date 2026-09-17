@@ -14,4 +14,6 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, In
     Optional<ProductReview> findByProductIdAndMemberId(Integer productId, Integer memberId);
 
     Optional<ProductReview> findByReviewIdAndProductId(Integer reviewId, Integer productId);
+
+    long deleteByProductId(Integer productId);
 }

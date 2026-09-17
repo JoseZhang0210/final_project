@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 function parseJwtPayload(token) {
     if (!token) return null;
@@ -32,6 +32,51 @@ export const useAuthStore = defineStore('auth', () => {
 
     let refreshTimer = null
     let refreshPromise = null
+
+    // 判斷是否具備員工身分
+    const isEmployee = computed(() => {
+        if (!isLoggedIn.value || !Array.isArray(authorities.value)) return false;
+        return authorities.value.some(a => 
+            a === 'ROLE_EMPLOYEE' || 
+            a === 'ROLE_ADMIN' || 
+            (typeof a === 'string' && a.startsWith('POSITION_'))
+        );
+    });
+
+    // 判斷是否為超級管理員（總經理 / 特權職位）
+    const isSuperAdmin = computed(() => {
+        if (!isLoggedIn.value || !Array.isArray(authorities.value)) return false;
+        return authorities.value.some(a => 
+            a === 'ROLE_ADMIN' || 
+            a === 'SUPER_ADMIN' || 
+            a === 'POSITION_總經理' ||
+            a === 'POSITION_管理員'
+        );
+    });
+
+    // 提取使用者職位名稱
+    const userPosition = computed(() => {
+        if (!Array.isArray(authorities.value)) return '';
+        const posAuth = authorities.value.find(a => typeof a === 'string' && a.startsWith('POSITION_'));
+        return posAuth ? posAuth.replace('POSITION_', '') : '';
+    });
+
+    // 檢查是否具有指定權限代碼（超管自動通過）
+    function hasPermission(permissionCode) {
+        if (!isLoggedIn.value) return false;
+        if (isSuperAdmin.value) return true;
+        if (!permissionCode) return true;
+        return Array.isArray(authorities.value) && authorities.value.includes(permissionCode);
+    }
+
+    // 檢查是否具有任一權限代碼
+    function hasAnyPermission(permissionCodes) {
+        if (!isLoggedIn.value) return false;
+        if (isSuperAdmin.value) return true;
+        if (!Array.isArray(permissionCodes) || permissionCodes.length === 0) return true;
+        if (!Array.isArray(authorities.value)) return false;
+        return permissionCodes.some(code => authorities.value.includes(code));
+    }
 
     // 自動續期定時器
     function startAutoRefreshTimer() {
@@ -168,6 +213,11 @@ export const useAuthStore = defineStore('auth', () => {
         isLoggedIn, 
         authorities, 
         name, 
+        isEmployee,
+        isSuperAdmin,
+        userPosition,
+        hasPermission,
+        hasAnyPermission,
         login, 
         logout, 
         updateName, 

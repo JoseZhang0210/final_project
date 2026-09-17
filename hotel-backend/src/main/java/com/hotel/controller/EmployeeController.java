@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,6 +36,7 @@ import com.hotel.util.JsonUtils;
 
 @RestController
 @RequestMapping("/api/employees")
+@PreAuthorize("hasAuthority('EMPLOYEE_MANAGE') or hasAuthority('POSITION_總經理') or hasAuthority('ROLE_EMPLOYEE')")
 public class EmployeeController {
 
     private final EmployeeService employeeService;

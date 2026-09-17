@@ -43,9 +43,14 @@
             <span>🎫 我的場地預約</span>
           </RouterLink>
 
-          <RouterLink to="/products" class="nav-item">
-            <span class="icon">🛍</span>
-            <span>飯店商城</span>
+          <RouterLink to="/member/wishlist" class="nav-item" active-class="active">
+            <span class="icon">♥</span>
+            <span>願望清單</span>
+          </RouterLink>
+
+          <RouterLink to="/member/room-bookings" class="nav-item" active-class="active">
+            <span class="icon">🛏️</span>
+            <span>訂房紀錄</span>
           </RouterLink>
 
           <RouterLink to="/logout" class="nav-item logout-item">
