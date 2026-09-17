@@ -39,7 +39,7 @@
     </div>
 
     <!-- 會員管理卡片 -->
-    <div class="admin-card">
+    <section class="admin-card">
       <!-- 篩選列 -->
       <div class="admin-toolbar">
         <div class="search-box">
