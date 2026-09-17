@@ -92,13 +92,29 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Integer id) {
         if (!roomTypeRepository.existsById(id)) {
-            throw new EntityNotFoundException("欲刪除的房型 ID: " + id + " 不存在");
+            throw new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料");
         }
         roomTypeRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public void syncAvailableRooms() {
+        List<RoomType> allRoomTypes = roomTypeRepository.findAll();
+        for (RoomType rt : allRoomTypes) {
+            // 同步計算該房型在資料庫中的實體房間總數 (預設房間數)
+            int totalPhysicalRooms = roomRepository.findByRoomTypeId(rt.getRoomTypeId()).size();
+            rt.setAvailableRooms(totalPhysicalRooms);
+            roomTypeRepository.save(rt);
+        }
+    }
+
+    // ==========================================
+    // JSON 匯入邏輯
+    // ==========================================
     @Override
     public java.util.Map<String, Object> importRoomTypes(List<RoomTypeDTO> dtos) {
         int successCount = 0;

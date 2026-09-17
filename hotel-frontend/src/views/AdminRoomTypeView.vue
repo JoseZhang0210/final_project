@@ -161,6 +161,19 @@ async function loadRoomTypes() {
   }
 }
 
+async function syncAvailableRooms() {
+  loading.value = true;
+  message.value = "";
+  try {
+    await roomTypeApi.syncAvailableRooms();
+    await loadRoomTypes();
+  } catch (error) {
+    showMessage("數量同步發生例外錯誤", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
 let refreshInterval = null;
 
 onMounted(() => {
@@ -382,7 +395,12 @@ function exportJson() {
     <section class="admin-card">
       <div class="table-header">
         <h2>房型列表</h2>
-        <span>共 {{ roomTypes.length }} 種房型</span>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>共 {{ roomTypes.length }} 種房型</span>
+          <button type="button" class="btn secondary" @click="syncAvailableRooms" :disabled="loading">
+            {{ loading ? '同步中...' : '同步今日剩餘房數量' }}
+          </button>
+        </div>
       </div>
 
       <div class="table-wrapper">
