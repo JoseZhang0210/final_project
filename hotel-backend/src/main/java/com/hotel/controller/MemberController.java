@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.MemberDTO;
+import com.hotel.model.dto.MemberDemographicsDTO;
 import com.hotel.model.entity.Account;
 import com.hotel.repository.AccountRepository;
 import com.hotel.service.MemberService;
@@ -537,5 +538,16 @@ public class MemberController {
                 "failureCount", failureCount,
                 "errors", errors));
     }
+
+    // =========================================
+    // 11. 會員人口統計分佈（地區、年齡、性別、資料完善率）
+    // GET /api/members/statistics/demographics
+    // =========================================
+    @GetMapping("/statistics/demographics")
+    public ResponseEntity<MemberDemographicsDTO> getMemberDemographics() {
+        MemberDemographicsDTO demographics = memberService.getMemberDemographics();
+        return ResponseEntity.ok(demographics);
+    }
 }
+
 
