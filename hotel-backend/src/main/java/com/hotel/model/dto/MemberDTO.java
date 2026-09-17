@@ -36,6 +36,7 @@ public class MemberDTO {
     private LocalDate birthday;
     private String gender;
     private LocalDateTime updatedAt;
+    private String avatarUrl;
 
     // 驗證碼 (註冊用)
     private String verificationCode;

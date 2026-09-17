@@ -127,7 +127,10 @@
 
         <div class="admin-header-actions">
           <div class="admin-user">
-            <span class="user-avatar-mini">{{ userInitial }}</span>
+            <span class="user-avatar-mini">
+              <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <span v-else>{{ userInitial }}</span>
+            </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>
           </div>
 
@@ -236,6 +239,14 @@ const accountOpen = ref(true);
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-mini-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-greeting-text {
