@@ -65,9 +65,6 @@ public class HotelScheduler {
                     
                     boolean isCheckoutOverdue = today.isAfter(b.getCheckOutDate()) || 
                                               (today.isEqual(b.getCheckOutDate()) && currentHour >= 12);
-                    
-                    boolean isPastCheckInDate = today.isAfter(b.getCheckInDate());
-                    boolean isCheckInTimeToday = today.isEqual(b.getCheckInDate()) && currentHour >= 15;
 
                     if (isCheckoutOverdue) {
                         log.info("自動修正：訂單 ID {} 退房時間已過，轉為已完成", b.getBookingId());

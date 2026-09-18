@@ -169,11 +169,6 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     // 目前日可用數（給後台用）
-    // 目前日可用數（給內部備用，若有需要）
-    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
-        LocalDate today = LocalDate.now();
-        return calculateAvailableRooms(roomTypeId, today, today.plusDays(1));
-    }
 
     private RoomTypeDTO convertToDTO(RoomType roomType) {
         RoomTypeDTO dto = new RoomTypeDTO();
