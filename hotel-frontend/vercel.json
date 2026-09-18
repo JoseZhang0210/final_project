@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://nonincorporative-kadence-unlikably.ngrok-free.dev/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://nonincorporative-kadence-unlikably.ngrok-free.dev/uploads/:path*"
+    }
+  ]
+}
