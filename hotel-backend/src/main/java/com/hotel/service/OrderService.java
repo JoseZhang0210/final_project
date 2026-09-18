@@ -35,7 +35,6 @@ import lombok.RequiredArgsConstructor;
 
 import com.hotel.model.dto.MonthlyProductSalesDTO;
 import com.hotel.util.MailUtil;
-import com.hotel.model.dto.EmailDTO;
 
 @Service
 @RequiredArgsConstructor
