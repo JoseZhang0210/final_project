@@ -89,7 +89,7 @@ public class MailUtil {
             mailSender.send(message);
             log.info("郵件發送成功！目標: {}", emailDto.getTo());
 
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             log.error("郵件發送失敗！錯誤原因: ", e);
             // 這裡可以選擇將發送失敗的紀錄寫入 Log 或做進一步通知
         }
