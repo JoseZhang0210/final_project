@@ -1,6 +1,6 @@
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'finalproject')
 BEGIN
-    CREATE DATABASE finalproject;
+    CREATE DATABASE finalproject COLLATE Chinese_Taiwan_Stroke_CI_AS;
 END;
 GO
 
@@ -19,4 +19,3 @@ BEGIN
     ALTER ROLE db_owner ADD MEMBER hotel_app;
 END;
 GO
-

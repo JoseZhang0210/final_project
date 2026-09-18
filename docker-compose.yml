@@ -11,6 +11,7 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=SaAdminPassword123!   # SA 管理員密碼（僅供初始化容器使用）
       - MSSQL_PID=Developer
+      - MSSQL_COLLATION=Chinese_Taiwan_Stroke_CI_AS # 設定伺服器與資料庫預設定序為繁體中文
     ports:
       - "1433:1433"
     volumes:
