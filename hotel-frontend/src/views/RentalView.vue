@@ -26,7 +26,7 @@ const dates = computed(() => { // 提供未來一年可選日期並禁用占用�
     return day.toISOString().slice(0, 10); // 表單僅顯示日期。
   });
 });
-const isOccupied = (venueId, day) => occupied.value.some(item => Number(item.venueId) === Number(venueId) && item.date === day && item.occupied); // 卡片與日期選項使用同一份占用資料。
+const isOccupied = (venueId, day) => (Array.isArray(occupied.value) ? occupied.value : []).some(item => Number(item.venueId) === Number(venueId) && item.date === day && item.occupied); // 卡片與日期選項使用同一份占用資料。
 async function pay(rental) { // 付款狀態只能由後端更新。
   loading.value = true; errorMessage.value = ""; // 防止重複按下付款按鈕。
   try { // 先取得後端驗證及簽章後的參數。
@@ -356,8 +356,8 @@ const form = ref({
 watch(() => form.value.venueId, () => { form.value.rentalDate = ""; }); // 表單初始化後監看場地切換，避免沿用已占用日期。
 
 const availableVenues = computed(() =>
-  venues.value.filter((venue) => {
-    const status = String(venue.venueStatus || "").trim();
+  (Array.isArray(venues.value) ? venues.value : []).filter((venue) => {
+    const status = String(venue?.venueStatus || "").trim();
     return (
       status.toUpperCase() === "AVAILABLE" ||
       status === "可預約"
@@ -366,9 +366,9 @@ const availableVenues = computed(() =>
 );
 
 const selectedVenue = computed(() =>
-  venues.value.find(
+  (Array.isArray(venues.value) ? venues.value : []).find(
     (venue) =>
-      Number(venue.venueId) ===
+      Number(venue?.venueId) ===
       Number(form.value.venueId),
   ),
 );
@@ -404,7 +404,7 @@ const capacityWarning = computed(() => {
 const venueMap = computed(() => {
   const result = new Map();
 
-  for (const venue of venues.value) {
+  for (const venue of (Array.isArray(venues.value) ? venues.value : [])) {
     result.set(
       Number(venue.venueId),
       venue.venueName,
@@ -444,12 +444,16 @@ async function loadData() {
         getMyRentals(token.value), // 此元件只供會員前台與會員中心使用，永遠只查本人租借。
       ]);
 
-    venues.value = venueData ?? [];
-    rentals.value = rentalData ?? [];
-    occupied.value = await getOccupiedDates(token.value, dates.value[0], dates.value.at(-1)); // 占用資料僅包含場地與日期。
+    venues.value = Array.isArray(venueData) ? venueData : [];
+    rentals.value = Array.isArray(rentalData) ? rentalData : [];
+    const occupiedData = await getOccupiedDates(token.value, dates.value[0], dates.value.at(-1));
+    occupied.value = Array.isArray(occupiedData) ? occupiedData : [];
     const details = await Promise.all(rentals.value.map(rental => getRentalPayment(token.value, rental.rentalId))); // 每筆付款都由後端驗證所有權。
-    payments.value = Object.fromEntries(details.map(detail => [detail.rentalId, detail])); // 保存歷史付款金額與狀態。
+    payments.value = Object.fromEntries(details.filter(Boolean).map(detail => [detail.rentalId, detail])); // 保存歷史付款金額與狀態。
   } catch (error) {
+    venues.value = [];
+    rentals.value = [];
+    occupied.value = [];
     errorMessage.value =
       getApiErrorMessage(error);
   } finally {
@@ -706,7 +710,7 @@ function money(value) {
         <!-- 有限範圍的已預約日期不含私人租借欄位。 -->
         <details><summary>查看未來一年已預約日期</summary>
           <!-- 每個日期僅顯示占用結果。 -->
-          <p>{{ occupied.filter(item => Number(item.venueId) === Number(venue.venueId)).map(item => item.date).join('、') || '目前無已預約日期' }}</p>
+          <p>{{ (Array.isArray(occupied) ? occupied : []).filter(item => Number(item.venueId) === Number(venue.venueId)).map(item => item.date).join('、') || '目前無已預約日期' }}</p>
         </details>
         <!-- 停用場地無法選取，最終仍由後端驗證。 -->
         <button type="button" :disabled="loading || !availableVenues.some(item => item.venueId === venue.venueId)" @click="form.venueId = venue.venueId; form.rentalDate = ''">選擇場地</button> <!-- 此頁固定提供會員選擇場地。 -->

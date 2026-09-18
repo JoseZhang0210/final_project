@@ -80,10 +80,14 @@ public class SecurityConfig {
                                                                                 "/upload/products/**")
                                                                 .permitAll()
                                                                 // -------------------------
-                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼
+                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼、場地列表與占用日期
                                                                 // -------------------------
                                                                 .requestMatchers("/api/roomtypes/**", "/uploads/**",
                                                                                 "/api/payments/ecpay/**")
+                                                                .permitAll()
+                                                                .requestMatchers(HttpMethod.GET,
+                                                                                "/api/venues", "/api/venues/**",
+                                                                                "/api/rentals/occupied-dates")
                                                                 .permitAll()
                                                                 // -------------------------
                                                                 // Spring Boot error
