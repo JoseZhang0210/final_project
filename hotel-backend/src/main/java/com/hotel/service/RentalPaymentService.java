@@ -1,5 +1,6 @@
 package com.hotel.service; // 場地付款與綠界介接，不依賴其他付款模組。
 import java.util.*; // 組裝固定付款參數與排序映射。
+import java.util.concurrent.atomic.AtomicBoolean; // 安全維護 runtime 模擬付款開關。
 import java.net.*; // 驗證付款網址及標準表單編碼。
 import java.nio.charset.StandardCharsets; // 固定使用 UTF8，避免中文簽章差異。
 import java.security.MessageDigest; // 計算 SHA256 與固定時間比較。
@@ -22,9 +23,24 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
     private final RentalPaymentRepository payments; // 付款資料列鎖與條件更新。
     private final RentalMailService mail; // 提交後寄送付款通知。
     private final Environment environment; // 不將金鑰寫入程式或前端。
+    private final AtomicBoolean demoModeEnabled; // Runtime 模擬付款狀態旗號。
     /** 建立場地付款服務及其資料與通知依賴。 */
     public RentalPaymentService(RentalService rentals, RentalPaymentRepository payments, RentalMailService mail, Environment environment) { // 注入場地專用服務。
         this.rentals=rentals; this.payments=payments; this.mail=mail; this.environment=environment; // 保存既有依賴。
+        this.demoModeEnabled = new AtomicBoolean("true".equalsIgnoreCase(environment.getProperty("VENUE_PAYMENT_DEMO", "false"))); // 依環境變數初始化開關。
+    }
+
+    /** 查詢展示用模擬付款模式開關（僅限管理員）。 */
+    public Map<String, Object> getDemoMode(Authentication authentication) {
+        RentalService.requireManager(authentication);
+        return Map.of("enabled", demoModeEnabled.get());
+    }
+
+    /** 設定展示用模擬付款模式開關（僅限管理員）。 */
+    public Map<String, Object> setDemoMode(boolean enabled, Authentication authentication) {
+        RentalService.requireManager(authentication);
+        demoModeEnabled.set(enabled);
+        return Map.of("enabled", demoModeEnabled.get());
     }
     /** 讀取必要的綠界環境設定。 */
     private String setting(String name) { // 缺設定時明確拒絕，不使用正式預設值。
@@ -114,7 +130,7 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
     @Transactional
     public Map<String,Object> stageDemoPaid(Integer rentalId, Authentication authentication) {
 
-        if (!"true".equalsIgnoreCase(environment.getProperty("VENUE_PAYMENT_DEMO", "false"))) {
+        if (!demoModeEnabled.get()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "本機測試付款未啟用");
         }
 

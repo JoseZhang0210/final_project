@@ -9,12 +9,16 @@ import {
   createAdminRental,
   updateRental,
   deleteRental,
+  getDemoPaymentMode,
+  setDemoPaymentMode,
   getApiErrorMessage,
 } from "../api/venueRentalApi"; // 僅使用既有管理 API。
 const token = ref(getStoredToken()); // 不建立新的登入流程。
 const rentals = ref([]); // 保存全部租借，不查詢會員專用端點。
 const venues = ref([]); // 場地名稱由既有場地 API 取得。
 const memberNames = ref({}); // 依會員 ID 保存會員姓名，不修改會員模組。
+const demoPaymentEnabled = ref(false); // 展示用模擬付款開關狀態。
+const demoPaymentLoading = ref(false); // 切換模擬付款開關狀態讀取中。
 const loading = ref(false); // 避免重複提交管理操作。
 const message = ref(""); // 顯示操作結果。
 const errorMessage = ref(""); // 保留後端權限及付款保護錯誤。
@@ -79,15 +83,17 @@ function scrollToRentalForm() {
 onMounted(refreshRentals); // 管理員進頁即載入全部租借。
 async function loadRentalData() {
   // 沿用舊版管理資料重新載入入口。
-  // 租借、場地與會員資料並行載入。
-  const [all, places, members] = await Promise.all([
+  // 租借、場地、會員資料與展示付款開關狀態並行載入。
+  const [all, places, members, demoModeRes] = await Promise.all([
     getRentals(token.value),
     getVenues(token.value),
     getMembers(token.value),
+    getDemoPaymentMode(token.value).catch(() => ({ enabled: false })),
   ]);
 
   rentals.value = Array.isArray(all) ? all : [];
   venues.value = Array.isArray(places) ? places : [];
+  demoPaymentEnabled.value = Boolean(demoModeRes?.enabled);
 
   // 建立 memberId -> 姓名對照表。
   memberNames.value = Object.fromEntries(
@@ -99,6 +105,37 @@ async function loadRentalData() {
       ]),
   );
 } // 結束管理資料載入。
+
+async function handleToggleDemoMode() {
+  if (demoPaymentLoading.value || !token.value) {
+    return;
+  }
+
+  const targetState = !demoPaymentEnabled.value;
+
+  if (targetState) {
+    const confirmed = window.confirm("確定要啟用展示付款模式嗎？");
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  demoPaymentLoading.value = true;
+  message.value = "";
+  errorMessage.value = "";
+
+  try {
+    const res = await setDemoPaymentMode(token.value, targetState);
+    demoPaymentEnabled.value = Boolean(res?.enabled);
+    message.value = demoPaymentEnabled.value
+      ? "已成功啟用展示用模擬付款模式"
+      : "已停用展示用模擬付款模式";
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error);
+  } finally {
+    demoPaymentLoading.value = false;
+  }
+}
 async function refreshRentals() {
   // 恢復重新整理功能。
   if (!token.value) {
@@ -312,6 +349,33 @@ function rentalStatusLabel(status) {
       </div>
 
 
+    </section>
+
+    <!-- 展示用模擬付款控制區塊 -->
+    <section v-if="isLoggedIn" class="card demo-mode-card">
+      <div class="demo-mode-header">
+        <div>
+          <h2>展示用模擬付款</h2>
+          <p class="description">控制全站是否開放場地租借展示用模擬付款功能</p>
+        </div>
+
+        <div class="demo-mode-toggle-wrap">
+          <button
+            type="button"
+            class="toggle-btn"
+            :class="demoPaymentEnabled ? 'on' : 'off'"
+            :disabled="demoPaymentLoading || loading"
+            @click="handleToggleDemoMode"
+          >
+            {{ demoPaymentEnabled ? "ON" : "OFF" }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="demoPaymentEnabled" class="demo-warning-box">
+        <span class="warning-icon">⚠️</span>
+        <span>展示付款模式已啟用。會員可使用展示流程將自己的待付款租借標記為已付款。</span>
+      </div>
     </section>
 
     <!-- 沿用網站登入，僅顯示管理結果與重新整理，不重建登入功能。 -->
@@ -803,6 +867,60 @@ th {
 .status-已完成 {
   background: #eee7de;
   color: #5f5145;
+}
+
+/* 展示用模擬付款開關樣式 */
+.demo-mode-card {
+  border-left: 4px solid #b58a46;
+}
+
+.demo-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.demo-mode-toggle-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn {
+  min-width: 72px;
+  min-height: 40px;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 20px;
+  transition: all 0.2s ease-in-out;
+}
+
+.toggle-btn.on {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.toggle-btn.off {
+  background: #94a3b8;
+  color: #ffffff;
+}
+
+.demo-warning-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fef3c7;
+  border: 1px solid #fde047;
+  color: #854d0e;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-icon {
+  font-size: 16px;
 }
 
 .empty {
