@@ -64,6 +64,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=finalproject;encrypt=true;trustServerCertificate=true
       - SPRING_DATASOURCE_USERNAME=hotel_app
       - SPRING_DATASOURCE_PASSWORD=123456
+      - VENUE_PAYMENT_DEMO=${VENUE_PAYMENT_DEMO:-false}
     volumes:
       - ./uploads:/app/uploads                 # 上傳圖片檔案持久化
     depends_on:
