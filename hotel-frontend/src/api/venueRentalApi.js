@@ -11,6 +11,9 @@ export async function checkoutRental(token, id) { // 付款請求只傳租借編
 
 const api = axios.create({
   baseURL: "/api",
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 function authConfig(token) {
@@ -50,6 +53,9 @@ export async function getVenues(token) {
     "/venues",
     authConfig(token),
   );
+  if (!Array.isArray(response.data)) {
+    throw new Error("場地資料格式錯誤，請確認網路連線或伺服器回應");
+  }
   return response.data;
 }
 
