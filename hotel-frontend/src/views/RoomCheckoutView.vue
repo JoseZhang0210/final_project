@@ -45,7 +45,6 @@
             </div>
           </label>
         </div>
-
         <button 
           class="btn-checkout" 
           :disabled="isProcessing"
@@ -83,29 +82,7 @@
           </div>
         </div>
       </div>
-      <!-- 等待付款視窗 (Modal) -->
-      <div v-if="showPaymentModal" class="payment-modal-overlay">
-        <div class="payment-modal">
-          <h3>💳 等待付款完成中...</h3>
-          <p>已在**新分頁**開啟綠界結帳畫面</p>
-          <p>請在綠界畫面完成付款！</p>
-          
-          <div class="spinner"></div>
 
-          <div class="dev-tools mt-4">
-            <p style="font-size: 0.85rem; color: #888;">開發測試用：</p>
-            <button @click="forceMockSuccess" class="btn-mock">
-              🚀 [開發測試用] 強制模擬付款成功
-            </button>
-            <button @click="forceMockFail" class="btn-mock-fail mt-2">
-              ❌ [開發測試用] 強制模擬付款失敗
-            </button>
-            <button @click="cancelPaymentWait" class="btn-cancel mt-2">
-              返回修改訂單
-            </button>
-          </div>
-        </div>
-      </div>
   </div>
 
     <!-- 美化版提示 Modal -->
@@ -123,11 +100,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { bookingApi } from '../api/bookingApi';
 import { useAuthStore } from '../stores/auth';
 import AlertModal from '../components/common/AlertModal.vue';
+
+const isProcessing = ref(false); // 避免重複送出
 
 const route = useRoute();
 const router = useRouter();
@@ -173,11 +152,8 @@ function goToSelection() {
     }
   });
 }
-
-const isProcessing = ref(false);
-const showPaymentModal = ref(false);
+const currentBookingId = ref(null); // 當前正在處理的訂單 ID
 const pollingInterval = ref(null);
-const currentBookingId = ref(null);
 const ecpayFormContainer = ref(null);
 
 onUnmounted(() => {
@@ -198,9 +174,9 @@ function fillDemoData() {
   form.value.remark = '這是一筆綠界測試金流的 Demo 訂單';
 }
 
-function startPolling(bookingId) {
+function startPolling(bookingId, ecpayWindow = null) {
   currentBookingId.value = bookingId;
-  showPaymentModal.value = true;
+  isProcessing.value = true;
   
   // 每 3 秒詢問一次後端狀態
   pollingInterval.value = setInterval(async () => {
@@ -210,10 +186,19 @@ function startPolling(bookingId) {
         const data = await res.json();
         if (data.status === '已付款') {
           clearInterval(pollingInterval.value);
+          isProcessing.value = false;
           showAlert('success', '付款成功', '即將為您跳轉至首頁。', () => {
             router.push('/');
           });
+          return;
         }
+      }
+
+      // 檢查使用者是否自行關閉了綠界視窗
+      if (ecpayWindow && ecpayWindow.closed) {
+        clearInterval(pollingInterval.value);
+        isProcessing.value = false;
+        showAlert('error', '付款失敗', '您已關閉綠界付款視窗。訂單尚未付款，請重新結帳！');
       }
     } catch (e) {
       console.error("輪詢狀態失敗", e);
@@ -225,7 +210,7 @@ async function cancelPaymentWait() {
   if (pollingInterval.value) {
     clearInterval(pollingInterval.value);
   }
-  showPaymentModal.value = false;
+  isProcessing.value = false;
 
   // 使用者放棄結帳，刪除剛建立的訂單與付款記錄
   if (currentBookingId.value) {
@@ -349,17 +334,21 @@ async function submitCheckout() {
     ecpayFormContainer.value.innerHTML = htmlForm;
     await nextTick();
     const formElement = ecpayFormContainer.value.querySelector('form');
+    let ecpayWindow = null;
     if (formElement) {
-      formElement.target = '_blank'; // ★ 關鍵：新開分頁
+      // 先用 window.open 開啟一個空白具名視窗，這樣我們可以追蹤它是否被關閉
+      ecpayWindow = window.open('', 'ecpayWindow');
+      formElement.target = 'ecpayWindow';
       formElement.submit();
     }
 
-    // 4. 開始在本地輪詢付款狀態
-    startPolling(bookingId);
+    // 4. 開始在本地輪詢付款狀態，並把 window 物件傳入以追蹤
+    startPolling(bookingId, ecpayWindow);
 
   } catch (error) {
     console.error("Checkout failed:", error);
-    showAlert('error', '結帳錯誤', '結帳發生錯誤，請稍後再試！');
+    showAlert('error', '結帳失敗', error.message || '發生未知錯誤，請稍後再試。');
+    isProcessing.value = false;
   } finally {
     isProcessing.value = false;
   }

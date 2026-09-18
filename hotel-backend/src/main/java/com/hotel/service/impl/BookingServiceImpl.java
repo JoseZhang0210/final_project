@@ -155,35 +155,47 @@ public class BookingServiceImpl implements BookingService {
 
     private void handleStatusTransition(Booking existingBooking, String oldStatus, String newStatus) {
         if (BookingStatus.CHECKED_IN.equals(newStatus)) {
-            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-            if (room != null) {
-                room.setRoomStatus(RoomStatus.OCCUPIED);
-                roomRepository.save(room);
-            }
+            processCheckIn(existingBooking);
         } else if ((BookingStatus.CHECKED_OUT.equals(newStatus) || BookingStatus.COMPLETED.equals(newStatus)) && !oldStatus.equals(newStatus)) {
-            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-            if (room != null) {
+            processCheckOut(existingBooking);
+        } else if (BookingStatus.CANCELLED.equals(newStatus) && !oldStatus.equals(newStatus)) {
+            processCancel(existingBooking, oldStatus);
+        }
+    }
+
+    private void processCheckIn(Booking existingBooking) {
+        Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+        if (room != null) {
+            room.setRoomStatus(RoomStatus.OCCUPIED);
+            roomRepository.save(room);
+        }
+    }
+
+    private void processCheckOut(Booking existingBooking) {
+        Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+        if (room != null) {
+            room.setRoomStatus(RoomStatus.CLEANING);
+            roomRepository.save(room);
+            
+            java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
+            java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().isBefore(targetTime) ? java.time.LocalDateTime.now() : targetTime;
+            createCleaningTask(room.getRoomId(), createdAt, "由系統自動產生：退房清潔");
+        }
+    }
+
+    private void processCancel(Booking existingBooking, String oldStatus) {
+        Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+        if (room != null) {
+            if (BookingStatus.CHECKED_IN.equals(oldStatus)) {
                 room.setRoomStatus(RoomStatus.CLEANING);
                 roomRepository.save(room);
-                
-                java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
-                java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().isBefore(targetTime) ? java.time.LocalDateTime.now() : targetTime;
-                createCleaningTask(room.getRoomId(), createdAt, "由系統自動產生：退房清潔");
-            }
-        } else if (BookingStatus.CANCELLED.equals(newStatus) && !oldStatus.equals(newStatus)) {
-            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-            if (room != null) {
-                if (BookingStatus.CHECKED_IN.equals(oldStatus)) {
-                    room.setRoomStatus(RoomStatus.CLEANING);
+                createCleaningTask(room.getRoomId(), java.time.LocalDateTime.now(), "由系統自動產生：入住後取消，執行退房清潔");
+            } else {
+                String currentRoomStatus = room.getRoomStatus();
+                if (!RoomStatus.MAINTENANCE.equals(currentRoomStatus) && !RoomStatus.DISABLED.equals(currentRoomStatus) && 
+                    !RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus) && !RoomStatus.CLEANING.equals(currentRoomStatus)) {
+                    room.setRoomStatus(RoomStatus.AVAILABLE);
                     roomRepository.save(room);
-                    createCleaningTask(room.getRoomId(), java.time.LocalDateTime.now(), "由系統自動產生：入住後取消，執行退房清潔");
-                } else {
-                    String currentRoomStatus = room.getRoomStatus();
-                    if (!RoomStatus.MAINTENANCE.equals(currentRoomStatus) && !RoomStatus.DISABLED.equals(currentRoomStatus) && 
-                        !RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus) && !RoomStatus.CLEANING.equals(currentRoomStatus)) {
-                        room.setRoomStatus(RoomStatus.AVAILABLE);
-                        roomRepository.save(room);
-                    }
                 }
             }
         }

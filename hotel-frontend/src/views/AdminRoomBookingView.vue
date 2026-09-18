@@ -11,6 +11,24 @@ import { useRouter, useRoute } from "vue-router";
 import { formatPrice } from "@/utils/formatters";
 import AdminPagination from "@/components/admin/AdminPagination.vue";
 
+// ==== Date Helper Functions ====
+function getTodayLocalString() {
+  const now = new Date();
+  const tzOffset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+}
+
+function getNextDayString(dateStr) {
+  const parts = dateStr.split('-');
+  const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const y = nextDay.getFullYear();
+  const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+  const d = String(nextDay.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+
 const BOOKING_API_URL = "/api/bookings";
 const BOOKING_ORDER_API_URL = "/api/orders";
 
@@ -38,13 +56,7 @@ const searchCriteria = ref({
 
 watch(() => searchCriteria.value.checkInDate, (newVal) => {
   if (newVal) {
-    const parts = newVal.split('-');
-    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const y = nextDay.getFullYear();
-    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
-    const d = String(nextDay.getDate()).padStart(2, '0');
-    searchCriteria.value.checkOutDate = `${y}-${m}-${d}`;
+    searchCriteria.value.checkOutDate = getNextDayString(newVal);
   }
 });
 
@@ -58,8 +70,7 @@ const availableBookingStatuses = computed(() => {
   
   const now = new Date();
   const currentHour = now.getHours();
-  const tzOffset = now.getTimezoneOffset() * 60000;
-  const todayStr = new Date(now.getTime() - tzOffset).toISOString().split('T')[0];
+  const todayStr = getTodayLocalString();
 
   if (isNew) {
     if (checkInDate === todayStr && currentHour < 15) {
@@ -119,13 +130,7 @@ const paymentForm = ref({
 
 watch(() => form.value.checkInDate, (newVal) => {
   if (newVal) {
-    const parts = newVal.split('-');
-    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
-    nextDay.setDate(nextDay.getDate() + 1);
-    const y = nextDay.getFullYear();
-    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
-    const d = String(nextDay.getDate()).padStart(2, '0');
-    form.value.checkOutDate = `${y}-${m}-${d}`;
+    form.value.checkOutDate = getNextDayString(newVal);
     calculatePrice();
   }
 });
@@ -213,12 +218,8 @@ function clearForm() {
 }
 
 function fillDummyData() {
-  const today = new Date();
-  const tzOffset = today.getTimezoneOffset() * 60000;
-  const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-  
-  const tomorrow = new Date(today.getTime() + 86400000);
-  const tomorrowStr = new Date(tomorrow.getTime() - tzOffset).toISOString().split('T')[0];
+  const todayStr = getTodayLocalString();
+  const tomorrowStr = getNextDayString(todayStr);
   
   let firstMemberId = 1;
   if (bookings.value && bookings.value.length > 0) {
@@ -298,8 +299,7 @@ async function loadBookings() {
     
     // 自動將已過退房日期的訂單改為「已完成」
     const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const todayStr = getTodayLocalString();
     
     const currentHour = today.getHours();
     
@@ -413,9 +413,7 @@ function calculatePrice() {
 
   // 3. 若為新增訂單，根據入住日期自動判斷狀態
   if (!form.value.bookingId && form.value.checkInDate) {
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const todayStr = getTodayLocalString();
     
     if (form.value.checkInDate === todayStr) {
       form.value.bookingStatus = '已入住';
@@ -667,9 +665,7 @@ const filteredBookings = computed(() => {
   let result = bookings.value;
   
   if (currentFilter.value === "order_today") {
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const todayStr = getTodayLocalString();
 
     result = result.filter(b => {
       const createdAt = b.createdAt ?? b.created_at;
@@ -677,9 +673,7 @@ const filteredBookings = computed(() => {
       return String(createdAt).startsWith(todayStr);
     });
   } else if (currentFilter.value === "stay_today") {
-    const today = new Date();
-    const tzOffset = today.getTimezoneOffset() * 60000;
-    const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
+    const todayStr = getTodayLocalString();
 
     result = result.filter(b => {
       const cin = b.checkInDate ?? b.check_in_date;

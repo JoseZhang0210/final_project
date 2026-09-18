@@ -346,7 +346,7 @@ const router = createRouter({
 
 import { useAuthStore } from "@/stores/auth";
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from) => {
   try {
     const authStore = useAuthStore();
     const token = localStorage.getItem("token");
@@ -359,16 +359,16 @@ router.beforeEach(async (to, from, next) => {
     if (isAdminRoute) {
       // 1. 檢查是否已登入
       if (!authStore.isLoggedIn) {
-        return next({
+        return {
           name: "login",
           query: { redirect: to.fullPath },
-        });
+        };
       }
 
       // 2. 檢查是否具備員工身分 (ROLE_EMPLOYEE / POSITION_*)
       if (!authStore.isEmployee) {
         console.warn("非員工身分嘗試進入後台，拒絕訪問");
-        return next({ name: "home" });
+        return { name: "home" };
       }
 
       // 3. 檢查細部功能權限
@@ -378,21 +378,20 @@ router.beforeEach(async (to, from, next) => {
       if (requiredPermission && !authStore.hasPermission(requiredPermission)) {
         console.warn(`缺乏指定後台權限 [${requiredPermission}]，重定向至後台首頁`);
         if (to.path !== "/admin") {
-          return next({ path: "/admin" });
+          return { path: "/admin" };
         }
       }
 
       if (requiredPermissions && !authStore.hasAnyPermission(requiredPermissions)) {
         console.warn(`缺乏指定後台權限清單 [${requiredPermissions.join(", ")}]，重定向至後台首頁`);
         if (to.path !== "/admin") {
-          return next({ path: "/admin" });
+          return { path: "/admin" };
         }
       }
     }
   } catch (e) {
     console.error("Route auth check error:", e);
   }
-  next();
 });
 
 export default router;
