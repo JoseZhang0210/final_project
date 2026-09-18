@@ -268,6 +268,23 @@ async function forceMockFail() {
 }
 
 onMounted(() => {
+  // 如果是從綠界跳轉回來且帶有成功標記，直接顯示成功訊息
+  if (route.query.paymentSuccess) {
+    // 從 localStorage 恢復原本的訂單參數，讓畫面（圖一）保持完整
+    const savedParams = localStorage.getItem('checkoutParams');
+    if (savedParams) {
+      const parsed = JSON.parse(savedParams);
+      roomTypeId.value = parsed.roomTypeId;
+      roomName.value = parsed.roomName;
+      checkIn.value = parsed.checkIn;
+      checkOut.value = parsed.checkOut;
+      guests.value = parsed.guests;
+      totalPrice.value = Number(parsed.price) || 0;
+    }
+    showAlert('success', '付款成功', '感謝您的預訂！您的付款已成功。');
+    return;
+  }
+
   // 如果缺少必要參數，導回首頁
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
     showAlert('error', '缺少參數', '缺少訂房參數，請重新選擇房型', () => {
@@ -317,11 +334,17 @@ async function submitCheckout() {
     const createdBooking = await bookingApi.createBooking(bookingPayload);
     const bookingId = createdBooking.bookingId;
 
+    // 在跳轉前，把當前的路由參數存入 localStorage，以便結帳回來後恢復畫面
+    localStorage.setItem('checkoutParams', JSON.stringify(route.query));
+
     // 2. 呼叫後端取得綠界 HTML 表單
     const res = await fetch('/api/payments/ecpay/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId: bookingId })
+      body: JSON.stringify({ 
+        bookingId: bookingId,
+        frontendUrl: window.location.href
+      })
     });
     
     if (!res.ok) {
@@ -334,16 +357,13 @@ async function submitCheckout() {
     ecpayFormContainer.value.innerHTML = htmlForm;
     await nextTick();
     const formElement = ecpayFormContainer.value.querySelector('form');
-    let ecpayWindow = null;
     if (formElement) {
-      // 先用 window.open 開啟一個空白具名視窗，這樣我們可以追蹤它是否被關閉
-      ecpayWindow = window.open('', 'ecpayWindow');
-      formElement.target = 'ecpayWindow';
+      // 避免 Safari 阻擋新分頁，直接在當前分頁 (_self) 跳轉綠界
+      formElement.target = '_self';
       formElement.submit();
     }
-
-    // 4. 開始在本地輪詢付款狀態，並把 window 物件傳入以追蹤
-    startPolling(bookingId, ecpayWindow);
+    // 注意：因為使用 _self，瀏覽器會直接離開此頁面。
+    // 付款完成後，後端會將使用者重新導向回這個頁面的完整 URL。
 
   } catch (error) {
     console.error("Checkout failed:", error);

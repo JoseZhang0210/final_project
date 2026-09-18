@@ -1,19 +1,19 @@
 package com.hotel.controller;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.HashMap;
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.BookingDTO;
@@ -32,11 +32,14 @@ public class RoomBookingEcpayController {
     private final BookingPaymentService bookingPaymentService;
     private final MailUtil mailUtil;
 
-    @Value("${ecpay.stage.return-url}")
+    @Value("${ecpay.payment.return-url}")
     private String ecpayReturnUrl;
 
-    @Value("${ecpay.stage.client-back-url-prefix}")
-    private String ecpayClientBackUrlPrefix;
+    @Value("${ecpay.payment.result-url}")
+    private String ecpayResultUrlPrefix;
+
+    @Value("${app.frontend.checkout-url}")
+    private String frontendCheckoutUrl;
 
     public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService,
             BookingPaymentService bookingPaymentService, MailUtil mailUtil) {
@@ -49,7 +52,9 @@ public class RoomBookingEcpayController {
     // 1. 前端結帳時呼叫，取得綠界 HTML 表單
     @PostMapping("/checkout")
     public ResponseEntity<String> checkout(@RequestBody Map<String, Object> request) {
-        Integer bookingId = request.get("bookingId") != null ? Integer.valueOf(request.get("bookingId").toString()) : null;
+        Integer bookingId = request.get("bookingId") != null ? Integer.valueOf(request.get("bookingId").toString())
+                : null;
+        String frontendUrl = (String) request.get("frontendUrl");
         if (bookingId == null) {
             return ResponseEntity.badRequest().body("缺少 bookingId");
         }
@@ -77,10 +82,25 @@ public class RoomBookingEcpayController {
             System.err.println("建立待付款紀錄失敗: " + e.getMessage());
         }
 
-        // Server端背景回呼 (使用 httpbin 吸收綠界的 POST，避免報錯)
-        String RETURN_URL = ecpayReturnUrl;
-        // 綠界畫面上的「返回商店」按鈕 (改為路徑變數呼叫後端)
-        String CLIENT_BACK_URL = ecpayClientBackUrlPrefix + booking.getBookingId();
+        // 動態偵測環境：如果是 localhost，回傳到 local 後端；否則回傳到 Vercel (上機環境)
+        String RETURN_URL;
+        String CLIENT_BACK_URL;
+
+        if (frontendUrl != null && frontendUrl.contains("localhost")) {
+            // 本地開發環境：由後端處理再跳轉
+            RETURN_URL = "https://httpbin.org/post";
+            CLIENT_BACK_URL = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId();
+        } else {
+            // 上機環境：使用環境變數設定的網址
+            RETURN_URL = ecpayReturnUrl;
+
+            // 如果 teammate 設的是後端網址，補上 bookingId；如果是前端網址，補上成功標記
+            if (ecpayResultUrlPrefix.contains("client-return")) {
+                CLIENT_BACK_URL = ecpayResultUrlPrefix + booking.getBookingId();
+            } else {
+                CLIENT_BACK_URL = ecpayResultUrlPrefix + "?paymentSuccess=true";
+            }
+        }
 
         String htmlForm = ecpayService.genAioCheckOutHTML(booking, RETURN_URL, CLIENT_BACK_URL);
         return ResponseEntity.ok(htmlForm);
@@ -113,8 +133,10 @@ public class RoomBookingEcpayController {
             // 尋找或建立對應的 BookingPayment 並更新狀態 (本地免 Ngrok 測試的核心)
             BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
             BookingDTO booking = bookingService.findById(bookingId).orElseThrow(() -> new RuntimeException("訂單不存在"));
-            
-            String tradeNo = "TXN" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + (System.currentTimeMillis() % 10000);
+
+            String tradeNo = "TXN"
+                    + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                    + (System.currentTimeMillis() % 10000);
 
             if (payment == null) {
                 payment = new BookingPaymentDTO();
@@ -138,9 +160,18 @@ public class RoomBookingEcpayController {
             System.err.println("更新付款狀態失敗: " + e.getMessage());
         }
 
-        // 回傳 HTML 讓瀏覽器自動關閉這個由 _blank 開啟的新分頁
-        String closeHtml = "<html><body><script>window.close();</script></body></html>";
-        return ResponseEntity.ok(closeHtml);
+        // 統一跳轉到環境變數指定的前端結帳頁面，並帶上成功標記
+        // 因為前端已經實作了 localStorage，所以不需要帶一長串參數
+        String targetUrl = frontendCheckoutUrl;
+        if (targetUrl.contains("?")) {
+            targetUrl += "&paymentSuccess=true";
+        } else {
+            targetUrl += "?paymentSuccess=true";
+        }
+
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(targetUrl))
+                .build();
     }
 
     // 4. 前端輪詢付款狀態 API
