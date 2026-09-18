@@ -44,7 +44,6 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
         BookingPayment payment = convertToEntity(bookingPaymentDTO);
         payment.setCreatedAt(LocalDateTime.now());
 
-        String method = payment.getPaymentMethod();
         // 若前端沒有傳入狀態，預設為未付款
         if (payment.getPaymentStatus() == null || payment.getPaymentStatus().isEmpty()) {
             payment.setPaymentStatus("未付款");

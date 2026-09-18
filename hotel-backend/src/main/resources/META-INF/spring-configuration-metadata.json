@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "hotel.default.housekeeper.id",
+      "type": "java.lang.Integer",
+      "description": "預設自動指派工單的房務員 ID。",
+      "defaultValue": 13
+    }
+  ]
+}
