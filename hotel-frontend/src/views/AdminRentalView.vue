@@ -19,6 +19,7 @@ const venues = ref([]); // 場地名稱由既有場地 API 取得。
 const memberNames = ref({}); // 依會員 ID 保存會員姓名，不修改會員模組。
 const demoPaymentEnabled = ref(false); // 展示用模擬付款開關狀態。
 const demoPaymentLoading = ref(false); // 切換模擬付款開關狀態讀取中。
+const demoPaymentError = ref(""); // 展示用模擬付款設定專屬錯誤訊息。
 const loading = ref(false); // 避免重複提交管理操作。
 const message = ref(""); // 顯示操作結果。
 const errorMessage = ref(""); // 保留後端權限及付款保護錯誤。
@@ -83,17 +84,15 @@ function scrollToRentalForm() {
 onMounted(refreshRentals); // 管理員進頁即載入全部租借。
 async function loadRentalData() {
   // 沿用舊版管理資料重新載入入口。
-  // 租借、場地、會員資料與展示付款開關狀態並行載入。
-  const [all, places, members, demoModeRes] = await Promise.all([
+  // 租借、場地與會員資料並行載入，不與 demo-mode API 綁定。
+  const [all, places, members] = await Promise.all([
     getRentals(token.value),
     getVenues(token.value),
     getMembers(token.value),
-    getDemoPaymentMode(token.value),
   ]);
 
   rentals.value = Array.isArray(all) ? all : [];
   venues.value = Array.isArray(places) ? places : [];
-  demoPaymentEnabled.value = Boolean(demoModeRes?.enabled);
 
   // 建立 memberId -> 姓名對照表。
   memberNames.value = Object.fromEntries(
@@ -105,6 +104,17 @@ async function loadRentalData() {
       ]),
   );
 } // 結束管理資料載入。
+
+async function loadDemoPaymentMode() {
+  if (!token.value) return;
+  demoPaymentError.value = "";
+  try {
+    const demoModeRes = await getDemoPaymentMode(token.value);
+    demoPaymentEnabled.value = Boolean(demoModeRes?.enabled);
+  } catch (error) {
+    demoPaymentError.value = getApiErrorMessage(error);
+  }
+}
 
 async function handleToggleDemoMode() {
   if (demoPaymentLoading.value || !token.value) {
@@ -123,6 +133,7 @@ async function handleToggleDemoMode() {
   demoPaymentLoading.value = true;
   message.value = "";
   errorMessage.value = "";
+  demoPaymentError.value = "";
 
   try {
     const res = await setDemoPaymentMode(token.value, targetState);
@@ -131,11 +142,12 @@ async function handleToggleDemoMode() {
       ? "已成功啟用展示用模擬付款模式"
       : "已停用展示用模擬付款模式";
   } catch (error) {
-    errorMessage.value = getApiErrorMessage(error);
+    demoPaymentError.value = getApiErrorMessage(error);
   } finally {
     demoPaymentLoading.value = false;
   }
 }
+
 async function refreshRentals() {
   // 恢復重新整理功能。
   if (!token.value) {
@@ -147,17 +159,18 @@ async function refreshRentals() {
   } // 不在管理畫面重做登入。
   loading.value = true;
   errorMessage.value = ""; // 鎖定操作並清除舊錯誤。
-  try {
-    await loadRentalData();
-  } catch (error) {
-    rentals.value = [];
-    venues.value = [];
-    memberNames.value = {};
-    errorMessage.value = getApiErrorMessage(error);
-  } finally {
-    // 顯示實際管理 API 錯誤。
-    loading.value = false;
-  } // 無論成功失敗都恢復按鈕。
+
+  await Promise.allSettled([
+    loadRentalData().catch((error) => {
+      rentals.value = [];
+      venues.value = [];
+      memberNames.value = {};
+      errorMessage.value = getApiErrorMessage(error);
+    }),
+    loadDemoPaymentMode(),
+  ]);
+
+  loading.value = false;
 } // 結束重新整理。
 function startCreate() {
   // 新增與編輯模式不可同時存在。
@@ -376,6 +389,8 @@ function rentalStatusLabel(status) {
         <span class="warning-icon">⚠️</span>
         <span>展示付款模式已啟用。會員可使用展示流程將自己的待付款租借標記為已付款。</span>
       </div>
+
+      <p v-if="demoPaymentError" class="error demo-error">{{ demoPaymentError }}</p>
     </section>
 
     <!-- 沿用網站登入，僅顯示管理結果與重新整理，不重建登入功能。 -->
@@ -921,6 +936,10 @@ th {
 
 .warning-icon {
   font-size: 16px;
+}
+
+.demo-error {
+  margin-top: 10px;
 }
 
 .empty {
