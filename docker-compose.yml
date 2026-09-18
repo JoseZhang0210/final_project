@@ -80,7 +80,7 @@ services:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
       - "http"
-      - "--domain=nonincorporative-kadence-unlikably.ngrok-free.dev"
+      - "--url=nonincorporative-kadence-unlikably.ngrok-free.dev"
       - "backend:8081"
     depends_on:
       - backend
