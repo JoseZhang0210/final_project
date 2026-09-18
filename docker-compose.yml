@@ -1,0 +1,92 @@
+services:
+  # ============================================================
+  # 1. SQL Server 資料庫容器
+  # ============================================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hotel-sqlserver
+    restart: unless-stopped
+    user: root                                 # 解決 Docker 掛載 Volume 時的權限問題
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SaAdminPassword123!   # SA 管理員密碼（僅供初始化容器使用）
+      - MSSQL_PID=Developer
+      - MSSQL_COLLATION=Chinese_Taiwan_Stroke_CI_AS # 設定伺服器與資料庫預設定序為繁體中文
+    ports:
+      - "14333:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql/data         # 資料持久化掛載
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'SaAdminPassword123!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ============================================================
+  # 2. SQL Server 初始化容器
+  #    執行 init-db.sql 建立 finalproject 資料庫與 hotel_app (密碼 123456)
+  # ============================================================
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hotel-sqlserver-init
+    user: root
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./init-db.sql:/init-db.sql
+    entrypoint:
+      - /opt/mssql-tools18/bin/sqlcmd
+      - -S
+      - sqlserver
+      - -U
+      - sa
+      - -P
+      - SaAdminPassword123!
+      - -C
+      - -i
+      - /init-db.sql
+
+  # ============================================================
+  # 3. Spring Boot 後端容器
+  # ============================================================
+  backend:
+    build:
+      context: ./hotel-backend
+      dockerfile: Dockerfile
+    container_name: hotel-backend
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      # 連線字串將 host 指向 sqlserver 容器，帳號密碼沿用 hotel_app / 123456
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=finalproject;encrypt=true;trustServerCertificate=true
+      - SPRING_DATASOURCE_USERNAME=hotel_app
+      - SPRING_DATASOURCE_PASSWORD=123456
+    volumes:
+      - ./uploads:/app/uploads                 # 上傳圖片檔案持久化
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+
+  # ============================================================
+  # 4. ngrok Tunnel (使用固定靜態網域穿透)
+  # ============================================================
+  tunnel:
+    image: ngrok/ngrok:latest
+    container_name: hotel-tunnel
+    restart: unless-stopped
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command:
+      - "http"
+      - "--url=nonincorporative-kadence-unlikably.ngrok-free.dev"
+      - "backend:8081"
+    depends_on:
+      - backend
+
+volumes:
+  mssql_data:
+    driver: local
+

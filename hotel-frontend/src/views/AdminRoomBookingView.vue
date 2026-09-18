@@ -9,6 +9,7 @@ import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
 import { useRouter, useRoute } from "vue-router";
 import { formatPrice } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 // ==== Date Helper Functions ====
 function getTodayLocalString() {
@@ -710,9 +711,7 @@ const sortedBookings = computed(() => {
 });
 
 // ==== 分頁 ====
-const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, resetPage } = useAdminPagination(sortedBookings, 20);
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedBookings, 20);
 
 </script>
 
@@ -844,30 +843,14 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-area" v-if="totalPages > 1">
-        <div class="pagination-info">
-          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
-        </div>
-
-        <div class="pagination">
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
-          
-          <button 
-            v-for="page in visiblePages" 
-            :key="page" 
-            type="button" 
-            class="page-button" 
-            :class="{ active: currentPage === page }" 
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
-        </div>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :total-count="sortedBookings.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
@@ -1172,14 +1155,6 @@ th {
     grid-template-columns: 1fr;
   }
 }
-.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
-.pagination-info { color: #857a70; font-size: 13px; }
-.pagination-info strong { color: #9b7435; }
-.pagination { display: flex; align-items: center; gap: 6px; }
-.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
-.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
-.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
-.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 .booking-status {
   display: inline-block;
   padding: 4px 12px;
