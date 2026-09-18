@@ -86,24 +86,14 @@
       <!-- 等待付款視窗 (Modal) -->
       <div v-if="showPaymentModal" class="payment-modal-overlay">
         <div class="payment-modal">
-          <h3>💳 等待付款完成中...</h3>
-          <p>已在**新分頁**開啟綠界結帳畫面</p>
-          <p>請在綠界畫面完成付款！</p>
+          <h3>💳 付款中...</h3>
+          <p>請在彈出的安全視窗中完成結帳</p>
 
           <div class="spinner"></div>
 
-          <div class="dev-tools mt-4">
-            <p style="font-size: 0.85rem; color: #888;">開發測試用：</p>
-            <button @click="forceMockSuccess" class="btn-mock">
-              🚀 [開發測試用] 強制模擬付款成功
-            </button>
-            <button @click="forceMockFail" class="btn-mock-fail mt-2">
-              ❌ [開發測試用] 強制模擬付款失敗
-            </button>
-            <button @click="cancelPaymentWait" class="btn-cancel mt-2">
-              返回修改訂單
-            </button>
-          </div>
+          <button @click="cancelPaymentWait" class="btn-cancel mt-4">
+            返回修改訂單
+          </button>
         </div>
       </div>
   </div>
@@ -210,7 +200,8 @@ function startPolling(bookingId) {
         const data = await res.json();
         if (data.status === '已付款') {
           clearInterval(pollingInterval.value);
-          showAlert('success', '付款成功', '即將為您跳轉至首頁。', () => {
+          showPaymentModal.value = false;
+          showAlert('success', '付款成功', '感謝您的預訂！即將為您跳轉至首頁。', () => {
             router.push('/');
           });
         }
@@ -283,9 +274,24 @@ async function forceMockFail() {
 }
 
 onMounted(() => {
-  // 如果是從綠界跳轉回來且帶有成功標記，直接顯示成功訊息
+  // 如果是從綠界跳轉回來且帶有成功標記
   if (route.query.paymentSuccess) {
-    // 從 localStorage 恢復原本的訂單參數，讓畫面（圖一）保持完整
+    // 透過 window.name 完美判斷這是不是我們開的「綠界新分頁」
+    if (window.name === 'ECPayPopup' || window.opener) {
+      // 這是彈出視窗！嘗試自動關掉
+      window.close();
+      
+      // 如果瀏覽器不給關，就顯示專屬的提示，千萬不要還原畫面，以免產生「兩個 Vue 畫面」的錯覺
+      setTimeout(() => {
+        showAlert('success', '結帳完畢', '綠界金流處理成功！\n\n請直接「關閉此分頁」，並回到您原本的訂房視窗查看結果。');
+      }, 300);
+      return; 
+    }
+
+    // ==========================================
+    // 若程式走到這裡，代表使用者是用 target="_self" (同一個分頁) 跳轉，
+    // 這時我們才需要還原畫面！
+    // ==========================================
     const savedParams = localStorage.getItem('checkoutParams');
     if (savedParams) {
       const parsed = JSON.parse(savedParams);
@@ -295,12 +301,32 @@ onMounted(() => {
       checkOut.value = parsed.checkOut;
       guests.value = parsed.guests;
       totalPrice.value = Number(parsed.price) || 0;
+      
+      // 將網址列改寫回原本帶著所有參數的樣子，這樣重整才不會不見
+      router.replace({
+        path: '/room-checkout',
+        query: {
+          roomTypeId: parsed.roomTypeId,
+          roomName: parsed.roomName,
+          checkIn: parsed.checkIn,
+          checkOut: parsed.checkOut,
+          guests: parsed.guests,
+          price: parsed.price,
+          paymentSuccess: 'true'
+        }
+      });
     }
-    showAlert('success', '付款成功', '感謝您的預訂！您的付款已成功。');
-    return;
+
+    // 延遲一下確保畫面已渲染，再顯示成功訊息
+    setTimeout(() => {
+      showAlert('success', '付款成功', '感謝您的預訂！即將為您跳轉至首頁。', () => {
+        router.push('/');
+      });
+    }, 100);
+    return; // 成功還原畫面，結束
   }
 
-  // 如果缺少必要參數，導回首頁
+  // 以下為正常進入此頁面 (沒有 paymentSuccess) 的邏輯：檢查是否有缺少必要參數
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
     showAlert('error', '缺少參數', '缺少訂房參數，請重新選擇房型', () => {
       router.push('/room-booking');
@@ -373,7 +399,7 @@ async function submitCheckout() {
     await nextTick();
     const formElement = ecpayFormContainer.value.querySelector('form');
     if (formElement) {
-      formElement.target = '_blank'; // ★ 關鍵：新開分頁
+      formElement.target = 'ECPayPopup'; // ★ 關鍵：新開分頁，並給予專屬名稱，方便回來時辨識！
       formElement.submit();
     }
 

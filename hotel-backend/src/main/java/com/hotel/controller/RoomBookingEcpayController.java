@@ -33,6 +33,15 @@ public class RoomBookingEcpayController {
     private final BookingPaymentService bookingPaymentService;
     private final MailUtil mailUtil;
 
+    @Value("${ecpay.payment.return-url:https://httpbin.org/post}")
+    private String ecpayReturnUrl;
+
+    @Value("${ecpay.payment.result-url:http://localhost:8081/api/payments/ecpay/client-return/}")
+    private String ecpayResultUrlPrefix;
+
+    @Value("${app.frontend.checkout-url:http://localhost:5173/room-checkout}")
+    private String frontendCheckoutUrl;
+
     public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService, BookingPaymentService bookingPaymentService, MailUtil mailUtil) {
         this.ecpayService = ecpayService;
         this.bookingService = bookingService;
@@ -42,8 +51,10 @@ public class RoomBookingEcpayController {
 
     // 1. 前端結帳時呼叫，取得綠界 HTML 表單
     @PostMapping("/checkout")
-    public ResponseEntity<String> checkout(@RequestBody Map<String, Integer> request) {
-        Integer bookingId = request.get("bookingId");
+    public ResponseEntity<String> checkout(@RequestBody Map<String, Object> request) {
+        Integer bookingId = request.get("bookingId") != null ? Integer.valueOf(request.get("bookingId").toString()) : null;
+        String frontendUrl = (String) request.get("frontendUrl");
+
         if (bookingId == null) {
             return ResponseEntity.badRequest().body("缺少 bookingId");
         }
@@ -72,10 +83,24 @@ public class RoomBookingEcpayController {
             System.err.println("建立待付款紀錄失敗: " + e.getMessage());
         }
 
-        // Server端背景回呼 (使用 httpbin 吸收綠界的 POST，避免報錯)
-        String RETURN_URL = "https://httpbin.org/post";
-        // 綠界畫面上的「返回商店」按鈕 (改為路徑變數呼叫後端)
-        String CLIENT_BACK_URL = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId();
+        String RETURN_URL;
+        String CLIENT_BACK_URL;
+
+        if (frontendUrl != null && frontendUrl.contains("localhost")) {
+            // 本地開發環境：由後端處理再跳轉
+            RETURN_URL = "https://httpbin.org/post";
+            CLIENT_BACK_URL = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId() + "?local=true";
+        } else {
+            // 上機環境：使用環境變數設定的網址
+            RETURN_URL = ecpayReturnUrl;
+            
+            // 如果 teammate 設的是後端網址，補上 bookingId；如果是前端網址，補上成功標記
+            if (ecpayResultUrlPrefix.contains("client-return")) {
+                CLIENT_BACK_URL = ecpayResultUrlPrefix + booking.getBookingId();
+            } else {
+                CLIENT_BACK_URL = ecpayResultUrlPrefix + "?paymentSuccess=true";
+            }
+        }
 
         String htmlForm = ecpayService.genAioCheckOutHTML(booking, RETURN_URL, CLIENT_BACK_URL);
         return ResponseEntity.ok(htmlForm);
@@ -101,7 +126,7 @@ public class RoomBookingEcpayController {
 
     // 3. 綠界免 Ngrok 零配置：藍色按鈕跳轉 (Client-Return)
     @GetMapping("/client-return/{bookingId}")
-    public ResponseEntity<Void> handleClientReturn(@PathVariable("bookingId") Integer bookingId) {
+    public ResponseEntity<Void> handleClientReturn(@PathVariable("bookingId") Integer bookingId, @RequestParam(value = "local", required = false) String local) {
         System.out.println("收到綠界藍色按鈕跳轉，訂單編號: " + bookingId);
 
         try {
@@ -135,9 +160,23 @@ public class RoomBookingEcpayController {
             System.err.println("更新付款狀態失敗: " + e.getMessage());
         }
 
-        // 重新導向回 Vue 前端首頁
+        // 統一跳轉到環境變數指定的前端結帳頁面，並帶上成功標記
+        // 因為前端已經實作了 localStorage，所以不需要帶一長串參數
+        String targetUrl;
+        if ("true".equals(local)) {
+            targetUrl = "http://localhost:5173/room-checkout?paymentSuccess=true";
+        } else {
+            targetUrl = frontendCheckoutUrl != null ? frontendCheckoutUrl : "http://localhost:5173/room-checkout";
+            if (targetUrl.contains("?")) {
+                targetUrl += "&paymentSuccess=true";
+            } else {
+                targetUrl += "?paymentSuccess=true";
+            }
+        }
+
+        targetUrl = targetUrl.trim().replace(" ", "%20");
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create("http://localhost:5173/"))
+                .location(URI.create(targetUrl))
                 .build();
     }
 
