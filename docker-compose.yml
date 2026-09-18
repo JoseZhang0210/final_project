@@ -13,7 +13,7 @@ services:
       - MSSQL_PID=Developer
       - MSSQL_COLLATION=Chinese_Taiwan_Stroke_CI_AS # 設定伺服器與資料庫預設定序為繁體中文
     ports:
-      - "1433:1433"
+      - "14333:1433"
     volumes:
       - mssql_data:/var/opt/mssql/data         # 資料持久化掛載
     healthcheck:
