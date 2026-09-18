@@ -24,8 +24,9 @@ const createMode = ref(false); // 管理員新增租借。
 const form = ref({}); // 編輯時複製完整租借欄位。
 const rentalStatuses = ["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]; // 沿用既有租借狀態。
 const venueName = (id) =>
-  venues.value.find((v) => Number(v.venueId) === Number(id))?.venueName ||
-  `場地 ${id}`; // 缺少場地時仍保留原編號。
+  (Array.isArray(venues.value) ? venues.value : []).find(
+    (v) => Number(v?.venueId) === Number(id),
+  )?.venueName || `場地 ${id}`; // 缺少場地時仍保留原編號。
 /*
  * 後台列表同時顯示會員姓名與會員 ID。
  */
@@ -85,13 +86,13 @@ async function loadRentalData() {
     getMembers(token.value),
   ]);
 
-  rentals.value = all ?? [];
-  venues.value = places ?? [];
+  rentals.value = Array.isArray(all) ? all : [];
+  venues.value = Array.isArray(places) ? places : [];
 
   // 建立 memberId -> 姓名對照表。
   memberNames.value = Object.fromEntries(
-    (members ?? [])
-      .filter((member) => Number.isInteger(Number(member.memberId)))
+    (Array.isArray(members) ? members : [])
+      .filter((member) => Number.isInteger(Number(member?.memberId)))
       .map((member) => [
         Number(member.memberId),
         String(member.name || "").trim() || "未設定姓名",
@@ -102,6 +103,9 @@ async function refreshRentals() {
   // 恢復重新整理功能。
   if (!token.value) {
     errorMessage.value = "請先使用網站登入";
+    rentals.value = [];
+    venues.value = [];
+    memberNames.value = {};
     return;
   } // 不在管理畫面重做登入。
   loading.value = true;
@@ -109,6 +113,9 @@ async function refreshRentals() {
   try {
     await loadRentalData();
   } catch (error) {
+    rentals.value = [];
+    venues.value = [];
+    memberNames.value = {};
     errorMessage.value = getApiErrorMessage(error);
   } finally {
     // 顯示實際管理 API 錯誤。

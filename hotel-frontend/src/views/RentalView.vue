@@ -951,7 +951,7 @@ function money(value) {
                 <!-- 租借紀錄同樣提供場地圖片或本地預設圖。 -->
                 <div class="venue-cell-content">
                   <span class="venue-name">{{ venueName(rental.venueId) }}</span>
-                  <img class="rental-thumb" :src="venues.find(item => item.venueId === rental.venueId)?.imageUrl || '/images/venue-placeholder.svg'" alt="場地圖片" @error="$event.target.src = '/images/venue-placeholder.svg'" />
+                  <img class="rental-thumb" :src="(Array.isArray(venues) ? venues : []).find(item => item?.venueId === rental.venueId)?.imageUrl || '/images/venue-placeholder.svg'" alt="場地圖片" @error="$event.target.src = '/images/venue-placeholder.svg'" />
                 </div>
               </td>
               <td>
