@@ -88,7 +88,7 @@ async function loadRentalData() {
     getRentals(token.value),
     getVenues(token.value),
     getMembers(token.value),
-    getDemoPaymentMode(token.value).catch(() => ({ enabled: false })),
+    getDemoPaymentMode(token.value),
   ]);
 
   rentals.value = Array.isArray(all) ? all : [];
