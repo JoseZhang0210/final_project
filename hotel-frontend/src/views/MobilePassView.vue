@@ -43,16 +43,26 @@
       <div class="circle top-right"></div>
       <div class="circle bottom-left"></div>
     </div>
+
+    <AlertModal
+      :show="alertConfig.show"
+      :type="alertConfig.type"
+      :title="alertConfig.title"
+      :message="alertConfig.message"
+      @close="alertConfig.show = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import AlertModal from '../components/common/AlertModal.vue';
 
 const route = useRoute();
 const roomNumber = ref('讀取中...');
 const verificationCode = ref('讀取中...');
+const alertConfig = ref({ show: false, type: 'success', title: '', message: '' });
 
 onMounted(() => {
   // 從 URL 參數讀取 code 與 room
@@ -61,7 +71,12 @@ onMounted(() => {
 });
 
 function closeWindow() {
-  alert('您已完成入住報到！');
+  alertConfig.value = {
+    show: true,
+    type: 'success',
+    title: '手續完成',
+    message: '您已完成入住報到！'
+  };
 }
 </script>
 

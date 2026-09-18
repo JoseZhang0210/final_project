@@ -101,6 +101,15 @@
         </div>
       </div>
     </div>
+
+    <!-- 美化版提示 Modal -->
+    <AlertModal
+      :show="alertConfig.show"
+      :type="alertConfig.type"
+      :title="alertConfig.title"
+      :message="alertConfig.message"
+      @close="closeAlert"
+    />
   </div>
 </template>
 
@@ -110,9 +119,18 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
+import AlertModal from '../components/common/AlertModal.vue';
+import { formatDateToYYYYMMDD } from '../utils/dateUtils';
 
 const router = useRouter();
 const authStore = useAuthStore();
+
+const alertConfig = ref({ show: false, type: 'success', title: '', message: '', onClose: null });
+function closeAlert() {
+  const cb = alertConfig.value.onClose;
+  alertConfig.value.show = false;
+  if (cb) cb();
+}
 
 // 取得當前時間
 const now = new Date();
@@ -150,38 +168,44 @@ function handleInternalModelChange(val) {
   if (val && val[0] && val[1]) {
     if (isSelecting.value) {
       isSelecting.value = false;
-      // 延遲 800 毫秒，讓使用者有足夠時間看到右下角顯示的入住天數
+      // 延遲讓使用者有足夠時間看到右下角顯示的入住天數
+      const DELAY_AUTO_SELECT_MS = 800;
       setTimeout(() => {
         if (datePickerRef.value) {
           datePickerRef.value.selectDate();
         }
-      }, 800);
+      }, DELAY_AUTO_SELECT_MS);
     }
   }
 }
 
 function handleSearch() {
   if (authStore.isEmployee) {
-    alert("員工無法使用前台訂房功能，請至後台管理系統操作。");
+    alertConfig.value = { show: true, type: 'error', title: '操作被拒', message: '員工無法使用前台訂房功能，請至後台管理系統操作。' };
     return;
   }
 
   if (!authStore.isLoggedIn) {
-    alert("請先登入會員以進行訂房");
-    router.push({ name: 'login', query: { redirect: '/room-booking/select' } });
+    alertConfig.value = {
+      show: true,
+      type: 'error',
+      title: '需會員登入',
+      message: '請先登入會員以進行訂房',
+      onClose: () => { router.push({ name: 'login', query: { redirect: '/room-booking/select' } }); }
+    };
     return;
   }
 
   if (!dateRange.value || !dateRange.value[0] || !dateRange.value[1]) {
-    alert("請選擇完整的入住與退房日期");
+    alertConfig.value = { show: true, type: 'error', title: '資料不完整', message: '請選擇完整的入住與退房日期' };
     return;
   }
 
   const start = dateRange.value[0];
   const end = dateRange.value[1];
 
-  const checkIn = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-  const checkOut = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+  const checkIn = formatDateToYYYYMMDD(start);
+  const checkOut = formatDateToYYYYMMDD(end);
 
   router.push({
     name: 'room-selection',

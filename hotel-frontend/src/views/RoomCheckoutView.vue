@@ -109,28 +109,25 @@
   </div>
 
     <!-- 美化版提示 Modal -->
-    <Transition name="fade">
-      <div v-if="alertConfig.show" class="alert-overlay">
-        <div class="alert-modal">
-          <div class="alert-icon" :class="alertConfig.type">
-            <span v-if="alertConfig.type === 'success'">✓</span>
-            <span v-if="alertConfig.type === 'error'">✕</span>
-          </div>
-          <h3 class="alert-title">{{ alertConfig.title }}</h3>
-          <p class="alert-message">{{ alertConfig.message }}</p>
-          <button class="btn-alert" @click="closeAlert">我知道了</button>
-        </div>
-      </div>
-    </Transition>
+    <AlertModal
+      :show="alertConfig.show"
+      :type="alertConfig.type"
+      :title="alertConfig.title"
+      :message="alertConfig.message"
+      @close="closeAlert"
+    />
 
+    <!-- ECPay 隱藏表單容器 -->
+    <div ref="ecpayFormContainer" style="display: none;"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { bookingApi } from '../api/bookingApi';
 import { useAuthStore } from '../stores/auth';
+import AlertModal from '../components/common/AlertModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -181,6 +178,13 @@ const isProcessing = ref(false);
 const showPaymentModal = ref(false);
 const pollingInterval = ref(null);
 const currentBookingId = ref(null);
+const ecpayFormContainer = ref(null);
+
+onUnmounted(() => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
+});
 
 const form = ref({
   name: '',
@@ -341,13 +345,14 @@ async function submitCheckout() {
 
     const htmlForm = await res.text();
 
-    // 3. 建立一個虛擬容器並 submit 表單，跳轉至綠界 (新分頁)
-    const div = document.createElement('div');
-    div.innerHTML = htmlForm;
-    document.body.appendChild(div);
-    const formElement = div.querySelector('form');
-    formElement.target = '_blank'; // ★ 關鍵：新開分頁
-    formElement.submit();
+    // 3. 將表單寫入預設的隱藏容器，再觸發 Submit
+    ecpayFormContainer.value.innerHTML = htmlForm;
+    await nextTick();
+    const formElement = ecpayFormContainer.value.querySelector('form');
+    if (formElement) {
+      formElement.target = '_blank'; // ★ 關鍵：新開分頁
+      formElement.submit();
+    }
 
     // 4. 開始在本地輪詢付款狀態
     startPolling(bookingId);
@@ -681,94 +686,4 @@ async function submitCheckout() {
 }
 .btn-cancel:hover { background: #f5f5f5; }
 
-/* 美化提示 Modal */
-.alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-}
-
-.alert-modal {
-  background: white;
-  width: 90%;
-  max-width: 320px;
-  border-radius: 16px;
-  padding: 32px 24px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  animation: modalScaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.alert-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 16px;
-  color: white;
-}
-
-.alert-icon.success {
-  background: #C9A96E;
-  box-shadow: 0 4px 12px rgba(201, 169, 110, 0.3);
-}
-
-.alert-icon.error {
-  background: #e74c3c;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-}
-
-.alert-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 8px;
-}
-
-.alert-message {
-  font-size: 15px;
-  color: #666;
-  margin: 0 0 24px;
-  line-height: 1.5;
-}
-
-.btn-alert {
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 500;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-alert:hover {
-  background: #555;
-}
-
-@keyframes modalScaleUp {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
 </style>
