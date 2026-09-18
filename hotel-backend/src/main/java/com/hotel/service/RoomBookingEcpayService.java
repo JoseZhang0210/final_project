@@ -9,7 +9,6 @@ import java.util.TreeMap;
 import java.util.StringJoiner;
 
 import java.security.MessageDigest;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.hotel.model.dto.BookingDTO;
@@ -17,24 +16,17 @@ import com.hotel.model.dto.BookingDTO;
 @Service
 public class RoomBookingEcpayService {
 
-    // 綠界測試環境設定 (從 application.properties 注入)
-    @Value("${ecpay.stage.url}")
-    private String ecpayUrl;
-
-    @Value("${ecpay.stage.merchant-id}")
-    private String merchantId;
-
-    @Value("${ecpay.stage.hash-key}")
-    private String hashKey;
-
-    @Value("${ecpay.stage.hash-iv}")
-    private String hashIv;
+    // 綠界測試環境設定
+    private static final String ECPAY_URL = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
+    private static final String MERCHANT_ID = "3002607";
+    private static final String HASH_KEY = "pwFHCqoQZGmho4w6";
+    private static final String HASH_IV = "EkRm7iFT261dpevs"; // 修正之前的 IV 錯誤
 
     public String genAioCheckOutHTML(BookingDTO booking, String returnUrl, String clientBackUrl) {
         // 1. 建立依照字母不區分大小寫排序的 TreeMap
         Map<String, String> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-        params.put("MerchantID", merchantId);
+        params.put("MerchantID", MERCHANT_ID);
         String tradeNo = "HOTEL" + booking.getBookingId() + "T" + (System.currentTimeMillis() % 10000);
         params.put("MerchantTradeNo", tradeNo);
         params.put("MerchantTradeDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")));
@@ -57,7 +49,7 @@ public class RoomBookingEcpayService {
 
         // 3. 組合 HTML 表單字串
         StringBuilder html = new StringBuilder();
-        html.append("<form id='ecpay-form' action='").append(ecpayUrl).append("' method='POST'>");
+        html.append("<form id='ecpay-form' action='").append(ECPAY_URL).append("' method='POST'>");
         for (Map.Entry<String, String> entry : params.entrySet()) {
             html.append("<input type='hidden' name='").append(entry.getKey()).append("' value='")
                     .append(entry.getValue()).append("' />");
@@ -90,7 +82,7 @@ public class RoomBookingEcpayService {
     private String generateCheckMacValue(Map<String, String> params) throws Exception {
         StringJoiner sj = new StringJoiner("&");
         params.forEach((k, v) -> sj.add(k + "=" + v));
-        String raw = "HashKey=" + hashKey + "&" + sj + "&HashIV=" + hashIv;
+        String raw = "HashKey=" + HASH_KEY + "&" + sj + "&HashIV=" + HASH_IV;
         String encoded = ecpayUrlEncode(raw);
 
         MessageDigest md = MessageDigest.getInstance("SHA-256");
