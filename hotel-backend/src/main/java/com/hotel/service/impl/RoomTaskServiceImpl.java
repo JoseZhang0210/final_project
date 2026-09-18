@@ -182,11 +182,12 @@ public class RoomTaskServiceImpl implements RoomTaskService {
     }
 
     @Override
-    @Transactional
     public int autoCreateTasksFromRooms() {
         int createdCount = 0;
-        // 找出所有退房待清潔的房間 (優化：交由 DB 過濾而非撈全部進記憶體過濾)
-        List<Room> roomsToClean = roomRepository.findByRoomStatus(RoomStatus.CHECKOUT_CLEANING_PENDING);
+        // 找出所有退房待清潔的房間
+        List<Room> roomsToClean = roomRepository.findAll().stream()
+                .filter(r -> RoomStatus.CHECKOUT_CLEANING_PENDING.equals(r.getRoomStatus()))
+                .collect(Collectors.toList());
 
         for (Room room : roomsToClean) {
             // 檢查是否已經有這個房間且還沒完成的退房清潔工單
