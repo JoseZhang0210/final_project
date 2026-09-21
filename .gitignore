@@ -241,3 +241,9 @@ test_db.js*
 .env
 .env.*
 !.env.example
+
+# IoT
+iot/
+iot-*/
+iot-hardware/
+.pio/
