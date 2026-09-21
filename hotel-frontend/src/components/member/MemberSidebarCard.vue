@@ -7,7 +7,13 @@
         @click="triggerFileInput"
         title="點擊更換頭像照片"
       >
-        <img v-if="effectiveAvatarUrl" :src="effectiveAvatarUrl" alt="Avatar" class="avatar-large-img" />
+        <img
+          v-if="effectiveAvatarUrl && !hasAvatarError"
+          :src="effectiveAvatarUrl"
+          alt="Avatar"
+          class="avatar-large-img"
+          @error="hasAvatarError = true"
+        />
         <span v-else>{{ userInitial }}</span>
 
         <div v-if="allowUpload" class="avatar-overlay">
@@ -20,9 +26,9 @@
         v-if="allowUpload"
         ref="fileInputRef"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         class="hidden-file-input"
-        @change="handleFileChange"
+        @change="handleFileSelected"
       />
 
       <button
@@ -40,13 +46,29 @@
     <div class="sidebar-user-name">{{ displayName }}</div>
     <div class="sidebar-tier-tag">{{ tierText }}</div>
     <slot></slot>
+
+    <!-- 通用原生 Canvas 圖片裁切彈窗 -->
+    <ImageCropModal
+      v-model="isCropping"
+      :image-src="rawImageSrc"
+      title="調整個人頭像"
+      confirm-text="確認並上傳"
+      shape="circle"
+      :viewport-width="240"
+      :viewport-height="240"
+      :output-width="400"
+      :output-height="400"
+      @confirm="handleCropConfirm"
+      @cancel="handleCropCancel"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch, onBeforeUnmount } from "vue";
 import { Camera, Upload } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
+import ImageCropModal from "@/components/common/ImageCropModal.vue";
 
 const props = defineProps({
   name: {
@@ -75,9 +97,14 @@ const emit = defineEmits(["upload-avatar"]);
 
 const authStore = useAuthStore();
 const fileInputRef = ref(null);
+const hasAvatarError = ref(false);
 
 const effectiveAvatarUrl = computed(() => {
   return props.avatarUrl || authStore.avatarUrl || "";
+});
+
+watch(effectiveAvatarUrl, () => {
+  hasAvatarError.value = false;
 });
 
 const displayName = computed(() => {
@@ -98,14 +125,48 @@ function triggerFileInput() {
   }
 }
 
-function handleFileChange(event) {
+// ============================================================
+// 裁切彈窗呼叫邏輯
+// ============================================================
+const isCropping = ref(false);
+const rawImageSrc = ref("");
+
+function handleFileSelected(event) {
   const file = event.target.files && event.target.files[0];
-  if (file) {
-    emit("upload-avatar", file);
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    return;
   }
-  // 寫回空值以確保重複選擇相同檔案時也能觸發 change 事件
+
+  if (rawImageSrc.value && rawImageSrc.value.startsWith("blob:")) {
+    URL.revokeObjectURL(rawImageSrc.value);
+  }
+
+  rawImageSrc.value = URL.createObjectURL(file);
+  isCropping.value = true;
   event.target.value = "";
 }
+
+function handleCropConfirm(croppedFile) {
+  emit("upload-avatar", croppedFile);
+  cleanupBlob();
+}
+
+function handleCropCancel() {
+  cleanupBlob();
+}
+
+function cleanupBlob() {
+  if (rawImageSrc.value && rawImageSrc.value.startsWith("blob:")) {
+    URL.revokeObjectURL(rawImageSrc.value);
+    rawImageSrc.value = "";
+  }
+}
+
+onBeforeUnmount(() => {
+  cleanupBlob();
+});
 </script>
 
 <style scoped>

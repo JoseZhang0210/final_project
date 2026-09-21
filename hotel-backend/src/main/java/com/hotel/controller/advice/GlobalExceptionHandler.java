@@ -31,6 +31,12 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", "請求參數錯誤：" + e.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResourceFoundException(org.springframework.web.servlet.resource.NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "找不到該靜態資源檔案"));
+    }
+
     /** 將未預期例外轉為一般伺服器錯誤回應。 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception e) {

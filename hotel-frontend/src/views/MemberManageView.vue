@@ -355,7 +355,13 @@
               <label> 會員頭像 </label>
               <div class="admin-avatar-upload-box">
                 <div class="admin-avatar-preview-circle">
-                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <img
+                    v-if="form.avatarUrl"
+                    :src="form.avatarUrl"
+                    alt="Avatar Preview"
+                    class="admin-avatar-img"
+                    @error="form.avatarUrl = ''"
+                  />
                   <span v-else>{{ (form.name || form.username || "客").charAt(0) }}</span>
                 </div>
                 <div v-if="editingMemberId !== null" class="admin-avatar-input-group">

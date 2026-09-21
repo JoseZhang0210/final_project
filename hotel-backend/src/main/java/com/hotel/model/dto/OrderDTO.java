@@ -2,7 +2,6 @@ package com.hotel.model.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,25 +11,25 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderDTO {
 
-    private Integer orderId;
+  private Integer orderId;
 
-    private String memberName;
+  private String memberName;
 
-    private String memberPhone;
+  private String memberPhone;
 
-    private String memberEmail;
+  private String memberEmail;
 
-    private Integer originalAmount;
+  private Integer originalAmount;
 
-    private Integer discountAmount;
+  private Integer discountAmount;
 
-    private Integer finalAmount;
+  private Integer finalAmount;
 
-    private String orderStatus;
+  private String orderStatus;
 
-    private String paymentStatus;
+  private String paymentStatus;
 
-    private LocalDateTime orderDate;
+  private LocalDateTime orderDate;
 
-    private List<OrderItemDTO> items;
+  private List<OrderItemDTO> items;
 }

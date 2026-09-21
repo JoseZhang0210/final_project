@@ -327,18 +327,21 @@ import {
 import {
   useRouter,
 } from "vue-router";
+import { storeToRefs } from "pinia";
+import { useCartStore } from "@/stores/cart";
 
 
 const router =
   useRouter();
+
+const cartStore = useCartStore();
 
 
 // =====================================================
 // 購物車
 // =====================================================
 
-const cartItems =
-  ref([]);
+const { items: cartItems } = storeToRefs(cartStore);
 
 const submitting =
   ref(false);
@@ -402,102 +405,13 @@ function getAuthHeaders() {
 // 載入購物車
 // =====================================================
 
-function loadCart() {
-
-  const savedCart =
-    localStorage.getItem(
-      "cart"
-    );
-
-
-  if (!savedCart) {
-
-    cartItems.value = [];
-
-    return;
-  }
-
-
+async function loadCart() {
   try {
-
-    const parsedCart =
-      JSON.parse(
-        savedCart
-      );
-
-
-    if (
-      !Array.isArray(
-        parsedCart
-      )
-    ) {
-
-      console.warn(
-        "購物車資料不是陣列：",
-        parsedCart
-      );
-
-      cartItems.value = [];
-
-      return;
-    }
-
-
-    cartItems.value =
-      parsedCart.map(
-        (item) => ({
-          ...item,
-
-          productId:
-            Number(
-              item.productId
-            ),
-
-          price:
-            Number(
-              item.price ?? 0
-            ),
-
-          quantity:
-            Math.max(
-              1,
-              Number(
-                item.quantity ?? 1
-              )
-            ),
-
-          stock:
-            Number(
-              item.stock ?? 0
-            ),
-        })
-      );
-
-
+    await cartStore.load();
   } catch (error) {
-
-    console.error(
-      "購物車資料錯誤：",
-      error
-    );
-
-    cartItems.value = [];
+    console.error("購物車資料載入失敗：", error);
+    alert(error.message || "購物車資料載入失敗");
   }
-}
-
-
-// =====================================================
-// 儲存購物車
-// =====================================================
-
-function saveCart() {
-
-  localStorage.setItem(
-    "cart",
-    JSON.stringify(
-      cartItems.value
-    )
-  );
 }
 
 
@@ -529,7 +443,7 @@ function resetCoupon() {
 // 增加數量
 // =====================================================
 
-function increaseQuantity(item) {
+async function increaseQuantity(item) {
 
   const quantity =
     Number(
@@ -549,15 +463,10 @@ function increaseQuantity(item) {
   }
 
 
-  item.quantity =
-    quantity + 1;
-
-
-  saveCart();
-
-  // 商品金額改變
-  // 優惠券必須重新套用
-  resetCoupon();
+  try {
+    await cartStore.updateQuantity(item.productId, quantity + 1);
+    resetCoupon();
+  } catch (error) { alert(error.message || "修改購物車失敗"); }
 }
 
 
@@ -565,7 +474,7 @@ function increaseQuantity(item) {
 // 減少數量
 // =====================================================
 
-function decreaseQuantity(item) {
+async function decreaseQuantity(item) {
 
   const quantity =
     Number(
@@ -580,13 +489,10 @@ function decreaseQuantity(item) {
   }
 
 
-  item.quantity =
-    quantity - 1;
-
-
-  saveCart();
-
-  resetCoupon();
+  try {
+    await cartStore.updateQuantity(item.productId, quantity - 1);
+    resetCoupon();
+  } catch (error) { alert(error.message || "修改購物車失敗"); }
 }
 
 
@@ -594,23 +500,11 @@ function decreaseQuantity(item) {
 // 刪除商品
 // =====================================================
 
-function removeItem(productId) {
-
-  cartItems.value =
-    cartItems.value.filter(
-      (item) =>
-        Number(
-          item.productId
-        ) !==
-        Number(
-          productId
-        )
-    );
-
-
-  saveCart();
-
-  resetCoupon();
+async function removeItem(productId) {
+  try {
+    await cartStore.removeItem(productId);
+    resetCoupon();
+  } catch (error) { alert(error.message || "移除商品失敗"); }
 }
 
 
@@ -1000,18 +894,6 @@ async function submitOrder() {
       couponCode:
         appliedCouponCode.value ||
         null,
-
-      items:
-        cartItems.value.map(
-          (item) => ({
-
-            productId:
-              item.productId,
-
-            quantity:
-              item.quantity,
-          })
-        ),
     };
 
 
@@ -1029,7 +911,7 @@ async function submitOrder() {
 
     const response =
       await fetch(
-        "/api/orders",
+        "/api/orders/from-cart",
         {
           method: "POST",
 
@@ -1118,7 +1000,7 @@ async function submitOrder() {
     // 9. 清空購物車
     // ==============================
 
-    cartItems.value = [];
+    cartStore.resetLocalState();
 
     localStorage.removeItem(
       "cart"
