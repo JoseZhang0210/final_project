@@ -28,8 +28,8 @@ public class FileStorageService {
      * 儲存圖片檔案至 uploads/{subDir} 並回傳可存取的相對 URL
      *
      * @param file   前端上傳的 MultipartFile
-     * @param subDir 子目錄名稱 (例如 "avatars", "products", "rooms", "venues")
-     * @return 存取路徑 (例如 "/uploads/products/xxx.jpg")
+     * @param subDir 子目錄名稱 (例如 "avatars", "products", "images/room", "venues")
+     * @return 存取路徑 (例如 "/uploads/avatars/xxx.jpg")
      */
     public String storeImage(MultipartFile file, String subDir) {
         if (file == null || file.isEmpty()) {
@@ -45,7 +45,6 @@ public class FileStorageService {
         String extension = ALLOWED_IMAGE_TYPES.get(normalizedContentType);
 
         if (extension == null) {
-            // 若 contentType 無法精確識別，嘗試從原始檔名副檔名判定
             String originalName = file.getOriginalFilename();
             if (originalName != null && originalName.contains(".")) {
                 String ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase(Locale.ROOT);
@@ -63,7 +62,7 @@ public class FileStorageService {
         String filename = UUID.randomUUID().toString() + extension;
 
         try {
-            Path targetDir = Paths.get("uploads", cleanSubDir).toAbsolutePath().normalize();
+            Path targetDir = resolveUploadDir(cleanSubDir);
             if (!Files.exists(targetDir)) {
                 Files.createDirectories(targetDir);
             }
@@ -88,11 +87,21 @@ public class FileStorageService {
         }
         try {
             String subPath = relativeUrl.substring("/uploads/".length());
-            Path filePath = Paths.get("uploads").resolve(subPath).toAbsolutePath().normalize();
-            Files.deleteIfExists(filePath);
-        } catch (Exception e) {
-            System.err.println("實體檔案刪除失敗: " + e.getMessage());
+            Files.deleteIfExists(Paths.get("uploads").resolve(subPath).toAbsolutePath().normalize());
+            if (Files.exists(Paths.get("..", "uploads"))) {
+                Files.deleteIfExists(Paths.get("..", "uploads").resolve(subPath).toAbsolutePath().normalize());
+            }
+        } catch (Exception ignored) {
         }
     }
-}
 
+    /**
+     * 自動判定適當的實體上傳根目錄位置 (支援從根目錄或 hotel-backend 內啟動)
+     */
+    private Path resolveUploadDir(String cleanSubDir) {
+        if (!Files.exists(Paths.get("uploads")) && Files.exists(Paths.get("..", "uploads"))) {
+            return Paths.get("..", "uploads", cleanSubDir).toAbsolutePath().normalize();
+        }
+        return Paths.get("uploads", cleanSubDir).toAbsolutePath().normalize();
+    }
+}
