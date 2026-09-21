@@ -14,6 +14,12 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# 設定容器時區為台灣時間 (Asia/Taipei)
+ENV TZ=Asia/Taipei
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Taipei /etc/localtime && \
+    echo "Asia/Taipei" > /etc/timezone
+
 # 複製打包完成的 jar 檔
 COPY --from=builder /app/target/*.jar app.jar
 
@@ -22,8 +28,8 @@ RUN mkdir -p /app/uploads /app/upload
 
 EXPOSE 8081
 
-# JVM 記憶體參數最佳化
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseSerialGC"
+# JVM 記憶體參數最佳化及設定時區
+ENV JAVA_OPTS="-Duser.timezone=Asia/Taipei -Xms256m -Xmx512m -XX:+UseSerialGC"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 
