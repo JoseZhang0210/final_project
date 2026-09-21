@@ -8,11 +8,11 @@
         title="點擊更換頭像照片"
       >
         <img
-          v-if="effectiveAvatarUrl && !hasLoadError"
+          v-if="effectiveAvatarUrl && !hasAvatarError"
           :src="effectiveAvatarUrl"
           alt="Avatar"
           class="avatar-large-img"
-          @error="hasLoadError = true"
+          @error="hasAvatarError = true"
         />
         <span v-else>{{ userInitial }}</span>
 
@@ -81,14 +81,14 @@ const emit = defineEmits(["upload-avatar"]);
 
 const authStore = useAuthStore();
 const fileInputRef = ref(null);
-const hasLoadError = ref(false);
+const hasAvatarError = ref(false);
 
 const effectiveAvatarUrl = computed(() => {
   return props.avatarUrl || authStore.avatarUrl || "";
 });
 
 watch(effectiveAvatarUrl, () => {
-  hasLoadError.value = false;
+  hasAvatarError.value = false;
 });
 
 const displayName = computed(() => {
