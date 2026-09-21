@@ -70,7 +70,7 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME:-xingchenghotel2026@gmail.com}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-vrzhtezczjumjtau}
     volumes:
-      - ./uploads:/app/uploads                 # 上傳圖片檔案持久化
+      - backend_uploads:/app/uploads           # 交由 Docker 管理具名 Volume，不汙染本機目錄
     depends_on:
       sqlserver-init:
         condition: service_completed_successfully
@@ -93,5 +93,7 @@ services:
 
 volumes:
   mssql_data:
+    driver: local
+  backend_uploads:
     driver: local
 

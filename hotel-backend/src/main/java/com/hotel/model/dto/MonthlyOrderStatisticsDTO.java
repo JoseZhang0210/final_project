@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MonthlyOrderStatisticsDTO {
 
-    private Integer year;
+  private Integer year;
 
-    private Integer month;
+  private Integer month;
 
-    private Long orderCount;
+  private Long orderCount;
 
-    private Long totalRevenue;
+  private Long totalRevenue;
 }

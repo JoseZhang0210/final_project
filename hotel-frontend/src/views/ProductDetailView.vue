@@ -590,6 +590,7 @@ import { storeToRefs } from "pinia";
 
 import { getAuthHeaders } from "@/utils/auth";
 import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
 import { normalizeProductId } from "@/utils/productId";
 import {
   addRecentlyViewed,
@@ -599,6 +600,7 @@ import { getWishlistIds, toggleWishlist } from "@/utils/wishlist";
 
 const route = useRoute();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { authorities, isLoggedIn } = storeToRefs(authStore);
 
 const DEFAULT_IMAGE = "/upload/products/default-product.jpg";
@@ -1074,7 +1076,7 @@ function showPurchaseMessage(message, type = "success") {
   purchaseMessageType.value = type;
 }
 
-function addToCart() {
+async function addToCart() {
   if (!isLoggedIn.value) {
     showPurchaseMessage("請先登入會員後再加入購物車。", "error");
     return;
@@ -1085,61 +1087,14 @@ function addToCart() {
     return;
   }
 
-  let cart = [];
-
-  try {
-    const savedCart = localStorage.getItem("cart");
-    const parsedCart = savedCart ? JSON.parse(savedCart) : [];
-    cart = Array.isArray(parsedCart) ? parsedCart : [];
-  } catch (error) {
-    console.error("購物車資料讀取失敗：", error);
-  }
-
-  const productId = Number(product.value.productId);
   const selectedQuantity = Number(quantity.value);
-  const existingItem = cart.find(
-    (item) => Number(item.productId) === productId,
-  );
-  const quantityInCart = Number(existingItem?.quantity ?? 0);
-  const nextQuantity = quantityInCart + selectedQuantity;
-
-  if (nextQuantity > normalizedStock.value) {
-    const availableQuantity = Math.max(
-      normalizedStock.value - quantityInCart,
-      0,
-    );
-
-    showPurchaseMessage(
-      availableQuantity > 0
-        ? `購物車內已有 ${quantityInCart} 件，本次最多還能加入 ${availableQuantity} 件。`
-        : `購物車內已有此商品的可購買上限 ${normalizedStock.value} 件。`,
-      "error",
-    );
-    return;
+  try {
+    await cartStore.addItem(product.value.productId, selectedQuantity);
+    showPurchaseMessage(`已將 ${product.value.productName} × ${selectedQuantity} 加入購物車。`);
+    quantity.value = 1;
+  } catch (error) {
+    showPurchaseMessage(error.message || "加入購物車失敗。", "error");
   }
-
-  if (existingItem) {
-    existingItem.quantity = nextQuantity;
-    existingItem.productName = product.value.productName;
-    existingItem.price = product.value.price;
-    existingItem.stock = product.value.stock;
-    existingItem.imageUrl = product.value.imageUrl ?? null;
-  } else {
-    cart.push({
-      productId: product.value.productId,
-      productName: product.value.productName,
-      price: product.value.price,
-      quantity: selectedQuantity,
-      stock: product.value.stock,
-      imageUrl: product.value.imageUrl ?? null,
-    });
-  }
-
-  localStorage.setItem("cart", JSON.stringify(cart));
-  showPurchaseMessage(
-    `已將 ${product.value.productName} × ${selectedQuantity} 加入購物車。`,
-  );
-  quantity.value = 1;
 }
 
 function formatPrice(price) {
