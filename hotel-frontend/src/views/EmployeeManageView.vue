@@ -480,7 +480,13 @@
               <label> 員工頭像 </label>
               <div class="admin-avatar-upload-box">
                 <div class="admin-avatar-preview-circle">
-                  <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="Avatar Preview" class="admin-avatar-img" />
+                  <img
+                    v-if="form.avatarUrl"
+                    :src="form.avatarUrl"
+                    alt="Avatar Preview"
+                    class="admin-avatar-img"
+                    @error="form.avatarUrl = ''"
+                  />
                   <span v-else>{{ (form.name || form.username || "員").charAt(0) }}</span>
                 </div>
                 <div v-if="editingEmployeeId !== null" class="admin-avatar-input-group">

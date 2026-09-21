@@ -7,7 +7,13 @@
         @click="triggerFileInput"
         title="點擊更換頭像照片"
       >
-        <img v-if="effectiveAvatarUrl" :src="effectiveAvatarUrl" alt="Avatar" class="avatar-large-img" />
+        <img
+          v-if="effectiveAvatarUrl && !hasLoadError"
+          :src="effectiveAvatarUrl"
+          alt="Avatar"
+          class="avatar-large-img"
+          @error="hasLoadError = true"
+        />
         <span v-else>{{ userInitial }}</span>
 
         <div v-if="allowUpload" class="avatar-overlay">
@@ -44,7 +50,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Camera, Upload } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 
@@ -75,9 +81,14 @@ const emit = defineEmits(["upload-avatar"]);
 
 const authStore = useAuthStore();
 const fileInputRef = ref(null);
+const hasLoadError = ref(false);
 
 const effectiveAvatarUrl = computed(() => {
   return props.avatarUrl || authStore.avatarUrl || "";
+});
+
+watch(effectiveAvatarUrl, () => {
+  hasLoadError.value = false;
 });
 
 const displayName = computed(() => {

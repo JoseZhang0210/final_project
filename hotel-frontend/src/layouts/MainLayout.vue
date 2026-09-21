@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { User, Package, Heart, Settings, LogOut } from "@lucide/vue";
@@ -13,6 +13,11 @@ const toastStore = useToastStore();
 const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
 
 const cartCount = ref(0);
+const hasAvatarError = ref(false);
+
+watch(avatarUrl, () => {
+  hasAvatarError.value = false;
+});
 
 const displayName = computed(() => {
   return name.value || "會員";
@@ -178,7 +183,13 @@ async function toggleAccount() {
         <div v-else class="user-dropdown-container">
           <button type="button" class="user-dropdown-btn">
             <span class="user-avatar-mini">
-              <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <img
+                v-if="avatarUrl && !hasAvatarError"
+                :src="avatarUrl"
+                alt="Avatar"
+                class="avatar-mini-img"
+                @error="hasAvatarError = true"
+              />
               <span v-else>{{ userInitial }}</span>
             </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>

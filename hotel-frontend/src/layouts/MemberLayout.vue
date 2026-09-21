@@ -13,7 +13,13 @@
       <aside class="member-sidebar">
         <div class="member-profile-summary">
           <div class="avatar-circle">
-            <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-circle-img" />
+            <img
+              v-if="avatarUrl && !hasAvatarError"
+              :src="avatarUrl"
+              alt="Avatar"
+              class="avatar-circle-img"
+              @error="hasAvatarError = true"
+            />
             <span v-else>{{ userInitial }}</span>
           </div>
           <div class="user-info">
@@ -69,12 +75,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 const { name, avatarUrl } = storeToRefs(authStore);
+const hasAvatarError = ref(false);
+
+watch(avatarUrl, () => {
+  hasAvatarError.value = false;
+});
 
 const displayName = computed(() => {
   return name.value || '貴賓';
