@@ -1,17 +1,8 @@
 package com.hotel.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -27,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hotel.model.dto.RoomImageDTO;
+import com.hotel.service.FileStorageService;
 import com.hotel.service.RoomImageService;
 
 @RestController
@@ -34,12 +26,11 @@ import com.hotel.service.RoomImageService;
 public class RoomImageController {
 
     private final RoomImageService imageService;
+    private final FileStorageService fileStorageService;
 
-    @Value("${file.upload-dir:#{null}}")
-    private String customUploadDir;
-
-    public RoomImageController(RoomImageService imageService) {
+    public RoomImageController(RoomImageService imageService, FileStorageService fileStorageService) {
         this.imageService = imageService;
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping
@@ -47,25 +38,12 @@ public class RoomImageController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "staticPath", required = false) String staticPath,
             @RequestParam(value = "imageDescription", required = false) String imageDescription,
-            @RequestParam(value = "roomTypeId", required = false) Integer roomTypeId) throws IOException {
+            @RequestParam(value = "roomTypeId", required = false) Integer roomTypeId) {
 
-        String dbPath = "";
+        String dbPath;
 
         if (file != null && !file.isEmpty()) {
-            String uploadDirPath = getUploadDirPath();
-            File dir = new File(uploadDirPath);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-
-            String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-            String fileName = UUID.randomUUID().toString() + "_" + originalFilename;
-            Path targetPath = Paths.get(uploadDirPath).resolve(fileName);
-
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            dbPath = "/uploads/images/room/" + fileName;
-
+            dbPath = fileStorageService.storeImage(file, "images/room");
         } else if (StringUtils.hasText(staticPath)) {
             dbPath = staticPath.trim();
         } else {
@@ -78,13 +56,6 @@ public class RoomImageController {
         imageDTO.setRoomTypeId(roomTypeId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(imageService.insert(imageDTO));
-    }
-
-    @PostMapping("/uploadimagesroompic")
-    public ResponseEntity<RoomImageDTO> uploadimagesroompic(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "imageDescription", required = false) String imageDescription) throws IOException {
-        return createImage(file, null, imageDescription, null);
     }
 
     @GetMapping
@@ -112,27 +83,10 @@ public class RoomImageController {
 
         imageService.deleteById(id);
 
-        if (imageDTO.getPath() != null && imageDTO.getPath().startsWith("/uploads/images/room/")) {
-            String fileName = imageDTO.getPath().replace("/uploads/images/room/", "");
-            Path filePath = Paths.get(getUploadDirPath()).resolve(fileName);
-            try {
-                Files.deleteIfExists(filePath);
-            } catch (IOException e) {
-                System.err.println("資料庫已刪除，但實體檔案刪除失敗: " + e.getMessage());
-            }
+        if (imageDTO.getPath() != null && imageDTO.getPath().startsWith("/uploads/")) {
+            fileStorageService.deleteFile(imageDTO.getPath());
         }
 
         return ResponseEntity.ok(Map.of("message", "圖片刪除成功！"));
-    }
-
-    private String getUploadDirPath() {
-        if (StringUtils.hasText(customUploadDir)) {
-            return customUploadDir;
-        }
-        return System.getProperty("user.dir")
-                + File.separator + "uploads"
-                + File.separator + "images"
-                + File.separator + "room"
-                + File.separator;
     }
 }
