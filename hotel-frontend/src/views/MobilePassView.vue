@@ -161,8 +161,32 @@
           </div>
         </div>
 
-        <!-- 通行驗證碼 -->
-        <div class="verify-box">
+        <!-- 狀態 3 (已入住)：顯示電子房卡與開門 QR Code (支援 CR522 門禁) -->
+        <div v-if="passData.bookingStatus === '已入住'" class="door-key-card">
+          <div class="door-key-header">
+            <span class="key-badge">🔑 智慧客房電子鑰匙</span>
+            <h4>房門開門感應 QR Code</h4>
+          </div>
+          <div class="door-qr-box">
+            <img
+              :src="`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(doorAccessKey)}`"
+              alt="Door Access QR Code"
+              class="door-qr-img"
+            />
+          </div>
+          <div class="door-key-info">
+            <span class="key-lbl">門禁金鑰：</span>
+            <span class="key-val">{{ doorAccessKey }}</span>
+          </div>
+          <p class="door-instruction">
+            📶 <strong>門禁開門說明：</strong><br />
+            抵達房門口時，請將此 QR Code 對準門鎖鏡頭或感應
+            <strong>CR522 門禁讀卡機</strong> 即可解鎖。
+          </p>
+        </div>
+
+        <!-- 通行驗證碼 (報到前顯示) -->
+        <div v-else class="verify-box">
           <span class="verify-label">專屬快速入住驗證碼</span>
           <div class="verify-code">{{ passData.verificationCode }}</div>
         </div>
@@ -192,8 +216,9 @@
           </template>
           <template v-else-if="passData.bookingStatus === '已入住'">
             <p class="instruction">
-              🎉
-              您已成功辦理入住！出示房號與驗證碼即可享用飯店各項設施與客房服務。
+              🎉 <strong>您已成功辦理入住！</strong><br />
+              請使用上方電子房卡與開門 QR Code
+              進出客房，祝您在星澄飯店擁有舒適愉快的住宿體驗！
             </p>
           </template>
           <template v-else>
@@ -348,6 +373,13 @@ const cardStateClass = computed(() => {
   return "card-expired";
 });
 
+// 門禁開門專用金鑰憑證 (供 CR522 / 門鎖讀卡機感應使用)
+const doorAccessKey = computed(() => {
+  const room = passData.roomNumber || "VIP";
+  const code = passData.verificationCode || "PASS";
+  return `STARLIGHT-KEY:ROOM-${room}:${code}`;
+});
+
 // 倒數文字計算
 const countdownText = computed(() => {
   if (!isEarly.value || !passData.checkInDate) return "";
@@ -366,34 +398,59 @@ const countdownText = computed(() => {
   return `距離開放報到還有 ${hours} 小時 ${minutes} 分`;
 });
 
-// 載入通行證資料 (相容本機 Localhost 與線上 Vercel 環境)
+// 載入通行證資料 (即時同步後端資料庫)
 async function fetchPassData() {
   loading.value = true;
   const bookingId = route.query.booking;
   const code = route.query.code;
 
-  // 1. 若有 bookingId，向後端安全 API 獲取官方權威資料
+  // 1. 若有 bookingId，向後端資料庫查詢最新訂房紀錄
   if (bookingId) {
     try {
-      const res = await fetch(
-        `/api/public/bookings/pass/${bookingId}${code ? "?code=" + code : ""}`,
-      );
+      const res = await fetch(`/api/bookings/${bookingId}`);
       if (res.ok) {
-        const data = await res.json();
-        passData.bookingId = data.bookingId;
+        const b = await res.json();
+        passData.bookingId = b.bookingId;
         passData.verificationCode =
-          data.verificationCode || code || "CK" + bookingId;
-        passData.roomTypeName = data.roomTypeName || "精緻客房";
-        passData.roomNumber = data.roomNumber || "";
-        passData.checkInDate = data.checkInDate;
-        passData.checkOutDate = data.checkOutDate;
-        passData.guestNum = data.guestNum || 2;
-        passData.bookingStatus = data.bookingStatus || "待入住";
+          code ||
+          "CK" +
+            b.bookingId +
+            String(Math.abs((b.bookingId * 37 + 1013) % 10000)).padStart(
+              4,
+              "0",
+            );
+        passData.checkInDate = b.checkInDate;
+        passData.checkOutDate = b.checkOutDate;
+        passData.guestNum = b.guestNum || 2;
+        passData.bookingStatus = b.bookingStatus || "待入住";
+
+        // 讀取房型名稱
+        if (b.roomTypeId) {
+          try {
+            const rtRes = await fetch(`/api/roomtypes/${b.roomTypeId}`);
+            if (rtRes.ok) {
+              const rt = await rtRes.json();
+              passData.roomTypeName = rt.typeName;
+            }
+          } catch (e) {}
+        }
+
+        // 讀取房號
+        if (b.roomId) {
+          try {
+            const rRes = await fetch(`/api/rooms/${b.roomId}`);
+            if (rRes.ok) {
+              const r = await rRes.json();
+              passData.roomNumber = r.roomNumber;
+            }
+          } catch (e) {}
+        }
+
         loading.value = false;
         return;
       }
     } catch (e) {
-      console.warn("後端通行證 API 呼叫失敗，啟用 URL 參數回退解析：", e);
+      console.warn("後端 API 取得失敗，啟用 URL 參數回退解析：", e);
     }
   }
 
@@ -437,7 +494,7 @@ function handleEarlyClick() {
   };
 }
 
-// 執行入住報到
+// 執行入住報到 (同步更新後端資料庫)
 async function handleCheckIn() {
   if (isEarly.value) {
     handleEarlyClick();
@@ -448,17 +505,28 @@ async function handleCheckIn() {
 
   try {
     if (passData.bookingId) {
-      const res = await fetch(
-        `/api/public/bookings/pass/${passData.bookingId}/check-in${passData.verificationCode ? "?code=" + passData.verificationCode : ""}`,
-        {
-          method: "POST",
+      const res = await fetch(`/api/bookings/${passData.bookingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          bookingId: passData.bookingId,
+          bookingStatus: "已入住",
+        }),
+      });
+
       if (res.ok) {
-        const result = await res.json();
+        const updated = await res.json();
         passData.bookingStatus = "已入住";
-        if (result.roomNumber) {
-          passData.roomNumber = result.roomNumber;
+        if (updated.roomId) {
+          try {
+            const rRes = await fetch(`/api/rooms/${updated.roomId}`);
+            if (rRes.ok) {
+              const r = await rRes.json();
+              passData.roomNumber = r.roomNumber;
+            }
+          } catch (e) {}
         }
       } else {
         passData.bookingStatus = "已入住";
@@ -472,7 +540,7 @@ async function handleCheckIn() {
       type: "success",
       title: "入住報到成功！",
       message:
-        "歡迎蒞臨星澄飯店！您已完成入住報到手續，祝您度過愉快舒適的美好假期！",
+        "歡迎蒞臨星澄飯店！您已完成入住報到手續，房門電子鑰匙與開門 QR Code 已啟用，祝您度過愉快舒適的美好假期！",
     };
   } catch (err) {
     console.error("Check-in error:", err);
@@ -814,6 +882,78 @@ onUnmounted(() => {
   color: #8c692e;
   letter-spacing: 3px;
   font-family: Consolas, Monaco, monospace;
+}
+
+/* 電子開門鑰匙卡片 (支援 CR522 門禁) */
+.door-key-card {
+  background: #fdfaf6;
+  border: 1px solid #ebd9b9;
+  border-radius: 12px;
+  padding: 16px 14px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.door-key-header {
+  margin-bottom: 12px;
+}
+
+.key-badge {
+  display: inline-block;
+  background: #2b2219;
+  color: #d4af37;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.door-key-header h4 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.door-qr-box {
+  display: inline-block;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e2cf9f;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+}
+
+.door-qr-img {
+  display: block;
+  width: 150px;
+  height: 150px;
+}
+
+.door-key-info {
+  font-size: 0.82rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.key-val {
+  color: #8c692e;
+  font-weight: 700;
+  font-family: Consolas, Monaco, monospace;
+}
+
+.door-instruction {
+  font-size: 0.78rem;
+  color: #777;
+  line-height: 1.5;
+  margin: 0;
+  text-align: left;
+  background: #fff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #c9a96e;
 }
 
 /* 說明文字區塊 */

@@ -69,14 +69,36 @@
             </div>
           </div>
 
-          <!-- 辦理入住 -->
+          <!-- 辦理 Check in 報到 (限當日 15:00 後) -->
           <div class="service-section" v-if="canCheckIn(selectedBooking)">
-            <h3>辦理入住</h3>
+            <h3>🛎️ 辦理 Check in 報到</h3>
             <p class="service-desc">
-              您可以線上產生入住 QR Code，並至櫃檯或自助機完成驗證。
+              已到達開放報到時間（下午 15:00 起），您可以直接點擊下方按鈕完成
+              Check in 報到手續。（專屬 QR Code 通行證已寄發至您的 Email）
             </p>
-            <button class="service-btn" @click="generateQrCode">
-              產生入住 QR Code
+            <button class="service-btn" @click="openCheckInModal">
+              Check in 報到
+            </button>
+          </div>
+
+          <!-- 未達入住時間提醒 (待入住且未到 15:00) -->
+          <div
+            class="service-section notice-section"
+            v-else-if="selectedBooking.bookingStatus === '待入住'"
+          >
+            <h3>🛎️ 入住報到提醒 (Check-in)</h3>
+            <p class="service-desc">
+              本預訂將於
+              <strong>{{ selectedBooking.checkInDate }} 下午 15:00</strong>
+              開放線上 Check in 報到。專屬 QR Code 通行證已同步寄發至您的 Email
+              信箱，敬請期待您的蒞臨！
+            </p>
+            <button
+              class="service-btn disabled-service-btn"
+              disabled
+              title="入住當日下午 15:00 起開放報到"
+            >
+              未達 15:00 報到時間
             </button>
           </div>
 
@@ -317,51 +339,62 @@
         </div>
       </div>
 
-      <!-- 入住 QR Code Modal -->
-      <div v-if="showQrModal" class="modal-overlay">
-        <div class="modal-content qr-modal-content">
-          <h3>專屬快速入住 QR Code 通行證</h3>
-          <p class="qr-desc">請向櫃檯人員出示，或以手機掃描開啟專屬通行證</p>
-          <div class="qr-code-wrapper">
-            <img
-              :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`"
-              alt="Check-in QR Code"
-            />
+      <!-- Check in 報到確認 Modal -->
+      <div v-if="showCheckInModal" class="modal-overlay">
+        <div class="modal-content checkin-modal-content">
+          <div class="checkin-modal-header">
+            <div class="checkin-icon-circle">🛎️</div>
+            <h3>辦理 Check in 報到</h3>
           </div>
-          <div class="verification-code">
-            入住快速驗證碼：<strong>{{ verificationCode }}</strong>
+          <p class="checkin-desc">
+            確認為您辦理
+            <strong>第 {{ getBookingIndex(selectedBooking) }} 次訂房</strong> 之
+            Check in 報到手續。
+          </p>
+          <div class="checkin-summary-box">
+            <div class="summary-line">
+              <span class="label">預訂房型</span>
+              <span class="value">{{
+                getRoomTypeName(selectedBooking?.roomTypeId)
+              }}</span>
+            </div>
+            <div class="summary-line">
+              <span class="label">入住日期</span>
+              <span class="value"
+                >{{ selectedBooking?.checkInDate }} 15:00 起</span
+              >
+            </div>
+            <div class="summary-line">
+              <span class="label">退房日期</span>
+              <span class="value"
+                >{{ selectedBooking?.checkOutDate }} 11:00 前</span
+              >
+            </div>
+            <div class="summary-line">
+              <span class="label">入住快速驗證碼</span>
+              <span class="value code-val">{{ verificationCode }}</span>
+            </div>
           </div>
-          <div class="qr-preview-link">
-            <a :href="qrCodeUrl" target="_blank" class="preview-btn-link">
-              🔗 在新分頁開啟貴賓通行證畫面
-            </a>
-          </div>
-          <div class="modal-actions qr-actions">
+          <p class="checkin-mail-note">
+            ※ 專屬快速入住 QR Code 已寄送至您的 Email
+            信箱，您亦可於現場出示信件辦理。
+          </p>
+          <div class="modal-actions">
             <button
               type="button"
               class="btn-cancel"
-              @click="showQrModal = false"
+              @click="showCheckInModal = false"
+              :disabled="checkingIn"
             >
-              關閉
+              取消
             </button>
             <button
               type="button"
               class="btn-submit"
               @click="performCheckIn"
               :disabled="checkingIn || !canCheckIn(selectedBooking)"
-              :title="
-                !canCheckIn(selectedBooking)
-                  ? '入住當日下午 15:00 起開放報到'
-                  : ''
-              "
             >
-              {{
-                checkingIn
-                  ? "驗證中..."
-                  : !canCheckIn(selectedBooking)
-                    ? "未達 15:00 報到時間"
-                    : "模擬掃描完成入住"
-              }}
+              {{ checkingIn ? "處理中..." : "Check in 報到" }}
             </button>
           </div>
         </div>
@@ -396,23 +429,8 @@ const rooms = ref([]);
 const roomTypes = ref([]);
 const selectedBooking = ref(null);
 const checkingIn = ref(false);
-const showQrModal = ref(false);
+const showCheckInModal = ref(false);
 const verificationCode = ref("");
-
-// 動態產生與 Email 完全一致的 QR Code 網址 (支援本機與線上 Vercel)
-const qrCodeUrl = computed(() => {
-  if (!selectedBooking.value) return "";
-  const b = selectedBooking.value;
-  const code =
-    verificationCode.value ||
-    "CK" +
-      b.bookingId +
-      String(Math.abs((b.bookingId * 37 + 1013) % 10000)).padStart(4, "0");
-  const origin = window.location.origin;
-  const roomTypeName = encodeURIComponent(getRoomTypeName(b.roomTypeId));
-  const roomNum = encodeURIComponent(getRoomNumber(b.roomId));
-  return `${origin}/mobile-pass?code=${code}&booking=${b.bookingId}&checkIn=${b.checkInDate}&checkOut=${b.checkOutDate}&roomType=${roomTypeName}&room=${roomNum}`;
-});
 
 const showCancelModal = ref(false);
 const cancelling = ref(false);
@@ -676,16 +694,15 @@ async function performCancelBooking() {
   }
 }
 
-function generateQrCode() {
+function openCheckInModal() {
   if (!selectedBooking.value) return;
   const b = selectedBooking.value;
-  // 統一採用與後端 PublicBookingController 及 MailUtil 完全一致的標準格式：CK + bookingId + 4位驗證碼
   const code =
     "CK" +
     b.bookingId +
     String(Math.abs((b.bookingId * 37 + 1013) % 10000)).padStart(4, "0");
   verificationCode.value = code;
-  showQrModal.value = true;
+  showCheckInModal.value = true;
 }
 
 async function performCheckIn() {
@@ -739,11 +756,11 @@ async function performCheckIn() {
       }
       selectedBooking.value = updatedBooking;
 
-      showQrModal.value = false;
+      showCheckInModal.value = false;
       showAlert(
         "success",
         "入住成功",
-        `已完成驗證，為您分配的房號為 ${getRoomNumber(assignedRoomId)}`,
+        `已完成 Check in 報到，為您分配的房號為 ${getRoomNumber(assignedRoomId)}，祝您住宿愉快！`,
       );
     } else {
       showAlert("error", "入住失敗", "驗證失敗，請聯絡櫃檯人員");
@@ -1067,55 +1084,56 @@ function getStatusClass(status) {
   cursor: not-allowed;
 }
 
-.qr-modal-content {
+.checkin-modal-content {
+  max-width: 440px;
   text-align: center;
 }
-.qr-desc {
-  color: #666;
-  margin-bottom: 20px;
-}
-.qr-code-wrapper {
-  margin: 20px auto;
-  padding: 15px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  display: inline-block;
-}
-.qr-code-wrapper img {
-  display: block;
-}
-.verification-code {
-  font-size: 1.1rem;
-  color: #333;
-  margin-bottom: 12px;
-}
-.verification-code strong {
-  color: #c9a96e;
-  letter-spacing: 2px;
-  font-family: monospace;
-}
-.qr-preview-link {
-  margin-bottom: 20px;
-}
-.preview-btn-link {
-  display: inline-block;
-  font-size: 0.85rem;
-  color: #8c692e;
-  background: #fdf8ef;
-  border: 1px solid #ebd9b9;
-  padding: 6px 14px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.preview-btn-link:hover {
-  background: #f4ead5;
-  color: #6a4f21;
-}
-.qr-actions {
+.checkin-modal-header {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.checkin-icon-circle {
+  font-size: 24px;
+}
+.checkin-modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #2c1810;
+}
+.checkin-desc {
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+.checkin-summary-box {
+  background: #faf7f2;
+  border: 1px solid #ede4d5;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+.checkin-mail-note {
+  font-size: 0.82rem;
+  color: #8c692e;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.code-val {
+  color: #9b7435 !important;
+  font-weight: 700 !important;
+  font-family: Consolas, Monaco, monospace;
+  letter-spacing: 1px;
+}
+.disabled-service-btn {
+  background: #e2ded8 !important;
+  color: #7d776f !important;
+  cursor: not-allowed !important;
+  border: none !important;
 }
 
 .pagination-controls {
