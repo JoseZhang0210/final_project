@@ -146,13 +146,15 @@
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Users, Home } from "@lucide/vue";
+import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const authStore = useAuthStore();
+const { avatarUrl } = storeToRefs(authStore);
 const hasAvatarError = ref(false);
 
-watch(() => authStore.avatarUrl, () => {
+watch(avatarUrl, () => {
   hasAvatarError.value = false;
 });
 

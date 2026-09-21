@@ -14,12 +14,12 @@ const cartStore = useCartStore();
 const toastStore = useToastStore();
 const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
 const { itemCount: cartCount } = storeToRefs(cartStore);
-
 const hasAvatarError = ref(false);
 
 watch(avatarUrl, () => {
   hasAvatarError.value = false;
 });
+
 
 function loadCartSafely() {
   cartStore.load().catch(error => console.error("購物車載入失敗：", error));
