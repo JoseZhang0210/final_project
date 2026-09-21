@@ -250,14 +250,18 @@
           {{ submitting ? "處理報到中..." : "🛎️ 確認辦理入住報到 (Check-in)" }}
         </button>
 
-        <!-- 狀態 3: 已入住（返回首頁） -->
-        <button
+        <!-- 狀態 3: 已入住 (前往官方網站申請房務或回首頁) -->
+        <div
           v-else-if="passData.bookingStatus === '已入住'"
-          class="action-btn secondary-btn"
-          @click="goToHome"
+          class="checked-in-actions"
         >
-          回到星澄飯店首頁
-        </button>
+          <button class="action-btn active-btn" @click="goToMemberBookings">
+            🏨 前往星澄飯店網站（申請房務服務）
+          </button>
+          <button class="action-btn secondary-btn" @click="goToHome">
+            回到首頁
+          </button>
+        </div>
 
         <!-- 狀態 4: 已取消或過期 -->
         <button v-else class="action-btn secondary-btn" @click="goToHome">
@@ -554,6 +558,10 @@ async function handleCheckIn() {
   } finally {
     submitting.value = false;
   }
+}
+
+function goToMemberBookings() {
+  router.push("/member/bookings");
 }
 
 function goToHome() {
@@ -1042,6 +1050,119 @@ onUnmounted(() => {
 
 .secondary-btn:hover {
   background: #000;
+}
+
+.checked-in-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 房務申請 Modal 樣式 (手機專用) */
+.task-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.task-modal-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 360px;
+  border-radius: 16px;
+  padding: 24px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  text-align: left;
+}
+
+.task-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.task-icon {
+  font-size: 24px;
+}
+
+.task-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #2b2219;
+}
+
+.form-item {
+  margin-bottom: 14px;
+}
+
+.form-item label {
+  display: block;
+  font-size: 0.82rem;
+  color: #666;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-item select,
+.form-item textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #faf7f2;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-item select:focus,
+.form-item textarea:focus {
+  outline: none;
+  border-color: #c9a96e;
+  background: #fff;
+}
+
+.task-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn-task-cancel {
+  flex: 1;
+  padding: 10px 0;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-task-submit {
+  flex: 2;
+  padding: 10px 0;
+  background: linear-gradient(135deg, #c9a96e 0%, #a67c38 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-task-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 背景光暈裝飾 */

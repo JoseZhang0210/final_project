@@ -16,6 +16,7 @@ import com.hotel.model.entity.Booking;
 import com.hotel.model.entity.CustomerOrder;
 import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.Product;
+import com.hotel.model.entity.Room;
 import com.hotel.model.entity.RoomType;
 import com.hotel.repository.BookingRepository;
 import com.hotel.repository.CustomerOrderRepository;
@@ -23,6 +24,7 @@ import com.hotel.repository.MemberRepository;
 import com.hotel.repository.OrderItemRepository;
 import com.hotel.repository.ProductRepository;
 import com.hotel.repository.ProfileRepository;
+import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTypeRepository;
 
 import jakarta.mail.internet.MimeMessage;
@@ -40,6 +42,7 @@ public class MailUtil {
         private final CustomerOrderRepository customerOrderRepository;
         private final BookingRepository bookingRepository;
         private final RoomTypeRepository roomTypeRepository;
+        private final RoomRepository roomRepository;
 
         // 自動讀取 application.properties 裡的發信人設定
         @Value("${spring.mail.username}")
@@ -52,7 +55,7 @@ public class MailUtil {
         MailUtil(JavaMailSender mailSender, ProfileRepository profileRepository, MemberRepository memberRepository,
                         OrderItemRepository orderItemRepository, ProductRepository productRepository,
                         CustomerOrderRepository customerOrderRepository, BookingRepository bookingRepository,
-                        RoomTypeRepository roomTypeRepository) {
+                        RoomTypeRepository roomTypeRepository, RoomRepository roomRepository) {
                 this.mailSender = mailSender;
                 this.profileRepository = profileRepository;
                 this.memberRepository = memberRepository;
@@ -61,6 +64,7 @@ public class MailUtil {
                 this.customerOrderRepository = customerOrderRepository;
                 this.bookingRepository = bookingRepository;
                 this.roomTypeRepository = roomTypeRepository;
+                this.roomRepository = roomRepository;
         }
 
         /**
@@ -170,6 +174,31 @@ public class MailUtil {
 
                 String subject = "【星澄飯店】訂房取消與退款通知 - 訂單編號 " + bookingId;
                 String htmlBody = buildBookingCancellationHtml(bookingId);
+
+                EmailDTO dto = new EmailDTO(toEmail, subject, htmlBody, true);
+                sendEmail(dto);
+        }
+
+        /**
+         * 發送入住報到成功與開門 QR Code 郵件 (非同步)。
+         * 時效為訂單入住日 15:00 起至退房日 11:00。
+         *
+         * @param bookingId 訂單編號
+         */
+        @Async
+        public void sendCheckInSuccess(Integer bookingId) {
+                Booking booking = bookingRepository.findById(bookingId)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到訂房編號 " + bookingId));
+
+                String toEmail = profileRepository.findByAccountId(
+                                memberRepository.findById(booking.getMemberId())
+                                                .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
+                                                .getAccountId())
+                                .map(p -> p != null ? p.getEmail() : null)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到會員的 Email"));
+
+                String subject = "【星澄飯店】入住報到完成通知 - 您的專屬房號與開門 QR Code (#" + bookingId + ")";
+                String htmlBody = buildCheckInSuccessHtml(bookingId);
 
                 EmailDTO dto = new EmailDTO(toEmail, subject, htmlBody, true);
                 sendEmail(dto);
@@ -1040,6 +1069,209 @@ public class MailUtil {
                 sb.append("• 若您對退款進度有任何疑問，歡迎隨時與星澄飯店客服中心聯繫 (服務專線：02-2345-6789)。");
                 sb.append("</div>");
                 sb.append("</td></tr></table>");
+
+                sb.append("</td></tr>");
+
+                // FOOTER BAR
+                sb.append("<tr>");
+                sb.append("<td style='background-color:#2b2219;padding:25px 20px;text-align:center;'>");
+                sb.append("<div style='color:#d4af37;font-size:15px;font-weight:bold;letter-spacing:2px;margin-bottom:8px;'>星澄飯店</div>");
+                sb.append("<div style='color:#c8c1b8;font-size:11px;line-height:1.6;'>Grand Aster Hotel & Resorts<br>© 2026 星澄飯店. All rights reserved.</div>");
+                sb.append("</td></tr>");
+
+                sb.append("</table>");
+                sb.append("</td></tr></table>");
+                sb.append("</body></html>");
+
+                return sb.toString();
+        }
+
+        /**
+         * 產生正式飯店風格的入住報到成功與開門 QR Code Email
+         */
+        private String buildCheckInSuccessHtml(Integer bookingId) {
+                Booking booking = bookingRepository.findById(bookingId)
+                                .orElseThrow(() -> new IllegalArgumentException("找不到訂房編號 " + bookingId));
+
+                RoomType roomType = roomTypeRepository.findById(booking.getRoomTypeId())
+                                .orElseThrow(() -> new IllegalArgumentException("找不到房型"));
+
+                String memberInfo = profileRepository.findByAccountId(
+                                memberRepository.findById(booking.getMemberId())
+                                                .orElseThrow(() -> new IllegalArgumentException("找不到會員"))
+                                                .getAccountId())
+                                .map(p -> p != null ? p.getEmail() : null)
+                                .orElse("會員資訊不可用");
+
+                String roomNumber = "尚未指派";
+                if (booking.getRoomId() != null) {
+                        Room room = roomRepository.findById(booking.getRoomId()).orElse(null);
+                        if (room != null && room.getRoomNumber() != null) {
+                                roomNumber = room.getRoomNumber();
+                        }
+                }
+
+                String verificationCode = "CK" + bookingId
+                                + String.format("%04d", Math.abs((bookingId * 37 + 1013) % 10000));
+                String roomKeyData = "STARLIGHT-KEY:ROOM-" + roomNumber + ":" + verificationCode;
+
+                String baseUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) ? frontendBaseUrl
+                                : "https://starlight-hotel.vercel.app";
+                String encodedRoomType = java.net.URLEncoder.encode(roomType.getTypeName(),
+                                java.nio.charset.StandardCharsets.UTF_8);
+                String mobilePassUrl = baseUrl + "/mobile-pass?code=" + verificationCode + "&booking=" + bookingId
+                                + "&checkIn=" + booking.getCheckInDate()
+                                + "&checkOut=" + booking.getCheckOutDate()
+                                + "&roomType=" + encodedRoomType
+                                + "&room="
+                                + java.net.URLEncoder.encode(roomNumber, java.nio.charset.StandardCharsets.UTF_8);
+
+                String memberBookingUrl = baseUrl + "/member/room-booking";
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("<!DOCTYPE html>");
+                sb.append("<html>");
+                sb.append("<head>");
+                sb.append("<meta charset='UTF-8'>");
+                sb.append("<style>");
+                sb.append("body{margin:0;padding:0;background-color:#f4f1ea;");
+                sb.append("font-family:'Microsoft JhengHei',Arial,sans-serif;color:#333333;}");
+                sb.append("a{text-decoration:none;}");
+                sb.append("</style>");
+                sb.append("</head>");
+                sb.append("<body>");
+
+                sb.append("<table role='presentation' width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='background-color:#f4f1ea;padding:35px 10px;'>");
+                sb.append("<tr>");
+                sb.append("<td align='center'>");
+
+                sb.append("<table role='presentation' width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='max-width:680px;background-color:#ffffff;");
+                sb.append("border-radius:12px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.08);'>");
+
+                // HEADER
+                sb.append("<tr>");
+                sb.append("<td style='background-color:#2b2219;padding:35px 25px;text-align:center;'>");
+                sb.append("<div style='color:#d4af37;font-size:28px;font-weight:bold;letter-spacing:5px;'>星澄飯店</div>");
+                sb.append("<div style='margin-top:8px;color:#eae5dc;font-size:13px;letter-spacing:2px;'>GRAND ASTER HOTEL & RESORTS</div>");
+                sb.append("</td>");
+                sb.append("</tr>");
+
+                sb.append("<tr>");
+                sb.append("<td style='height:4px;background-color:#d4af37;'></td>");
+                sb.append("</tr>");
+
+                // CONTENT
+                sb.append("<tr>");
+                sb.append("<td style='padding:40px 35px;'>");
+
+                // STATUS BADGE
+                sb.append("<div style='text-align:center;margin-bottom:24px;'>");
+                sb.append("<div style='display:inline-block;background-color:#e8f5e9;border:1px solid #c8e6c9;border-radius:30px;padding:9px 24px;color:#2e7d32;font-size:14px;font-weight:bold;'>");
+                sb.append("🎉 入住報到完成 (Check-in Verified)");
+                sb.append("</div>");
+                sb.append("</div>");
+
+                sb.append("<h1 style='margin:0;text-align:center;font-size:24px;font-weight:bold;color:#2b2219;'>歡迎入住！您的客房智慧電子鑰匙已啟用</h1>");
+                sb.append("<p style='text-align:center;font-size:15px;line-height:1.8;color:#666666;margin:14px 0 28px 0;'>");
+                sb.append("親愛的貴賓您好，<br>");
+                sb.append("您已成功完成星澄飯店的報到手續。我們已為您備妥專屬客房，<br>");
+                sb.append("下方為您的房號及開門感應專用 QR Code，祝您住宿愉快！");
+                sb.append("</p>");
+
+                // ROOM INFO SUMMARY
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='background-color:#faf7f2;border:1px solid #eee5d8;border-radius:10px;overflow:hidden;margin-bottom:28px;'>");
+                sb.append("<tr>");
+                sb.append("<td style='padding:18px 24px;width:50%;border-right:1px solid #eee5d8;text-align:center;'>");
+                sb.append("<div style='font-size:13px;color:#888888;margin-bottom:6px;'>專屬入住房號</div>");
+                sb.append("<div style='font-size:28px;font-weight:bold;color:#9b7435;letter-spacing:2px;'>")
+                                .append(roomNumber).append(" <span style='font-size:16px;'>號房</span></div>");
+                sb.append("</td>");
+                sb.append("<td style='padding:18px 24px;width:50%;text-align:center;'>");
+                sb.append("<div style='font-size:13px;color:#888888;margin-bottom:6px;'>預訂房型</div>");
+                sb.append("<div style='font-size:16px;font-weight:bold;color:#4a3b2a;'>")
+                                .append(roomType.getTypeName()).append("</div>");
+                sb.append("</td>");
+                sb.append("</tr>");
+                sb.append("</table>");
+
+                // DOOR KEY QR PASS CARD (開門感應專用 QR CODE)
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='background-color:#faf7f2;border:2px solid #d4af37;border-radius:12px;overflow:hidden;margin-bottom:30px;'>");
+                sb.append("<tr>");
+                sb.append("<td style='padding:28px 20px;text-align:center;'>");
+
+                sb.append("<div style='display:inline-block;background-color:#2b2219;color:#d4af37;font-size:12px;font-weight:bold;letter-spacing:1px;padding:5px 16px;border-radius:20px;margin-bottom:12px;'>");
+                sb.append("ROOM ACCESS KEY");
+                sb.append("</div>");
+
+                sb.append("<div style='font-size:19px;font-weight:bold;color:#4a3b2a;margin-bottom:6px;'>");
+                sb.append("🔑 房門開門感應專用 QR Code");
+                sb.append("</div>");
+
+                sb.append("<div style='font-size:13px;color:#666666;line-height:1.6;margin-bottom:18px;'>");
+                sb.append("抵達房門前，請將此 QR Code 對準房門光學感應區或 CR522 門禁設備即可開門。");
+                sb.append("</div>");
+
+                // QR CODE IMAGE
+                sb.append("<div style='display:inline-block;padding:12px;background:#ffffff;border:1px solid #e8dfd3;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,0.06);'>");
+                sb.append("<img src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=")
+                                .append(java.net.URLEncoder.encode(roomKeyData,
+                                                java.nio.charset.StandardCharsets.UTF_8))
+                                .append("' alt='Room Access QR Key' width='180' height='180' style='display:block;' />");
+                sb.append("</div>");
+
+                // KEY CODE DATA
+                sb.append("<div style='margin-top:14px;font-size:13px;color:#888888;'>");
+                sb.append("開門金鑰識別碼：<strong style='color:#9b7435;font-size:15px;letter-spacing:1px;font-family:Consolas,Monaco,monospace;'>")
+                                .append(roomKeyData).append("</strong>");
+                sb.append("</div>");
+
+                // TIME VALIDITY ALERT (下午3點至退房)
+                sb.append("<div style='margin-top:16px;background-color:#ffffff;border:1px solid #e0d5c1;border-radius:8px;padding:12px 16px;display:inline-block;text-align:left;max-width:480px;'>");
+                sb.append("<div style='font-size:13px;color:#4a3b2a;font-weight:bold;margin-bottom:4px;'>⏳ 電子鑰匙有效期限：</div>");
+                sb.append("<div style='font-size:13px;color:#777777;line-height:1.6;'>");
+                sb.append("自 <strong style='color:#2e7d32;'>").append(booking.getCheckInDate())
+                                .append(" 15:00</strong> 起，至 <strong style='color:#c62828;'>")
+                                .append(booking.getCheckOutDate()).append(" 11:00</strong> 退房時止。");
+                sb.append("<br><span style='font-size:12px;color:#999999;'>※ 超出此時段該金鑰將自動失效以維護客房安全。</span>");
+                sb.append("</div>");
+                sb.append("</div>");
+
+                // BUTTON: OPEN MOBILE PASS
+                sb.append("<div style='margin-top:22px;'>");
+                sb.append("<a href='").append(mobilePassUrl).append(
+                                "' style='display:inline-block;background-color:#9b7435;color:#ffffff;font-size:14px;font-weight:bold;padding:11px 26px;border-radius:6px;box-shadow:0 2px 6px rgba(155,116,53,0.3);'>");
+                sb.append("📱 開啟手機版智慧房卡通行證");
+                sb.append("</a>");
+                sb.append("</div>");
+
+                sb.append("</td>");
+                sb.append("</tr>");
+                sb.append("</table>");
+
+                // ROOM SERVICE GUIDANCE (客房房務申請引導)
+                sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
+                sb.append(" style='margin-top:20px;background-color:#f9fbf9;border:1px solid #c8e6c9;border-left:4px solid #43a047;border-radius:8px;margin-bottom:28px;'>");
+                sb.append("<tr><td style='padding:20px;'>");
+                sb.append("<div style='font-size:15px;font-weight:bold;color:#2e7d32;margin-bottom:8px;'>🧽 住宿期間房務服務申請</div>");
+                sb.append("<div style='font-size:13px;line-height:1.8;color:#555555;margin-bottom:14px;'>");
+                sb.append("入住期間如需補充毛巾浴巾、洗沐備品、預約客房清掃或設備報修，請直接登入星澄飯店官方網站會員中心之「訂房清單」即可一鍵新增房務申請，我們的房務團隊將以最快速度為您服務！");
+                sb.append("</div>");
+                sb.append("<a href='").append(memberBookingUrl).append(
+                                "' style='display:inline-block;background-color:#2e7d32;color:#ffffff;font-size:13px;font-weight:bold;padding:9px 20px;border-radius:6px;'>");
+                sb.append("🛎️ 前往會員中心申請房務服務");
+                sb.append("</a>");
+                sb.append("</td></tr></table>");
+
+                // FOOTER GREETING
+                sb.append("<div style='text-align:center;margin-top:30px;'>");
+                sb.append("<div style='font-size:15px;font-weight:bold;color:#4a3b2a;margin-bottom:8px;'>祝您住宿愉快</div>");
+                sb.append("<div style='font-size:13px;line-height:1.7;color:#888888;'>若有任何即時需求，歡迎隨時透過房內分機聯繫總機櫃檯。</div>");
+                sb.append("</div>");
 
                 sb.append("</td></tr>");
 
