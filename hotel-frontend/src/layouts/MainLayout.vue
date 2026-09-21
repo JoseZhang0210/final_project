@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { User, Package, Heart, Settings, LogOut } from "@lucide/vue";
@@ -14,11 +14,21 @@ const cartStore = useCartStore();
 const toastStore = useToastStore();
 const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
 const { itemCount: cartCount } = storeToRefs(cartStore);
+const hasAvatarError = ref(false);
+
+watch(avatarUrl, () => {
+  hasAvatarError.value = false;
+});
+
 
 function loadCartSafely() {
   cartStore.load().catch(error => console.error("購物車載入失敗：", error));
 }
-onMounted(() => { if (isLoggedIn.value) loadCartSafely(); });
+
+onMounted(() => {
+  if (isLoggedIn.value) loadCartSafely();
+});
+
 watch(isLoggedIn, loggedIn => {
   if (loggedIn) loadCartSafely();
   else cartStore.resetLocalState();
@@ -188,7 +198,13 @@ async function toggleAccount() {
         <div v-else class="user-dropdown-container">
           <button type="button" class="user-dropdown-btn">
             <span class="user-avatar-mini">
-              <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <img
+                v-if="avatarUrl && !hasAvatarError"
+                :src="avatarUrl"
+                alt="Avatar"
+                class="avatar-mini-img"
+                @error="hasAvatarError = true"
+              />
               <span v-else>{{ userInitial }}</span>
             </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>
