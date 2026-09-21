@@ -8,6 +8,7 @@ import com.hotel.repository.RentalPaymentRepository; // 模擬付款持久化入
 import com.hotel.model.entity.Rental; // 沿用現有租借實體。
 import org.springframework.mock.env.MockEnvironment; // 測試設定不使用正式秘密。
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // 模擬既有會員登入。
+import org.springframework.security.core.authority.SimpleGrantedAuthority; // 模擬管理員權限。
 import org.springframework.transaction.support.TransactionSynchronizationManager; // 驗證提交後才寄信。
 class RentalPaymentServiceTest { // 測試簽章、金額、所有權與重送。
     private final RentalService rentals=mock(RentalService.class); // 不存取真實會員資料。
@@ -110,5 +111,54 @@ class RentalPaymentServiceTest { // 測試簽章、金額、所有權與重送�
         when(rentals.findAccessible(2,authentication)).thenReturn(rental); when(rentals.resolveMemberId("customer01")).thenReturn(1); // 模擬錯誤暴露實體的上游。
         assertThrows(org.springframework.web.server.ResponseStatusException.class,()->service.checkout(2,authentication)); // 付款服務仍獨立拒絕。
         verifyNoInteractions(repository); // 不讀寫他人付款。
+    }
+
+    /** 驗證管理員可讀取與切換模擬付款模式開關，一般會員則被拒絕。 */
+    @Test void demoModePermissionAndToggle() {
+        var adminAuth = new UsernamePasswordAuthenticationToken("admin01", null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"), new SimpleGrantedAuthority("POSITION_總經理")));
+        var customerAuth = new UsernamePasswordAuthenticationToken("customer01", null, List.of());
+
+        // 一般會員查詢/切換被拒絕
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.getDemoMode(customerAuth));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.setDemoMode(true, customerAuth));
+
+        // 管理員預設讀取到 false
+        assertEquals(false, service.getDemoMode(adminAuth).get("enabled"));
+
+        // 管理員啟用模擬付款
+        assertEquals(true, service.setDemoMode(true, adminAuth).get("enabled"));
+        assertEquals(true, service.getDemoMode(adminAuth).get("enabled"));
+
+        // 管理員停用模擬付款
+        assertEquals(false, service.setDemoMode(false, adminAuth).get("enabled"));
+        assertEquals(false, service.getDemoMode(adminAuth).get("enabled"));
+    }
+
+    /** 驗證 stageDemoPaid 依據 runtime flag 開關允許或拒絕。 */
+    @Test void stageDemoPaidRespectsRuntimeFlag() {
+        var adminAuth = new UsernamePasswordAuthenticationToken("admin01", null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"), new SimpleGrantedAuthority("POSITION_總經理")));
+        var customerAuth = new UsernamePasswordAuthenticationToken("customer01", null, List.of());
+
+        Rental rental = new Rental();
+        rental.setMemberId(1);
+        rental.setPaymentId(1);
+        rental.setRentalStatus("PENDING");
+
+        when(rentals.findAccessible(1, customerAuth)).thenReturn(rental);
+        when(rentals.resolveMemberId("customer01")).thenReturn(1);
+        when(repository.lock(1)).thenReturn(payment);
+        when(repository.stageDemoPaid(eq(1), eq(1), anyString(), any())).thenReturn(1);
+
+        // 預設 (false) 時調用拋出 404
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.stageDemoPaid(1, customerAuth));
+
+        // 管理員開啟開關
+        service.setDemoMode(true, adminAuth);
+
+        // 啟用後，會員可正常完成付款標記
+        var result = service.stageDemoPaid(1, customerAuth);
+        assertEquals("已付款", result.get("paymentStatus"));
+        assertEquals("CONFIRMED", result.get("rentalStatus"));
+        assertEquals(true, result.get("demo"));
     }
 }
