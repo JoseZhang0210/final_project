@@ -1,68 +1,51 @@
 package com.hotel.model.entity;
 
-import java.math.BigDecimal;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Entity
+@Table(name = "cart_item", schema = "dbo")
+@IdClass(CartItemId.class)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CartItem {
 
-    private Integer productId;
-    private String productName;
-    private BigDecimal price;
-    private Integer quantity;
+  @Id
+  @Column(name = "member_id")
+  private Integer memberId;
 
-    public CartItem() {
-    }
+  @Id
+  @Column(name = "product_id")
+  private Integer productId;
 
-    public CartItem(
-            Integer productId,
-            String productName,
-            BigDecimal price,
-            Integer quantity) {
+  @Column(name = "quantity", nullable = false)
+  private Integer quantity;
 
-        this.productId = productId;
-        this.productName = productName;
-        this.price = price;
-        this.quantity = quantity;
-    }
+  @Column(name = "created_at", nullable = false)
+  private LocalDateTime createdAt;
 
-    public BigDecimal getSubtotal() {
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 
-        if (price == null || quantity == null) {
-            return BigDecimal.ZERO;
-        }
+  @PrePersist
+  void onCreate() {
+    LocalDateTime now = LocalDateTime.now();
+    createdAt = createdAt == null ? now : createdAt;
+    updatedAt = now;
+  }
 
-        return price.multiply(
-                BigDecimal.valueOf(quantity));
-    }
-
-    public Integer getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Integer productId) {
-        this.productId = productId;
-    }
-
-    public String getProductName() {
-        return productName;
-    }
-
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
+  @PreUpdate
+  void onUpdate() {
+    updatedAt = LocalDateTime.now();
+  }
 }

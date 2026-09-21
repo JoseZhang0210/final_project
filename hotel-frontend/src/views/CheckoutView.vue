@@ -74,28 +74,23 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-
-import { getAuthHeaders } from "@/utils/auth";
+import { storeToRefs } from "pinia";
+import { useCartStore } from "@/stores/cart";
 
 const router = useRouter();
-
-const cart = ref([]);
+const cartStore = useCartStore();
+const { items: cart } = storeToRefs(cartStore);
 
 const couponCode = ref("");
 
 const submitting = ref(false);
 
-try {
-  cart.value = JSON.parse(
-    localStorage.getItem("cart") || "[]",
-  );
-} catch (error) {
-  console.error("購物車資料格式錯誤：", error);
-
-  cart.value = [];
-}
+onMounted(() => cartStore.load().catch(error => {
+  console.error("購物車資料載入失敗：", error);
+  alert(error.message || "購物車資料載入失敗");
+}));
 
 const originalAmount = computed(() => {
   return cart.value.reduce((total, item) => {
@@ -125,48 +120,12 @@ async function createOrder() {
     return;
   }
 
-  const requestBody = {
-
-    couponCode:
-      couponCode.value.trim() === ""
-        ? null
-        : couponCode.value.trim(),
-
-    items: cart.value.map((item) => ({
-      productId: Number(item.productId),
-      quantity: Number(item.quantity),
-    })),
-  };
-
-  console.log("建立訂單 Request：", requestBody);
-
   submitting.value = true;
 
   try {
-    const response = await fetch("/api/orders", {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-
-      throw new Error(
-        message || `建立訂單失敗：${response.status}`,
-      );
-    }
-
-    const order = await response.json();
+    const order = await cartStore.checkout(couponCode.value.trim() || null);
 
     console.log("建立訂單成功：", order);
-
-    localStorage.removeItem("cart");
 
     router.push(`/payment/${order.orderId}`);
   } catch (error) {
