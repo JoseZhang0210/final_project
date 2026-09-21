@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { defineStore } from "pinia";
 import { cartApi } from "@/api/cartApi";
 
@@ -7,7 +7,6 @@ export const useCartStore = defineStore("cart", () => {
   const loading = ref(false);
   const totalQuantity = ref(0);
   const totalAmount = ref(0);
-  const itemCount = computed(() => totalQuantity.value);
 
   function applyCart(cart) {
     items.value = Array.isArray(cart?.items) ? cart.items : [];
@@ -58,6 +57,6 @@ export const useCartStore = defineStore("cart", () => {
   }
   function resetLocalState() { applyCart(null); }
 
-  return { items, loading, totalQuantity, totalAmount, itemCount, load, addItem,
+  return { items, loading, totalQuantity, totalAmount, itemCount: totalQuantity, load, addItem,
     updateQuantity, removeItem, clear, checkout, resetLocalState };
 });

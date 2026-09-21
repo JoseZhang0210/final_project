@@ -3,14 +3,18 @@ package com.hotel.service;
 import com.hotel.model.dto.AddCartItemRequest;
 import com.hotel.model.dto.CartItemResponse;
 import com.hotel.model.dto.CartResponse;
+import com.hotel.model.entity.Account;
 import com.hotel.model.entity.CartItem;
+import com.hotel.model.entity.Member;
 import com.hotel.model.entity.Product;
+import com.hotel.repository.AccountRepository;
 import com.hotel.repository.CartItemRepository;
+import com.hotel.repository.MemberRepository;
 import com.hotel.repository.ProductRepository;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -23,17 +27,17 @@ public class CartService {
 
   private final CartItemRepository cartItemRepository;
   private final ProductRepository productRepository;
-  private final MemberIdentityService memberIdentityService;
+  private final AccountRepository accountRepository;
+  private final MemberRepository memberRepository;
 
   @Transactional(readOnly = true)
   public CartResponse getCart(String username) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
-    return buildResponse(memberId);
+    return buildResponse(resolveMemberId(username));
   }
 
   @Transactional
   public CartResponse addItem(String username, AddCartItemRequest request) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
+    Integer memberId = resolveMemberId(username);
     validateRequest(request);
 
     Product product = requirePurchasableProduct(request.getProductId());
@@ -52,7 +56,7 @@ public class CartService {
 
   @Transactional
   public CartResponse updateQuantity(String username, Integer productId, Integer quantity) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
+    Integer memberId = resolveMemberId(username);
     if (quantity == null || quantity < 1) {
       throw new IllegalArgumentException("購物車商品數量至少為 1");
     }
@@ -71,20 +75,19 @@ public class CartService {
 
   @Transactional
   public CartResponse removeItem(String username, Integer productId) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
+    Integer memberId = resolveMemberId(username);
     cartItemRepository.deleteByMemberIdAndProductId(memberId, productId);
     return buildResponse(memberId);
   }
 
   @Transactional
   public void clear(String username) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
-    cartItemRepository.deleteByMemberId(memberId);
+    cartItemRepository.deleteByMemberId(resolveMemberId(username));
   }
 
   @Transactional
   public CartResponse merge(String username, List<AddCartItemRequest> requests) {
-    Integer memberId = memberIdentityService.requireMemberId(username);
+    Integer memberId = resolveMemberId(username);
     if (requests == null || requests.isEmpty()) {
       return buildResponse(memberId);
     }
@@ -114,45 +117,54 @@ public class CartService {
     return buildResponse(memberId);
   }
 
+  private Integer resolveMemberId(String username) {
+    if (username == null || username.isBlank()) {
+      throw new IllegalArgumentException("無法取得目前登入帳號");
+    }
+    Account account = accountRepository.findByUsername(username.trim());
+    if (account == null) {
+      throw new IllegalArgumentException("找不到登入帳號");
+    }
+    return memberRepository
+        .findByAccountId(account.getAccountId())
+        .map(Member::getMemberId)
+        .orElseThrow(() -> new IllegalArgumentException("目前登入帳號不是會員"));
+  }
+
   private CartResponse buildResponse(Integer memberId) {
     List<CartItem> cartItems = cartItemRepository.findByMemberIdOrderByCreatedAtAsc(memberId);
-    List<Integer> productIds = cartItems.stream().map(CartItem::getProductId).toList();
     Map<Integer, Product> products =
-        productRepository.findAllById(productIds).stream()
-            .collect(Collectors.toMap(Product::getProductId, Function.identity()));
+        productRepository.findAllById(cartItems.stream().map(CartItem::getProductId).toList())
+            .stream().collect(Collectors.toMap(Product::getProductId, Function.identity()));
 
-    List<CartItemResponse> items = new ArrayList<>();
-    int totalQuantity = 0;
-    int totalAmount = 0;
+    List<CartItemResponse> items =
+        cartItems.stream()
+            .map(item -> toResponse(item, products.get(item.getProductId())))
+            .filter(Objects::nonNull)
+            .toList();
 
-    for (CartItem cartItem : cartItems) {
-      Product product = products.get(cartItem.getProductId());
-      if (product == null) {
-        continue;
-      }
-
-      int subtotal = product.getPrice() * cartItem.getQuantity();
-      boolean available =
-          isActive(product)
-              && product.getStock() != null
-              && product.getStock() >= cartItem.getQuantity();
-
-      items.add(
-          new CartItemResponse(
-              product.getProductId(),
-              product.getProductName(),
-              product.getPrice(),
-              cartItem.getQuantity(),
-              subtotal,
-              product.getStock(),
-              product.getImageUrl(),
-              product.getStatus(),
-              available));
-      totalQuantity += cartItem.getQuantity();
-      totalAmount += subtotal;
-    }
-
+    int totalQuantity = items.stream().mapToInt(CartItemResponse::getQuantity).sum();
+    int totalAmount = items.stream().mapToInt(CartItemResponse::getSubtotal).sum();
     return new CartResponse(items, totalQuantity, totalAmount);
+  }
+
+  private CartItemResponse toResponse(CartItem cartItem, Product product) {
+    if (product == null) return null;
+    int subtotal = product.getPrice() * cartItem.getQuantity();
+    boolean available =
+        isActive(product)
+            && product.getStock() != null
+            && product.getStock() >= cartItem.getQuantity();
+    return new CartItemResponse(
+        product.getProductId(),
+        product.getProductName(),
+        product.getPrice(),
+        cartItem.getQuantity(),
+        subtotal,
+        product.getStock(),
+        product.getImageUrl(),
+        product.getStatus(),
+        available);
   }
 
   private void validateRequest(AddCartItemRequest request) {
