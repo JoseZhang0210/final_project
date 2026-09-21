@@ -3,9 +3,8 @@ package com.hotel.model.dto;
 import lombok.Data;
 
 @Data
-public class CreateOrderItemRequest {
+public class AddCartItemRequest {
 
   private Integer productId;
-
   private Integer quantity;
 }

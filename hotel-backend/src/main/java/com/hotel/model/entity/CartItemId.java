@@ -8,8 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderItemId implements Serializable {
-
-  private Integer orderId;
+public class CartItemId implements Serializable {
+  private Integer memberId;
   private Integer productId;
 }
