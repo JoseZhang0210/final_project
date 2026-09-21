@@ -19,14 +19,20 @@
             @touchstart="startTouchDrag"
             @wheel.prevent="handleWheel"
           >
+            <!-- 載入中骨架畫面 -->
+            <div v-if="!isImageReady" class="crop-loading-placeholder">
+              <div class="crop-spinner"></div>
+            </div>
+
             <img
               v-if="imageSrc"
               ref="rawImgRef"
               :src="imageSrc"
               alt="Crop preview"
               class="crop-preview-image"
+              :class="{ 'is-visible': isImageReady }"
               :style="imageTransformStyle"
-              @load="initImageDimensions"
+              @load="onImageLoad"
               draggable="false"
             />
 
@@ -90,7 +96,7 @@
           <button
             type="button"
             class="btn-crop-confirm"
-            :disabled="isGeneratingBlob"
+            :disabled="isGeneratingBlob || !isImageReady"
             @click="handleConfirm"
           >
             <span v-if="isGeneratingBlob" class="btn-spinner"></span>
@@ -158,9 +164,10 @@ const emit = defineEmits(["update:modelValue", "confirm", "cancel"]);
 
 const titleId = `crop-title-${Math.random().toString(36).slice(2, 8)}`;
 const rawImgRef = ref(null);
+const isImageReady = ref(false);
 
-const originalWidth = ref(0);
-const originalHeight = ref(0);
+const originalWidth = ref(400);
+const originalHeight = ref(400);
 const baseScale = ref(1);
 
 const scale = ref(1);
@@ -176,25 +183,25 @@ let startPointerX = 0;
 let startPointerY = 0;
 let initialOffsetX = 0;
 let initialOffsetY = 0;
+let rafId = null;
 
-function initImageDimensions() {
-  if (!props.imageSrc) return;
-  const tempImg = new Image();
-  tempImg.onload = () => {
-    const nw = tempImg.naturalWidth || props.outputWidth;
-    const nh = tempImg.naturalHeight || props.outputHeight;
+function onImageLoad(e) {
+  const img = e?.target || rawImgRef.value;
+  if (!img) return;
 
-    originalWidth.value = nw;
-    originalHeight.value = nh;
+  const nw = img.naturalWidth || props.outputWidth;
+  const nh = img.naturalHeight || props.outputHeight;
 
-    // 計算可完整填滿視窗的 baseScale
-    const scaleX = props.viewportWidth / nw;
-    const scaleY = props.viewportHeight / nh;
-    baseScale.value = Math.max(scaleX, scaleY);
+  originalWidth.value = nw;
+  originalHeight.value = nh;
 
-    resetCrop();
-  };
-  tempImg.src = props.imageSrc;
+  // 計算可填滿 viewport 的最佳縮放基礎
+  const scaleX = props.viewportWidth / nw;
+  const scaleY = props.viewportHeight / nh;
+  baseScale.value = Math.max(scaleX, scaleY);
+
+  resetCrop();
+  isImageReady.value = true;
 }
 
 function resetCrop() {
@@ -207,22 +214,18 @@ function resetCrop() {
 
 watch(
   () => props.imageSrc,
-  (src) => {
-    if (src) {
-      initImageDimensions();
-    }
-  },
-  { immediate: true }
+  () => {
+    isImageReady.value = false;
+  }
 );
 
 watch(
   () => props.modelValue,
   (val) => {
-    if (val && props.imageSrc) {
-      initImageDimensions();
-    } else {
+    if (!val) {
       stopDrag();
       stopTouchDrag();
+      isImageReady.value = false;
     }
   }
 );
@@ -234,7 +237,7 @@ const imageTransformStyle = computed(() => {
   return {
     width: `${currentW}px`,
     height: `${currentH}px`,
-    transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
+    transform: `translate3d(${offsetX.value}px, ${offsetY.value}px, 0) scale(${scale.value})`,
     transformOrigin: "center center",
   };
 });
@@ -249,7 +252,7 @@ function handleWheel(e) {
   adjustScale(delta);
 }
 
-// 拖曳平移 (滑鼠)
+// 拖曳平移 (滑鼠) - 採用 requestAnimationFrame 節流提升效能
 function startDrag(e) {
   if (e.button !== 0) return;
   isDragging = true;
@@ -258,7 +261,7 @@ function startDrag(e) {
   initialOffsetX = offsetX.value;
   initialOffsetY = offsetY.value;
 
-  window.addEventListener("mousemove", onDragging);
+  window.addEventListener("mousemove", onDragging, { passive: true });
   window.addEventListener("mouseup", stopDrag);
 }
 
@@ -266,12 +269,22 @@ function onDragging(e) {
   if (!isDragging) return;
   const dx = e.clientX - startPointerX;
   const dy = e.clientY - startPointerY;
-  offsetX.value = initialOffsetX + dx;
-  offsetY.value = initialOffsetY + dy;
+
+  if (rafId === null) {
+    rafId = requestAnimationFrame(() => {
+      offsetX.value = initialOffsetX + dx;
+      offsetY.value = initialOffsetY + dy;
+      rafId = null;
+    });
+  }
 }
 
 function stopDrag() {
   isDragging = false;
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
   window.removeEventListener("mousemove", onDragging);
   window.removeEventListener("mouseup", stopDrag);
 }
@@ -294,12 +307,22 @@ function onTouchDragging(e) {
   e.preventDefault();
   const dx = e.touches[0].clientX - startPointerX;
   const dy = e.touches[0].clientY - startPointerY;
-  offsetX.value = initialOffsetX + dx;
-  offsetY.value = initialOffsetY + dy;
+
+  if (rafId === null) {
+    rafId = requestAnimationFrame(() => {
+      offsetX.value = initialOffsetX + dx;
+      offsetY.value = initialOffsetY + dy;
+      rafId = null;
+    });
+  }
 }
 
 function stopTouchDrag() {
   isDragging = false;
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
   window.removeEventListener("touchmove", onTouchDragging);
   window.removeEventListener("touchend", stopTouchDrag);
 }
@@ -312,7 +335,7 @@ function closeModal() {
 }
 
 async function handleConfirm() {
-  if (!props.imageSrc || isGeneratingBlob.value) return;
+  if (!rawImgRef.value || isGeneratingBlob.value) return;
   isGeneratingBlob.value = true;
 
   try {
@@ -321,16 +344,12 @@ async function handleConfirm() {
     canvas.height = props.outputHeight;
     const ctx = canvas.getContext("2d");
 
-    // 填充底色避免透明圖出現黑底
+    // 填充底色 (白底)
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, props.outputWidth, props.outputHeight);
 
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = props.imageSrc;
-    });
+    // 直接使用 DOM 中已解碼的圖片元素，完全 0ms 延遲
+    const img = rawImgRef.value;
 
     const ratio = props.outputWidth / props.viewportWidth;
     ctx.scale(ratio, ratio);
@@ -382,13 +401,12 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   background-color: rgba(20, 16, 12, 0.65);
-  backdrop-filter: blur(3px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.15s ease-out;
 }
 
 @keyframes fadeIn {
@@ -432,7 +450,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .btn-close-crop:hover {
@@ -465,11 +483,37 @@ onBeforeUnmount(() => {
   cursor: grabbing;
 }
 
+.crop-loading-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2b251f;
+  z-index: 1;
+}
+
+.crop-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #b58a46;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
 .crop-preview-image {
   position: absolute;
   top: 0;
   left: 0;
   pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+  transition: opacity 0.15s ease-in;
+}
+
+.crop-preview-image.is-visible {
+  opacity: 1;
 }
 
 .crop-guide-mask {
@@ -478,6 +522,7 @@ onBeforeUnmount(() => {
   border: 2px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+  z-index: 2;
 }
 
 .crop-guide-mask.is-circle {
@@ -512,7 +557,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
 
@@ -557,7 +602,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s ease;
+  transition: background 0.15s, color 0.15s;
 }
 
 .btn-crop-cancel:hover {
@@ -594,7 +639,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   box-shadow: 0 2px 8px rgba(181, 138, 70, 0.25);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-crop-confirm:hover:not(:disabled) {
