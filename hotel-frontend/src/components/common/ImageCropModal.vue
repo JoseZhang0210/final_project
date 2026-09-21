@@ -176,19 +176,23 @@ let initialOffsetX = 0;
 let initialOffsetY = 0;
 
 function initImageDimensions() {
-  if (!rawImgRef.value) return;
-  const nw = rawImgRef.value.naturalWidth || props.outputWidth;
-  const nh = rawImgRef.value.naturalHeight || props.outputHeight;
+  if (!props.imageSrc) return;
+  const tempImg = new Image();
+  tempImg.onload = () => {
+    const nw = tempImg.naturalWidth || props.outputWidth;
+    const nh = tempImg.naturalHeight || props.outputHeight;
 
-  originalWidth.value = nw;
-  originalHeight.value = nh;
+    originalWidth.value = nw;
+    originalHeight.value = nh;
 
-  // 計算可完整填滿視窗的 baseScale
-  const scaleX = props.viewportWidth / nw;
-  const scaleY = props.viewportHeight / nh;
-  baseScale.value = Math.max(scaleX, scaleY);
+    // 計算可完整填滿視窗的 baseScale
+    const scaleX = props.viewportWidth / nw;
+    const scaleY = props.viewportHeight / nh;
+    baseScale.value = Math.max(scaleX, scaleY);
 
-  resetCrop();
+    resetCrop();
+  };
+  tempImg.src = props.imageSrc;
 }
 
 function resetCrop() {
@@ -201,18 +205,19 @@ function resetCrop() {
 
 watch(
   () => props.imageSrc,
-  () => {
-    if (props.imageSrc) {
-      setTimeout(() => initImageDimensions(), 20);
+  (src) => {
+    if (src) {
+      initImageDimensions();
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
   () => props.modelValue,
   (val) => {
-    if (val) {
-      setTimeout(() => initImageDimensions(), 20);
+    if (val && props.imageSrc) {
+      initImageDimensions();
     } else {
       stopDrag();
       stopTouchDrag();
@@ -305,7 +310,7 @@ function closeModal() {
 }
 
 async function handleConfirm() {
-  if (!rawImgRef.value || isGeneratingBlob.value) return;
+  if (!props.imageSrc || isGeneratingBlob.value) return;
   isGeneratingBlob.value = true;
 
   try {
@@ -314,39 +319,34 @@ async function handleConfirm() {
     canvas.height = props.outputHeight;
     const ctx = canvas.getContext("2d");
 
-    const img = rawImgRef.value;
-    const currentScale = baseScale.value * scale.value;
+    // 填充底色避免透明圖出現黑底
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, props.outputWidth, props.outputHeight);
 
-    const viewportCenterX = props.viewportWidth / 2;
-    const viewportCenterY = props.viewportHeight / 2;
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = props.imageSrc;
+    });
 
-    const imgCenterRenderX = offsetX.value + (originalWidth.value * baseScale.value) / 2;
-    const imgCenterRenderY = offsetY.value + (originalHeight.value * baseScale.value) / 2;
+    const ratio = props.outputWidth / props.viewportWidth;
+    ctx.scale(ratio, ratio);
 
-    const diffX = viewportCenterX - imgCenterRenderX;
-    const diffY = viewportCenterY - imgCenterRenderY;
+    const currentW = originalWidth.value * baseScale.value;
+    const currentH = originalHeight.value * baseScale.value;
+    const cx = offsetX.value + currentW / 2;
+    const cy = offsetY.value + currentH / 2;
 
-    const cropHalfWidthInImg = (props.viewportWidth / 2) / currentScale;
-    const cropHalfHeightInImg = (props.viewportHeight / 2) / currentScale;
-
-    const cropCenterXInImg = (originalWidth.value / 2) - (diffX / currentScale);
-    const cropCenterYInImg = (originalHeight.value / 2) - (diffY / currentScale);
-
-    const sourceX = cropCenterXInImg - cropHalfWidthInImg;
-    const sourceY = cropCenterYInImg - cropHalfHeightInImg;
-    const sourceWidth = cropHalfWidthInImg * 2;
-    const sourceHeight = cropHalfHeightInImg * 2;
-
+    // 套用與 Viewport 完全一致的平移與縮放轉換
+    ctx.translate(cx, cy);
+    ctx.scale(scale.value, scale.value);
     ctx.drawImage(
       img,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      props.outputWidth,
-      props.outputHeight
+      -currentW / 2,
+      -currentH / 2,
+      currentW,
+      currentH
     );
 
     const blob = await new Promise((resolve) => {
@@ -355,8 +355,9 @@ async function handleConfirm() {
 
     if (blob) {
       const ext = props.outputType.includes("png") ? "png" : "jpg";
-      const croppedFile = new File([blob], `cropped_${Date.now()}.${ext}`, {
+      const croppedFile = new File([blob], `avatar_${Date.now()}.${ext}`, {
         type: props.outputType,
+        lastModified: Date.now(),
       });
       emit("confirm", croppedFile);
       emit("update:modelValue", false);
