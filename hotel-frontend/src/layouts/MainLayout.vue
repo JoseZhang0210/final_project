@@ -1,22 +1,37 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { User, Package, Heart, Settings, LogOut } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
 import { useToastStore } from "@/stores/toast";
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const toastStore = useToastStore();
 const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
+const { itemCount: cartCount } = storeToRefs(cartStore);
 
-const cartCount = ref(0);
 const hasAvatarError = ref(false);
 
 watch(avatarUrl, () => {
   hasAvatarError.value = false;
+});
+
+function loadCartSafely() {
+  cartStore.load().catch(error => console.error("購物車載入失敗：", error));
+}
+
+onMounted(() => {
+  if (isLoggedIn.value) loadCartSafely();
+});
+
+watch(isLoggedIn, loggedIn => {
+  if (loggedIn) loadCartSafely();
+  else cartStore.resetLocalState();
 });
 
 const displayName = computed(() => {

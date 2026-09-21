@@ -1,28 +1,22 @@
 package com.hotel.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
 import com.hotel.model.dto.CreateOrderItemRequest;
 import com.hotel.model.dto.MonthlyOrderStatisticsDTO;
+import com.hotel.model.dto.MonthlyProductSalesDTO;
 import com.hotel.model.dto.OrderDTO;
 import com.hotel.model.dto.OrderItemDTO;
+import com.hotel.model.entity.Account;
+import com.hotel.model.entity.CartItem;
 import com.hotel.model.entity.Coupon;
 import com.hotel.model.entity.CustomerOrder;
 import com.hotel.model.entity.Member;
 import com.hotel.model.entity.OrderItem;
 import com.hotel.model.entity.OrderItemId;
 import com.hotel.model.entity.Payment;
-import com.hotel.model.entity.Account;
 import com.hotel.model.entity.Product;
 import com.hotel.model.entity.Profile;
 import com.hotel.repository.AccountRepository;
+import com.hotel.repository.CartItemRepository;
 import com.hotel.repository.CouponRepository;
 import com.hotel.repository.CustomerOrderRepository;
 import com.hotel.repository.MemberRepository;
@@ -30,1421 +24,1125 @@ import com.hotel.repository.OrderItemRepository;
 import com.hotel.repository.PaymentRepository;
 import com.hotel.repository.ProductRepository;
 import com.hotel.repository.ProfileRepository;
-
-import lombok.RequiredArgsConstructor;
-
-import com.hotel.model.dto.MonthlyProductSalesDTO;
 import com.hotel.util.MailUtil;
-import com.hotel.model.dto.EmailDTO;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
-        private final CustomerOrderRepository customerOrderRepository;
-        private final OrderItemRepository orderItemRepository;
-        private final ProductRepository productRepository;
-        private final MemberRepository memberRepository;
-        private final ProfileRepository profileRepository;
-        private final CouponRepository couponRepository;
-        private final PaymentRepository paymentRepository;
-        private final AccountRepository accountRepository;
-        private final MailUtil mailUtil;
+  private final CustomerOrderRepository customerOrderRepository;
+  private final OrderItemRepository orderItemRepository;
+  private final ProductRepository productRepository;
+  private final MemberRepository memberRepository;
+  private final ProfileRepository profileRepository;
+  private final CouponRepository couponRepository;
+  private final PaymentRepository paymentRepository;
+  private final AccountRepository accountRepository;
+  private final MailUtil mailUtil;
+  private final CartItemRepository cartItemRepository;
 
-        // =====================================================
-        // 1. 查詢全部訂單 Entity
-        // =====================================================
-        public List<CustomerOrder> getAllOrders() {
+  // =====================================================
+  // 1. 查詢全部訂單 Entity
+  // =====================================================
+  public List<CustomerOrder> getAllOrders() {
 
-                return customerOrderRepository
-                                .findAllByOrderByOrderDateDesc();
+    return customerOrderRepository.findAllByOrderByOrderDateDesc();
+  }
+
+  // =====================================================
+  // 2. 查詢單筆訂單 Entity
+  // =====================================================
+
+  public CustomerOrder getOrderById(Integer orderId) {
+
+    return customerOrderRepository
+        .findById(orderId)
+        .orElseThrow(() -> new IllegalArgumentException("找不到訂單"));
+  }
+
+  // =====================================================
+  // 3. 查詢單筆訂單 DTO
+  //
+  // PaymentView 使用
+  // GET /api/orders/{id}
+  // =====================================================
+
+  public OrderDTO getOrderDTOById(Integer orderId) {
+
+    CustomerOrder order = customerOrderRepository.findById(orderId).orElse(null);
+
+    if (order == null) {
+      return null;
+    }
+
+    return convertToDTO(order);
+  }
+
+  // =====================================================
+  // 4. 查詢某張訂單商品
+  // =====================================================
+
+  public List<OrderItem> getOrderItems(Integer orderId) {
+
+    return orderItemRepository.findByOrderId(orderId);
+  }
+
+  // =====================================================
+  // 5. 建立訂單
+  //
+  // 商品
+  // ↓
+  // 計算 originalAmount
+  // ↓
+  // 驗證 Coupon
+  // ↓
+  // 計算 discountAmount
+  // ↓
+  // 計算 finalAmount
+  // ↓
+  // 建立 Order
+  // ↓
+  // 建立 OrderItem
+  // ↓
+  // 扣庫存
+  // =====================================================
+
+  @Transactional
+  public CustomerOrder createOrder(
+      Integer memberId, String couponCode, List<CreateOrderItemRequest> items) {
+
+    // ==============================
+    // 會員檢查
+    // ==============================
+
+    if (memberId == null || memberId <= 0) {
+
+      throw new IllegalArgumentException("會員資料不能為空");
+    }
+
+    if (!memberRepository.existsById(memberId)) {
+
+      throw new IllegalArgumentException("找不到會員");
+    }
+
+    // ==============================
+    // 商品檢查
+    // ==============================
+
+    if (items == null || items.isEmpty()) {
+
+      throw new IllegalArgumentException("訂單不能沒有商品");
+    }
+
+    int originalAmount = 0;
+
+    // ==============================
+    // 先確認商品、數量、庫存
+    // ==============================
+
+    for (CreateOrderItemRequest requestItem : items) {
+
+      if (requestItem.getProductId() == null) {
+
+        throw new IllegalArgumentException("商品編號不能為空");
+      }
+
+      if (requestItem.getQuantity() == null || requestItem.getQuantity() < 1) {
+
+        throw new IllegalArgumentException("購買數量至少為 1");
+      }
+
+      Product product =
+          productRepository
+              .findById(requestItem.getProductId())
+              .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
+
+      if (!isProductActive(product)) {
+
+        throw new IllegalArgumentException(product.getProductName() + "目前無法購買");
+      }
+
+      if (product.getStock() == null || product.getStock() < requestItem.getQuantity()) {
+
+        throw new IllegalArgumentException(product.getProductName() + "庫存不足");
+      }
+
+      originalAmount += product.getPrice() * requestItem.getQuantity();
+    }
+
+    // ==============================
+    // 優惠券
+    // ==============================
+
+    Integer couponId = null;
+
+    int discountAmount = 0;
+
+    if (couponCode != null && !couponCode.isBlank()) {
+
+      String normalizedCouponCode = couponCode.trim().toUpperCase();
+
+      Coupon coupon =
+          couponRepository
+              .findByCouponCode(normalizedCouponCode)
+              .orElseThrow(() -> new IllegalArgumentException("優惠券不存在"));
+
+      validateCoupon(coupon, originalAmount);
+
+      discountAmount = calculateDiscount(coupon, originalAmount);
+
+      couponId = coupon.getCouponId();
+    }
+
+    // ==============================
+    // 最終金額
+    // ==============================
+
+    int finalAmount = Math.max(0, originalAmount - discountAmount);
+
+    // ==============================
+    // 建立 Order
+    // ==============================
+
+    CustomerOrder order = new CustomerOrder();
+
+    order.setMemberId(memberId);
+
+    order.setOrderDate(LocalDateTime.now());
+
+    order.setOriginalAmount(originalAmount);
+
+    order.setDiscountAmount(discountAmount);
+
+    order.setFinalAmount(finalAmount);
+
+    order.setCouponId(couponId);
+
+    // 尚未建立付款資料
+    order.setPaymentId(null);
+
+    order.setOrderStatus("PENDING");
+
+    order = customerOrderRepository.save(order);
+
+    // ==============================
+    // 建立 OrderItem + 扣庫存
+    // ==============================
+
+    for (CreateOrderItemRequest requestItem : items) {
+
+      Product product =
+          productRepository
+              .findById(requestItem.getProductId())
+              .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
+
+      Integer quantity = requestItem.getQuantity();
+
+      Integer unitPrice = product.getPrice();
+
+      Integer subtotal = unitPrice * quantity;
+
+      OrderItem item = new OrderItem();
+
+      item.setOrderId(order.getOrderId());
+
+      item.setProductId(product.getProductId());
+
+      item.setQuantity(quantity);
+
+      // 記錄下單時價格
+      item.setUnitPrice(unitPrice);
+
+      item.setSubtotal(subtotal);
+
+      orderItemRepository.save(item);
+
+      // 扣庫存
+      product.setStock(product.getStock() - quantity);
+
+      updateProductStockStatus(product);
+
+      productRepository.save(product);
+    }
+
+    // 明細與庫存成功提交後才寄信，回滾時不寄送確認信。
+    Integer confirmedOrderId = order.getOrderId();
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              mailUtil.sendOrderConfirmation(confirmedOrderId, memberId);
+            } catch (Exception ex) {
+              // 訂單已提交，寄信失敗不應讓下單 API 回報失敗。
+              org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                  .error("訂單 {} 已建立，但確認信寄送失敗", confirmedOrderId, ex);
+            }
+          }
+        });
+
+    return order;
+  }
+
+  // =====================================================
+  // 6. 查詢全部訂單 DTO
+  // =====================================================
+
+  public List<OrderDTO> getAllOrderDTOs() {
+
+    List<CustomerOrder> orders = customerOrderRepository.findAllByOrderByOrderDateDesc();
+
+    List<OrderDTO> result = new ArrayList<>();
+
+    for (CustomerOrder order : orders) {
+
+      result.add(convertToDTO(order));
+    }
+
+    return result;
+  }
+
+  // =====================================================
+  // 7. 查詢會員自己的訂單
+  // =====================================================
+
+  public List<OrderDTO> getOrdersByMemberId(Integer memberId) {
+
+    if (memberId == null || memberId <= 0) {
+
+      throw new IllegalArgumentException("會員編號錯誤");
+    }
+
+    if (!memberRepository.existsById(memberId)) {
+
+      throw new IllegalArgumentException("找不到會員");
+    }
+
+    List<CustomerOrder> orders =
+        customerOrderRepository.findByMemberIdOrderByOrderDateDesc(memberId);
+
+    List<OrderDTO> result = new ArrayList<>();
+
+    for (CustomerOrder order : orders) {
+
+      result.add(convertToDTO(order));
+    }
+
+    return result;
+  }
+
+  // =====================================================
+  // 7-1. 透過帳號解析 memberId (供 Controller JWT 使用)
+  // =====================================================
+
+  public Integer resolveMemberId(String username) {
+    if (username == null || username.isBlank()) {
+      throw new IllegalArgumentException("無法取得目前登入帳號");
+    }
+
+    Account account = accountRepository.findByUsername(username.trim());
+    if (account == null) {
+      throw new IllegalArgumentException("找不到使用者帳號：" + username);
+    }
+
+    Member member =
+        memberRepository
+            .findByAccountId(account.getAccountId())
+            .orElseThrow(() -> new IllegalArgumentException("此登入帳號尚未建立會員資料，無法進行訂單操作"));
+
+    return member.getMemberId();
+  }
+
+  // =====================================================
+  // 7-2. 透過登入帳號查詢會員訂單
+  // =====================================================
+
+  public List<OrderDTO> getOrdersByUsername(String username) {
+    Integer memberId = resolveMemberId(username);
+    return getOrdersByMemberId(memberId);
+  }
+
+  // =====================================================
+  // 7-3. 透過登入帳號建立訂單
+  // =====================================================
+
+  @Transactional
+  public CustomerOrder createOrderForUser(
+      String username, String couponCode, List<CreateOrderItemRequest> items) {
+    Integer memberId = resolveMemberId(username);
+    return createOrder(memberId, couponCode, items);
+  }
+
+  @Transactional
+  public CustomerOrder createOrderFromCart(String username, String couponCode) {
+    Integer memberId = resolveMemberId(username);
+    List<CartItem> cartItems = cartItemRepository.findByMemberIdOrderByCreatedAtAsc(memberId);
+    if (cartItems.isEmpty()) {
+      throw new IllegalArgumentException("購物車沒有商品");
+    }
+    List<CreateOrderItemRequest> items =
+        cartItems.stream()
+            .map(
+                cartItem -> {
+                  CreateOrderItemRequest request = new CreateOrderItemRequest();
+                  request.setProductId(cartItem.getProductId());
+                  request.setQuantity(cartItem.getQuantity());
+                  return request;
+                })
+            .toList();
+    CustomerOrder order = createOrder(memberId, couponCode, items);
+    cartItemRepository.deleteByMemberId(memberId);
+    return order;
+  }
+
+  // =====================================================
+  // 8. 修改訂單商品數量
+  //
+  // 僅：
+  // Order = PENDING
+  // Payment != PAID
+  // =====================================================
+
+  @Transactional
+  public void updateOrderItemQuantity(Integer orderId, Integer productId, Integer quantity) {
+
+    // ==============================
+    // 數量檢查
+    // ==============================
+
+    if (quantity == null || quantity < 1) {
+
+      throw new IllegalArgumentException("數量至少為 1");
+    }
+
+    // ==============================
+    // 訂單
+    // ==============================
+
+    CustomerOrder order = getOrderById(orderId);
+
+    // ==============================
+    // 狀態檢查
+    // ==============================
+
+    if (!"PENDING".equals(order.getOrderStatus())) {
+
+      throw new IllegalArgumentException("只有待付款訂單可以修改商品");
+    }
+
+    // ==============================
+    // 已付款不可修改
+    // ==============================
+
+    if (isOrderPaid(order)) {
+
+      throw new IllegalArgumentException("訂單已付款，無法修改商品");
+    }
+
+    // ==============================
+    // 訂單商品
+    // ==============================
+
+    OrderItemId id = new OrderItemId(orderId, productId);
+
+    OrderItem item =
+        orderItemRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到訂單商品"));
+
+    // ==============================
+    // 商品
+    // ==============================
+
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
+
+    int oldQuantity = item.getQuantity();
+
+    int difference = quantity - oldQuantity;
+
+    // 沒有變更
+    if (difference == 0) {
+      return;
+    }
+
+    // ==============================
+    // 增加數量
+    // ==============================
+
+    if (difference > 0) {
+
+      if (product.getStock() == null || product.getStock() < difference) {
+
+        throw new IllegalArgumentException("商品庫存不足");
+      }
+
+      product.setStock(product.getStock() - difference);
+    }
+
+    // ==============================
+    // 減少數量
+    // ==============================
+
+    if (difference < 0) {
+
+      int currentStock = product.getStock() == null ? 0 : product.getStock();
+
+      product.setStock(currentStock + Math.abs(difference));
+    }
+
+    updateProductStockStatus(product);
+
+    // ==============================
+    // 更新 OrderItem
+    // ==============================
+
+    item.setQuantity(quantity);
+
+    item.setSubtotal(item.getUnitPrice() * quantity);
+
+    orderItemRepository.save(item);
+
+    productRepository.save(product);
+
+    // ==============================
+    // 重算訂單金額
+    // ==============================
+
+    recalculateOrderAmount(order);
+  }
+
+  // =====================================================
+  // 9. 刪除訂單商品
+  //
+  // 僅：
+  // Order = PENDING
+  // Payment != PAID
+  //
+  // 訂單至少保留一個商品
+  // =====================================================
+
+  @Transactional
+  public void deleteOrderItem(Integer orderId, Integer productId) {
+
+    CustomerOrder order = getOrderById(orderId);
+
+    // ==============================
+    // 狀態
+    // ==============================
+
+    if (!"PENDING".equals(order.getOrderStatus())) {
+
+      throw new IllegalArgumentException("只有待付款訂單可以修改商品");
+    }
+
+    // ==============================
+    // 已付款
+    // ==============================
+
+    if (isOrderPaid(order)) {
+
+      throw new IllegalArgumentException("訂單已付款，無法刪除商品");
+    }
+
+    // ==============================
+    // 至少保留一項商品
+    // ==============================
+
+    List<OrderItem> currentItems = orderItemRepository.findByOrderId(orderId);
+
+    if (currentItems.size() <= 1) {
+
+      throw new IllegalArgumentException("訂單至少需要保留一項商品，如不需要此訂單請取消訂單");
+    }
+
+    // ==============================
+    // 找訂單商品
+    // ==============================
+
+    OrderItemId id = new OrderItemId(orderId, productId);
+
+    OrderItem item =
+        orderItemRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("找不到訂單商品"));
+
+    // ==============================
+    // 找商品
+    // ==============================
+
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
+
+    // ==============================
+    // 庫存補回
+    // ==============================
+
+    int currentStock = product.getStock() == null ? 0 : product.getStock();
+
+    product.setStock(currentStock + item.getQuantity());
+
+    updateProductStockStatus(product);
+
+    productRepository.save(product);
+
+    // ==============================
+    // 刪除訂單商品
+    // ==============================
+
+    orderItemRepository.delete(item);
+
+    orderItemRepository.flush();
+
+    // ==============================
+    // 重算訂單
+    // ==============================
+
+    recalculateOrderAmount(order);
+  }
+
+  // =====================================================
+  // 10. 取消訂單
+  //
+  // 僅：
+  // Order = PENDING
+  // Payment != PAID
+  //
+  // 取消後補回庫存
+  // =====================================================
+
+  @Transactional
+  public void cancelOrder(Integer orderId) {
+
+    CustomerOrder order = getOrderById(orderId);
+
+    // ==============================
+    // 已完成
+    // ==============================
+
+    if ("COMPLETED".equals(order.getOrderStatus())) {
+
+      throw new IllegalArgumentException("已完成訂單不能取消");
+    }
+
+    // ==============================
+    // 已取消
+    // ==============================
+
+    if ("CANCELLED".equals(order.getOrderStatus())) {
+
+      throw new IllegalArgumentException("訂單已經取消");
+    }
+
+    // ==============================
+    // 只有 PENDING
+    // ==============================
+
+    if (!"PENDING".equals(order.getOrderStatus())) {
+
+      throw new IllegalArgumentException("此訂單目前無法取消");
+    }
+
+    // ==============================
+    // 已付款不可取消
+    // ==============================
+
+    if (isOrderPaid(order)) {
+
+      throw new IllegalArgumentException("訂單已完成付款，無法取消");
+    }
+
+    // ==============================
+    // 補回庫存
+    // ==============================
+
+    restoreOrderStock(orderId);
+
+    // ==============================
+    // 改狀態
+    // ==============================
+
+    order.setOrderStatus("CANCELLED");
+
+    customerOrderRepository.save(order);
+  }
+
+  // =====================================================
+  // 11. 後台修改訂單狀態
+  //
+  // 正常流程：
+  //
+  // PENDING + PAID
+  // ↓
+  // COMPLETED
+  //
+  // PENDING + 未付款
+  // ↓
+  // CANCELLED
+  //
+  // COMPLETED / CANCELLED
+  // 都視為終態
+  // =====================================================
+
+  @Transactional
+  public void updateOrderStatus(Integer orderId, String status) {
+
+    CustomerOrder order = getOrderById(orderId);
+
+    // ==============================
+    // status 基本檢查
+    // ==============================
+
+    if (status == null || status.isBlank()) {
+
+      throw new IllegalArgumentException("訂單狀態不能為空");
+    }
+
+    String newStatus = status.trim().toUpperCase();
+
+    if (!"PENDING".equals(newStatus)
+        && !"COMPLETED".equals(newStatus)
+        && !"CANCELLED".equals(newStatus)) {
+
+      throw new IllegalArgumentException("不支援的訂單狀態");
+    }
+
+    String oldStatus = order.getOrderStatus();
+
+    // ==============================
+    // 無變更
+    // ==============================
+
+    if (newStatus.equals(oldStatus)) {
+
+      return;
+    }
+
+    // ==============================
+    // 已完成不能改
+    // ==============================
+
+    if ("COMPLETED".equals(oldStatus)) {
+
+      throw new IllegalArgumentException("已完成訂單不能再變更狀態");
+    }
+
+    // ==============================
+    // 已取消不能恢復
+    // ==============================
+
+    if ("CANCELLED".equals(oldStatus)) {
+
+      throw new IllegalArgumentException("已取消訂單不能恢復");
+    }
+
+    // ==============================
+    // PENDING → COMPLETED
+    // 必須已付款
+    // ==============================
+
+    if ("COMPLETED".equals(newStatus)) {
+
+      if (!isOrderPaid(order)) {
+
+        throw new IllegalArgumentException("訂單尚未付款，不能完成訂單");
+      }
+
+      order.setOrderStatus("COMPLETED");
+
+      customerOrderRepository.save(order);
+
+      return;
+    }
+
+    // ==============================
+    // PENDING → CANCELLED
+    // 已付款不可取消
+    // ==============================
+
+    if ("CANCELLED".equals(newStatus)) {
+
+      if (isOrderPaid(order)) {
+
+        throw new IllegalArgumentException("訂單已付款，無法取消");
+      }
+
+      restoreOrderStock(orderId);
+
+      order.setOrderStatus("CANCELLED");
+
+      customerOrderRepository.save(order);
+
+      return;
+    }
+
+    // ==============================
+    // 其他轉換不允許
+    // ==============================
+
+    throw new IllegalArgumentException("不允許的訂單狀態變更");
+  }
+
+  // =====================================================
+  // 12. 清除測試訂單
+  //
+  // 僅測試使用
+  // =====================================================
+
+  @Transactional
+  public void clearAllOrders() {
+
+    orderItemRepository.deleteAll();
+
+    customerOrderRepository.deleteAll();
+  }
+
+  // =====================================================
+  // 13. 優惠券驗證
+  // =====================================================
+
+  private void validateCoupon(Coupon coupon, int originalAmount) {
+
+    if (!"ACTIVE".equals(coupon.getStatus())) {
+
+      throw new IllegalArgumentException("優惠券目前未啟用");
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+
+    if (now.isBefore(coupon.getStartDate())) {
+
+      throw new IllegalArgumentException("優惠券尚未開始使用");
+    }
+
+    if (now.isAfter(coupon.getEndDate())) {
+
+      throw new IllegalArgumentException("優惠券已過期");
+    }
+
+    if (originalAmount < coupon.getMinimumAmount()) {
+
+      throw new IllegalArgumentException("未達優惠券最低消費金額");
+    }
+  }
+
+  // =====================================================
+  // 14. 計算優惠券折扣
+  // =====================================================
+
+  private int calculateDiscount(Coupon coupon, int originalAmount) {
+
+    int discountAmount;
+
+    // 百分比
+    if ("PERCENT".equals(coupon.getDiscountType())) {
+
+      discountAmount = originalAmount * coupon.getDiscountValue() / 100;
+    }
+
+    // 固定金額
+    else if ("FIXED".equals(coupon.getDiscountType())) {
+
+      discountAmount = coupon.getDiscountValue();
+    } else {
+
+      throw new IllegalArgumentException("優惠券折扣類型錯誤");
+    }
+
+    return Math.min(discountAmount, originalAmount);
+  }
+
+  // =====================================================
+  // 15. 修改商品後重新計算訂單金額
+  // =====================================================
+
+  private void recalculateOrderAmount(CustomerOrder order) {
+
+    List<OrderItem> items = orderItemRepository.findByOrderId(order.getOrderId());
+
+    int originalAmount = items.stream().mapToInt(OrderItem::getSubtotal).sum();
+
+    int discountAmount = 0;
+
+    // ==============================
+    // 原訂單有優惠券
+    // ==============================
+
+    if (order.getCouponId() != null) {
+
+      Coupon coupon = couponRepository.findById(order.getCouponId()).orElse(null);
+
+      if (coupon != null) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        boolean couponStillValid =
+            "ACTIVE".equals(coupon.getStatus())
+                && !now.isBefore(coupon.getStartDate())
+                && !now.isAfter(coupon.getEndDate())
+                && originalAmount >= coupon.getMinimumAmount();
+
+        if (couponStillValid) {
+
+          discountAmount = calculateDiscount(coupon, originalAmount);
+
+        } else {
+
+          // 修改訂單後不再符合優惠券
+          order.setCouponId(null);
         }
 
-        // =====================================================
-        // 2. 查詢單筆訂單 Entity
-        // =====================================================
+      } else {
 
-        public CustomerOrder getOrderById(
-                        Integer orderId) {
+        order.setCouponId(null);
+      }
+    }
 
-                return customerOrderRepository
-                                .findById(orderId)
-                                .orElseThrow(
-                                                () -> new IllegalArgumentException(
-                                                                "找不到訂單"));
+    order.setOriginalAmount(originalAmount);
+
+    order.setDiscountAmount(discountAmount);
+
+    order.setFinalAmount(Math.max(0, originalAmount - discountAmount));
+
+    customerOrderRepository.save(order);
+  }
+
+  // =====================================================
+  // 16. 取消訂單補回庫存
+  // =====================================================
+
+  private void restoreOrderStock(Integer orderId) {
+
+    List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+
+    for (OrderItem item : items) {
+
+      Product product = productRepository.findById(item.getProductId()).orElse(null);
+
+      if (product == null) {
+        continue;
+      }
+
+      int currentStock = product.getStock() == null ? 0 : product.getStock();
+
+      product.setStock(currentStock + item.getQuantity());
+
+      updateProductStockStatus(product);
+
+      productRepository.save(product);
+    }
+  }
+
+  // =====================================================
+  // 17. 是否已付款
+  // =====================================================
+
+  private boolean isOrderPaid(CustomerOrder order) {
+
+    if (order == null) {
+
+      return false;
+    }
+
+    if (order.getPaymentId() == null) {
+
+      return false;
+    }
+
+    Payment payment = paymentRepository.findById(order.getPaymentId()).orElse(null);
+
+    if (payment == null) {
+
+      return false;
+    }
+
+    return "PAID".equals(payment.getPaymentStatus());
+  }
+
+  // =====================================================
+  // 18. 更新商品庫存狀態
+  // =====================================================
+
+  private void updateProductStockStatus(Product product) {
+
+    if (product.getStock() != null && product.getStock() <= 0) {
+
+      product.setStatus("OUT_OF_STOCK");
+
+    } else if ("OUT_OF_STOCK".equals(product.getStatus())) {
+
+      product.setStatus("ACTIVE");
+    }
+  }
+
+  // =====================================================
+  // 19. 商品是否可以購買
+  // =====================================================
+
+  private boolean isProductActive(Product product) {
+
+    String status = product.getStatus();
+
+    return "ACTIVE".equals(status) || "上架".equals(status) || "上架中".equals(status);
+  }
+
+  // =====================================================
+  // 20. CustomerOrder → OrderDTO
+  // =====================================================
+
+  private OrderDTO convertToDTO(CustomerOrder order) {
+
+    // =====================================================
+    // 1. 會員資料
+    // =====================================================
+
+    String memberName = "查無會員資料";
+
+    String memberPhone = "";
+
+    String memberEmail = "";
+
+    if (order.getMemberId() != null) {
+
+      Member member = memberRepository.findById(order.getMemberId()).orElse(null);
+
+      if (member != null) {
+
+        Profile profile = profileRepository.findByAccountId(member.getAccountId()).orElse(null);
+
+        if (profile != null) {
+
+          memberName = profile.getName();
+
+          memberPhone = profile.getPhone();
+
+          memberEmail = profile.getEmail();
         }
+      }
+    }
 
-        // =====================================================
-        // 3. 查詢單筆訂單 DTO
-        //
-        // PaymentView 使用
-        // GET /api/orders/{id}
-        // =====================================================
-
-        public OrderDTO getOrderDTOById(
-                        Integer orderId) {
-
-                CustomerOrder order = customerOrderRepository
-                                .findById(orderId)
-                                .orElse(null);
-
-                if (order == null) {
-                        return null;
-                }
-
-                return convertToDTO(
-                                order);
-        }
-
-        // =====================================================
-        // 4. 查詢某張訂單商品
-        // =====================================================
-
-        public List<OrderItem> getOrderItems(
-                        Integer orderId) {
-
-                return orderItemRepository
-                                .findByOrderId(
-                                                orderId);
-        }
-
-        // =====================================================
-        // 5. 建立訂單
-        //
-        // 商品
-        // ↓
-        // 計算 originalAmount
-        // ↓
-        // 驗證 Coupon
-        // ↓
-        // 計算 discountAmount
-        // ↓
-        // 計算 finalAmount
-        // ↓
-        // 建立 Order
-        // ↓
-        // 建立 OrderItem
-        // ↓
-        // 扣庫存
-        // =====================================================
-
-        @Transactional
-        public CustomerOrder createOrder(
-                        Integer memberId,
-                        String couponCode,
-                        List<CreateOrderItemRequest> items) {
-
-                // ==============================
-                // 會員檢查
-                // ==============================
-
-                if (memberId == null ||
-                                memberId <= 0) {
-
-                        throw new IllegalArgumentException(
-                                        "會員資料不能為空");
-                }
-
-                if (!memberRepository
-                                .existsById(
-                                                memberId)) {
-
-                        throw new IllegalArgumentException(
-                                        "找不到會員");
-                }
-
-                // ==============================
-                // 商品檢查
-                // ==============================
-
-                if (items == null ||
-                                items.isEmpty()) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單不能沒有商品");
-                }
-
-                int originalAmount = 0;
-
-                // ==============================
-                // 先確認商品、數量、庫存
-                // ==============================
-
-                for (CreateOrderItemRequest requestItem : items) {
-
-                        if (requestItem.getProductId() == null) {
-
-                                throw new IllegalArgumentException(
-                                                "商品編號不能為空");
-                        }
+    // =====================================================
+    // 2. 訂單商品
+    // =====================================================
 
-                        if (requestItem.getQuantity() == null
-                                        ||
-                                        requestItem.getQuantity() < 1) {
+    List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getOrderId());
 
-                                throw new IllegalArgumentException(
-                                                "購買數量至少為 1");
-                        }
+    List<OrderItemDTO> itemDTOs = new ArrayList<>();
 
-                        Product product = productRepository
-                                        .findById(
-                                                        requestItem
-                                                                        .getProductId())
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "找不到商品"));
+    for (OrderItem item : orderItems) {
 
-                        if (!isProductActive(
-                                        product)) {
+      Product product = productRepository.findById(item.getProductId()).orElse(null);
 
-                                throw new IllegalArgumentException(
-                                                product.getProductName()
-                                                                + "目前無法購買");
-                        }
+      if (product == null) {
+        continue;
+      }
 
-                        if (product.getStock() == null
-                                        ||
-                                        product.getStock() < requestItem.getQuantity()) {
+      Integer unitPrice = item.getUnitPrice();
 
-                                throw new IllegalArgumentException(
-                                                product.getProductName()
-                                                                + "庫存不足");
-                        }
+      Integer quantity = item.getQuantity();
 
-                        originalAmount += product.getPrice()
-                                        *
-                                        requestItem
-                                                        .getQuantity();
-                }
+      Integer subtotal = item.getSubtotal();
 
-                // ==============================
-                // 優惠券
-                // ==============================
+      OrderItemDTO itemDTO =
+          new OrderItemDTO(
+              item.getProductId(), product.getProductName(), unitPrice, quantity, subtotal);
 
-                Integer couponId = null;
+      itemDTOs.add(itemDTO);
+    }
 
-                int discountAmount = 0;
+    // =====================================================
+    // 3. 付款狀態
+    // =====================================================
 
-                if (couponCode != null
-                                &&
-                                !couponCode.isBlank()) {
+    String paymentStatus = null;
 
-                        String normalizedCouponCode = couponCode
-                                        .trim()
-                                        .toUpperCase();
+    if (order.getPaymentId() != null) {
 
-                        Coupon coupon = couponRepository
-                                        .findByCouponCode(
-                                                        normalizedCouponCode)
-                                        .orElseThrow(
-                                                        () -> new IllegalArgumentException(
-                                                                        "優惠券不存在"));
+      Payment payment = paymentRepository.findById(order.getPaymentId()).orElse(null);
 
-                        validateCoupon(
-                                        coupon,
-                                        originalAmount);
+      if (payment != null) {
 
-                        discountAmount = calculateDiscount(
-                                        coupon,
-                                        originalAmount);
+        paymentStatus = payment.getPaymentStatus();
+      }
+    }
 
-                        couponId = coupon.getCouponId();
-                }
+    // =====================================================
+    // 4. OrderDTO
+    // =====================================================
 
-                // ==============================
-                // 最終金額
-                // ==============================
+    return new OrderDTO(
+        order.getOrderId(),
+        memberName,
+        memberPhone,
+        memberEmail,
+        order.getOriginalAmount(),
+        order.getDiscountAmount(),
+        order.getFinalAmount(),
+        order.getOrderStatus(),
+        paymentStatus,
+        order.getOrderDate(),
+        itemDTOs);
+  }
 
-                int finalAmount = Math.max(
-                                0,
-                                originalAmount
-                                                -
-                                                discountAmount);
+  public List<MonthlyOrderStatisticsDTO> getMonthlyOrderStatistics() {
 
-                // ==============================
-                // 建立 Order
-                // ==============================
+    List<Object[]> rows = customerOrderRepository.findMonthlyOrderStatistics();
 
-                CustomerOrder order = new CustomerOrder();
+    List<MonthlyOrderStatisticsDTO> result = new ArrayList<>();
 
-                order.setMemberId(memberId);
+    for (Object[] row : rows) {
 
-                order.setOrderDate(LocalDateTime.now());
+      Integer year = ((Number) row[0]).intValue();
 
-                order.setOriginalAmount(originalAmount);
+      Integer month = ((Number) row[1]).intValue();
 
-                order.setDiscountAmount(discountAmount);
+      Long orderCount = ((Number) row[2]).longValue();
 
-                order.setFinalAmount(finalAmount);
+      Long totalRevenue = ((Number) row[3]).longValue();
 
-                order.setCouponId(couponId);
+      result.add(new MonthlyOrderStatisticsDTO(year, month, orderCount, totalRevenue));
+    }
 
-                // 尚未建立付款資料
-                order.setPaymentId(null);
+    return result;
+  }
 
-                order.setOrderStatus("PENDING");
+  public List<MonthlyProductSalesDTO> getMonthlyProductSales(Integer year, Integer month) {
 
-                order = customerOrderRepository.save(order);
+    if (year == null || year < 2000) {
 
-                // ==============================
-                // 建立 OrderItem + 扣庫存
-                // ==============================
+      throw new IllegalArgumentException("年份格式錯誤");
+    }
 
-                for (CreateOrderItemRequest requestItem : items) {
+    if (month == null || month < 1 || month > 12) {
 
-                        Product product = productRepository
-                                        .findById(requestItem.getProductId())
-                                        .orElseThrow(() -> new IllegalArgumentException("找不到商品"));
+      throw new IllegalArgumentException("月份必須介於 1 到 12");
+    }
 
-                        Integer quantity = requestItem.getQuantity();
+    List<Object[]> rows = customerOrderRepository.findMonthlyProductSales(year, month);
 
-                        Integer unitPrice = product.getPrice();
+    List<MonthlyProductSalesDTO> result = new ArrayList<>();
 
-                        Integer subtotal = unitPrice
-                                        *
-                                        quantity;
+    for (Object[] row : rows) {
 
-                        OrderItem item = new OrderItem();
+      Integer productId = ((Number) row[0]).intValue();
 
-                        item.setOrderId(order.getOrderId());
+      String productName = String.valueOf(row[1]);
 
-                        item.setProductId(product.getProductId());
+      Long quantitySold = ((Number) row[2]).longValue();
 
-                        item.setQuantity(quantity);
+      Long salesAmount = ((Number) row[3]).longValue();
 
-                        // 記錄下單時價格
-                        item.setUnitPrice(unitPrice);
+      result.add(new MonthlyProductSalesDTO(productId, productName, quantitySold, salesAmount));
+    }
 
-                        item.setSubtotal(subtotal);
-
-                        orderItemRepository.save(item);
-
-                        // 扣庫存
-                        product.setStock(product.getStock() - quantity);
-
-                        updateProductStockStatus(product);
-
-                        productRepository.save(product);
-                }
-
-                // 明細與庫存成功提交後才寄信，回滾時不寄送確認信。
-                Integer confirmedOrderId = order.getOrderId();
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                                try {
-                                        mailUtil.sendOrderConfirmation(confirmedOrderId, memberId);
-                                } catch (Exception ex) {
-                                        // 訂單已提交，寄信失敗不應讓下單 API 回報失敗。
-                                        org.slf4j.LoggerFactory.getLogger(OrderService.class)
-                                                        .error("訂單 {} 已建立，但確認信寄送失敗", confirmedOrderId, ex);
-                                }
-                        }
-                });
-
-                return order;
-        }
-
-        // =====================================================
-        // 6. 查詢全部訂單 DTO
-        // =====================================================
-
-        public List<OrderDTO> getAllOrderDTOs() {
-
-                List<CustomerOrder> orders = customerOrderRepository
-                                .findAllByOrderByOrderDateDesc();
-
-                List<OrderDTO> result = new ArrayList<>();
-
-                for (CustomerOrder order : orders) {
-
-                        result.add(convertToDTO(order));
-                }
-
-                return result;
-        }
-
-        // =====================================================
-        // 7. 查詢會員自己的訂單
-        // =====================================================
-
-        public List<OrderDTO> getOrdersByMemberId(
-                        Integer memberId) {
-
-                if (memberId == null ||
-                                memberId <= 0) {
-
-                        throw new IllegalArgumentException(
-                                        "會員編號錯誤");
-                }
-
-                if (!memberRepository
-                                .existsById(memberId)) {
-
-                        throw new IllegalArgumentException(
-                                        "找不到會員");
-                }
-
-                List<CustomerOrder> orders = customerOrderRepository
-                                .findByMemberIdOrderByOrderDateDesc(
-                                                memberId);
-
-                List<OrderDTO> result = new ArrayList<>();
-
-                for (CustomerOrder order : orders) {
-
-                        result.add(convertToDTO(order));
-                }
-
-                return result;
-        }
-
-        // =====================================================
-        // 7-1. 透過帳號解析 memberId (供 Controller JWT 使用)
-        // =====================================================
-
-        public Integer resolveMemberId(String username) {
-                if (username == null || username.isBlank()) {
-                        throw new IllegalArgumentException("無法取得目前登入帳號");
-                }
-
-                Account account = accountRepository.findByUsername(username.trim());
-                if (account == null) {
-                        throw new IllegalArgumentException("找不到使用者帳號：" + username);
-                }
-
-                Member member = memberRepository.findByAccountId(account.getAccountId())
-                                .orElseThrow(() -> new IllegalArgumentException("此登入帳號尚未建立會員資料，無法進行訂單操作"));
-
-                return member.getMemberId();
-        }
-
-        // =====================================================
-        // 7-2. 透過登入帳號查詢會員訂單
-        // =====================================================
-
-        public List<OrderDTO> getOrdersByUsername(String username) {
-                Integer memberId = resolveMemberId(username);
-                return getOrdersByMemberId(memberId);
-        }
-
-        // =====================================================
-        // 7-3. 透過登入帳號建立訂單
-        // =====================================================
-
-        @Transactional
-        public CustomerOrder createOrderForUser(
-                        String username,
-                        String couponCode,
-                        List<CreateOrderItemRequest> items) {
-                Integer memberId = resolveMemberId(username);
-                return createOrder(memberId, couponCode, items);
-        }
-
-        // =====================================================
-        // 8. 修改訂單商品數量
-        //
-        // 僅：
-        // Order = PENDING
-        // Payment != PAID
-        // =====================================================
-
-        @Transactional
-        public void updateOrderItemQuantity(
-                        Integer orderId,
-                        Integer productId,
-                        Integer quantity) {
-
-                // ==============================
-                // 數量檢查
-                // ==============================
-
-                if (quantity == null ||
-                                quantity < 1) {
-
-                        throw new IllegalArgumentException(
-                                        "數量至少為 1");
-                }
-
-                // ==============================
-                // 訂單
-                // ==============================
-
-                CustomerOrder order = getOrderById(
-                                orderId);
-
-                // ==============================
-                // 狀態檢查
-                // ==============================
-
-                if (!"PENDING".equals(
-                                order.getOrderStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "只有待付款訂單可以修改商品");
-                }
-
-                // ==============================
-                // 已付款不可修改
-                // ==============================
-
-                if (isOrderPaid(
-                                order)) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單已付款，無法修改商品");
-                }
-
-                // ==============================
-                // 訂單商品
-                // ==============================
-
-                OrderItemId id = new OrderItemId(
-                                orderId,
-                                productId);
-
-                OrderItem item = orderItemRepository
-                                .findById(id)
-                                .orElseThrow(
-                                                () -> new IllegalArgumentException(
-                                                                "找不到訂單商品"));
-
-                // ==============================
-                // 商品
-                // ==============================
-
-                Product product = productRepository
-                                .findById(
-                                                productId)
-                                .orElseThrow(
-                                                () -> new IllegalArgumentException(
-                                                                "找不到商品"));
-
-                int oldQuantity = item.getQuantity();
-
-                int difference = quantity
-                                -
-                                oldQuantity;
-
-                // 沒有變更
-                if (difference == 0) {
-                        return;
-                }
-
-                // ==============================
-                // 增加數量
-                // ==============================
-
-                if (difference > 0) {
-
-                        if (product.getStock() == null
-                                        ||
-                                        product.getStock() < difference) {
-
-                                throw new IllegalArgumentException(
-                                                "商品庫存不足");
-                        }
-
-                        product.setStock(
-                                        product.getStock()
-                                                        -
-                                                        difference);
-                }
-
-                // ==============================
-                // 減少數量
-                // ==============================
-
-                if (difference < 0) {
-
-                        int currentStock = product.getStock() == null
-                                        ? 0
-                                        : product.getStock();
-
-                        product.setStock(
-                                        currentStock
-                                                        +
-                                                        Math.abs(
-                                                                        difference));
-                }
-
-                updateProductStockStatus(
-                                product);
-
-                // ==============================
-                // 更新 OrderItem
-                // ==============================
-
-                item.setQuantity(
-                                quantity);
-
-                item.setSubtotal(
-                                item.getUnitPrice()
-                                                *
-                                                quantity);
-
-                orderItemRepository
-                                .save(
-                                                item);
-
-                productRepository
-                                .save(
-                                                product);
-
-                // ==============================
-                // 重算訂單金額
-                // ==============================
-
-                recalculateOrderAmount(
-                                order);
-        }
-
-        // =====================================================
-        // 9. 刪除訂單商品
-        //
-        // 僅：
-        // Order = PENDING
-        // Payment != PAID
-        //
-        // 訂單至少保留一個商品
-        // =====================================================
-
-        @Transactional
-        public void deleteOrderItem(
-                        Integer orderId,
-                        Integer productId) {
-
-                CustomerOrder order = getOrderById(
-                                orderId);
-
-                // ==============================
-                // 狀態
-                // ==============================
-
-                if (!"PENDING".equals(
-                                order.getOrderStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "只有待付款訂單可以修改商品");
-                }
-
-                // ==============================
-                // 已付款
-                // ==============================
-
-                if (isOrderPaid(
-                                order)) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單已付款，無法刪除商品");
-                }
-
-                // ==============================
-                // 至少保留一項商品
-                // ==============================
-
-                List<OrderItem> currentItems = orderItemRepository
-                                .findByOrderId(
-                                                orderId);
-
-                if (currentItems.size() <= 1) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單至少需要保留一項商品，如不需要此訂單請取消訂單");
-                }
-
-                // ==============================
-                // 找訂單商品
-                // ==============================
-
-                OrderItemId id = new OrderItemId(
-                                orderId,
-                                productId);
-
-                OrderItem item = orderItemRepository
-                                .findById(id)
-                                .orElseThrow(
-                                                () -> new IllegalArgumentException(
-                                                                "找不到訂單商品"));
-
-                // ==============================
-                // 找商品
-                // ==============================
-
-                Product product = productRepository
-                                .findById(
-                                                productId)
-                                .orElseThrow(
-                                                () -> new IllegalArgumentException(
-                                                                "找不到商品"));
-
-                // ==============================
-                // 庫存補回
-                // ==============================
-
-                int currentStock = product.getStock() == null
-                                ? 0
-                                : product.getStock();
-
-                product.setStock(
-                                currentStock
-                                                +
-                                                item.getQuantity());
-
-                updateProductStockStatus(
-                                product);
-
-                productRepository
-                                .save(
-                                                product);
-
-                // ==============================
-                // 刪除訂單商品
-                // ==============================
-
-                orderItemRepository
-                                .delete(
-                                                item);
-
-                orderItemRepository
-                                .flush();
-
-                // ==============================
-                // 重算訂單
-                // ==============================
-
-                recalculateOrderAmount(
-                                order);
-        }
-
-        // =====================================================
-        // 10. 取消訂單
-        //
-        // 僅：
-        // Order = PENDING
-        // Payment != PAID
-        //
-        // 取消後補回庫存
-        // =====================================================
-
-        @Transactional
-        public void cancelOrder(
-                        Integer orderId) {
-
-                CustomerOrder order = getOrderById(
-                                orderId);
-
-                // ==============================
-                // 已完成
-                // ==============================
-
-                if ("COMPLETED".equals(
-                                order.getOrderStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "已完成訂單不能取消");
-                }
-
-                // ==============================
-                // 已取消
-                // ==============================
-
-                if ("CANCELLED".equals(
-                                order.getOrderStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單已經取消");
-                }
-
-                // ==============================
-                // 只有 PENDING
-                // ==============================
-
-                if (!"PENDING".equals(
-                                order.getOrderStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "此訂單目前無法取消");
-                }
-
-                // ==============================
-                // 已付款不可取消
-                // ==============================
-
-                if (isOrderPaid(
-                                order)) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單已完成付款，無法取消");
-                }
-
-                // ==============================
-                // 補回庫存
-                // ==============================
-
-                restoreOrderStock(
-                                orderId);
-
-                // ==============================
-                // 改狀態
-                // ==============================
-
-                order.setOrderStatus(
-                                "CANCELLED");
-
-                customerOrderRepository
-                                .save(
-                                                order);
-        }
-
-        // =====================================================
-        // 11. 後台修改訂單狀態
-        //
-        // 正常流程：
-        //
-        // PENDING + PAID
-        // ↓
-        // COMPLETED
-        //
-        // PENDING + 未付款
-        // ↓
-        // CANCELLED
-        //
-        // COMPLETED / CANCELLED
-        // 都視為終態
-        // =====================================================
-
-        @Transactional
-        public void updateOrderStatus(
-                        Integer orderId,
-                        String status) {
-
-                CustomerOrder order = getOrderById(
-                                orderId);
-
-                // ==============================
-                // status 基本檢查
-                // ==============================
-
-                if (status == null ||
-                                status.isBlank()) {
-
-                        throw new IllegalArgumentException(
-                                        "訂單狀態不能為空");
-                }
-
-                String newStatus = status
-                                .trim()
-                                .toUpperCase();
-
-                if (!"PENDING".equals(
-                                newStatus)
-                                &&
-                                !"COMPLETED".equals(
-                                                newStatus)
-                                &&
-                                !"CANCELLED".equals(
-                                                newStatus)) {
-
-                        throw new IllegalArgumentException(
-                                        "不支援的訂單狀態");
-                }
-
-                String oldStatus = order.getOrderStatus();
-
-                // ==============================
-                // 無變更
-                // ==============================
-
-                if (newStatus.equals(
-                                oldStatus)) {
-
-                        return;
-                }
-
-                // ==============================
-                // 已完成不能改
-                // ==============================
-
-                if ("COMPLETED".equals(
-                                oldStatus)) {
-
-                        throw new IllegalArgumentException(
-                                        "已完成訂單不能再變更狀態");
-                }
-
-                // ==============================
-                // 已取消不能恢復
-                // ==============================
-
-                if ("CANCELLED".equals(
-                                oldStatus)) {
-
-                        throw new IllegalArgumentException(
-                                        "已取消訂單不能恢復");
-                }
-
-                // ==============================
-                // PENDING → COMPLETED
-                // 必須已付款
-                // ==============================
-
-                if ("COMPLETED".equals(
-                                newStatus)) {
-
-                        if (!isOrderPaid(
-                                        order)) {
-
-                                throw new IllegalArgumentException(
-                                                "訂單尚未付款，不能完成訂單");
-                        }
-
-                        order.setOrderStatus(
-                                        "COMPLETED");
-
-                        customerOrderRepository
-                                        .save(
-                                                        order);
-
-                        return;
-                }
-
-                // ==============================
-                // PENDING → CANCELLED
-                // 已付款不可取消
-                // ==============================
-
-                if ("CANCELLED".equals(
-                                newStatus)) {
-
-                        if (isOrderPaid(
-                                        order)) {
-
-                                throw new IllegalArgumentException(
-                                                "訂單已付款，無法取消");
-                        }
-
-                        restoreOrderStock(
-                                        orderId);
-
-                        order.setOrderStatus(
-                                        "CANCELLED");
-
-                        customerOrderRepository
-                                        .save(
-                                                        order);
-
-                        return;
-                }
-
-                // ==============================
-                // 其他轉換不允許
-                // ==============================
-
-                throw new IllegalArgumentException(
-                                "不允許的訂單狀態變更");
-        }
-
-        // =====================================================
-        // 12. 清除測試訂單
-        //
-        // 僅測試使用
-        // =====================================================
-
-        @Transactional
-        public void clearAllOrders() {
-
-                orderItemRepository
-                                .deleteAll();
-
-                customerOrderRepository
-                                .deleteAll();
-        }
-
-        // =====================================================
-        // 13. 優惠券驗證
-        // =====================================================
-
-        private void validateCoupon(
-                        Coupon coupon,
-                        int originalAmount) {
-
-                if (!"ACTIVE".equals(
-                                coupon.getStatus())) {
-
-                        throw new IllegalArgumentException(
-                                        "優惠券目前未啟用");
-                }
-
-                LocalDateTime now = LocalDateTime.now();
-
-                if (now.isBefore(
-                                coupon.getStartDate())) {
-
-                        throw new IllegalArgumentException(
-                                        "優惠券尚未開始使用");
-                }
-
-                if (now.isAfter(
-                                coupon.getEndDate())) {
-
-                        throw new IllegalArgumentException(
-                                        "優惠券已過期");
-                }
-
-                if (originalAmount < coupon.getMinimumAmount()) {
-
-                        throw new IllegalArgumentException(
-                                        "未達優惠券最低消費金額");
-                }
-        }
-
-        // =====================================================
-        // 14. 計算優惠券折扣
-        // =====================================================
-
-        private int calculateDiscount(
-                        Coupon coupon,
-                        int originalAmount) {
-
-                int discountAmount;
-
-                // 百分比
-                if ("PERCENT".equals(
-                                coupon.getDiscountType())) {
-
-                        discountAmount = originalAmount
-                                        *
-                                        coupon.getDiscountValue()
-                                        /
-                                        100;
-                }
-
-                // 固定金額
-                else if ("FIXED".equals(
-                                coupon.getDiscountType())) {
-
-                        discountAmount = coupon.getDiscountValue();
-                }
-
-                else {
-
-                        throw new IllegalArgumentException(
-                                        "優惠券折扣類型錯誤");
-                }
-
-                return Math.min(
-                                discountAmount,
-                                originalAmount);
-        }
-
-        // =====================================================
-        // 15. 修改商品後重新計算訂單金額
-        // =====================================================
-
-        private void recalculateOrderAmount(
-                        CustomerOrder order) {
-
-                List<OrderItem> items = orderItemRepository
-                                .findByOrderId(
-                                                order.getOrderId());
-
-                int originalAmount = items.stream()
-                                .mapToInt(
-                                                OrderItem::getSubtotal)
-                                .sum();
-
-                int discountAmount = 0;
-
-                // ==============================
-                // 原訂單有優惠券
-                // ==============================
-
-                if (order.getCouponId() != null) {
-
-                        Coupon coupon = couponRepository
-                                        .findById(
-                                                        order.getCouponId())
-                                        .orElse(null);
-
-                        if (coupon != null) {
-
-                                LocalDateTime now = LocalDateTime.now();
-
-                                boolean couponStillValid = "ACTIVE".equals(
-                                                coupon.getStatus())
-                                                &&
-                                                !now.isBefore(
-                                                                coupon.getStartDate())
-                                                &&
-                                                !now.isAfter(
-                                                                coupon.getEndDate())
-                                                &&
-                                                originalAmount >= coupon.getMinimumAmount();
-
-                                if (couponStillValid) {
-
-                                        discountAmount = calculateDiscount(
-                                                        coupon,
-                                                        originalAmount);
-
-                                } else {
-
-                                        // 修改訂單後不再符合優惠券
-                                        order.setCouponId(
-                                                        null);
-                                }
-
-                        } else {
-
-                                order.setCouponId(
-                                                null);
-                        }
-                }
-
-                order.setOriginalAmount(
-                                originalAmount);
-
-                order.setDiscountAmount(
-                                discountAmount);
-
-                order.setFinalAmount(
-                                Math.max(
-                                                0,
-                                                originalAmount
-                                                                -
-                                                                discountAmount));
-
-                customerOrderRepository
-                                .save(
-                                                order);
-        }
-
-        // =====================================================
-        // 16. 取消訂單補回庫存
-        // =====================================================
-
-        private void restoreOrderStock(
-                        Integer orderId) {
-
-                List<OrderItem> items = orderItemRepository
-                                .findByOrderId(
-                                                orderId);
-
-                for (OrderItem item : items) {
-
-                        Product product = productRepository
-                                        .findById(
-                                                        item.getProductId())
-                                        .orElse(null);
-
-                        if (product == null) {
-                                continue;
-                        }
-
-                        int currentStock = product.getStock() == null
-                                        ? 0
-                                        : product.getStock();
-
-                        product.setStock(
-                                        currentStock
-                                                        +
-                                                        item.getQuantity());
-
-                        updateProductStockStatus(
-                                        product);
-
-                        productRepository
-                                        .save(
-                                                        product);
-                }
-        }
-
-        // =====================================================
-        // 17. 是否已付款
-        // =====================================================
-
-        private boolean isOrderPaid(
-                        CustomerOrder order) {
-
-                if (order == null) {
-
-                        return false;
-                }
-
-                if (order.getPaymentId() == null) {
-
-                        return false;
-                }
-
-                Payment payment = paymentRepository
-                                .findById(
-                                                order.getPaymentId())
-                                .orElse(null);
-
-                if (payment == null) {
-
-                        return false;
-                }
-
-                return "PAID".equals(
-                                payment.getPaymentStatus());
-        }
-
-        // =====================================================
-        // 18. 更新商品庫存狀態
-        // =====================================================
-
-        private void updateProductStockStatus(
-                        Product product) {
-
-                if (product.getStock() != null
-                                &&
-                                product.getStock() <= 0) {
-
-                        product.setStatus(
-                                        "OUT_OF_STOCK");
-
-                } else if ("OUT_OF_STOCK".equals(
-                                product.getStatus())) {
-
-                        product.setStatus(
-                                        "ACTIVE");
-                }
-        }
-
-        // =====================================================
-        // 19. 商品是否可以購買
-        // =====================================================
-
-        private boolean isProductActive(
-                        Product product) {
-
-                String status = product.getStatus();
-
-                return "ACTIVE".equals(
-                                status)
-                                ||
-                                "上架".equals(
-                                                status)
-                                ||
-                                "上架中".equals(
-                                                status);
-        }
-
-        // =====================================================
-        // 20. CustomerOrder → OrderDTO
-        // =====================================================
-
-        private OrderDTO convertToDTO(
-                        CustomerOrder order) {
-
-                // =====================================================
-                // 1. 會員資料
-                // =====================================================
-
-                String memberName = "查無會員資料";
-
-                String memberPhone = "";
-
-                String memberEmail = "";
-
-                if (order.getMemberId() != null) {
-
-                        Member member = memberRepository
-                                        .findById(
-                                                        order.getMemberId())
-                                        .orElse(null);
-
-                        if (member != null) {
-
-                                Profile profile = profileRepository
-                                                .findByAccountId(
-                                                                member.getAccountId())
-                                                .orElse(null);
-
-                                if (profile != null) {
-
-                                        memberName = profile.getName();
-
-                                        memberPhone = profile.getPhone();
-
-                                        memberEmail = profile.getEmail();
-                                }
-                        }
-                }
-
-                // =====================================================
-                // 2. 訂單商品
-                // =====================================================
-
-                List<OrderItem> orderItems = orderItemRepository
-                                .findByOrderId(
-                                                order.getOrderId());
-
-                List<OrderItemDTO> itemDTOs = new ArrayList<>();
-
-                for (OrderItem item : orderItems) {
-
-                        Product product = productRepository
-                                        .findById(
-                                                        item.getProductId())
-                                        .orElse(null);
-
-                        if (product == null) {
-                                continue;
-                        }
-
-                        Integer unitPrice = item.getUnitPrice();
-
-                        Integer quantity = item.getQuantity();
-
-                        Integer subtotal = item.getSubtotal();
-
-                        OrderItemDTO itemDTO = new OrderItemDTO(
-
-                                        item.getProductId(),
-
-                                        product.getProductName(),
-
-                                        unitPrice,
-
-                                        quantity,
-
-                                        subtotal);
-
-                        itemDTOs.add(
-                                        itemDTO);
-                }
-
-                // =====================================================
-                // 3. 付款狀態
-                // =====================================================
-
-                String paymentStatus = null;
-
-                if (order.getPaymentId() != null) {
-
-                        Payment payment = paymentRepository
-                                        .findById(
-                                                        order.getPaymentId())
-                                        .orElse(null);
-
-                        if (payment != null) {
-
-                                paymentStatus = payment.getPaymentStatus();
-                        }
-                }
-
-                // =====================================================
-                // 4. OrderDTO
-                // =====================================================
-
-                return new OrderDTO(
-
-                                order.getOrderId(),
-
-                                memberName,
-
-                                memberPhone,
-
-                                memberEmail,
-
-                                order.getOriginalAmount(),
-
-                                order.getDiscountAmount(),
-
-                                order.getFinalAmount(),
-
-                                order.getOrderStatus(),
-
-                                paymentStatus,
-
-                                order.getOrderDate(),
-
-                                itemDTOs);
-        }
-
-        public List<MonthlyOrderStatisticsDTO> getMonthlyOrderStatistics() {
-
-                List<Object[]> rows = customerOrderRepository
-                                .findMonthlyOrderStatistics();
-
-                List<MonthlyOrderStatisticsDTO> result = new ArrayList<>();
-
-                for (Object[] row : rows) {
-
-                        Integer year = ((Number) row[0])
-                                        .intValue();
-
-                        Integer month = ((Number) row[1])
-                                        .intValue();
-
-                        Long orderCount = ((Number) row[2])
-                                        .longValue();
-
-                        Long totalRevenue = ((Number) row[3])
-                                        .longValue();
-
-                        result.add(
-                                        new MonthlyOrderStatisticsDTO(
-                                                        year,
-                                                        month,
-                                                        orderCount,
-                                                        totalRevenue));
-                }
-
-                return result;
-        }
-
-        public List<MonthlyProductSalesDTO> getMonthlyProductSales(
-                        Integer year,
-                        Integer month) {
-
-                if (year == null ||
-                                year < 2000) {
-
-                        throw new IllegalArgumentException(
-                                        "年份格式錯誤");
-                }
-
-                if (month == null ||
-                                month < 1 ||
-                                month > 12) {
-
-                        throw new IllegalArgumentException(
-                                        "月份必須介於 1 到 12");
-                }
-
-                List<Object[]> rows = customerOrderRepository
-                                .findMonthlyProductSales(
-                                                year,
-                                                month);
-
-                List<MonthlyProductSalesDTO> result = new ArrayList<>();
-
-                for (Object[] row : rows) {
-
-                        Integer productId = ((Number) row[0])
-                                        .intValue();
-
-                        String productName = String.valueOf(
-                                        row[1]);
-
-                        Long quantitySold = ((Number) row[2])
-                                        .longValue();
-
-                        Long salesAmount = ((Number) row[3])
-                                        .longValue();
-
-                        result.add(
-                                        new MonthlyProductSalesDTO(
-                                                        productId,
-                                                        productName,
-                                                        quantitySold,
-                                                        salesAmount));
-                }
-
-                return result;
-        }
+    return result;
+  }
 }
