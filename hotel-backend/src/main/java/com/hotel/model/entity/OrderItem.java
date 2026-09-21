@@ -15,20 +15,20 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class OrderItem {
 
-    @Id
-    @Column(name = "order_id")
-    private Integer orderId;
+  @Id
+  @Column(name = "order_id")
+  private Integer orderId;
 
-    @Id
-    @Column(name = "product_id")
-    private Integer productId;
+  @Id
+  @Column(name = "product_id")
+  private Integer productId;
 
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
+  @Column(name = "quantity", nullable = false)
+  private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false)
-    private Integer unitPrice;
+  @Column(name = "unit_price", nullable = false)
+  private Integer unitPrice;
 
-    @Column(name = "subtotal", nullable = false)
-    private Integer subtotal;
+  @Column(name = "subtotal", nullable = false)
+  private Integer subtotal;
 }
