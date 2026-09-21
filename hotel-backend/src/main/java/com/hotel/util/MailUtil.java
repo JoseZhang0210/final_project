@@ -45,6 +45,10 @@ public class MailUtil {
         @Value("${spring.mail.username}")
         private String fromEmail;
 
+        // 自動讀取前端基礎網址 (支援本機與線上環境)
+        @Value("${app.frontend.base-url:https://starlight-hotel.vercel.app}")
+        private String frontendBaseUrl;
+
         MailUtil(JavaMailSender mailSender, ProfileRepository profileRepository, MemberRepository memberRepository,
                         OrderItemRepository orderItemRepository, ProductRepository productRepository,
                         CustomerOrderRepository customerOrderRepository, BookingRepository bookingRepository,
@@ -821,8 +825,16 @@ public class MailUtil {
                 // =========================================================
                 // CHECK-IN QR PASS (專屬快速入住通行證)
                 // =========================================================
-                String checkInCode = "CK" + bookingId + String.format("%04d", Math.abs((bookingId * 37 + 1013) % 10000));
-                String qrDataUrl = "https://starlight-hotel.vercel.app/mobile-pass?code=" + checkInCode + "&booking=" + bookingId;
+                String checkInCode = "CK" + bookingId
+                                + String.format("%04d", Math.abs((bookingId * 37 + 1013) % 10000));
+                String baseUrl = (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) ? frontendBaseUrl
+                                : "https://starlight-hotel.vercel.app";
+                String encodedRoomType = java.net.URLEncoder.encode(roomType.getTypeName(),
+                                java.nio.charset.StandardCharsets.UTF_8);
+                String qrDataUrl = baseUrl + "/mobile-pass?code=" + checkInCode + "&booking=" + bookingId
+                                + "&checkIn=" + booking.getCheckInDate()
+                                + "&checkOut=" + booking.getCheckOutDate()
+                                + "&roomType=" + encodedRoomType;
 
                 sb.append("<table width='100%' cellspacing='0' cellpadding='0'");
                 sb.append(" style='margin-top:28px;background-color:#faf7f2;border:1px dashed #d4af37;border-radius:10px;overflow:hidden;'>");
@@ -843,13 +855,13 @@ public class MailUtil {
 
                 sb.append("<div style='display:inline-block;padding:12px;background:#ffffff;border:1px solid #e8dfd3;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);'>");
                 sb.append("<img src='https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=")
-                        .append(java.net.URLEncoder.encode(qrDataUrl, java.nio.charset.StandardCharsets.UTF_8))
-                        .append("' alt='Check-in QR Code' width='160' height='160' style='display:block;' />");
+                                .append(java.net.URLEncoder.encode(qrDataUrl, java.nio.charset.StandardCharsets.UTF_8))
+                                .append("' alt='Check-in QR Code' width='160' height='160' style='display:block;' />");
                 sb.append("</div>");
 
                 sb.append("<div style='margin-top:14px;font-size:13px;color:#888888;'>");
                 sb.append("入住快速驗證碼：<strong style='color:#9b7435;font-size:16px;letter-spacing:2px;font-family:Consolas,Monaco,monospace;'>")
-                        .append(checkInCode).append("</strong>");
+                                .append(checkInCode).append("</strong>");
                 sb.append("</div>");
 
                 sb.append("</td>");

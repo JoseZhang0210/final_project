@@ -320,16 +320,21 @@
       <!-- 入住 QR Code Modal -->
       <div v-if="showQrModal" class="modal-overlay">
         <div class="modal-content qr-modal-content">
-          <h3>您的入住驗證碼</h3>
-          <p class="qr-desc">請向櫃檯人員或自助報到機出示此 QR Code</p>
+          <h3>專屬快速入住 QR Code 通行證</h3>
+          <p class="qr-desc">請向櫃檯人員出示，或以手機掃描開啟專屬通行證</p>
           <div class="qr-code-wrapper">
             <img
-              :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ACTIVE_WIFI_IP + '/mobile-pass?code=' + verificationCode + '&room=' + getRoomNumber(selectedBooking.roomId))}`"
+              :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`"
               alt="Check-in QR Code"
             />
           </div>
           <div class="verification-code">
-            驗證碼：<strong>{{ verificationCode }}</strong>
+            入住快速驗證碼：<strong>{{ verificationCode }}</strong>
+          </div>
+          <div class="qr-preview-link">
+            <a :href="qrCodeUrl" target="_blank" class="preview-btn-link">
+              🔗 在新分頁開啟貴賓通行證畫面
+            </a>
           </div>
           <div class="modal-actions qr-actions">
             <button
@@ -343,9 +348,20 @@
               type="button"
               class="btn-submit"
               @click="performCheckIn"
-              :disabled="checkingIn"
+              :disabled="checkingIn || !canCheckIn(selectedBooking)"
+              :title="
+                !canCheckIn(selectedBooking)
+                  ? '入住當日下午 15:00 起開放報到'
+                  : ''
+              "
             >
-              {{ checkingIn ? "驗證中..." : "模擬掃描完成入住" }}
+              {{
+                checkingIn
+                  ? "驗證中..."
+                  : !canCheckIn(selectedBooking)
+                    ? "未達 15:00 報到時間"
+                    : "模擬掃描完成入住"
+              }}
             </button>
           </div>
         </div>
@@ -373,12 +389,6 @@
 import { ref, computed, onMounted } from "vue";
 import { bookingApi } from "@/api/bookingApi";
 
-// ==========================================
-// 手機端測試 Wifi IP 切換區 (Demo 專用)
-// ==========================================
-const ACTIVE_WIFI_IP = "http://172.22.45.103:5173"; // R201 Wifi
-// const ACTIVE_WIFI_IP = 'http://172.22.41.173:5173'; // R301 Wifi
-
 const currentDomain = window.location.origin;
 const loading = ref(true);
 const bookings = ref([]);
@@ -388,6 +398,21 @@ const selectedBooking = ref(null);
 const checkingIn = ref(false);
 const showQrModal = ref(false);
 const verificationCode = ref("");
+
+// 動態產生與 Email 完全一致的 QR Code 網址 (支援本機與線上 Vercel)
+const qrCodeUrl = computed(() => {
+  if (!selectedBooking.value) return "";
+  const b = selectedBooking.value;
+  const code =
+    verificationCode.value ||
+    "CK" +
+      b.bookingId +
+      String(Math.abs((b.bookingId * 37 + 1013) % 10000)).padStart(4, "0");
+  const origin = window.location.origin;
+  const roomTypeName = encodeURIComponent(getRoomTypeName(b.roomTypeId));
+  const roomNum = encodeURIComponent(getRoomNumber(b.roomId));
+  return `${origin}/mobile-pass?code=${code}&booking=${b.bookingId}&checkIn=${b.checkInDate}&checkOut=${b.checkOutDate}&roomType=${roomTypeName}&room=${roomNum}`;
+});
 
 const showCancelModal = ref(false);
 const cancelling = ref(false);
@@ -651,38 +676,16 @@ async function performCancelBooking() {
   }
 }
 
-async function generateQrCode() {
+function generateQrCode() {
   if (!selectedBooking.value) return;
-
-  try {
-    const bookingInfo = `${selectedBooking.value.bookingId}-${selectedBooking.value.memberId || "M"}-${selectedBooking.value.checkInDate}`;
-    let numericCode = "";
-
-    if (window.crypto && window.crypto.subtle) {
-      const msgBuffer = new TextEncoder().encode(bookingInfo);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      numericCode = BigInt("0x" + hashHex.substring(0, 12)).toString();
-    } else {
-      // 在非 HTTPS 環境下 (例如手機連內網 IP 測試時)，crypto.subtle 會是 undefined
-      // 我們使用簡單的隨機數作為 Fallback
-      numericCode = Math.floor(
-        10000000000000 + Math.random() * 90000000000000,
-      ).toString();
-    }
-
-    verificationCode.value = numericCode;
-    showQrModal.value = true;
-  } catch (err) {
-    console.error("產生 QR Code 時發生錯誤:", err);
-    verificationCode.value = Math.floor(
-      10000000000000 + Math.random() * 90000000000000,
-    ).toString();
-    showQrModal.value = true;
-  }
+  const b = selectedBooking.value;
+  // 統一採用與後端 PublicBookingController 及 MailUtil 完全一致的標準格式：CK + bookingId + 4位驗證碼
+  const code =
+    "CK" +
+    b.bookingId +
+    String(Math.abs((b.bookingId * 37 + 1013) % 10000)).padStart(4, "0");
+  verificationCode.value = code;
+  showQrModal.value = true;
 }
 
 async function performCheckIn() {
@@ -1085,11 +1088,31 @@ function getStatusClass(status) {
 .verification-code {
   font-size: 1.1rem;
   color: #333;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 .verification-code strong {
   color: #c9a96e;
   letter-spacing: 2px;
+  font-family: monospace;
+}
+.qr-preview-link {
+  margin-bottom: 20px;
+}
+.preview-btn-link {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: #8c692e;
+  background: #fdf8ef;
+  border: 1px solid #ebd9b9;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.preview-btn-link:hover {
+  background: #f4ead5;
+  color: #6a4f21;
 }
 .qr-actions {
   justify-content: center;
