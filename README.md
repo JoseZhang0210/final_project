@@ -1,4 +1,4 @@
-# 星澄飯店管理與線上服務系統 (Xingcheng Hotel)
+# 星澄飯店管理與線上服務系統 (Starlight Hotel)
 > EEIT 23 第一組 期末專題成果
 
 本專案為前後端分離架構的綜合飯店服務與營運管理系統，涵蓋前台旅客線上預約服務（訂房、訂位、周邊商城、場地租借與會員中心）以及後台員工營運管理（房態房務、商品庫存、訂單管理、細部權限控制與營運儀表板）。
@@ -142,6 +142,7 @@ npm run dev
 <summary> 展開檢視設計圖與功能清單 </summary>
 <br>
 
+- [專案功能整理與系統架構分析報告](./doc/PROJECT_FUNCTION_REPORT.md)
 - [功能清單詳細說明](./doc/function_List.md)
 - 顧客端網站架構圖：`./doc/sitemap_client.drawio.svg`
 - 員工端網站架構圖：`./doc/sitemap_employee.drawio.svg`
