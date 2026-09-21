@@ -167,11 +167,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void handleStatusTransition(Booking existingBooking, String oldStatus, String newStatus) {
-        if (BookingStatus.CHECKED_IN.equals(newStatus)) {
+        if (BookingStatus.CHECKED_IN.equals(newStatus) && !newStatus.equals(oldStatus)) {
             Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
             if (room != null) {
                 room.setRoomStatus(RoomStatus.OCCUPIED);
                 roomRepository.save(room);
+            }
+
+            // 入住報到完成，自動發送專屬房號與開門 QR Code 信件
+            try {
+                mailUtil.sendCheckInSuccess(existingBooking.getBookingId());
+            } catch (Exception e) {
+                log.error("發送入住報到成功通知信失敗 (Booking ID: {}): {}", existingBooking.getBookingId(), e.getMessage());
             }
         } else if ((BookingStatus.CHECKED_OUT.equals(newStatus) || BookingStatus.COMPLETED.equals(newStatus))
                 && !oldStatus.equals(newStatus)) {

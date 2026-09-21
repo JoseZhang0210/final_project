@@ -80,9 +80,10 @@ public class SecurityConfig {
                                                                                 "/upload/products/**")
                                                                 .permitAll()
                                                                 // -------------------------
-                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼、場地列表與占用日期、通行證讀取與報到
+                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼、場地列表與占用日期、通行證讀取與報到、房務申請
                                                                 // -------------------------
                                                                 .requestMatchers("/api/roomtypes/**", "/api/rooms/**",
+                                                                                "/api/roomtask/**",
                                                                                 "/uploads/**",
                                                                                 "/api/payments/ecpay/**")
                                                                 .permitAll()
