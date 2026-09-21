@@ -112,7 +112,13 @@
         <div class="admin-header-actions">
           <div class="admin-user">
             <span class="user-avatar-mini">
-              <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <img
+                v-if="authStore.avatarUrl && !hasAvatarError"
+                :src="authStore.avatarUrl"
+                alt="Avatar"
+                class="avatar-mini-img"
+                @error="hasAvatarError = true"
+              />
               <span v-else>{{ userInitial }}</span>
             </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>
@@ -137,13 +143,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { Users, Home } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const authStore = useAuthStore();
+const hasAvatarError = ref(false);
+
+watch(() => authStore.avatarUrl, () => {
+  hasAvatarError.value = false;
+});
 
 const displayName = computed(() => {
   return authStore.name || "管理員";
