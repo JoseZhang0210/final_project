@@ -23,7 +23,7 @@ const toastStore = useToastStore();
 <style scoped>
 .toast-wrapper {
   position: fixed;
-  top: 24px;
+  bottom: 24px;
   right: 24px;
   z-index: 9999;
   min-width: 280px;
@@ -97,12 +97,12 @@ const toastStore = useToastStore();
 
 .toast-fade-enter-from {
   opacity: 0;
-  transform: translateY(-20px) scale(0.95);
+  transform: translateY(20px) scale(0.95);
 }
 
 .toast-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px) scale(0.95);
+  transform: translateY(10px) scale(0.95);
 }
 </style>
 

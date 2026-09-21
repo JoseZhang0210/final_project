@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,6 +36,7 @@ import com.hotel.util.JsonUtils;
 
 @RestController
 @RequestMapping("/api/employees")
+@PreAuthorize("hasAuthority('EMPLOYEE_MANAGE') or hasAuthority('POSITION_總經理') or hasAuthority('ROLE_EMPLOYEE')")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -141,6 +143,50 @@ public class EmployeeController {
         }
 
         return ResponseEntity.ok(updatedEmployee);
+    }
+
+    // =========================================
+    // 5-1. 員工上傳/更新自己的頭像照片（使用 JWT 識別）
+    // POST /api/employees/me/avatar
+    // =========================================
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadMyAvatar(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "尚未登入或認證已失效"));
+        }
+
+        try {
+            EmployeeDTO updated = employeeService.updateAvatarByUsername(authentication.getName(), file);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "上傳頭像失敗：" + e.getMessage()));
+        }
+    }
+
+    // =========================================
+    // 5-2. 管理員為指定 ID 員工上傳/更新頭像照片
+    // POST /api/employees/{id}/avatar
+    // =========================================
+    @PostMapping(value = "/{id}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadEmployeeAvatar(
+            @PathVariable Integer id,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            EmployeeDTO updated = employeeService.updateAvatarByEmployeeId(id, file);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "上傳頭像失敗：" + e.getMessage()));
+        }
     }
 
     // =========================================
@@ -297,7 +343,7 @@ public class EmployeeController {
 
         // 依 accountId 批次查詢 Account 密碼
         List<Integer> accountIds = employees.stream()
-                .map(EmployeeDTO::getAccountId)
+                .map(emp -> emp != null ? emp.getAccountId() : null)
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());

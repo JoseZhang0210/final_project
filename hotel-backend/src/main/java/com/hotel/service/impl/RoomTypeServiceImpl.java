@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.dto.RoomTypeDTO;
 import com.hotel.model.entity.Room;
+import com.hotel.model.entity.RoomImage;
 import com.hotel.model.entity.RoomType;
 import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomImageRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.service.RoomTypeService;
@@ -25,10 +27,10 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
-    private final com.hotel.repository.RoomImageRepository roomImageRepository;
+    private final RoomImageRepository roomImageRepository;
 
     public RoomTypeServiceImpl(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
-            BookingRepository bookingRepository, com.hotel.repository.RoomImageRepository roomImageRepository) {
+            BookingRepository bookingRepository, RoomImageRepository roomImageRepository) {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
@@ -92,13 +94,29 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Integer id) {
         if (!roomTypeRepository.existsById(id)) {
-            throw new EntityNotFoundException("欲刪除的房型 ID: " + id + " 不存在");
+            throw new EntityNotFoundException("找不到 ID 為 " + id + " 的房型資料");
         }
         roomTypeRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public void syncAvailableRooms() {
+        List<RoomType> allRoomTypes = roomTypeRepository.findAll();
+        for (RoomType rt : allRoomTypes) {
+            // 同步計算該房型在資料庫中的實體房間總數 (預設房間數)
+            int totalPhysicalRooms = roomRepository.findByRoomTypeId(rt.getRoomTypeId()).size();
+            rt.setAvailableRooms(totalPhysicalRooms);
+            roomTypeRepository.save(rt);
+        }
+    }
+
+    // ==========================================
+    // JSON 匯入邏輯
+    // ==========================================
     @Override
     public java.util.Map<String, Object> importRoomTypes(List<RoomTypeDTO> dtos) {
         int successCount = 0;
@@ -153,11 +171,6 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     // 目前日可用數（給後台用）
-    // 目前日可用數（給內部備用，若有需要）
-    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
-        LocalDate today = LocalDate.now();
-        return calculateAvailableRooms(roomTypeId, today, today.plusDays(1));
-    }
 
     private RoomTypeDTO convertToDTO(RoomType roomType) {
         RoomTypeDTO dto = new RoomTypeDTO();
@@ -172,10 +185,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         // 動態計算今日可用數 (從今日到明日)
         dto.setTodayAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), LocalDate.now(), LocalDate.now().plusDays(1)));
         
-        // 載入主圖
-        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        // 載入主圖與所有圖片
+        List<RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(img -> img.getPath()).collect(Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;
@@ -191,10 +207,13 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setPricePerNight(roomType.getPricePerNight());
         dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
         
-        // 載入主圖
-        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        // 載入主圖與所有圖片
+        List<RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
+            dto.setImageUrls(images.stream().map(img -> img.getPath()).collect(Collectors.toList()));
+        } else {
+            dto.setImageUrls(new java.util.ArrayList<>());
         }
         
         return dto;

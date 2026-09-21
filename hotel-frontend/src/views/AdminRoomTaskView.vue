@@ -1,8 +1,12 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
 import { fetchClient } from "@/api/apiClient"; // for employees API
+import { formatDateTimeShort } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 // 下拉選單資料 (透過 API 動態載入)
 const rooms = ref([]);
@@ -18,16 +22,16 @@ const loading = ref(false);
 // 下拉選單選項（與資料庫值對應）
 const priorities = ["一般", "重要", "緊急"];
 const taskStatuses = ["待處理", "進行中", "已完成", "已取消"];
-const taskTypes = ["退房清潔", "日常清潔", "設備維修", "停用維護", "補充備品", "其他"];
+const taskTypes = ["退房清潔", "日常清潔", "設備報修", "停用維護", "備品補充", "其他"];
 
 // 工單「進行中」時房間狀態 / 工單「已完成」時房間狀態
 // 對應 AdminRoomView 的房間狀態：可預訂、已預訂、已入住、退房待清潔、清潔中、維修中、停用
 const taskTypeToRoomStatus = {
   '退房清潔': { doing: '清潔中',  done: '可預訂' }, // 退房 → 清潔中 → 可預訂
   '日常清潔': { doing: '已入住',  done: '已入住' }, // 續住清潔，維持已入住
-  '設備維修': { doing: '維修中',  done: '可預訂' }, // 維修 → 維修中 → 可預訂
+  '設備報修': { doing: '維修中',  done: '可預訂' }, // 維修 → 維修中 → 可預訂
   '停用維護': { doing: '停用',    done: '可預訂' }, // 停用 → 停用 → 可預訂
-  '補充備品': { doing: null,      done: null     }, // 不改變房間狀態
+  '備品補充': { doing: null,      done: null     }, // 不改變房間狀態
   '其他':     { doing: null,      done: null     },
 };
 
@@ -56,12 +60,16 @@ function closeFormModal() {
 }
 
 const filteredEmployees = computed(() => {
-  if (!form.value || !form.value.taskType) return employees.value;
+  if (!form.value || !form.value.taskType) return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
   if (form.value.taskType.includes("清潔")) {
     return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
   } else {
     return employees.value.filter(e => Number(e.employeeId) >= 25 && Number(e.employeeId) <= 28);
   }
+});
+
+const taskSearchEmployees = computed(() => {
+  return employees.value.filter(e => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24);
 });
 
 function createEmptyForm() {
@@ -142,11 +150,6 @@ function getCurrentDateTime() {
   return new Date(now.getTime() - tzOffset).toISOString().slice(0, 19);
 }
 
-// 前端畫面顯示用的時間格式：只保留到幾點幾分 (長度 16)
-function formatDateTimeShort(dateTimeStr) {
-  if (!dateTimeStr) return "—";
-  return String(dateTimeStr).slice(0, 16);
-}
 
 // 確保傳給後端的時間格式包含秒數，並將空格替換為 T（Java LocalDateTime 要求）
 function ensureSecondsFormat(dateTimeStr) {
@@ -162,7 +165,6 @@ function ensureSecondsFormat(dateTimeStr) {
 
 // 1. 載入與條件查詢房務工單 (GET /api/roomtask?...)
 async function loadRoomTasks() {
-  currentPage.value = 1;
   try {
     const params = {};
     if (searchParams.value.taskId) params.taskId = searchParams.value.taskId;
@@ -189,6 +191,7 @@ function resetSearch() {
   quickFilterType.value = "all";
   quickFilterPriority.value = "all";
   quickFilterStatus.value = "all";
+  resetPage();
   loadRoomTasks();
 }
 
@@ -250,7 +253,7 @@ async function saveRoomTask() {
             roomStatus: targetRoomStatus,
           };
           await roomApi.updateRoom(payload.roomId, updatedRoom);
-          console.log(`房間 ${payload.roomId} 狀態已同步更新為 ${targetRoomStatus}`);
+
         } catch (roomErr) {
           console.warn("房間狀態更新失敗：", roomErr);
         }
@@ -436,9 +439,9 @@ function getTaskReminder(task) {
 
   const diffMins = Math.floor((currentTime.value.getTime() - expected.getTime()) / 60000);
   if (diffMins > 0) {
-    return `⚠️ 逾時 ${diffMins} 分`;
+    return `⚠️ 逾時\n${diffMins} 分`;
   } else {
-    return `剩餘 ${Math.abs(diffMins)} 分`;
+    return `剩餘\n${Math.abs(diffMins)} 分`;
   }
 }
 
@@ -454,7 +457,7 @@ async function autoCompleteStaleTasks() {
   const staleTasks = roomTasks.value.filter((task) => {
     const status = task.taskStatus ?? task.task_status;
     const createdAt = task.createdAt ?? task.created_at;
-    if (status !== '進行中' || !createdAt) return false;
+    if (status === '已完成' || status === '已取消' || !createdAt) return false;
 
     const diffMins = (currentTime.value - new Date(createdAt)) / 60000;
     return diffMins > 30; // 測試用，超過 30 分鐘就自動完成
@@ -497,6 +500,7 @@ onUnmounted(() => {
   }
 });
 
+// ==== 快速過濾 ====
 const quickFilterType = ref("all");
 const quickFilterPriority = ref("all");
 const quickFilterStatus = ref("all");
@@ -510,20 +514,9 @@ const filteredTasks = computed(() => {
   });
 });
 
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(filteredTasks.value.length / itemsPerPage));
-const sortKey = ref("taskId");
-const sortOrder = ref("desc");
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('taskId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedTasks = computed(() => {
   return [...filteredTasks.value].sort((a, b) => {
@@ -532,7 +525,6 @@ const sortedTasks = computed(() => {
       valA = Number(a.taskId ?? a.task_id);
       valB = Number(b.taskId ?? b.task_id);
     } else if (sortKey.value === 'reminder') {
-      // 提醒狀態排序：未完成的排前面，並依照 expectedTime 排序
       const expA = getExpectedCompletionTime(a);
       const expB = getExpectedCompletionTime(b);
       if (expA && expB) {
@@ -549,19 +541,14 @@ const sortedTasks = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedTasks.value.slice(start, start + itemsPerPage);
-});
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedTasks, 20);
 
 </script>
 
@@ -604,7 +591,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <label>負責員工</label>
           <select v-model="searchParams.employeeId">
             <option value="">全部</option>
-            <option v-for="employee in employees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeName }}</option>
+            <option v-for="employee in taskSearchEmployees" :key="employee.employeeId" :value="employee.employeeId">{{ employee.employeeId }} - {{ employee.employeeName }}</option>
           </select>
         </div>
         <div class="form-group" style="flex: 1; min-width: 150px;">
@@ -615,22 +602,22 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </select>
         </div>
         <div class="form-actions" style="margin-top: 0;">
-          <button type="button" class="btn primary" @click="loadRoomTasks">搜尋</button>
+          <button type="button" class="btn primary" @click="currentPage = 1; loadRoomTasks()">搜尋</button>
           <button type="button" class="btn secondary" @click="resetSearch">重設</button>
         </div>
       </div>
 
       <!-- 快速切換過濾 -->
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <select v-model="quickFilterType" class="quick-filter-select">
+        <select v-model="quickFilterType" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有類型</option>
           <option v-for="t in taskTypes" :key="t" :value="t">{{ t }}</option>
         </select>
-        <select v-model="quickFilterPriority" class="quick-filter-select">
+        <select v-model="quickFilterPriority" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有優先程度</option>
           <option v-for="p in priorities" :key="p" :value="p">{{ p }}</option>
         </select>
-        <select v-model="quickFilterStatus" class="quick-filter-select">
+        <select v-model="quickFilterStatus" class="quick-filter-select" @change="currentPage = 1">
           <option value="all">所有狀態</option>
           <option v-for="s in taskStatuses" :key="s" :value="s">{{ s }}</option>
         </select>
@@ -641,7 +628,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       </div>
 
     <!-- 新增 / 編輯表單小視窗 (Modal) -->
-    <div v-if="showFormModal" class="modal-overlay">
+    <div v-if="showFormModal" class="modal-overlay" @click.self="closeFormModal">
       <div class="modal-content" style="max-width: 800px; width: 90%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0;">{{ formTitle }}</h2>
@@ -691,7 +678,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
             <div class="form-group">
               <label>建立時間</label>
-              <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" />
+              <input v-model="form.createdAt" type="text" placeholder="YYYY-MM-DD HH:mm:ss (留空則為現在)" :disabled="form.taskId !== null" />
             </div>
 
             <div class="form-group full-width">
@@ -714,10 +701,10 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         <table>
           <thead>
             <tr>
-              <th @click="toggleSort('taskId')" class="sortable">
+              <th @click="toggleSort('taskId')" class="sortable" style="width: 60px;">
                 ID <span v-if="sortKey === 'taskId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th>房號</th>
+              <th style="width: 70px;">房號</th>
               <th>負責員工</th>
               <th>類型</th>
               <th>優先程度</th>
@@ -726,8 +713,8 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                 提醒狀態 <span v-if="sortKey === 'reminder'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th>建立時間</th>
-              <th>完成時間</th>
-              <th>備註</th>
+              <th class="narrow-col">完成時間</th>
+              <th class="narrow-col">備註</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -763,7 +750,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               </td>
 
               <td>
-                <span v-if="getTaskReminder(task)" :class="{'late-text': isTaskLate(task), 'safe-text': !isTaskLate(task)}" style="font-weight: bold;">
+                <span v-if="getTaskReminder(task)" :class="{'late-text': isTaskLate(task), 'safe-text': !isTaskLate(task)}" style="font-weight: bold; white-space: pre-line;">
                   {{ getTaskReminder(task) }}
                 </span>
                 <span v-else>-</span>
@@ -772,26 +759,27 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>
                 {{ formatDateTimeShort(task.createdAt ?? task.created_at) }}
               </td>
-              <td>
+              <td class="narrow-col">
                 {{ formatDateTimeShort(task.completedAt ?? task.completed_at) }}
               </td>
-              <td>{{ task.remark || "—" }}</td>
+              <td class="narrow-col">{{ task.remark || "—" }}</td>
 
               <td class="actions">
-                <button class="btn edit" @click="editRoomTask(task)">
-                  修改
-                </button>
-
                 <button
-                  v-if="(task.taskStatus ?? task.task_status) !== '已完成'"
-                  class="btn finish"
+                  v-if="!['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)"
+                  class="btn finish btn-condensed"
                   @click="completeRoomTask(task)"
                 >
                   完成
                 </button>
 
+                <button class="btn edit" :class="{'btn-condensed': !['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)}" @click="editRoomTask(task)">
+                  修改
+                </button>
+
                 <button
                   class="btn delete"
+                  :class="{'btn-condensed': !['已完成', '已取消'].includes(task.taskStatus ?? task.task_status)}"
                   @click="deleteRoomTask(task.taskId ?? task.task_id)"
                 >
                   刪除
@@ -801,11 +789,15 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="sortedTasks.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
@@ -894,10 +886,36 @@ textarea {
   border-radius: 7px;
 }
 
-.form-actions,
-.actions {
+textarea {
+  resize: none;
+  overflow-y: auto;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f5f5f5;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.form-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.actions .btn {
+  margin-right: 8px;
+}
+
+.actions .btn:last-child {
+  margin-right: 0;
 }
 
 .form-actions {
@@ -910,6 +928,11 @@ textarea {
   border: none;
   border-radius: 7px;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-condensed {
+  padding: 6px 8px !important;
 }
 
 .primary {
@@ -966,8 +989,8 @@ table {
 
 th,
 td {
-  min-width: 90px;
-  padding: 12px;
+  min-width: 50px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid #e4e7ec;
 }
@@ -980,6 +1003,14 @@ th {
   display: inline-block;
   padding: 5px 9px;
   border-radius: 20px;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 58px;
+}
+
+.narrow-col {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 
 .low,
@@ -1023,7 +1054,6 @@ tr.late-warning:hover td {
     grid-column: auto;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 
 .quick-filter-select {
   padding: 6px 10px;

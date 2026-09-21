@@ -1,8 +1,14 @@
 <script setup>
 import { onMounted, ref, computed } from "vue";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
+import { bookingApi } from "@/api/bookingApi";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
+import { formatPrice, formatDateTimeShort } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 const payments = ref([]);
+const bookings = ref([]);
 const loading = ref(false);
 const message = ref("");
 const messageType = ref("");
@@ -22,19 +28,27 @@ function showMessage(text, type) {
   setTimeout(() => { message.value = ""; }, 3000);
 }
 
-// 讀取全部付款資料
+// 讀取全部付款資料與訂房資料以取得會員 ID
 async function loadPayments() {
-  currentPage.value = 1;
   loading.value = true;
   message.value = "";
   try {
-    const data = await bookingPaymentApi.getAllPayments();
-    payments.value = Array.isArray(data) ? data : data.content || [];
+    const [paymentData, bookingData] = await Promise.all([
+      bookingPaymentApi.getAllPayments(),
+      bookingApi.getAllBookings().catch(() => []) // 容錯處理
+    ]);
+    payments.value = Array.isArray(paymentData) ? paymentData : paymentData.content || [];
+    bookings.value = Array.isArray(bookingData) ? bookingData : bookingData.content || [];
   } catch (error) {
     showMessage(error.message || "無法連線至付款 API", "error");
   } finally {
     loading.value = false;
   }
+}
+
+function getMemberIdForPayment(bookingId) {
+  const booking = bookings.value.find(b => b.bookingId === bookingId || b.booking_id === bookingId);
+  return booking ? (booking.memberId ?? booking.member_id) : "—";
 }
 
 // 前端篩選後的資料
@@ -53,7 +67,7 @@ const filteredPayments = computed(() => {
 function clearSearch() {
   searchBookingId.value = "";
   searchStatus.value = "";
-  currentPage.value = 1;
+  resetPage();
 }
 
 // 開啟行內狀態修改
@@ -81,18 +95,6 @@ async function saveStatus(payment) {
   }
 }
 
-function formatPrice(price) {
-  return new Intl.NumberFormat("zh-TW", {
-    style: "currency",
-    currency: "TWD",
-    maximumFractionDigits: 0,
-  }).format(price || 0);
-}
-
-function formatDateTimeShort(dateTimeStr) {
-  if (!dateTimeStr) return "—";
-  return String(dateTimeStr).replace("T", " ").slice(0, 16);
-}
 
 function getStatusClass(status) {
   return {
@@ -106,23 +108,9 @@ onMounted(() => {
   loadPayments();
 });
 
-// 分頁（基於篩選後的資料）
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() =>
-  Math.ceil(filteredPayments.value.length / itemsPerPage)
-);
-const sortKey = ref("paymentId");
-const sortOrder = ref("desc");
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('paymentId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedFilteredPayments = computed(() => {
   return [...filteredPayments.value].sort((a, b) => {
@@ -136,23 +124,14 @@ const sortedFilteredPayments = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedFilteredPayments.value.slice(start, start + itemsPerPage);
-});
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedFilteredPayments, 20);
 </script>
 
 <template>
@@ -215,6 +194,7 @@ function prevPage() {
               <th @click="toggleSort('bookingId')" class="sortable">
                 訂單 ID <span v-if="sortKey === 'bookingId'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
+              <th>會員ID</th>
               <th>金額</th>
               <th>付款方式</th>
               <th>狀態</th>
@@ -236,6 +216,7 @@ function prevPage() {
               <tr v-for="payment in paginatedData" :key="payment.paymentId">
                 <td>{{ payment.paymentId }}</td>
                 <td>{{ payment.bookingId }}</td>
+                <td>{{ getMemberIdForPayment(payment.bookingId) }}</td>
                 <td>{{ formatPrice(payment.amount) }}</td>
                 <td>{{ payment.paymentMethod }}</td>
                 <td>
@@ -269,11 +250,15 @@ function prevPage() {
         </table>
       </div>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="sortedFilteredPayments.length"
+        @page-change="goToPage"
+      />
     </section>
   </main>
 </template>
@@ -508,39 +493,6 @@ tbody tr:hover td {
   border-radius: 7px;
   cursor: pointer;
   font-size: 13px;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  gap: 15px;
-}
-
-.page-btn {
-  padding: 8px 16px;
-  background-color: #315b7d;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #264a63;
-}
-
-.page-btn:disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.page-info {
-  font-weight: 500;
-  color: #374151;
 }
 
 @media (max-width: 768px) {

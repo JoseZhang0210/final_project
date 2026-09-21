@@ -1,5 +1,6 @@
 <script setup>
 import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
+import { Bed, ChevronRight, Utensils, ShoppingBag, Landmark, Star, ShieldCheck, Heart } from "@lucide/vue";
 </script>
 
 <template>
@@ -14,62 +15,59 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
         <div class="home-section__heading">
           <p class="home-section__eyebrow">OUR SERVICES</p>
           <h2 id="services-title">展開你的星澄體驗</h2>
-          <p>無論是一夜好眠、一席佳餚，或把飯店質感帶回家，都能從這裡開始。</p>
+          <p>無論是一夜好眠、一席佳餚、飯店選物或重要聚會，都能從這裡開始。</p>
         </div>
 
         <div class="home-services__grid">
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M4 19v-8m16 8v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6m0-3h16M7 11V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"
-                />
-              </svg>
+              <Bed :size="24" />
             </div>
             <p class="service-card__number">01</p>
             <h3>舒適住宿</h3>
             <p>選擇適合你的房型與日期，輕鬆安排下一段悠閒旅程。</p>
             <RouterLink to="/room-booking" class="service-card__link">
               查看房型
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
 
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M7 3v8m-3-8v5a3 3 0 0 0 6 0V3m-3 8v10M17 3v18m0-18c2 2 3 4 3 7h-3"
-                />
-              </svg>
+              <Utensils :size="24" />
             </div>
             <p class="service-card__number">02</p>
             <h3>精緻餐飲</h3>
             <p>以當季食材與細緻料理，為相聚時光增添值得回味的風景。</p>
             <RouterLink to="/restaurant-menu" class="service-card__link">
               瀏覽餐廳
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
 
           <article class="service-card">
             <div class="service-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M6 8h12l1 13H5L6 8Zm3 2V6a3 3 0 0 1 6 0v4" />
-              </svg>
+              <ShoppingBag :size="24" />
             </div>
             <p class="service-card__number">03</p>
             <h3>飯店嚴選</h3>
             <p>精選寢具、香氛與特色商品，讓旅途中的舒適延續到日常。</p>
             <RouterLink to="/products" class="service-card__link">
               前往商城
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+              <ChevronRight :size="18" aria-hidden="true" />
+            </RouterLink>
+          </article>
+
+          <article class="service-card">
+            <div class="service-card__icon" aria-hidden="true">
+              <Landmark :size="24" />
+            </div>
+            <p class="service-card__number">04</p>
+            <h3>場地租借</h3>
+            <p>從會議、聚會到慶祝活動，找到符合人數與需求的理想空間。</p>
+            <RouterLink to="/rentals" class="service-card__link">
+              查看場地
+              <ChevronRight :size="18" aria-hidden="true" />
             </RouterLink>
           </article>
         </div>
@@ -83,11 +81,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
 
         <div class="home-promise__items">
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4-3.9-3.8 5.4-.8L12 3Z"
-              />
-            </svg>
+            <Star :size="24" aria-hidden="true" />
             <div>
               <h3>品質嚴選</h3>
               <p>從住宿到商品，維持一致的品質標準。</p>
@@ -95,9 +89,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
           </div>
 
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M20 12a8 8 0 1 1-3-6.2M20 4v6h-6m-5 2 2 2 4-5" />
-            </svg>
+            <ShieldCheck :size="24" aria-hidden="true" />
             <div>
               <h3>安心服務</h3>
               <p>清楚的流程與資訊，讓每次選擇更放心。</p>
@@ -105,11 +97,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
           </div>
 
           <div class="promise-item">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="M12 21s-8-4.7-8-11a4 4 0 0 1 7-2.6L12 9l1-1.6A4 4 0 0 1 20 10c0 6.3-8 11-8 11Z"
-              />
-            </svg>
+            <Heart :size="24" aria-hidden="true" />
             <div>
               <h3>真誠款待</h3>
               <p>以貼近需求的服務，陪你創造美好回憶。</p>
@@ -266,9 +254,9 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
 }
 
 .home-services__grid {
-  width: min(1180px, 100%);
+  width: min(1400px, 100%);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px;
   margin-inline: auto;
 }
@@ -433,7 +421,7 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
     font-size: clamp(28px, 5.2vw, 42px);
   }
   .home-services__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .service-card {
     min-height: 280px;
@@ -481,6 +469,9 @@ import HomeExperienceWheel from "@/components/HomeExperienceWheel.vue";
   .home-section__heading {
     margin-bottom: 32px;
     text-align: left;
+  }
+  .home-services__grid {
+    grid-template-columns: 1fr;
   }
   .service-card {
     min-height: 0;

@@ -16,9 +16,14 @@ import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTaskRepository;
 import com.hotel.repository.RoomTypeRepository;
+import com.hotel.repository.BookingPaymentRepository;
 import com.hotel.model.entity.RoomTask;
 import com.hotel.repository.specification.BookingSpecification;
 import com.hotel.service.BookingService;
+import com.hotel.constant.RoomStatus;
+import com.hotel.constant.RoomTaskStatus;
+import com.hotel.constant.BookingStatus;
+import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -32,13 +37,19 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final RoomTaskRepository roomTaskRepository;
+    private final BookingPaymentRepository bookingPaymentRepository;
+
+    @Value("${hotel.default.housekeeper.id:13}")
+    private Integer defaultHousekeeperId;
 
     public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository,
-            RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository) {
+            RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository,
+            BookingPaymentRepository bookingPaymentRepository) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.roomTypeRepository = roomTypeRepository;
         this.roomTaskRepository = roomTaskRepository;
+        this.bookingPaymentRepository = bookingPaymentRepository;
     }
 
     @Override
@@ -128,70 +139,7 @@ public class BookingServiceImpl implements BookingService {
             String newStatus = newBookingData.getBookingStatus();
             existingBooking.setBookingStatus(newStatus);
             
-            // =========================
-            // 狀態連動：訂單狀態 ↔ 房間狀態 ↔ 房務工單
-            // =========================
-            if ("已入住".equals(newStatus)) {
-                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-                if (room != null) {
-                    room.setRoomStatus("已入住");
-                    roomRepository.save(room);
-                }
-            } else if (("已退房".equals(newStatus) || "已完成".equals(newStatus)) && !oldStatus.equals(newStatus)) {
-                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-                if (room != null) {
-                    room.setRoomStatus("清潔中");
-                    roomRepository.save(room);
-                    
-                    // 自動產生清潔工單
-                    RoomTask task = new RoomTask();
-                    task.setRoomId(room.getRoomId());
-                    task.setPriority("一般");
-                    task.setTaskType("退房清潔");
-                    task.setTaskStatus("進行中");
-                    
-                    java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
-                    if (java.time.LocalDateTime.now().isBefore(targetTime)) {
-                        task.setCreatedAt(java.time.LocalDateTime.now());
-                    } else {
-                        task.setCreatedAt(targetTime);
-                    }
-                    
-                    Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
-                    task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : 13); // 自動指派給工作量最少的房務專員，若無則預設 13
-                    task.setRemark("由系統自動產生：退房清潔");
-                    roomTaskRepository.save(task);
-                }
-            } else if ("已取消".equals(newStatus) && !oldStatus.equals(newStatus)) {
-                Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
-                if (room != null) {
-                    if ("已入住".equals(oldStatus)) {
-                        // 漏洞 B 防護：客人已入住後取消 (客訴退費/提早離場)，視同退房，需清潔
-                        room.setRoomStatus("清潔中");
-                        roomRepository.save(room);
-                        
-                        RoomTask task = new RoomTask();
-                        task.setRoomId(room.getRoomId());
-                        task.setPriority("一般");
-                        task.setTaskType("退房清潔");
-                        task.setTaskStatus("進行中");
-                        task.setCreatedAt(java.time.LocalDateTime.now());
-                        
-                        Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
-                        task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : 13);
-                        task.setRemark("由系統自動產生：入住後取消，執行退房清潔");
-                        roomTaskRepository.save(task);
-                    } else {
-                        // 漏洞 A 防護：尚未入住取消，防呆檢查，不可覆蓋維修或清潔中的實體狀態
-                        String currentRoomStatus = room.getRoomStatus();
-                        if (!"維修中".equals(currentRoomStatus) && !"停用".equals(currentRoomStatus) && 
-                            !"退房待清潔".equals(currentRoomStatus) && !"清潔中".equals(currentRoomStatus)) {
-                            room.setRoomStatus("可預訂");
-                            roomRepository.save(room);
-                        }
-                    }
-                }
-            }
+            handleStatusTransition(existingBooking, oldStatus, newStatus);
         }
 
         // 若日期或房型有變動，重新計算實際訂單金額
@@ -205,11 +153,67 @@ public class BookingServiceImpl implements BookingService {
         return convertToDTO(existingBooking);
     }
 
+    private void handleStatusTransition(Booking existingBooking, String oldStatus, String newStatus) {
+        if (BookingStatus.CHECKED_IN.equals(newStatus)) {
+            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+            if (room != null) {
+                room.setRoomStatus(RoomStatus.OCCUPIED);
+                roomRepository.save(room);
+            }
+        } else if ((BookingStatus.CHECKED_OUT.equals(newStatus) || BookingStatus.COMPLETED.equals(newStatus)) && !oldStatus.equals(newStatus)) {
+            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+            if (room != null) {
+                room.setRoomStatus(RoomStatus.CLEANING);
+                roomRepository.save(room);
+
+                java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
+                java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().isBefore(targetTime) ? java.time.LocalDateTime.now() : targetTime;
+                createCleaningTask(room.getRoomId(), createdAt, "由系統自動產生：退房清潔");
+            }
+        } else if (BookingStatus.CANCELLED.equals(newStatus) && !oldStatus.equals(newStatus)) {
+            Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
+            if (room != null) {
+                if (BookingStatus.CHECKED_IN.equals(oldStatus)) {
+                    room.setRoomStatus(RoomStatus.CLEANING);
+                    roomRepository.save(room);
+                    createCleaningTask(room.getRoomId(), java.time.LocalDateTime.now(), "由系統自動產生：入住後取消，執行退房清潔");
+                } else {
+                    String currentRoomStatus = room.getRoomStatus();
+                    if (!RoomStatus.MAINTENANCE.equals(currentRoomStatus) && !RoomStatus.DISABLED.equals(currentRoomStatus) &&
+                        !RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus) && !RoomStatus.CLEANING.equals(currentRoomStatus)) {
+                        room.setRoomStatus(RoomStatus.AVAILABLE);
+                        roomRepository.save(room);
+                    }
+                }
+            }
+        }
+    }
+
+    private void createCleaningTask(Integer roomId, java.time.LocalDateTime createdAt, String remark) {
+        RoomTask task = new RoomTask();
+        task.setRoomId(roomId);
+        task.setPriority(RoomTaskStatus.PRIORITY_NORMAL);
+        task.setTaskType(RoomTaskStatus.TYPE_CHECKOUT_CLEANING);
+        task.setTaskStatus(RoomTaskStatus.STATUS_IN_PROGRESS);
+        task.setCreatedAt(createdAt);
+        
+        Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
+        task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : defaultHousekeeperId);
+        task.setRemark(remark);
+        roomTaskRepository.save(task);
+    }
+
     @Override
     public void deleteById(Integer id) {
         if (!bookingRepository.existsById(id)) {
             throw new EntityNotFoundException("欲刪除的預約 ID: " + id + " 不存在");
         }
+        
+        // 刪除關聯的付款記錄
+        bookingPaymentRepository.findByBookingId(id).ifPresent(payment -> {
+            bookingPaymentRepository.delete(payment);
+        });
+        
         bookingRepository.deleteById(id);
     }
 
@@ -244,7 +248,7 @@ public class BookingServiceImpl implements BookingService {
         // 3. 過濾出尚未被預訂，且狀態為「可入住」或「可預訂」的可用房間
         List<Room> availableRooms = allRooms.stream()
                 .filter(room -> !bookedRoomIds.contains(room.getRoomId()))
-                .filter(room -> !"停用".equals(room.getRoomStatus()) && !"維修中".equals(room.getRoomStatus()))
+                .filter(room -> !RoomStatus.DISABLED.equals(room.getRoomStatus()) && !RoomStatus.MAINTENANCE.equals(room.getRoomStatus()))
                 .collect(Collectors.toList());
 
         if (availableRooms.isEmpty()) {
@@ -304,7 +308,7 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> unassignedBookings = bookingRepository.findAll().stream()
                 .filter(b -> b.getRoomId() == null)
                 .filter(b -> !b.getCheckInDate().isAfter(today) && !b.getCheckOutDate().isBefore(today))
-                .filter(b -> "待入住".equals(b.getBookingStatus()) || "已入住".equals(b.getBookingStatus()))
+                .filter(b -> BookingStatus.PENDING.equals(b.getBookingStatus()) || BookingStatus.CHECKED_IN.equals(b.getBookingStatus()))
                 .collect(Collectors.toList());
 
         for (Booking b : unassignedBookings) {

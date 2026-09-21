@@ -1,0 +1,34 @@
+[
+  {
+    "restaurantId": 1,
+    "restaurantName": "雲饗中式自助餐廳",
+    "address": "星澄飯店 1 樓",
+    "phone": "02-1234-5678",
+    "capacity": 120,
+    "description": "提供中式料理、海鮮與季節自助餐點。"
+  },
+  {
+    "restaurantId": 2,
+    "restaurantName": "晨光西式餐廳",
+    "address": "星澄飯店 2 樓",
+    "phone": "02-1234-5679",
+    "capacity": 60,
+    "description": "提供精緻西式料理與主廚套餐。"
+  },
+  {
+    "restaurantId": 3,
+    "restaurantName": "托斯卡尼義式餐廳",
+    "address": "星澄飯店 2 樓",
+    "phone": "02-1234-5680",
+    "capacity": 50,
+    "description": "提供現做義大利麵、披薩與義式料理。"
+  },
+  {
+    "restaurantId": 4,
+    "restaurantName": "星夜駐唱酒吧",
+    "address": "星澄飯店頂樓",
+    "phone": "02-1234-5681",
+    "capacity": 80,
+    "description": "提供調酒、輕食與現場駐唱表演。"
+  }
+]

@@ -1,11 +1,15 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
 import { bookingApi } from "@/api/bookingApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import { formatPrice } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 const BOOKING_API_URL = "/api/bookings";
 const BOOKING_ORDER_API_URL = "/api/orders";
@@ -16,6 +20,7 @@ const roomTypes = ref([]);
 const rooms = ref([]);
 const payments = ref([]);
 const router = useRouter();
+const route = useRoute();
 
 // 核心資料
 const bookings = ref([]);
@@ -33,9 +38,13 @@ const searchCriteria = ref({
 
 watch(() => searchCriteria.value.checkInDate, (newVal) => {
   if (newVal) {
-    const nextDay = new Date(newVal);
+    const parts = newVal.split('-');
+    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
     nextDay.setDate(nextDay.getDate() + 1);
-    searchCriteria.value.checkOutDate = nextDay.toISOString().split('T')[0];
+    const y = nextDay.getFullYear();
+    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+    const d = String(nextDay.getDate()).padStart(2, '0');
+    searchCriteria.value.checkOutDate = `${y}-${m}-${d}`;
   }
 });
 
@@ -103,16 +112,20 @@ const currentNewBooking = ref(null);
 const isSubmittingPayment = ref(false); // 防止重複提交
 const paymentForm = ref({
   amount: 0,
-  paymentMethod: '現金',
+  paymentMethod: '信用卡',
   paymentStatus: '已付款',
   transactionId: ''
 });
 
 watch(() => form.value.checkInDate, (newVal) => {
   if (newVal) {
-    const nextDay = new Date(newVal);
+    const parts = newVal.split('-');
+    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
     nextDay.setDate(nextDay.getDate() + 1);
-    form.value.checkOutDate = nextDay.toISOString().split('T')[0];
+    const y = nextDay.getFullYear();
+    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+    const d = String(nextDay.getDate()).padStart(2, '0');
+    form.value.checkOutDate = `${y}-${m}-${d}`;
     calculatePrice();
   }
 });
@@ -203,7 +216,7 @@ function fillDummyData() {
   const today = new Date();
   const tzOffset = today.getTimezoneOffset() * 60000;
   const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-  
+
   const tomorrow = new Date(today.getTime() + 86400000);
   const tomorrowStr = new Date(tomorrow.getTime() - tzOffset).toISOString().split('T')[0];
   
@@ -257,7 +270,7 @@ async function loadSelectOptions() {
 
 // 1. 載入與條件查詢 (對應 @GetMapping)
 async function loadBookings() {
-  currentPage.value = 1;
+  resetPage();
   try {
     // 依據條件切換 API Endpoint
     let data;
@@ -319,7 +332,7 @@ async function loadBookings() {
 }
 
 function clearSearch() {
-  currentPage.value = 1;
+  resetPage();
   searchCriteria.value = { memberId: "", checkInDate: "", checkOutDate: "", bookingStatus: "" };
   loadBookings();
 }
@@ -361,7 +374,7 @@ function getPaymentStatus(bookingId) {
   return payment ? (payment.paymentStatus ?? payment.payment_status) : "無付款紀錄";
 }
 
-function goToPayment(bookingId) {
+function goToPayment() {
   router.push({ name: 'admin-booking-payments' });
 }
 
@@ -610,18 +623,25 @@ function getBookingStatusClass(status) {
   return map[status] || "";
 }
 
-function formatPrice(price) {
-
-  return new Intl.NumberFormat("zh-TW", {
-    style: "currency",
-    currency: "TWD",
-    maximumFractionDigits: 0,
-  }).format(price || 0);
+function formatDateTime(dateStr) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
+
 
 let refreshInterval = null;
 
 onMounted(async () => {
+  if (route.query.filter) {
+    currentFilter.value = route.query.filter;
+  }
   await loadSelectOptions();
   await loadBookings();
 
@@ -636,12 +656,11 @@ onUnmounted(() => {
     clearInterval(refreshInterval);
   }
 });
-
-const currentFilter = ref("待入住"); // 預設顯示待入住的訂單
+const currentFilter = ref("all"); // 預設顯示全部的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
-  currentPage.value = 1;
+  resetPage();
 }
 
 const filteredBookings = computed(() => {
@@ -666,7 +685,7 @@ const filteredBookings = computed(() => {
       const cin = b.checkInDate ?? b.check_in_date;
       const cout = b.checkOutDate ?? b.check_out_date;
       const status = b.bookingStatus ?? b.booking_status;
-      return cin <= todayStr && cout >= todayStr && status !== "已取消";
+      return cin <= todayStr && cout >= todayStr && status !== "已取消" && status !== "已完成";
     });
   } else if (currentFilter.value !== "all") {
     result = result.filter(b => (b.bookingStatus ?? b.booking_status) === currentFilter.value);
@@ -675,20 +694,9 @@ const filteredBookings = computed(() => {
   return result;
 });
 
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(filteredBookings.value.length / itemsPerPage));
-const sortKey = ref("bookingId");
-const sortOrder = ref("desc"); // 預設從新到舊
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('bookingId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedBookings = computed(() => {
   return [...filteredBookings.value].sort((a, b) => {
@@ -702,19 +710,14 @@ const sortedBookings = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedBookings.value.slice(start, start + itemsPerPage);
-});
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedBookings, 20);
 
 </script>
 
@@ -745,11 +748,17 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         </div>
         <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>入住日期</label>
-          <input v-model="searchCriteria.checkInDate" type="date" />
+          <div style="position: relative; width: 100%;">
+            <input v-model="searchCriteria.checkInDate" type="date" style="width: 100%; box-sizing: border-box; padding-right: 35px;" />
+            <button v-if="searchCriteria.checkInDate" @click="searchCriteria.checkInDate = ''" type="button" style="position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 14px; cursor: pointer; color: #999; padding: 4px;" title="清除日期">✖</button>
+          </div>
         </div>
         <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>退房日期</label>
-          <input v-model="searchCriteria.checkOutDate" type="date" />
+          <div style="position: relative; width: 100%;">
+            <input v-model="searchCriteria.checkOutDate" type="date" style="width: 100%; box-sizing: border-box; padding-right: 35px;" />
+            <button v-if="searchCriteria.checkOutDate" @click="searchCriteria.checkOutDate = ''" type="button" style="position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 14px; cursor: pointer; color: #999; padding: 4px;" title="清除日期">✖</button>
+          </div>
         </div>
         <div class="form-actions" style="margin-top: 0;">
           <button type="button" class="btn primary" @click="loadBookings">
@@ -791,7 +800,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <th>入住</th>
               <th>退房</th>
               <th>人數</th>
-              <th>價格</th>
+              <th>建立時間</th>
               <th>狀態</th>
 
               <th>操作</th>
@@ -817,7 +826,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
               <td>{{ booking.checkOutDate ?? booking.check_out_date }}</td>
               <td>{{ booking.guestNum ?? booking.guest_num }} 人</td>
               <td>
-                {{ formatPrice(booking.bookingPrice ?? booking.booking_price) }}
+                {{ formatDateTime(booking.createdAt ?? booking.created_at) }}
               </td>
               <td>
                 <span :class="['booking-status', getBookingStatusClass(booking.bookingStatus ?? booking.booking_status)]">
@@ -840,18 +849,21 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :total-count="sortedBookings.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
     </section>
 
     <!-- 新增 / 編輯表單小視窗 (Modal) -->
-    <div v-if="showFormModal" class="modal-overlay">
+    <div v-if="showFormModal" class="modal-overlay" @click.self="closeFormModal">
       <div class="modal-content" style="max-width: 800px; width: 90%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0;">{{ formTitle }}</h2>
@@ -865,6 +877,16 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <div class="form-group">
               <label>會員 ID *</label>
               <input v-model="form.memberId" type="text" placeholder="輸入會員 ID" required />
+            </div>
+
+            <div class="form-group">
+              <label>入住日期 *</label>
+              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
+            </div>
+
+            <div class="form-group">
+              <label>退房日期 *</label>
+              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
             </div>
 
             <div class="form-group">
@@ -885,16 +907,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
                   房號 {{ room.roomNumber }}
                 </option>
               </select>
-            </div>
-
-            <div class="form-group">
-              <label>入住日期 *</label>
-              <input v-model="form.checkInDate" type="date" @change="calculatePrice" required />
-            </div>
-
-            <div class="form-group">
-              <label>退房日期 *</label>
-              <input v-model="form.checkOutDate" type="date" @change="calculatePrice" required />
             </div>
 
             <div class="form-group">
@@ -940,7 +952,6 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           <div class="form-group">
             <label>付款方式</label>
             <select v-model="paymentForm.paymentMethod" required>
-              <option value="現金">現金</option>
               <option value="信用卡">信用卡</option>
               <option value="銀行轉帳">銀行轉帳</option>
               <option value="LINE PAY">LINE PAY</option>
@@ -952,9 +963,9 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
             <label>付款狀態</label>
             <select v-model="paymentForm.paymentStatus" required>
               <option value="已付款">已付款</option>
-              <option value="待付款">待付款</option>
+              <option value="未付款">未付款</option>
               <option value="已退款">已退款</option>
-              <option value="已取消">已取消</option>
+              <option value="付款失敗">付款失敗</option>
             </select>
           </div>
 
@@ -1150,7 +1161,6 @@ th {
     grid-template-columns: 1fr;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 .booking-status {
   display: inline-block;
   padding: 4px 12px;

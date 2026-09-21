@@ -27,7 +27,6 @@ const formTitle = ref("新增訂位");
 const loading = ref(false);
 const saving = ref(false);
 const memberLoaded = ref(false);
-const testingSms = ref(null);
 const modalOpen = ref(false);
 const filterModalOpen = ref(false);
 
@@ -38,7 +37,7 @@ function createEmptyForm() {
         reservationId: null,
         memberId: "",
         contactName: "",
-        contactPhone: "",
+        contactEmail: "",
         restaurantId: "",
         reservationDate: "",
         timeId: "",
@@ -247,11 +246,11 @@ function getTimeName(timeId) {
     return `${time.mealType}（${formatTime(time.openTime)} - ${formatTime(time.closeTime)}）`;
 }
 
-// 輸入會員 ID 後，自動帶入姓名與電話。
+// 輸入會員 ID 後，自動帶入姓名；信箱可由管理員補上或帶入會員資料。
 function handleMemberIdInput() {
     memberLoaded.value = false;
     form.value.contactName = "";
-    form.value.contactPhone = "";
+    form.value.contactEmail = "";
 }
 
 async function loadMemberInfo() {
@@ -293,7 +292,7 @@ async function loadMemberInfo() {
 
         form.value.memberId = String(member.memberId);
         form.value.contactName = member.name ?? "";
-        form.value.contactPhone = member.phone ?? "";
+        form.value.contactEmail = member.email ?? "";
         memberLoaded.value = true;
     } catch (error) {
         console.error(error);
@@ -427,16 +426,26 @@ function closeModal() {
 }
 
 async function saveReservation() {
+    const isEdit = form.value.reservationId !== null;
+
     if (hasMember.value && !memberLoaded.value) {
         showMessage("請先輸入有效的會員 ID", "error");
         return;
     }
 
-    if (!hasMember.value) {
-        if (!form.value.contactName.trim() || !form.value.contactPhone.trim()) {
-            showMessage("非會員訂位必須填寫姓名與電話", "error");
-            return;
-        }
+    if (!form.value.contactName.trim()) {
+        showMessage("請填寫訂位人姓名", "error");
+        return;
+    }
+
+    if (!isEdit && !form.value.contactEmail.trim()) {
+        showMessage("新增訂位時請填寫聯絡信箱", "error");
+        return;
+    }
+
+    if (!isEdit && !isValidEmail(form.value.contactEmail)) {
+        showMessage("請填寫正確的 Email 格式", "error");
+        return;
     }
 
     const payload = {
@@ -444,7 +453,7 @@ async function saveReservation() {
 
         contactName: form.value.contactName.trim() || null,
 
-        contactPhone: form.value.contactPhone.trim() || null,
+        contactEmail: isEdit ? null : form.value.contactEmail.trim(),
 
         restaurantId: Number(form.value.restaurantId),
 
@@ -456,8 +465,6 @@ async function saveReservation() {
 
         status: form.value.status,
     };
-
-    const isEdit = form.value.reservationId !== null;
 
     const url = isEdit
         ? `${RESERVATION_API_URL}/${form.value.reservationId}`
@@ -506,7 +513,8 @@ async function editReservation(reservation) {
 
         contactName: reservation.contactName ?? "",
 
-        contactPhone: reservation.contactPhone ?? "",
+        // contactEmail 使用 @Transient，不會從資料庫讀回，修改舊訂位時需重新填寫。
+        contactEmail: "",
 
         restaurantId: String(reservation.restaurantId),
 
@@ -562,36 +570,8 @@ async function deleteReservation(id) {
     }
 }
 
-async function sendTestSms(reservation) {
-    if (!reservation.contactPhone) {
-        showMessage("此訂位沒有聯絡電話，無法測試簡訊", "error");
-        return;
-    }
-
-    testingSms.value = reservation.reservationId;
-
-    try {
-        const response = await fetch(
-            `${RESERVATION_API_URL}/${reservation.reservationId}/sms`,
-            {
-                method: "POST",
-                headers: getAuthHeaders(),
-            },
-        );
-        const result = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            showMessage(result.message || "測試簡訊發送失敗", "error");
-            return;
-        }
-
-        showMessage("測試簡訊已發送，請查看 Spring Boot Console", "success");
-    } catch (error) {
-        console.error(error);
-        showMessage("無法連線至測試簡訊 API", "error");
-    } finally {
-        testingSms.value = null;
-    }
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 // 匯入與匯出餐廳、時段、訂位資料。
@@ -705,7 +685,6 @@ onMounted(async () => {
                         <tr>
                             <th>訂位 ID</th>
                             <th>訂位人姓名</th>
-                            <th>訂位人電話</th>
                             <th>餐廳</th>
                             <th>訂位日期</th>
                             <th>時段</th>
@@ -717,7 +696,7 @@ onMounted(async () => {
 
                     <tbody>
                         <tr v-if="filteredReservations.length === 0">
-                            <td colspan="9" class="empty-row">查無符合條件的訂位資料</td>
+                            <td colspan="8" class="empty-row">查無符合條件的訂位資料</td>
                         </tr>
 
                         <tr v-for="reservation in pagedReservations" :key="reservation.reservationId">
@@ -727,10 +706,6 @@ onMounted(async () => {
 
                             <td>
                                 {{ reservation.contactName ?? "" }}
-                            </td>
-
-                            <td>
-                                {{ reservation.contactPhone ?? "" }}
                             </td>
 
                             <td>
@@ -772,11 +747,6 @@ onMounted(async () => {
                                         刪除
                                     </button>
 
-                                    <button type="button" class="admin-btn admin-btn-secondary"
-                                        :disabled="testingSms === reservation.reservationId"
-                                        @click="sendTestSms(reservation)">
-                                        {{ testingSms === reservation.reservationId ? "發送中..." : "測試簡訊" }}
-                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -822,15 +792,14 @@ onMounted(async () => {
                             </div>
 
                             <div class="admin-form-group">
-                                <label>訂位人姓名（非會員必填）</label>
+                                <label>訂位人姓名 *</label>
                                 <input v-model="form.contactName" type="text" placeholder="請輸入訂位人姓名"
                                     :disabled="memberLoaded" />
                             </div>
 
-                            <div class="admin-form-group">
-                                <label>訂位人電話（非會員必填）</label>
-                                <input v-model="form.contactPhone" type="text" placeholder="請輸入聯絡電話"
-                                    :disabled="memberLoaded" />
+                            <div v-if="form.reservationId === null" class="admin-form-group">
+                                <label>聯絡信箱 *</label>
+                                <input v-model="form.contactEmail" type="email" placeholder="例如：name@example.com" />
                             </div>
 
                             <div class="admin-form-group">

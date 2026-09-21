@@ -1,8 +1,10 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { roomApi } from "@/api/roomApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
-import { fetchClient } from "@/api/apiClient";
+import { fetchClient } from "@/api/apiClient"; // syncRoomStatuses 用到
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 // 從 API 載入真實房型清單
 const roomTypes = ref([]);
@@ -67,7 +69,6 @@ async function loadRooms() {
   try {
     const data = await roomApi.getAllRooms();
     rooms.value = Array.isArray(data) ? data : data.content || [];
-    console.log("SQL room 資料：", rooms.value);
   } catch (error) {
     console.error("讀取房間錯誤：", error);
     showMessage(error.message || "無法連線至房間 API", "error");
@@ -157,15 +158,10 @@ async function deleteRoom(id) {
 }
 
 async function syncRoomStatuses() {
-  if (!window.confirm("確定要手動同步今日訂房狀態與房間狀態嗎？")) {
-    return;
-  }
-  
   loading.value = true;
   message.value = "";
   try {
     await fetchClient('/api/rooms/sync-status', { method: 'POST' });
-    showMessage("今日房間狀態已成功同步！", "success");
     await loadRooms();
   } catch (error) {
     showMessage("狀態同步發生例外錯誤", "error");
@@ -197,9 +193,7 @@ onMounted(async () => {
   loadRooms();
 });
 
-const currentPage = ref(1);
 const currentFilter = ref('all');
-const itemsPerPage = 20;
 
 // 各狀態筆數統計
 const statusCount = computed(() => {
@@ -210,25 +204,19 @@ const statusCount = computed(() => {
   return counts;
 });
 
-// 依籾選過濾後的房間列表
+// 依過濾條件篩選後的房間列表
 const filteredRooms = computed(() => {
   if (currentFilter.value === 'all') return rooms.value;
   return rooms.value.filter(r => (r.roomStatus ?? r.room_status) === currentFilter.value);
 });
 
-const totalPages = computed(() => Math.ceil(filteredRooms.value.length / itemsPerPage));
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredRooms.value.slice(start, start + itemsPerPage);
-});
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(filteredRooms, 20);
 
 function setFilter(status) {
   currentFilter.value = status;
-  currentPage.value = 1;
+  resetPage();
 }
-
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
 </script>
 
@@ -396,11 +384,15 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-container" v-if="totalPages > 1">
-        <button @click="prevPage" :disabled="currentPage === 1" class="page-btn">◀ 上一頁</button>
-        <span class="page-info">第 {{ currentPage }} 頁 / 共 {{ totalPages }} 頁</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="page-btn">下一頁 ▶</button>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="filteredRooms.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
@@ -711,5 +703,4 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 15px; } .page-btn { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s; } .page-btn:hover:not(:disabled) { background-color: #2563eb; } .page-btn:disabled { background-color: #d1d5db; cursor: not-allowed; } .page-info { font-weight: 500; color: #374151; }
 </style>

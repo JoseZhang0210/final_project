@@ -76,6 +76,12 @@ public class RoomTypeController {
         return ResponseEntity.ok(Map.of("message", "房型刪除成功！"));
     }
 
+    @PostMapping("/sync-available")
+    public ResponseEntity<Map<String, String>> syncAvailableRooms() {
+        roomTypeService.syncAvailableRooms();
+        return ResponseEntity.ok(Map.of("message", "今日房間剩餘數量同步成功！"));
+    }
+
     // =========================================
     // JSON 匯出 API
     // GET /api/roomtypes/export/json

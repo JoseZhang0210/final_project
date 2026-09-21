@@ -13,7 +13,8 @@
       <aside class="member-sidebar">
         <div class="member-profile-summary">
           <div class="avatar-circle">
-            {{ userInitial }}
+            <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-circle-img" />
+            <span v-else>{{ userInitial }}</span>
           </div>
           <div class="user-info">
             <div class="greeting-name">{{ displayName }}</div>
@@ -43,9 +44,14 @@
             <span>🎫 我的場地預約</span>
           </RouterLink>
 
-          <RouterLink to="/products" class="nav-item">
-            <span class="icon">🛍</span>
-            <span>飯店商城</span>
+          <RouterLink to="/member/wishlist" class="nav-item" active-class="active">
+            <span class="icon">♥</span>
+            <span>願望清單</span>
+          </RouterLink>
+
+          <RouterLink to="/member/room-bookings" class="nav-item" active-class="active">
+            <span class="icon">🛏️</span>
+            <span>訂房紀錄</span>
           </RouterLink>
 
           <RouterLink to="/logout" class="nav-item logout-item">
@@ -68,7 +74,7 @@ import { storeToRefs } from 'pinia';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
-const { name } = storeToRefs(authStore);
+const { name, avatarUrl } = storeToRefs(authStore);
 
 const displayName = computed(() => {
   return name.value || '貴賓';
@@ -161,6 +167,14 @@ const userInitial = computed(() => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 10px rgba(181, 138, 70, 0.3);
+  overflow: hidden;
+}
+
+.avatar-circle-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .user-info {

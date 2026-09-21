@@ -1,0 +1,34 @@
+[
+  {
+    "venueId": 1,
+    "venueName": "國際宴會廳",
+    "capacity": 200,
+    "pricePerDay": 50000,
+    "venueStatus": "可預約",
+    "imageUrl": "/images/venues/venue-1.jpg"
+  },
+  {
+    "venueId": 2,
+    "venueName": "璀璨晶漾廳",
+    "capacity": 150,
+    "pricePerDay": 38000,
+    "venueStatus": "可預約",
+    "imageUrl": "/images/venues/venue-2.jpg"
+  },
+  {
+    "venueId": 3,
+    "venueName": "商務會議廳",
+    "capacity": 60,
+    "pricePerDay": 12000,
+    "venueStatus": "可預約",
+    "imageUrl": "/images/venues/venue-3.jpg"
+  },
+  {
+    "venueId": 4,
+    "venueName": "采悅雅緻廳",
+    "capacity": 100,
+    "pricePerDay": 28000,
+    "venueStatus": "可預約",
+    "imageUrl": "/images/venues/venue-4.jpg"
+  }
+]

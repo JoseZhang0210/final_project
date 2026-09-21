@@ -16,8 +16,9 @@ import org.springframework.web.server.ResponseStatusException; // 回傳安全�
 import org.springframework.http.HttpStatus; // 區分禁止與衝突。
 @Service // 本功能僅允許綠界 Stage。
 public class RentalPaymentService { // 付款參數、驗證與冪等處理集中於此。
-    public static final String STAGE="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"; // 官方測試網址，禁止正式扣款。
     private final RentalService rentals; // 沿用既有租借與會員解析。
+    public static final String STAGE="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"; // 官方測試網址，禁止正式扣款。
+    private static final DateTimeFormatter TRADE_TIME=DateTimeFormatter.ofPattern("yyMMddHHmmss"); // 交易編號包含台灣時間以判斷付款重試間隔。
     private final RentalPaymentRepository payments; // 付款資料列鎖與條件更新。
     private final RentalMailService mail; // 提交後寄送付款通知。
     private final Environment environment; // 不將金鑰寫入程式或前端。
@@ -43,6 +44,13 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         if (!"https".equals(uri.getScheme()) || host==null || host.equalsIgnoreCase("localhost") || host.endsWith(".local") || host.matches("[0-9.]+") || host.contains(":") || uri.getUserInfo()!=null || (uri.getPort()!=-1 && uri.getPort()!=443) || !"/api/rental-payments/ecpay/return".equals(uri.getPath()) || uri.getQuery()!=null || value.length()>200) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"需要公開 HTTPS 的精確付款回呼網址"); // 拒絕本機與字面 IP，固定回呼路徑。
         return value; // 僅回傳驗證後網址。
     }
+    /** 建立符合綠界二十字元限制且每次皆不同的新交易編號。 */
+    private String freshTrade() { // 每一次真正允許的付款嘗試使用新的 MerchantTradeNo。
+        String time=LocalDateTime.now(ZoneId.of("Asia/Taipei")).format(TRADE_TIME); // 使用飯店時區建立十二碼時間。
+        String random=UUID.randomUUID().toString().replace("-","").substring(0,6); // 加入六碼隨機值避免同秒碰撞。
+        return "VR"+time+random; // VR + 12 位時間 + 6 位亂數正好二十字元。
+    }
+
     /** 依綠界規格計算付款參數檢查碼。 */
     public static String checksum(Map<String,String> parameters, String key, String iv) { // 依官方全方位金流規則計算檢查碼。
         try { // 標準 JDK 已支援 SHA256。
@@ -79,11 +87,9 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         if (!"待付款".equals(payment.get("payment_status"))) throw new ResponseStatusException(HttpStatus.CONFLICT,"此付款已處理"); // 已付款不能產生第二筆有效交易。
         int amount=((Number)payment.get("total_price")).intValue(); // 不採用前端或目前場地價格。
         if (amount<=0) throw new ResponseStatusException(HttpStatus.CONFLICT,"信用卡付款金額必須大於零"); // 不提交零元信用卡交易。
-        String trade=(String)payment.get("merchant_trade_no"); // 重新整理沿用既有交易號。
-        if (trade==null) { // 僅第一次付款準備配置識別碼。
-            trade="VR"+UUID.randomUUID().toString().replace("-","").substring(0,18); // 二十字元英數且由唯一索引再防碰撞。
-            payments.assign(rental.getPaymentId(),trade); // 寫入一次後不覆蓋。
-        }
+        String previousTrade=(String)payment.get("merchant_trade_no"); // 讀取上一次付款嘗試的 MerchantTradeNo。
+        String trade=freshTrade(); // 舊格式、逾時或第一次付款均建立新的唯一交易編號。
+        payments.replacePendingTrade(rental.getPaymentId(),previousTrade,trade); // 僅在仍為待付款且舊值未改變時更新。
         var parameters=new LinkedHashMap<String,String>(); // 僅回傳公開付款參數。
         parameters.put("MerchantID",setting("ECPAY_MERCHANT_ID")); // 官方 Stage 商店識別。
         parameters.put("MerchantTradeNo",trade); // 與資料庫保存編號一致。
@@ -99,6 +105,69 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
         parameters.put("CheckMacValue",checksum(parameters,key,iv)); // 後端簽章後才交給前端表單。
         return Map.of("action",STAGE,"parameters",parameters); // 不回傳金鑰或向量。
     }
+    /**
+     * 本機測試付款。
+     *
+     * 此流程不是綠界付款驗證，只用於課堂 / UI / DB 串接示範。
+     * 必須明確設定 VENUE_PAYMENT_DEMO=true 才能使用。
+     */
+    @Transactional
+    public Map<String,Object> stageDemoPaid(Integer rentalId, Authentication authentication) {
+
+        if (!"true".equalsIgnoreCase(environment.getProperty("VENUE_PAYMENT_DEMO", "false"))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "本機測試付款未啟用");
+        }
+
+        var rental = rentals.findAccessible(rentalId, authentication);
+        Integer memberId = rentals.resolveMemberId(authentication.getName());
+
+        if (!rental.getMemberId().equals(memberId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能處理自己的租借");
+        }
+
+        var payment = payments.lock(rental.getPaymentId());
+
+        if (!rental.getMemberId().equals(((Number) payment.get("member_id")).intValue())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "付款會員關聯不一致");
+        }
+
+        String status = String.valueOf(payment.get("payment_status"));
+
+        if ("已付款".equals(status)) {
+            return Map.of(
+                "rentalId", rentalId,
+                "paymentStatus", "已付款",
+                "rentalStatus", "CONFIRMED",
+                "demo", true
+            );
+        }
+
+        if (!"待付款".equals(status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "此付款狀態不可轉換");
+        }
+
+        String demoTrade = "DEMO" + UUID.randomUUID()
+            .toString()
+            .replace("-", "")
+            .substring(0, 16);
+
+        if (payments.stageDemoPaid(
+                rental.getPaymentId(),
+                rentalId,
+                demoTrade,
+                LocalDateTime.now(ZoneId.of("Asia/Taipei"))
+            ) != 1) {
+            throw new IllegalStateException("測試付款狀態更新失敗");
+        }
+
+        return Map.of(
+            "rentalId", rentalId,
+            "paymentStatus", "已付款",
+            "rentalStatus", "CONFIRMED",
+            "demo", true
+        );
+    }
+
     /** 驗證付款回呼並以冪等方式更新付款狀態。 */
     @Transactional // 回呼驗證及狀態更新必須原子完成。
     public void callback(Map<String,String> parameters) { // 接收表單原始參數值。

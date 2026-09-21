@@ -1,6 +1,8 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
 import { roomTypeApi } from "@/api/roomTypeApi";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { formatPrice } from "@/utils/formatters";
 
 const roomTypes = ref([]);
 const loading = ref(false);
@@ -136,13 +138,6 @@ function getAvailableRoomsClass(count) {
   return "maintenance";
 }
 
-function formatPrice(price) {
-  return new Intl.NumberFormat("zh-TW", {
-    style: "currency",
-    currency: "TWD",
-    maximumFractionDigits: 0,
-  }).format(price || 0);
-}
 
 async function loadRoomTypes() {
   currentPage.value = 1;
@@ -152,7 +147,6 @@ async function loadRoomTypes() {
   try {
     const data = await roomTypeApi.getAllRoomTypes();
     roomTypes.value = Array.isArray(data) ? data : data.content || [];
-    console.log("SQL room_type 資料：", roomTypes.value);
   } catch (error) {
     console.error("讀取房型錯誤：", error);
     showMessage(error.message || "無法連線至房型 API", "error");
@@ -161,17 +155,37 @@ async function loadRoomTypes() {
   }
 }
 
+async function syncAvailableRooms() {
+  loading.value = true;
+  message.value = "";
+  try {
+    await roomTypeApi.syncAvailableRooms();
+    await loadRoomTypes();
+  } catch (error) {
+    showMessage("數量同步發生例外錯誤", "error");
+  } finally {
+    loading.value = false;
+  }
+}
+
+let refreshInterval = null;
+
 onMounted(() => {
   loadRoomTypes();
+  // 每 30 秒自動更新剩餘房數
+  refreshInterval = setInterval(() => {
+    loadRoomTypes();
+  }, 30000);
 });
 
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(roomTypes.value.length / itemsPerPage));
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return roomTypes.value.slice(start, start + itemsPerPage);
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
+
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages: _visiblePages, paginatedItems: paginatedData, resetPage } = useAdminPagination(roomTypes, 20);
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
@@ -194,33 +208,37 @@ function closeImportModal() {
   importJsonText.value = "";
 }
 
+const jsonFileInputRef = ref(null);
+
 function triggerFileInput() {
-  document.getElementById("jsonFileInput").click();
+  jsonFileInputRef.value?.click();
+}
+
+async function processFile(file, inputRef) {
+  importing.value = true;
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const data = await roomTypeApi.importJson(formData, true);
+    closeImportModal();
+    showMessage(
+      `匡入完成！成功 ${data.successCount ?? 0} 筆，失敗 ${data.failureCount ?? 0} 筆`,
+      "success"
+    );
+    await loadRoomTypes();
+  } catch (error) {
+    console.error("匡入檔案錯誤：", error);
+    showMessage(error.message || "匡入失敗", "error");
+  } finally {
+    importing.value = false;
+    if (inputRef) inputRef.value = ""; // 重設 input
+  }
 }
 
 async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-
-  importing.value = true;
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const data = await roomTypeApi.importJson(formData, true);
-    closeImportModal();
-    showMessage(
-      `匯入完成！成功 ${data.successCount ?? 0} 筆，失敗 ${data.failureCount ?? 0} 筆`,
-      "success"
-    );
-    await loadRoomTypes();
-  } catch (error) {
-    console.error("匯入檔案錯誤：", error);
-    showMessage(error.message || "匯入失敗", "error");
-  } finally {
-    importing.value = false;
-    event.target.value = ""; // 重設 input
-  }
+  await processFile(file, event.target);
 }
 
 async function handleFileDrop(event) {
@@ -229,8 +247,7 @@ async function handleFileDrop(event) {
     alert("請上傳有效的 JSON 檔案");
     return;
   }
-  const mockEvent = { target: { files: [file], value: "" } };
-  await handleFileUpload(mockEvent);
+  await processFile(file, null);
 }
 
 async function submitJsonText() {
@@ -370,7 +387,12 @@ function exportJson() {
     <section class="admin-card">
       <div class="table-header">
         <h2>房型列表</h2>
-        <span>共 {{ roomTypes.length }} 種房型</span>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span>共 {{ roomTypes.length }} 種房型</span>
+          <button type="button" class="btn secondary" @click="syncAvailableRooms" :disabled="loading">
+            {{ loading ? '同步中...' : '同步今日剩餘房數量' }}
+          </button>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -458,7 +480,7 @@ function exportJson() {
           </div>
 
           <div v-if="importMode === 'file'" class="import-file-area" @dragover.prevent @drop.prevent="handleFileDrop">
-            <input type="file" id="jsonFileInput" accept=".json" @change="handleFileUpload" style="display: none" />
+            <input type="file" ref="jsonFileInputRef" id="jsonFileInput" accept=".json" @change="handleFileUpload" style="display: none" />
             <div class="drop-zone" @click="triggerFileInput">
               <span class="icon">📄</span>
               <p>點擊此處選取 .json 檔案，或拖放檔案至此</p>

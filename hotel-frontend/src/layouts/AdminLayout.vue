@@ -15,12 +15,12 @@
         <RouterLink to="/admin"> 📊 Dashboard </RouterLink>
 
         <!-- 商品管理 -->
-        <RouterLink to="/admin/products"> 🛍 商品管理 </RouterLink>
+        <RouterLink v-if="authStore.hasPermission('PRODUCT_MANAGE')" to="/admin/products"> 🛍 商品管理 </RouterLink>
 
         <!-- =========================
              餐廳管理群組
              ========================= -->
-        <div class="sidebar-group">
+        <div v-if="authStore.hasPermission('RESTAURANT_MANAGE')" class="sidebar-group">
           <button type="button" class="sidebar-group-title" @click="restaurantOpen = !restaurantOpen">
             <span> 🍽 餐廳管理 </span>
 
@@ -39,7 +39,7 @@
         </div>
 
         <!-- ＝＝＝＝＝訂房管理＝＝＝＝＝ -->
-        <div class="sidebar-group">
+        <div v-if="authStore.hasAnyPermission(['ROOM_MANAGE', 'BOOKING_MANAGE'])" class="sidebar-group">
           <button type="button" class="sidebar-group-title" @click="roombookingOpen = !roombookingOpen">
             <span> 🛏 訂房管理 </span>
 
@@ -49,33 +49,46 @@
           </button>
 
           <div v-show="roombookingOpen" class="sidebar-submenu">
-            <RouterLink to="/admin/room-booking">訂房明細</RouterLink>
-            <RouterLink to="/admin/room-status">房間管理</RouterLink>
-            <RouterLink to="/admin/room-task">房務工單</RouterLink>
-            <RouterLink to="/admin/room-types">房間類型</RouterLink>
-            <RouterLink to="/admin/room-images">房型圖片</RouterLink>
-            <RouterLink to="/admin/booking-payments">付款紀錄</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('BOOKING_MANAGE')" to="/admin/room-booking">訂房明細</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-status">房間管理</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-task">房務工單</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-types">房間類型</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-images">房型圖片</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('BOOKING_MANAGE')" to="/admin/booking-payments">付款紀錄</RouterLink>
           </div>
         </div>
         <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
 
-        <!-- 會員管理 -->
-        <RouterLink to="/admin/members"> 👤 會員管理 </RouterLink>
+        <!-- 帳號管理群組 -->
+        <div v-if="authStore.hasAnyPermission(['MEMBER_MANAGE', 'EMPLOYEE_MANAGE'])" class="sidebar-group">
+          <button type="button" class="sidebar-group-title" @click="accountOpen = !accountOpen">
+            <span class="sidebar-title-with-icon">
+              <Users :size="18" class="lucide-icon" />
+              帳號管理
+            </span>
 
-        <!-- 員工管理 -->
-        <RouterLink to="/admin/employees"> 🧑‍💼 員工管理 </RouterLink>
+            <span class="arrow">
+              {{ accountOpen ? "▲" : "▼" }}
+            </span>
+          </button>
+
+          <div v-show="accountOpen" class="sidebar-submenu">
+            <RouterLink v-if="authStore.hasPermission('MEMBER_MANAGE')" to="/admin/members">會員管理</RouterLink>
+            <RouterLink v-if="authStore.hasPermission('EMPLOYEE_MANAGE')" to="/admin/employees">員工管理</RouterLink>
+          </div>
+        </div>
         
         <!-- 訂單管理 -->
-        <RouterLink to="/admin/orders"> 📦 訂單管理 </RouterLink>
+        <RouterLink v-if="authStore.hasPermission('ORDER_MANAGE')" to="/admin/orders"> 📦 訂單管理 </RouterLink>
 
         <!-- 優惠券管理 -->
-        <RouterLink to="/admin/coupons"> 🎟 優惠券管理 </RouterLink>
+        <RouterLink v-if="authStore.hasPermission('COUPON_MANAGE')" to="/admin/coupons"> 🎟 優惠券管理 </RouterLink>
 
         <!-- 場地管理 -->
-        <RouterLink to="/admin/venues"> 🏛️場地管理 </RouterLink>
+        <RouterLink v-if="authStore.hasPermission('VENUE_MANAGE')" to="/admin/venues"> 🏛️場地管理 </RouterLink>
 
         <!-- 場地租借管理 -->
-        <RouterLink to="/admin/rental"> 📝場地租借管理 </RouterLink>
+        <RouterLink v-if="authStore.hasPermission('VENUE_MANAGE')" to="/admin/rental"> 📝場地租借管理 </RouterLink>
       </nav>
 
       <!-- =========================
@@ -97,26 +110,19 @@
         </div>
 
         <div class="admin-header-actions">
-          <div class="admin-user">管理員</div>
+          <div class="admin-user">
+            <span class="user-avatar-mini">
+              <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <span v-else>{{ userInitial }}</span>
+            </span>
+            <span class="user-greeting-text">{{ displayName }} 您好</span>
+          </div>
 
           <RouterLink
             to="/"
             class="admin-home-button"
           >
-            <svg
-              class="admin-home-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m3 11 9-8 9 8" />
-              <path d="M5 10v10h14V10" />
-              <path d="M9 20v-6h6v6" />
-            </svg>
+            <Home class="admin-home-icon" :size="18" aria-hidden="true" />
             <span>回首頁</span>
           </RouterLink>
         </div>
@@ -131,10 +137,24 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
+import { Users, Home } from "@lucide/vue";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
+const authStore = useAuthStore();
+
+const displayName = computed(() => {
+  return authStore.name || "管理員";
+});
+
+const userInitial = computed(() => {
+  if (authStore.name && authStore.name.trim().length > 0) {
+    return authStore.name.trim().charAt(0);
+  }
+  return "管";
+});
 
 /*
  * 控制餐廳管理選單展開 / 收合
@@ -144,14 +164,68 @@ const route = useRoute();
  */
 const restaurantOpen = ref(true);
 const roombookingOpen = ref(true);
+const accountOpen = ref(true);
 </script>
 
 <style scoped>
+.sidebar-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lucide-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
 .admin-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   white-space: nowrap;
+}
+
+.admin-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fdfbf7;
+  border: 1px solid #ebd9bf;
+  padding: 6px 14px 6px 8px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a3b2a;
+}
+
+.user-avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #b58a46, #8f692f);
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-mini-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-greeting-text {
+  max-width: 180px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .admin-home-button {

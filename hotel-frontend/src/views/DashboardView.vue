@@ -22,7 +22,11 @@
 
       <div class="stat-card">
         <div class="stat-icon">
-          🛍
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
         </div>
 
         <div>
@@ -39,7 +43,14 @@
 
       <div class="stat-card">
         <div class="stat-icon">
-          🍽
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/>
+            <path d="M15 2v14"/>
+            <path d="M15 20v2"/>
+            <path d="M5 2v4a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"/>
+            <path d="M8 2v14"/>
+            <path d="M8 20v2"/>
+          </svg>
         </div>
 
         <div>
@@ -56,7 +67,13 @@
 
       <div class="stat-card">
         <div class="stat-icon">
-          📅
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+            <line x1="16" x2="16" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="2" y2="6"/>
+            <line x1="3" x2="21" y1="10" y2="10"/>
+            <path d="m9 16 2 2 4-4"/>
+          </svg>
         </div>
 
         <div>
@@ -73,7 +90,12 @@
 
       <div class="stat-card">
         <div class="stat-icon">
-          👤
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
         </div>
 
         <div>
@@ -142,7 +164,7 @@
         </div>
 
         <div class="operations-grid">
-          <RouterLink to="/admin/room-booking" class="operation-item operation-info">
+          <RouterLink to="/admin/room-booking?filter=stay_today" class="operation-item operation-info">
             <span class="operation-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h6M9 13h6" />
@@ -227,32 +249,71 @@
 
         <div class="quick-grid">
           <RouterLink to="/admin/products" class="quick-item">
-            🛍
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
             <span>商品管理</span>
           </RouterLink>
 
           <RouterLink to="/admin/orders" class="quick-item">
-            📦
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" x2="12" y1="22.08" y2="12"/>
+            </svg>
             <span>訂單管理</span>
           </RouterLink>
 
           <RouterLink to="/admin/coupons" class="quick-item">
-            🎟
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+              <path d="M13 5v2"/>
+              <path d="M13 17v2"/>
+              <path d="M13 11v2"/>
+            </svg>
             <span>優惠券管理</span>
           </RouterLink>
 
           <RouterLink to="/admin/restaurants" class="quick-item">
-            🍽
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/>
+              <path d="M15 2v14"/>
+              <path d="M15 20v2"/>
+              <path d="M5 2v4a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"/>
+              <path d="M8 2v14"/>
+              <path d="M8 20v2"/>
+            </svg>
             <span>餐廳管理</span>
           </RouterLink>
 
           <RouterLink to="/admin/rental" class="quick-item">
-            📝
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+              <path d="M6 12H4a2 2 0 0 0-2 2v8h4"/>
+              <path d="M18 9h2a2 2 0 0 1 2 2v11h-4"/>
+              <path d="M10 6h4"/>
+              <path d="M10 10h4"/>
+              <path d="M10 14h4"/>
+              <path d="M10 18h4"/>
+            </svg>
             <span>場地租借管理</span>
           </RouterLink>
 
           <RouterLink to="/admin/reservations" class="quick-item">
-            📅
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="quick-icon" aria-hidden="true">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+              <path d="M8 14h.01"/>
+              <path d="M12 14h.01"/>
+              <path d="M16 14h.01"/>
+              <path d="M8 18h.01"/>
+              <path d="M12 18h.01"/>
+              <path d="M16 18h.01"/>
+            </svg>
             <span>訂位管理</span>
           </RouterLink>
         </div>
@@ -389,6 +450,16 @@
               @click="activeAnalyticsTab = 'products'; analyticsExpanded = true"
             >
               商品月銷售
+            </button>
+
+            <button
+              type="button"
+              class="analytics-tab"
+              :class="{ active: activeAnalyticsTab === 'members' }"
+              :aria-pressed="activeAnalyticsTab === 'members'"
+              @click="activeAnalyticsTab = 'members'; analyticsExpanded = true; ensureMemberDemographicsLoaded()"
+            >
+              會員分佈畫像
             </button>
           </div>
 
@@ -824,7 +895,11 @@
       >
 
         <div class="empty-sales-icon">
-          📦
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="empty-icon-svg" aria-hidden="true">
+            <path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" x2="12" y1="22.08" y2="12"/>
+          </svg>
         </div>
 
         <strong>
@@ -1162,6 +1237,279 @@
 
       </div>
       </div>
+      </div>
+
+      <!-- =====================================================
+           會員分佈畫像（地區與年齡層）
+           ===================================================== -->
+      <div
+        v-show="activeAnalyticsTab === 'members'"
+        id="members-panel"
+        class="analytics-section analytics-panel member-analytics-section"
+      >
+        <!-- 標題與操作按鈕 -->
+        <div class="member-analytics-header">
+          <div>
+            <h2>會員來源地區與年齡層分佈</h2>
+            <p>分析會員人口特徵、客源縣市佔比與年齡世代結構</p>
+          </div>
+
+          <button
+            type="button"
+            class="member-refresh-button"
+            :disabled="memberDemographicsLoading"
+            @click="loadMemberDemographics"
+          >
+            <svg
+              :class="{ spinning: memberDemographicsLoading }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5" />
+            </svg>
+            {{ memberDemographicsLoading ? "更新中..." : "重新整理" }}
+          </button>
+        </div>
+
+        <div class="analytics-body">
+          <!-- Loading -->
+          <div v-if="memberDemographicsLoading && !memberDemographicsLoaded" class="chart-message">
+            會員人口統計資料讀取中...
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="memberDemographicsError" class="chart-error">
+            <p>{{ memberDemographicsError }}</p>
+            <button class="retry-button" @click="loadMemberDemographics">重試</button>
+          </div>
+
+          <!-- 空資料 -->
+          <div v-else-if="memberDemographics.totalMembers === 0" class="empty-sales">
+            <div class="empty-sales-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="empty-icon-svg" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="17" x2="22" y1="8" y2="13"/>
+                <line x1="22" x2="17" y1="8" y2="13"/>
+              </svg>
+            </div>
+            <strong>目前尚無會員資料</strong>
+            <p>待有新會員註冊後將自動產生人口統計圖表</p>
+          </div>
+
+          <!-- 視覺化內容 -->
+          <div v-else class="member-content-wrapper">
+            <!-- 摘要指標卡 (3大核心指標) -->
+            <div class="member-summary-grid">
+              <div class="member-summary-card">
+                <div class="summary-card-header">
+                  <span class="summary-label">會員總人數</span>
+                  <span class="summary-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </span>
+                </div>
+                <strong class="summary-value">
+                  {{ memberDemographics.totalMembers }}
+                  <small>位</small>
+                </strong>
+                <span class="summary-hint">目前系統中已註冊會員</span>
+              </div>
+
+              <div class="member-summary-card">
+                <div class="summary-card-header">
+                  <span class="summary-label">主要客源縣市</span>
+                  <span class="summary-card-icon highlight-city-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </span>
+                </div>
+                <strong class="summary-value highlight-city">
+                  {{ memberDemographics.topCity }}
+                </strong>
+                <span class="summary-hint">佔比約 {{ memberDemographics.topCityPercentage }}%</span>
+              </div>
+
+              <div class="member-summary-card">
+                <div class="summary-card-header">
+                  <span class="summary-label">主力年齡客群</span>
+                  <span class="summary-card-icon highlight-age-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </span>
+                </div>
+                <strong class="summary-value highlight-age">
+                  {{ memberDemographics.topAgeGroup }}
+                </strong>
+                <span class="summary-hint">佔比約 {{ memberDemographics.topAgeGroupPercentage }}%</span>
+              </div>
+            </div>
+
+            <!-- 主圖表網格 -->
+            <div class="member-charts-grid">
+              <!-- 左側：來源地區排行 -->
+              <div class="member-chart-box city-distribution-box">
+                <div class="chart-box-header">
+                  <div class="chart-box-title">
+                    <span class="chart-box-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chart-box-icon-svg" aria-hidden="true">
+                        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0Z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    </span>
+                    <h3>會員來源地區排行</h3>
+                  </div>
+                  <span class="chart-box-unit">單位：人 / 佔比</span>
+                </div>
+
+                <div v-if="memberDemographics.cityDistribution.length === 0" class="chart-empty-inline">
+                  暫無地區資料
+                </div>
+
+                <div v-else class="city-ranking-list">
+                  <div
+                    v-for="(item, index) in memberDemographics.cityDistribution"
+                    :key="`city-${item.city}`"
+                    class="city-ranking-item"
+                  >
+                    <div
+                      class="city-rank-badge"
+                      :class="{
+                        'rank-gold': index === 0,
+                        'rank-silver': index === 1,
+                        'rank-bronze': index === 2,
+                      }"
+                    >
+                      {{ index + 1 }}
+                    </div>
+
+                    <div class="city-info-col">
+                      <div class="city-name-row">
+                        <span class="city-name">{{ item.city }}</span>
+                        <div class="city-stats">
+                          <strong class="city-count">{{ item.count }} <small>人</small></strong>
+                          <span class="city-pct">{{ item.percentage }}%</span>
+                        </div>
+                      </div>
+
+                      <div class="city-bar-bg">
+                        <div
+                          class="city-bar-fill"
+                          :class="{
+                            'fill-top1': index === 0,
+                            'fill-top2': index === 1,
+                            'fill-top3': index === 2,
+                          }"
+                          :style="{ width: getCityBarWidth(item.count) }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右側：年齡層分佈柱狀圖與性別比例 -->
+              <div class="member-chart-box age-distribution-box">
+                <div class="chart-box-header">
+                  <div class="chart-box-title">
+                    <span class="chart-box-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chart-box-icon-svg" aria-hidden="true">
+                        <path d="M18 20V10"/>
+                        <path d="M12 20V4"/>
+                        <path d="M6 20v-6"/>
+                      </svg>
+                    </span>
+                    <h3>年齡層世代分佈</h3>
+                  </div>
+                  <span class="chart-box-unit">單位：人</span>
+                </div>
+
+                <div v-if="memberDemographics.ageDistribution.length === 0" class="chart-empty-inline">
+                  暫無年齡資料
+                </div>
+
+                <div v-else class="age-chart-container">
+                  <!-- 年齡柱狀圖 -->
+                  <div class="age-bar-chart">
+                    <div
+                      v-for="item in memberDemographics.ageDistribution"
+                      :key="`age-${item.groupName}`"
+                      class="age-bar-column"
+                    >
+                      <div class="age-bar-value">
+                        {{ item.count }}
+                      </div>
+
+                      <div class="age-bar-area">
+                        <div
+                          class="age-bar"
+                          :class="{ 'zero-bar': item.count === 0 }"
+                          :style="{ height: getAgeBarHeight(item.count) }"
+                          :title="`${item.groupName}：${item.count} 人 (${item.percentage}%)`"
+                        ></div>
+                      </div>
+
+                      <div class="age-bar-label">
+                        <strong>{{ item.groupName }}</strong>
+                        <small>{{ item.percentage }}%</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 性別結構比例 -->
+                  <div class="gender-section">
+                    <div class="gender-header">
+                      <span class="gender-title">性別結構比例</span>
+                    </div>
+
+                    <!-- 分段比例條 -->
+                    <div class="gender-segmented-bar">
+                      <div
+                        v-for="g in memberDemographics.genderDistribution"
+                        :key="`segment-${g.gender}`"
+                        class="gender-segment"
+                        :class="`gender-${g.gender.toLowerCase()}`"
+                        :style="{ width: `${g.percentage}%` }"
+                        :title="`${g.label}：${g.count} 人 (${g.percentage}%)`"
+                      ></div>
+                    </div>
+
+                    <!-- 性別細項指標 -->
+                    <div class="gender-legend-grid">
+                      <div
+                        v-for="g in memberDemographics.genderDistribution"
+                        :key="`legend-${g.gender}`"
+                        class="gender-legend-item"
+                      >
+                        <div class="gender-legend-header">
+                          <span class="gender-indicator" :class="`indicator-${g.gender.toLowerCase()}`"></span>
+                          <span class="gender-label">{{ g.label }}</span>
+                        </div>
+                        <div class="gender-legend-values">
+                          <strong>{{ g.count }} <small>人</small></strong>
+                          <span>{{ g.percentage }}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       </div>
     </section>
@@ -2444,6 +2792,107 @@ function formatCompactPrice(
 
 
 // =====================================================
+// 會員人口統計分佈
+// =====================================================
+
+const memberDemographics = ref({
+  totalMembers: 0,
+  profileCount: 0,
+  profileCompletionRate: 0,
+  topCity: "—",
+  topCityPercentage: 0,
+  topAgeGroup: "—",
+  topAgeGroupPercentage: 0,
+  cityDistribution: [],
+  ageDistribution: [],
+  genderDistribution: [],
+});
+
+const memberDemographicsLoading = ref(false);
+const memberDemographicsError = ref("");
+const memberDemographicsLoaded = ref(false);
+
+const maxCityCount = computed(() => {
+  if (!memberDemographics.value.cityDistribution || memberDemographics.value.cityDistribution.length === 0) {
+    return 1;
+  }
+  const max = Math.max(...memberDemographics.value.cityDistribution.map((item) => Number(item.count ?? 0)));
+  return Math.max(1, max);
+});
+
+const maxAgeCount = computed(() => {
+  if (!memberDemographics.value.ageDistribution || memberDemographics.value.ageDistribution.length === 0) {
+    return 1;
+  }
+  const max = Math.max(...memberDemographics.value.ageDistribution.map((item) => Number(item.count ?? 0)));
+  return Math.max(1, max);
+});
+
+function getCityBarWidth(count) {
+  const value = Number(count ?? 0);
+  if (value <= 0) return "0%";
+  const percentage = (value / maxCityCount.value) * 100;
+  return `${Math.max(4, Math.min(100, percentage))}%`;
+}
+
+function getAgeBarHeight(count) {
+  const value = Number(count ?? 0);
+  if (value <= 0) return "4px";
+  const percentage = (value / maxAgeCount.value) * 100;
+  return `${Math.max(8, Math.min(100, percentage))}%`;
+}
+
+async function loadMemberDemographics() {
+  memberDemographicsLoading.value = true;
+  memberDemographicsError.value = "";
+
+  try {
+    const response = await fetch("/api/members/statistics/demographics", {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("沒有權限讀取會員統計資料");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("會員統計 API 錯誤：", errorText);
+      throw new Error(`會員統計讀取失敗 (${response.status})`);
+    }
+
+    const data = await response.json();
+    console.log("會員統計資料：", data);
+
+    memberDemographics.value = {
+      totalMembers: Number(data.totalMembers ?? 0),
+      profileCount: Number(data.profileCount ?? 0),
+      profileCompletionRate: Number(data.profileCompletionRate ?? 0),
+      topCity: data.topCity ?? "—",
+      topCityPercentage: Number(data.topCityPercentage ?? 0),
+      topAgeGroup: data.topAgeGroup ?? "—",
+      topAgeGroupPercentage: Number(data.topAgeGroupPercentage ?? 0),
+      cityDistribution: Array.isArray(data.cityDistribution) ? data.cityDistribution : [],
+      ageDistribution: Array.isArray(data.ageDistribution) ? data.ageDistribution : [],
+      genderDistribution: Array.isArray(data.genderDistribution) ? data.genderDistribution : [],
+    };
+    memberDemographicsLoaded.value = true;
+  } catch (error) {
+    console.error("讀取會員統計失敗：", error);
+    memberDemographicsError.value = error.message || "會員統計資料讀取失敗";
+  } finally {
+    memberDemographicsLoading.value = false;
+  }
+}
+
+function ensureMemberDemographicsLoaded() {
+  if (!memberDemographicsLoaded.value && !memberDemographicsLoading.value) {
+    loadMemberDemographics();
+  }
+}
+
+// =====================================================
 // 初始化
 // =====================================================
 
@@ -2474,6 +2923,8 @@ onMounted(
         loadMonthlyProductSales(),
 
         loadOperationsCenter(),
+
+        loadMemberDemographics(),
       ]);
 
 
@@ -2571,9 +3022,16 @@ onMounted(
 
   background: #f3eadc;
 
-  border-radius: 12px;
+  color: #7b5a27;
 
-  font-size: 28px;
+  border-radius: 12px;
+}
+
+
+.stat-icon svg {
+  width: 28px;
+
+  height: 28px;
 }
 
 
@@ -3886,11 +4344,24 @@ onMounted(
 
   border-radius: 12px;
 
-  font-size: 25px;
+  font-size: 15px;
 
   text-decoration: none;
 
   transition: 0.25s;
+}
+
+
+.quick-icon {
+  width: 32px;
+
+  height: 32px;
+
+  color: #7b5a27;
+
+  stroke: #7b5a27;
+
+  transition: transform 0.25s ease, color 0.25s ease;
 }
 
 
@@ -3906,6 +4377,15 @@ onMounted(
 
   transform:
     translateY(-3px);
+}
+
+
+.quick-item:hover .quick-icon {
+  color: #b58a46;
+
+  stroke: #b58a46;
+
+  transform: scale(1.08);
 }
 
 
@@ -4150,4 +4630,563 @@ onMounted(
   }
 }
 
+/* =====================================================
+   會員分佈畫像視覺化樣式
+   ===================================================== */
+
+.member-analytics-section {
+  padding-top: 10px;
+}
+
+.member-analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.member-analytics-header h2 {
+  color: #4a3b2a;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.member-analytics-header p {
+  color: #777777;
+  font-size: 14px;
+}
+
+.member-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fdfaf6;
+  border: 1px solid #e2d7c8;
+  border-radius: 8px;
+  color: #6f5328;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.member-refresh-button:hover:not(:disabled) {
+  background: #f4ece1;
+  border-color: #c69a55;
+  color: #4a3b2a;
+}
+
+.member-refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.member-refresh-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.member-refresh-button svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.member-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 摘要指標卡 (3大核心指標) */
+.member-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.member-summary-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  background: #faf6f0;
+  border: 1px solid #ebdccb;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(111, 83, 40, 0.08);
+}
+
+.summary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.member-summary-card .summary-label {
+  color: #7a6a57;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.summary-card-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  background: #eee4d7;
+  color: #7b5a27;
+  border-radius: 8px;
+}
+
+.summary-card-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.highlight-city-icon {
+  background: #faeed9;
+  color: #c69a55;
+}
+
+.highlight-age-icon {
+  background: #e4edf8;
+  color: #315f94;
+}
+
+.member-summary-card .summary-value {
+  color: #4a3b2a;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.member-summary-card .summary-value small {
+  font-size: 14px;
+  font-weight: normal;
+  color: #777777;
+  margin-left: 2px;
+}
+
+.member-summary-card .summary-value.highlight-city {
+  color: #c69a55;
+}
+
+.member-summary-card .summary-value.highlight-age {
+  color: #315f94;
+}
+
+.member-summary-card .summary-hint {
+  color: #999999;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* 主圖表網格 (雙欄) */
+.member-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.member-chart-box {
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #eee7dd;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.chart-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3ece4;
+}
+
+.chart-box-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-box-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b5a27;
+}
+
+.chart-box-icon-svg {
+  width: 18px;
+  height: 18px;
+  color: #7b5a27;
+}
+
+.empty-icon-svg {
+  width: 48px;
+  height: 48px;
+  color: #bdae9c;
+  stroke: #bdae9c;
+  margin-bottom: 8px;
+}
+
+.chart-box-title h3 {
+  color: #4a3b2a;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.chart-box-unit {
+  color: #999999;
+  font-size: 12px;
+}
+
+.chart-empty-inline {
+  padding: 30px;
+  text-align: center;
+  color: #999999;
+  font-size: 14px;
+}
+
+/* 左側：地區排行進度圖 */
+.city-ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.city-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.city-rank-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background: #e9e4dc;
+  color: #666666;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.city-rank-badge.rank-gold {
+  background: linear-gradient(135deg, #f5d061, #e5a93b);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(229, 169, 59, 0.35);
+}
+
+.city-rank-badge.rank-silver {
+  background: linear-gradient(135deg, #d3d8dc, #a4adb5);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(164, 173, 181, 0.35);
+}
+
+.city-rank-badge.rank-bronze {
+  background: linear-gradient(135deg, #dfa375, #bd7a49);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(189, 122, 73, 0.35);
+}
+
+.city-info-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.city-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.city-name {
+  color: #4a3b2a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.city-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.city-count {
+  color: #4a3b2a;
+  font-size: 13px;
+}
+
+.city-count small {
+  color: #888888;
+  font-size: 11px;
+}
+
+.city-pct {
+  color: #888888;
+  font-size: 12px;
+  min-width: 44px;
+  text-align: right;
+}
+
+.city-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #f1ece4;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.city-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b08d57, #cfa86e);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.city-bar-fill.fill-top1 {
+  background: linear-gradient(90deg, #c69a55, #dfb774);
+}
+
+.city-bar-fill.fill-top2 {
+  background: linear-gradient(90deg, #6389b5, #88aed9);
+}
+
+.city-bar-fill.fill-top3 {
+  background: linear-gradient(90deg, #7c9d74, #9ec196);
+}
+
+/* 右側：年齡層分佈柱狀圖 */
+.age-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+.age-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 12px;
+  min-height: 180px;
+  padding: 10px 0 0;
+  border-bottom: 1px solid #eee7dd;
+}
+
+.age-bar-column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 48px;
+}
+
+.age-bar-value {
+  margin-bottom: 6px;
+  color: #6f5328;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.age-bar-area {
+  display: flex;
+  align-items: flex-end;
+  width: 32px;
+  height: 120px;
+}
+
+.age-bar {
+  width: 100%;
+  min-height: 4px;
+  background: linear-gradient(180deg, #5b84b1, #2b5586);
+  border-radius: 6px 6px 0 0;
+  transition: height 0.35s ease;
+}
+
+.age-bar-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.age-bar-label strong {
+  color: #4a3b2a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.age-bar-label small {
+  color: #888888;
+  font-size: 11px;
+}
+
+/* 性別結構比例 */
+.gender-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.gender-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gender-title {
+  color: #4a3b2a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gender-segmented-bar {
+  display: flex;
+  width: 100%;
+  height: 12px;
+  background: #ede7de;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.gender-segment {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.gender-segment.gender-m {
+  background: #315f94;
+}
+
+.gender-segment.gender-f {
+  background: #d9776f;
+}
+
+.gender-segment.gender-other {
+  background: #a09b93;
+}
+
+.gender-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.gender-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #faf6f0;
+  border-radius: 8px;
+}
+
+.gender-legend-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gender-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.indicator-m {
+  background: #315f94;
+}
+
+.indicator-f {
+  background: #d9776f;
+}
+
+.indicator-other {
+  background: #a09b93;
+}
+
+.gender-label {
+  color: #666666;
+  font-size: 12px;
+}
+
+.gender-legend-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.gender-legend-values strong {
+  color: #4a3b2a;
+  font-size: 14px;
+}
+
+.gender-legend-values strong small {
+  font-size: 11px;
+  font-weight: normal;
+  color: #888888;
+}
+
+.gender-legend-values span {
+  color: #888888;
+  font-size: 12px;
+}
+
+/* 響應式佈局適配 */
+@media (max-width: 1024px) {
+  .member-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .member-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .member-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gender-legend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .age-bar-column {
+    min-width: 38px;
+  }
+
+  .age-bar-label strong {
+    font-size: 11px;
+  }
+}
 </style>

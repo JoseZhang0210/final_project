@@ -84,7 +84,13 @@
             </div>
           </div>
           
-          <button class="btn-check-rates" @click="handleSearch">
+          <button 
+            class="btn-check-rates" 
+            :class="{ 'disabled-btn': authStore.isEmployee }"
+            :disabled="authStore.isEmployee"
+            :title="authStore.isEmployee ? '員工無法使用前台訂房功能，請至後台操作' : ''"
+            @click="handleSearch"
+          >
             CHECK RATES
           </button>
         </div>
@@ -95,6 +101,15 @@
         </div>
       </div>
     </div>
+
+    <!-- 美化版提示 Modal -->
+    <AlertModal
+      :show="alertConfig.show"
+      :type="alertConfig.type"
+      :title="alertConfig.title"
+      :message="alertConfig.message"
+      @close="closeAlert"
+    />
   </div>
 </template>
 
@@ -104,19 +119,31 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { VueDatePicker } from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css';
+import AlertModal from '../components/common/AlertModal.vue';
+import { formatDateToYYYYMMDD } from '../utils/dateUtils';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Date validation - fix timezone issue
-const now = new Date();
-const offset = now.getTimezoneOffset() * 60000;
-const localNow = new Date(now.getTime() - offset);
-localNow.setHours(0, 0, 0, 0); // Strip time
-const today = localNow;
+const alertConfig = ref({ show: false, type: 'success', title: '', message: '', onClose: null });
+function closeAlert() {
+  const cb = alertConfig.value.onClose;
+  alertConfig.value.show = false;
+  if (cb) cb();
+}
 
-const tomorrowDate = new Date(localNow.getTime() + 86400000);
-tomorrowDate.setHours(0, 0, 0, 0); // Strip time
+// 取得當前時間
+const now = new Date();
+const today = new Date();
+
+// 如果還沒超過退房時間 (12:00)，允許選擇「昨天」作為入住日 (因應凌晨入住)
+if (now.getHours() < 12) {
+  today.setDate(today.getDate() - 1);
+}
+today.setHours(0, 0, 0, 0); // 歸零時間，純比較日期
+
+const tomorrowDate = new Date(today);
+tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
 const dateRange = ref([today, tomorrowDate]);
 
@@ -141,30 +168,44 @@ function handleInternalModelChange(val) {
   if (val && val[0] && val[1]) {
     if (isSelecting.value) {
       isSelecting.value = false;
-      // 延遲 800 毫秒，讓使用者有足夠時間看到右下角顯示的入住天數
+      // 延遲讓使用者有足夠時間看到右下角顯示的入住天數
+      const DELAY_AUTO_SELECT_MS = 800;
       setTimeout(() => {
         if (datePickerRef.value) {
           datePickerRef.value.selectDate();
         }
-      }, 800);
+      }, DELAY_AUTO_SELECT_MS);
     }
   }
 }
 
 function handleSearch() {
+  if (authStore.isEmployee) {
+    alertConfig.value = { show: true, type: 'error', title: '操作被拒', message: '員工無法使用前台訂房功能，請至後台管理系統操作。' };
+    return;
+  }
+
   if (!authStore.isLoggedIn) {
-    alert("請先登入會員以進行訂房");
-    router.push({ name: 'login', query: { redirect: '/room-booking/select' } });
+    alertConfig.value = {
+      show: true,
+      type: 'error',
+      title: '需會員登入',
+      message: '請先登入會員以進行訂房',
+      onClose: () => { router.push({ name: 'login', query: { redirect: '/room-booking/select' } }); }
+    };
     return;
   }
 
   if (!dateRange.value || !dateRange.value[0] || !dateRange.value[1]) {
-    alert("請選擇完整的入住與退房日期");
+    alertConfig.value = { show: true, type: 'error', title: '資料不完整', message: '請選擇完整的入住與退房日期' };
     return;
   }
 
-  const checkIn = new Date(dateRange.value[0].getTime() - offset).toISOString().split('T')[0];
-  const checkOut = new Date(dateRange.value[1].getTime() - offset).toISOString().split('T')[0];
+  const start = dateRange.value[0];
+  const end = dateRange.value[1];
+
+  const checkIn = formatDateToYYYYMMDD(start);
+  const checkOut = formatDateToYYYYMMDD(end);
 
   router.push({
     name: 'room-selection',
@@ -415,8 +456,15 @@ function handleSearch() {
   margin-left: 1rem;
 }
 
-.btn-check-rates:hover {
+.btn-check-rates:hover:not(:disabled) {
   background: #f0f0f0;
+}
+
+.disabled-btn {
+  background: #cccccc !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
 }
 
 .search-footer {

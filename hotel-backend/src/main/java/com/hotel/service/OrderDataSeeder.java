@@ -5,25 +5,23 @@ import com.hotel.repository.CustomerOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.stereotype.Component;
 
 /**
- * 訂單系統資料種子注入器 (Data Seeder)。
- *
- * <p>在 Spring Boot 啟動且 Hibernate 完成 DDL 更新後自動執行。 若檢測到訂單系統資料表為空，自動從
- * resources/data/order-seed-data.json 注入初始資料， 徹底解決「不跑 createTable / insertAll 導致空表無資料」的問題。
+ * 原訂單系統資料種子注入器。
+ * 
+ * 目前已由統一全系統資料初始化器 DatabaseDataInitializer 接管。
+ * 本類別予以保留以維護歷史相容性，但移除 @Component 避免重複執行。
  */
-@Component
+@Deprecated
 @RequiredArgsConstructor
 @Slf4j
-public class OrderDataSeeder implements ApplicationRunner {
+public class OrderDataSeeder {
 
   private final CouponRepository couponRepository;
   private final CustomerOrderRepository customerOrderRepository;
   private final OrderDataExchangeService orderDataExchangeService;
 
-  @Override
+  @Deprecated
   public void run(ApplicationArguments args) {
     long couponCount = couponRepository.count();
     long orderCount = customerOrderRepository.count();

@@ -37,6 +37,7 @@ public class EmployeeService {
     private final EmployeePermissionRepository employeePermissionRepository;
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvatarStorageService avatarStorageService;
 
     public EmployeeService(
             EmployeeRepository employeeRepository,
@@ -45,7 +46,8 @@ public class EmployeeService {
             DepartmentRepository departmentRepository,
             EmployeePermissionRepository employeePermissionRepository,
             PermissionRepository permissionRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AvatarStorageService avatarStorageService) {
         this.employeeRepository = employeeRepository;
         this.accountRepository = accountRepository;
         this.profileRepository = profileRepository;
@@ -53,6 +55,7 @@ public class EmployeeService {
         this.employeePermissionRepository = employeePermissionRepository;
         this.permissionRepository = permissionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.avatarStorageService = avatarStorageService;
     }
 
     // =========================================
@@ -64,7 +67,8 @@ public class EmployeeService {
         List<EmployeeDTO> list = new ArrayList<>();
 
         Map<Integer, String> permissionNameMap = permissionRepository.findAll().stream()
-                .collect(Collectors.toMap(Permission::getPermissionId, Permission::getPermissionName, (v1, v2) -> v1));
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toMap(p -> p != null ? p.getPermissionId() : null, p -> p != null ? p.getPermissionName() : null, (v1, v2) -> v1));
 
         List<EmployeePermission> allEmployeePermissions = employeePermissionRepository.findAll();
         Map<Integer, List<Integer>> empPermMap = new java.util.HashMap<>();
@@ -232,6 +236,9 @@ public class EmployeeService {
         profile.setAddress(dto.getAddress());
         profile.setBirthday(dto.getBirthday());
         profile.setGender(dto.getGender());
+        if (dto.getAvatarUrl() != null) {
+            profile.setAvatarUrl(dto.getAvatarUrl());
+        }
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
         Profile savedProfile = profileRepository.save(profile);
@@ -319,6 +326,8 @@ public class EmployeeService {
                 profile.setBirthday(dto.getBirthday());
             if (dto.getGender() != null)
                 profile.setGender(dto.getGender());
+            if (dto.getAvatarUrl() != null)
+                profile.setAvatarUrl(dto.getAvatarUrl());
             profile.setUpdatedAt(LocalDateTime.now());
             profile = profileRepository.save(profile);
         }
@@ -433,12 +442,12 @@ public class EmployeeService {
             return;
         }
         List<EmployeePermission> epList = employeePermissionRepository.findByEmployeeId(employeeId);
-        List<Integer> permIds = epList.stream().map(EmployeePermission::getPermissionId).collect(Collectors.toList());
+        List<Integer> permIds = epList.stream().map(ep -> ep != null ? ep.getPermissionId() : null).filter(java.util.Objects::nonNull).collect(Collectors.toList());
         dto.setPermissionIds(permIds);
 
         if (!permIds.isEmpty()) {
             List<Permission> perms = permissionRepository.findAllById(permIds);
-            List<String> permNames = perms.stream().map(Permission::getPermissionName).collect(Collectors.toList());
+            List<String> permNames = perms.stream().map(p -> p != null ? p.getPermissionName() : null).filter(java.util.Objects::nonNull).collect(Collectors.toList());
             dto.setPermissionNames(permNames);
         } else {
             dto.setPermissionNames(new ArrayList<>());
@@ -501,8 +510,34 @@ public class EmployeeService {
             dto.setBirthday(profile.getBirthday());
             dto.setGender(profile.getGender());
             dto.setUpdatedAt(profile.getUpdatedAt());
+            dto.setAvatarUrl(profile.getAvatarUrl());
         }
         return dto;
+    }
+
+    // =========================================
+    // 11. 上傳/更新員工頭像 (DRY - 委託 AvatarStorageService)
+    // =========================================
+    public EmployeeDTO updateAvatarByUsername(String username, org.springframework.web.multipart.MultipartFile file) {
+        Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            throw new IllegalArgumentException("查無此帳號");
+        }
+        Employee employee = employeeRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (employee == null) {
+            throw new IllegalArgumentException("查無員工資料");
+        }
+        avatarStorageService.storeAvatar(account.getAccountId(), file);
+        return findByUsername(username);
+    }
+
+    public EmployeeDTO updateAvatarByEmployeeId(Integer employeeId, org.springframework.web.multipart.MultipartFile file) {
+        Employee employee = employeeRepository.findById(employeeId).orElse(null);
+        if (employee == null) {
+            throw new IllegalArgumentException("查無員工資料");
+        }
+        avatarStorageService.storeAvatar(employee.getAccountId(), file);
+        return findById(employeeId);
     }
 }
 

@@ -1,0 +1,31 @@
+[
+  {
+    "timeId": 1,
+    "restaurantId": 1,
+    "mealType": "早餐",
+    "openTime": "07:00:00",
+    "closeTime": "10:00:00"
+  },
+  {
+    "timeId": 2,
+    "restaurantId": 1,
+    "mealType": "午餐",
+    "openTime": "11:30:00",
+    "closeTime": "14:00:00"
+  },
+  {
+    "timeId": 3,
+    "restaurantId": 1,
+    "mealType": "晚餐",
+    "openTime": "17:30:00",
+    "closeTime": "21:00:00"
+  },
+  {
+    "timeId": 4,
+    "restaurantId": 2,
+    "mealType": "下午茶",
+    "openTime": "14:00:00",
+    "closeTime": "17:00:00"
+  }
+]
+

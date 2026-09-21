@@ -236,3 +236,14 @@ node_modules/
 # Ignore test scripts
 test_db.js
 test_db.js*
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# IoT
+iot/
+iot-*/
+iot-hardware/
+.pio/

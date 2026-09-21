@@ -16,6 +16,8 @@ import com.hotel.model.entity.RoomTask;
 import com.hotel.repository.RoomTaskRepository;
 import com.hotel.service.BookingService;
 import com.hotel.service.RoomTaskService;
+import com.hotel.service.BookingPaymentService;
+import com.hotel.model.dto.BookingPaymentDTO;
 
 @Component
 public class HotelScheduler {
@@ -26,12 +28,14 @@ public class HotelScheduler {
     private final RoomTaskService roomTaskService;
     private final RoomTaskRepository roomTaskRepository;
     private final com.hotel.service.RoomService roomService;
+    private final BookingPaymentService bookingPaymentService;
 
-    public HotelScheduler(BookingService bookingService, RoomTaskService roomTaskService, RoomTaskRepository roomTaskRepository, com.hotel.service.RoomService roomService) {
+    public HotelScheduler(BookingService bookingService, RoomTaskService roomTaskService, RoomTaskRepository roomTaskRepository, com.hotel.service.RoomService roomService, BookingPaymentService bookingPaymentService) {
         this.bookingService = bookingService;
         this.roomTaskService = roomTaskService;
         this.roomTaskRepository = roomTaskRepository;
         this.roomService = roomService;
+        this.bookingPaymentService = bookingPaymentService;
     }
 
     @PostConstruct
@@ -61,26 +65,10 @@ public class HotelScheduler {
                     
                     boolean isCheckoutOverdue = today.isAfter(b.getCheckOutDate()) || 
                                               (today.isEqual(b.getCheckOutDate()) && currentHour >= 12);
-                    
-                    boolean isPastCheckInDate = today.isAfter(b.getCheckInDate());
-                    boolean isCheckInTimeToday = today.isEqual(b.getCheckInDate()) && currentHour >= 15;
 
                     if (isCheckoutOverdue) {
-                        if ("待入住".equals(currentStatus)) {
-                            log.info("自動修正：訂單 ID {} 過期未入住，轉為已取消", b.getBookingId());
-                            updateDto.setBookingStatus("已取消");
-                        } else {
-                            log.info("自動修正：訂單 ID {} 退房時間已過 (12:00)，轉為已完成", b.getBookingId());
-                            updateDto.setBookingStatus("已完成");
-                        }
-                        isUpdated = true;
-                    } else if (isPastCheckInDate && "待入住".equals(currentStatus)) {
-                        log.info("自動修正：訂單 ID {} 逾期未入住 (No-show)，轉為已取消", b.getBookingId());
-                        updateDto.setBookingStatus("已取消");
-                        isUpdated = true;
-                    } else if (isCheckInTimeToday && "待入住".equals(currentStatus)) {
-                        log.info("自動修正：訂單 ID {} 達到今日入住時間 (15:00)，轉為已入住", b.getBookingId());
-                        updateDto.setBookingStatus("已入住");
+                        log.info("自動修正：訂單 ID {} 退房時間已過，轉為已完成", b.getBookingId());
+                        updateDto.setBookingStatus("已完成");
                         isUpdated = true;
                     }
                 }
@@ -195,5 +183,35 @@ public class HotelScheduler {
             }
         }
         log.info("每日 00:00 過期工單清理排程執行完畢，共刪除 {} 筆。", toDelete.size());
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void cancelUnpaidBookings() {
+        log.info("排程執行：自動取消 15 分鐘未付款訂單...");
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(15);
+        List<BookingDTO> allBookings = bookingService.findAll();
+        
+        int canceledCount = 0;
+        for (BookingDTO b : allBookings) {
+            // 只處理「已預訂」狀態，且建立時間超過 15 分鐘的訂單
+            if ("已預訂".equals(b.getBookingStatus()) && b.getCreatedAt() != null && b.getCreatedAt().isBefore(threshold)) {
+                try {
+                    BookingPaymentDTO payment = bookingPaymentService.findByBookingId(b.getBookingId());
+                    // 如果沒有付款紀錄，或者付款紀錄不是「已付款」，就自動取消
+                    if (payment == null || !"已付款".equals(payment.getPaymentStatus())) {
+                        b.setBookingStatus("已取消");
+                        bookingService.updateBooking(b.getBookingId(), b);
+                        log.info("自動取消逾時未付訂單：Booking ID = {}", b.getBookingId());
+                        canceledCount++;
+                    }
+                } catch (Exception e) {
+                    // findByBookingId 可能拋出 NotFoundException 或其他錯誤
+                    log.warn("無法確認訂單付款狀態或無法取消 (Booking ID: {}): {}", b.getBookingId(), e.getMessage());
+                }
+            }
+        }
+        if (canceledCount > 0) {
+            log.info("自動取消 15 分鐘未付款訂單完成，共取消 {} 筆。", canceledCount);
+        }
     }
 }

@@ -11,6 +11,9 @@ export async function checkoutRental(token, id) { // 付款請求只傳租借編
 
 const api = axios.create({
   baseURL: "/api",
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 function authConfig(token) {
@@ -33,11 +36,26 @@ export function getStoredAuthorities() {
   }
 }
 
+/*
+ * 後台場地租借取得既有會員資料，
+ * 僅用於依 memberId 顯示會員姓名。
+ */
+export async function getMembers(token) {
+  const response = await api.get(
+    "/members",
+    authConfig(token),
+  );
+
+  return response.data;
+}
 export async function getVenues(token) {
   const response = await api.get(
     "/venues",
     authConfig(token),
   );
+  if (!Array.isArray(response.data)) {
+    throw new Error("場地資料格式錯誤，請確認網路連線或伺服器回應");
+  }
   return response.data;
 }
 
@@ -89,6 +107,20 @@ export async function createRental(token, payload) {
     payload,
     authConfig(token),
   );
+  return response.data;
+}
+
+/*
+ * 管理員替既有會員建立場地租借。
+ * memberId 由後台指定，其餘系統欄位仍由後端產生。
+ */
+export async function createAdminRental(token, payload) {
+  const response = await api.post(
+    "/rentals/admin",
+    payload,
+    authConfig(token),
+  );
+
   return response.data;
 }
 

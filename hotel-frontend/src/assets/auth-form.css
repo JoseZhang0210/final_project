@@ -1,0 +1,529 @@
+/* =========================================================
+   身分驗證與表單頁面通用樣式 (auth-form.css)
+   適用於 RegisterView, LoginView, ForgotPasswordView
+   ========================================================= */
+
+.auth-page-wrapper {
+  min-height: 100vh;
+  font-family: Arial, "Segoe UI", "Microsoft JhengHei", sans-serif;
+  background:
+    linear-gradient(rgba(20, 16, 12, 0.65), rgba(20, 16, 12, 0.65)),
+    url("https://images.unsplash.com/photo-1566073771259-6a8506099945") center / cover no-repeat fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.auth-card-container {
+  width: 100%;
+}
+
+.auth-card {
+  background-color: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(8px);
+  padding: 40px 45px;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+}
+
+.auth-card h1 {
+  text-align: center;
+  color: #3b2c1d;
+  font-size: 24px;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.auth-card .subtitle {
+  text-align: center;
+  color: #665b50;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+/* 飯店品牌標頭 (ForgotPassword/Login) */
+.hotel-brand {
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.hotel-brand .hotel-name {
+  color: #9b7435;
+  font-size: 26px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.hotel-brand .hotel-en {
+  color: #998369;
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* 區塊樣式 */
+.form-section {
+  margin-bottom: 24px;
+  background-color: #faf7f2;
+  border: 1px solid #ede4d6;
+  border-radius: 12px;
+  padding: 18px 22px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #5c472a;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px dashed #ded4c3;
+  padding-bottom: 8px;
+}
+
+.lucide-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 表單排版 */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #4a3b2a;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.form-group .required {
+  color: #c93b2b;
+  font-weight: bold;
+}
+
+.form-group input,
+.auth-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #d8d0c5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: 0.25s;
+  box-sizing: border-box;
+  background-color: #fff;
+}
+
+.form-group input:focus,
+.auth-input:focus {
+  outline: none;
+  border-color: #b58a46;
+  box-shadow: 0 0 0 3px rgba(181, 138, 70, 0.14);
+}
+
+.form-group input.is-invalid,
+.auth-input.is-invalid {
+  border-color: #c93b2b;
+  background-color: #fffaf9;
+}
+
+.field-error {
+  color: #c93b2b;
+  font-size: 12px;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: #887a6d;
+  margin-top: 5px;
+}
+
+/* 信箱輸入群組與驗證碼發送按鈕 */
+.email-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.email-input-group input {
+  flex: 1;
+}
+
+.btn-send-code {
+  white-space: nowrap;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  background-color: #8c6d3b;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-send-code:hover:not(:disabled) {
+  background-color: #6e542c;
+}
+
+.btn-send-code:disabled {
+  background-color: #c2b7a6;
+  cursor: not-allowed;
+}
+
+.code-input {
+  letter-spacing: 4px;
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.google-verified-tag {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+/* 性別單選 */
+.gender-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+  font-weight: normal;
+  margin-bottom: 0;
+}
+
+.radio-label input[type="radio"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #b58a46;
+}
+
+/* Google 橫幅提示 */
+.google-notice-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #eef4fe 0%, #e8f0fe 100%);
+  border: 1px solid #c2d7fc;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+}
+
+.google-badge-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background-color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(66, 133, 244, 0.2);
+}
+
+.google-badge-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.google-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+}
+
+.google-avatar-preview {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
+}
+
+.google-badge-sub-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.google-badge-sub-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.google-notice-content {
+  flex: 1;
+}
+
+.google-notice-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1967d2;
+  margin-bottom: 3px;
+}
+
+.google-notice-desc {
+  font-size: 12.5px;
+  color: #495057;
+  line-height: 1.5;
+}
+
+/* 按鈕群組 */
+.auth-button-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-auth-primary {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #b58a46 0%, #946c2b 100%);
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  transition: 0.25s;
+  box-shadow: 0 4px 12px rgba(181, 138, 70, 0.28);
+  text-align: center;
+}
+
+.btn-auth-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a17838 0%, #825d22 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(181, 138, 70, 0.38);
+}
+
+.btn-auth-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-auth-outline {
+  padding: 13px 20px;
+  border: 1px solid #d8d0c5;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #665b50;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.25s;
+}
+
+.btn-auth-outline:hover {
+  background-color: #faf7f2;
+  border-color: #b58a46;
+  color: #b58a46;
+}
+
+/* 訊息提示 */
+.auth-message {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-message.success {
+  background-color: #e5f6eb;
+  color: #257641;
+}
+
+.auth-message.error {
+  background-color: #fde9e7;
+  color: #b3443c;
+}
+
+/* 第三方登入 */
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  margin: 22px 0 16px;
+  color: #8c7e70;
+  font-size: 13px;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2dacd;
+}
+
+.oauth-divider span {
+  padding: 0 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.google-btn-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+}
+
+.custom-google-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 11px 16px;
+  background-color: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.08);
+}
+
+.custom-google-button:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #c6c9ce;
+  box-shadow: 0 2px 6px rgba(60, 64, 67, 0.15);
+  transform: translateY(-1px);
+}
+
+.custom-google-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* 底部導覽連結 */
+.link-area,
+.login-link {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  color: #777;
+}
+
+.link-area a,
+.login-link a {
+  color: #9b7435;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.link-area a:hover,
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+.link-area .divider {
+  margin: 0 8px;
+  color: #ccc;
+}
+
+.home-link {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.home-link a {
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.home-link a:hover {
+  color: #9b7435;
+}
+
+/* RWD */
+@media (max-width: 600px) {
+  .auth-card {
+    padding: 32px 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-page-wrapper {
+    padding: 18px;
+  }
+}
+
