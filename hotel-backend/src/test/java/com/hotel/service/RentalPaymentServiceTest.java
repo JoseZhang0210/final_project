@@ -134,10 +134,18 @@ class RentalPaymentServiceTest { // 測試簽章、金額、所有權與重送�
         assertEquals(false, service.getDemoMode(adminAuth).get("enabled"));
     }
 
-    /** 驗證 stageDemoPaid 依據 runtime flag 開關允許或拒絕。 */
-    @Test void stageDemoPaidRespectsRuntimeFlag() {
+    /** 驗證 Demo Mode OFF 時 stageDemoPaid 拒絕且不寄 Email。 */
+    @Test void stageDemoPaidOffRejectsAndDoesNotMail() {
+        var customerAuth = new UsernamePasswordAuthenticationToken("customer01", null, List.of());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.stageDemoPaid(1, customerAuth));
+        verifyNoInteractions(mail);
+    }
+
+    /** 驗證 Demo Mode ON 時 stageDemoPaid 於 commit 後僅寄送一次 Email，且重複呼叫不重複寄信。 */
+    @Test void stageDemoPaidMailsOnceAfterCommitAndIgnoresDuplicate() {
         var adminAuth = new UsernamePasswordAuthenticationToken("admin01", null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"), new SimpleGrantedAuthority("POSITION_總經理")));
         var customerAuth = new UsernamePasswordAuthenticationToken("customer01", null, List.of());
+        service.setDemoMode(true, adminAuth);
 
         Rental rental = new Rental();
         rental.setMemberId(1);
@@ -148,17 +156,47 @@ class RentalPaymentServiceTest { // 測試簽章、金額、所有權與重送�
         when(rentals.resolveMemberId("customer01")).thenReturn(1);
         when(repository.lock(1)).thenReturn(payment);
         when(repository.stageDemoPaid(eq(1), eq(1), anyString(), any())).thenReturn(1);
+        when(repository.rentalFor(1)).thenReturn(Map.of("rental_id", 1, "member_id", 1, "venue_name", "多功能宴會廳", "event_name", "年度研討會", "rental_date", "2026-10-01", "guest_count", 50));
 
-        // 預設 (false) 時調用拋出 404
-        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.stageDemoPaid(1, customerAuth));
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            var result = service.stageDemoPaid(1, customerAuth);
+            assertEquals("已付款", result.get("paymentStatus"));
+            assertEquals("CONFIRMED", result.get("rentalStatus"));
 
-        // 管理員開啟開關
+            // Commit 前不寄信
+            verifyNoInteractions(mail);
+
+            // 觸發 commit 後寄信一次
+            TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
+            verify(mail, times(1)).sendDemo(any(), eq(5000), startsWith("DEMO"));
+
+            // 模擬已變更為已付款狀態
+            payment.put("payment_status", "已付款");
+
+            // 再次呼叫 stageDemoPaid 不應重複寄信
+            service.stageDemoPaid(1, customerAuth);
+            // 寄信總次數仍為 1
+            verify(mail, times(1)).sendDemo(any(), eq(5000), anyString());
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    /** 驗證會員不能以 stageDemoPaid 支付他人租借。 */
+    @Test void stageDemoPaidRejectsOtherMember() {
+        var adminAuth = new UsernamePasswordAuthenticationToken("admin01", null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"), new SimpleGrantedAuthority("POSITION_總經理")));
+        var customerAuth = new UsernamePasswordAuthenticationToken("customer01", null, List.of());
         service.setDemoMode(true, adminAuth);
 
-        // 啟用後，會員可正常完成付款標記
-        var result = service.stageDemoPaid(1, customerAuth);
-        assertEquals("已付款", result.get("paymentStatus"));
-        assertEquals("CONFIRMED", result.get("rentalStatus"));
-        assertEquals(true, result.get("demo"));
+        Rental rental = new Rental();
+        rental.setMemberId(2); // 他人的租借
+        rental.setPaymentId(2);
+
+        when(rentals.findAccessible(2, customerAuth)).thenReturn(rental);
+        when(rentals.resolveMemberId("customer01")).thenReturn(1);
+
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> service.stageDemoPaid(2, customerAuth));
+        verifyNoInteractions(mail);
     }
 }

@@ -167,6 +167,8 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
             .replace("-", "")
             .substring(0, 16);
 
+        int amount = ((Number) payment.get("total_price")).intValue();
+
         if (payments.stageDemoPaid(
                 rental.getPaymentId(),
                 rentalId,
@@ -175,6 +177,15 @@ public class RentalPaymentService { // 付款參數、驗證與冪等處理集�
             ) != 1) {
             throw new IllegalStateException("測試付款狀態更新失敗");
         }
+
+        var rentalDetails = payments.rentalFor(rental.getPaymentId());
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                mail.sendDemo(rentalDetails, amount, demoTrade);
+            }
+        });
 
         return Map.of(
             "rentalId", rentalId,
