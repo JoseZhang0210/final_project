@@ -137,6 +137,8 @@ public class RoomBookingEcpayController {
             // 查出訂單金額
             BookingDTO booking = bookingService.findById(bookingId).orElseThrow(() -> new RuntimeException("訂單不存在"));
 
+            boolean shouldSendMail = false;
+
             // 產生一組假的交易序號，符合您的圖表 TXN...
             String tradeNo = "TXN"
                     + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -151,7 +153,11 @@ public class RoomBookingEcpayController {
                 payment.setTransactionId(tradeNo);
                 payment.setPaidAt(LocalDateTime.now());
                 bookingPaymentService.createPayment(payment);
+                shouldSendMail = true;
             } else {
+                if (!"已付款".equals(payment.getPaymentStatus())) {
+                    shouldSendMail = true;
+                }
                 payment.setPaymentStatus("已付款");
                 if (payment.getTransactionId() == null || payment.getTransactionId().isEmpty()) {
                     payment.setTransactionId(tradeNo);
@@ -160,6 +166,14 @@ public class RoomBookingEcpayController {
                 bookingPaymentService.update(payment.getPaymentId(), payment);
             }
             System.out.println("訂單 " + bookingId + " 付款狀態已透過藍色按鈕更新為：已付款");
+
+            if (shouldSendMail) {
+                try {
+                    mailUtil.sendBookingConfirmation(bookingId);
+                } catch (Exception e) {
+                    System.err.println("發送訂房確認信失敗: " + e.getMessage());
+                }
+            }
         } catch (Exception e) {
             System.err.println("更新付款狀態失敗: " + e.getMessage());
         }
@@ -267,6 +281,7 @@ public class RoomBookingEcpayController {
             int bookingId = Integer.parseInt(merchantTradeNo.substring(5, merchantTradeNo.indexOf("T")));
 
             try {
+                boolean shouldSendMail = false;
                 // 尋找或建立對應的 BookingPayment 並更新狀態
                 BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
                 if (payment == null) {
@@ -278,7 +293,11 @@ public class RoomBookingEcpayController {
                     payment.setTransactionId(tradeNo);
                     payment.setPaidAt(LocalDateTime.now());
                     bookingPaymentService.createPayment(payment);
+                    shouldSendMail = true;
                 } else {
+                    if (!"已付款".equals(payment.getPaymentStatus())) {
+                        shouldSendMail = true;
+                    }
                     payment.setPaymentMethod("信用卡");
                     payment.setPaymentStatus("已付款");
                     payment.setTransactionId(tradeNo);
@@ -286,6 +305,14 @@ public class RoomBookingEcpayController {
                     bookingPaymentService.update(payment.getPaymentId(), payment);
                 }
                 System.out.println("訂單 " + bookingId + " 付款狀態已更新為：已付款");
+
+                if (shouldSendMail) {
+                    try {
+                        mailUtil.sendBookingConfirmation(bookingId);
+                    } catch (Exception e) {
+                        System.err.println("發送訂房確認信失敗: " + e.getMessage());
+                    }
+                }
             } catch (Exception e) {
                 System.err.println("更新付款狀態失敗: " + e.getMessage());
             }
