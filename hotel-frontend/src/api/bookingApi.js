@@ -6,11 +6,11 @@ export const bookingApi = {
   getAllBookings() {
     return fetchClient(BASE_URL, { method: "GET" });
   },
-  
+
   getBookingById(id) {
     return fetchClient(`${BASE_URL}/${id}`, { method: "GET" });
   },
-  
+
   searchBookings(criteria) {
     return fetchClient(`${BASE_URL}/search`, {
       method: "POST",
@@ -24,24 +24,34 @@ export const bookingApi = {
   },
 
   searchByStatus(status) {
-    return fetchClient(`${BASE_URL}/status?status=${encodeURIComponent(status)}`, { method: "GET" });
+    return fetchClient(
+      `${BASE_URL}/status?status=${encodeURIComponent(status)}`,
+      { method: "GET" },
+    );
   },
-  
+
   createBooking(data) {
     return fetchClient(BASE_URL, {
       method: "POST",
       body: data,
     });
   },
-  
+
   updateBooking(id, data) {
     return fetchClient(`${BASE_URL}/${id}`, {
       method: "PUT",
       body: data,
     });
   },
-  
+
   deleteBooking(id) {
     return fetchClient(`${BASE_URL}/${id}`, { method: "DELETE" });
+  },
+
+  cancelBooking(id, data = {}) {
+    return fetchClient(`${BASE_URL}/${id}/cancel`, {
+      method: "POST",
+      body: data,
+    });
   },
 };

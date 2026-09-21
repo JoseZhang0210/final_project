@@ -81,13 +81,63 @@ public class BookingController {
     /**
      * 更新指定 ID 的訂房紀錄
      * 
-     * @param id 欲更新的訂房 ID
+     * @param id         欲更新的訂房 ID
      * @param bookingDTO 包含更新資訊的資料傳輸物件
      * @return 更新後的訂房紀錄
      */
     @PutMapping("/{id}")
     public ResponseEntity<BookingDTO> updateBooking(@PathVariable Integer id, @RequestBody BookingDTO bookingDTO) {
         return ResponseEntity.ok(bookingService.updateBooking(id, bookingDTO));
+    }
+
+    /**
+     * 取消指定 ID 的訂房紀錄（限入住日期 > 3 天）
+     * 
+     * @param id             欲取消的訂房 ID
+     * @param authentication 登入認證物件
+     * @param body           可選請求參數 (如 memberId)
+     * @return 取消後之訂房紀錄與訊息
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelBooking(
+            @PathVariable Integer id,
+            org.springframework.security.core.Authentication authentication,
+            @RequestBody(required = false) Map<String, Object> body) {
+        try {
+            Integer memberId = null;
+            boolean isAdmin = false;
+
+            if (authentication != null && authentication.isAuthenticated()
+                    && !"anonymousUser".equals(authentication.getName())) {
+                isAdmin = authentication.getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ADMIN"));
+            }
+
+            if (body != null && body.get("memberId") != null) {
+                try {
+                    memberId = Integer.valueOf(body.get("memberId").toString());
+                } catch (Exception ignored) {
+                }
+            }
+
+            BookingDTO cancelledBooking = bookingService.cancelBooking(id, memberId, isAdmin);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "訂單已成功取消並退款",
+                    "booking", cancelledBooking));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()));
+        } catch (jakarta.persistence.EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "取消訂房時發生系統錯誤：" + e.getMessage()));
+        }
     }
 
     /**

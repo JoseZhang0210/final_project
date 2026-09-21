@@ -38,18 +38,20 @@ public class BookingServiceImpl implements BookingService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomTaskRepository roomTaskRepository;
     private final BookingPaymentRepository bookingPaymentRepository;
+    private final com.hotel.util.MailUtil mailUtil;
 
     @Value("${hotel.default.housekeeper.id:13}")
     private Integer defaultHousekeeperId;
 
     public BookingServiceImpl(BookingRepository bookingRepository, RoomRepository roomRepository,
             RoomTypeRepository roomTypeRepository, RoomTaskRepository roomTaskRepository,
-            BookingPaymentRepository bookingPaymentRepository) {
+            BookingPaymentRepository bookingPaymentRepository, com.hotel.util.MailUtil mailUtil) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.roomTypeRepository = roomTypeRepository;
         this.roomTaskRepository = roomTaskRepository;
         this.bookingPaymentRepository = bookingPaymentRepository;
+        this.mailUtil = mailUtil;
     }
 
     @Override
@@ -80,8 +82,7 @@ public class BookingServiceImpl implements BookingService {
                 bookingDTO.getRoomTypeId(),
                 bookingDTO.getCheckInDate(),
                 bookingDTO.getCheckOutDate(),
-                null
-        );
+                null);
         bookingDTO.setRoomId(assignedRoomId);
 
         // 後端自動計算訂單金額：房型每晚單價 × 住宿天數，防止前端傳入不正確的金額
@@ -90,6 +91,14 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = convertToEntity(bookingDTO);
         Booking savedBooking = bookingRepository.save(booking);
+
+        // 建立訂房後立即發送訂房確認與歡迎信
+        try {
+            mailUtil.sendBookingConfirmation(savedBooking.getBookingId());
+        } catch (Exception e) {
+            log.error("建立訂房後發送確認信失敗 (Booking ID: {}): {}", savedBooking.getBookingId(), e.getMessage());
+        }
+
         return convertToDTO(savedBooking);
     }
 
@@ -99,20 +108,23 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new EntityNotFoundException("修改失敗：找不到 ID 為 " + id + " 的預訂資料"));
 
         boolean needReassign = false;
-        
+
         Integer targetRoomTypeId = existingBooking.getRoomTypeId();
         LocalDate targetCheckIn = existingBooking.getCheckInDate();
         LocalDate targetCheckOut = existingBooking.getCheckOutDate();
 
-        if (newBookingData.getRoomTypeId() != null && !newBookingData.getRoomTypeId().equals(existingBooking.getRoomTypeId())) {
+        if (newBookingData.getRoomTypeId() != null
+                && !newBookingData.getRoomTypeId().equals(existingBooking.getRoomTypeId())) {
             targetRoomTypeId = newBookingData.getRoomTypeId();
             needReassign = true;
         }
-        if (newBookingData.getCheckInDate() != null && !newBookingData.getCheckInDate().equals(existingBooking.getCheckInDate())) {
+        if (newBookingData.getCheckInDate() != null
+                && !newBookingData.getCheckInDate().equals(existingBooking.getCheckInDate())) {
             targetCheckIn = newBookingData.getCheckInDate();
             needReassign = true;
         }
-        if (newBookingData.getCheckOutDate() != null && !newBookingData.getCheckOutDate().equals(existingBooking.getCheckOutDate())) {
+        if (newBookingData.getCheckOutDate() != null
+                && !newBookingData.getCheckOutDate().equals(existingBooking.getCheckOutDate())) {
             targetCheckOut = newBookingData.getCheckOutDate();
             needReassign = true;
         }
@@ -134,11 +146,12 @@ public class BookingServiceImpl implements BookingService {
         if (newBookingData.getBookingPrice() != null) {
             existingBooking.setBookingPrice(newBookingData.getBookingPrice());
         }
-        if (newBookingData.getBookingStatus() != null && !newBookingData.getBookingStatus().equals(existingBooking.getBookingStatus())) {
+        if (newBookingData.getBookingStatus() != null
+                && !newBookingData.getBookingStatus().equals(existingBooking.getBookingStatus())) {
             String oldStatus = existingBooking.getBookingStatus();
             String newStatus = newBookingData.getBookingStatus();
             existingBooking.setBookingStatus(newStatus);
-            
+
             handleStatusTransition(existingBooking, oldStatus, newStatus);
         }
 
@@ -160,14 +173,17 @@ public class BookingServiceImpl implements BookingService {
                 room.setRoomStatus(RoomStatus.OCCUPIED);
                 roomRepository.save(room);
             }
-        } else if ((BookingStatus.CHECKED_OUT.equals(newStatus) || BookingStatus.COMPLETED.equals(newStatus)) && !oldStatus.equals(newStatus)) {
+        } else if ((BookingStatus.CHECKED_OUT.equals(newStatus) || BookingStatus.COMPLETED.equals(newStatus))
+                && !oldStatus.equals(newStatus)) {
             Room room = roomRepository.findById(existingBooking.getRoomId()).orElse(null);
             if (room != null) {
                 room.setRoomStatus(RoomStatus.CLEANING);
                 roomRepository.save(room);
 
                 java.time.LocalDateTime targetTime = existingBooking.getCheckOutDate().atTime(12, 0);
-                java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().isBefore(targetTime) ? java.time.LocalDateTime.now() : targetTime;
+                java.time.LocalDateTime createdAt = java.time.LocalDateTime.now().isBefore(targetTime)
+                        ? java.time.LocalDateTime.now()
+                        : targetTime;
                 createCleaningTask(room.getRoomId(), createdAt, "由系統自動產生：退房清潔");
             }
         } else if (BookingStatus.CANCELLED.equals(newStatus) && !oldStatus.equals(newStatus)) {
@@ -179,8 +195,10 @@ public class BookingServiceImpl implements BookingService {
                     createCleaningTask(room.getRoomId(), java.time.LocalDateTime.now(), "由系統自動產生：入住後取消，執行退房清潔");
                 } else {
                     String currentRoomStatus = room.getRoomStatus();
-                    if (!RoomStatus.MAINTENANCE.equals(currentRoomStatus) && !RoomStatus.DISABLED.equals(currentRoomStatus) &&
-                        !RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus) && !RoomStatus.CLEANING.equals(currentRoomStatus)) {
+                    if (!RoomStatus.MAINTENANCE.equals(currentRoomStatus)
+                            && !RoomStatus.DISABLED.equals(currentRoomStatus) &&
+                            !RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus)
+                            && !RoomStatus.CLEANING.equals(currentRoomStatus)) {
                         room.setRoomStatus(RoomStatus.AVAILABLE);
                         roomRepository.save(room);
                     }
@@ -196,7 +214,7 @@ public class BookingServiceImpl implements BookingService {
         task.setTaskType(RoomTaskStatus.TYPE_CHECKOUT_CLEANING);
         task.setTaskStatus(RoomTaskStatus.STATUS_IN_PROGRESS);
         task.setCreatedAt(createdAt);
-        
+
         Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
         task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : defaultHousekeeperId);
         task.setRemark(remark);
@@ -208,19 +226,20 @@ public class BookingServiceImpl implements BookingService {
         if (!bookingRepository.existsById(id)) {
             throw new EntityNotFoundException("欲刪除的預約 ID: " + id + " 不存在");
         }
-        
+
         // 刪除關聯的付款記錄
         bookingPaymentRepository.findByBookingId(id).ifPresent(payment -> {
             bookingPaymentRepository.delete(payment);
         });
-        
+
         bookingRepository.deleteById(id);
     }
 
     /**
      * 核心自動配房邏輯
      */
-    private Integer assignAvailableRoom(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate, Integer excludeBookingId) {
+    private Integer assignAvailableRoom(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate,
+            Integer excludeBookingId) {
         if (roomTypeId == null || checkInDate == null || checkOutDate == null) {
             throw new IllegalArgumentException("建立訂單失敗：必須提供房型、入住日期與退房日期");
         }
@@ -230,7 +249,7 @@ public class BookingServiceImpl implements BookingService {
 
         // 1. 找出特定日期區間內，該房型已被預訂的房間 ID
         List<Integer> bookedRoomIds = bookingRepository.findBookedRoomIds(roomTypeId, checkInDate, checkOutDate);
-        
+
         // 若是 update，需排除掉自己原本佔用的房間
         if (excludeBookingId != null) {
             Booking self = bookingRepository.findById(excludeBookingId).orElse(null);
@@ -248,7 +267,8 @@ public class BookingServiceImpl implements BookingService {
         // 3. 過濾出尚未被預訂，且狀態為「可入住」或「可預訂」的可用房間
         List<Room> availableRooms = allRooms.stream()
                 .filter(room -> !bookedRoomIds.contains(room.getRoomId()))
-                .filter(room -> !RoomStatus.DISABLED.equals(room.getRoomStatus()) && !RoomStatus.MAINTENANCE.equals(room.getRoomStatus()))
+                .filter(room -> !RoomStatus.DISABLED.equals(room.getRoomStatus())
+                        && !RoomStatus.MAINTENANCE.equals(room.getRoomStatus()))
                 .collect(Collectors.toList());
 
         if (availableRooms.isEmpty()) {
@@ -264,11 +284,14 @@ public class BookingServiceImpl implements BookingService {
      */
     @Override
     public Integer calculateBookingPrice(Integer roomTypeId, LocalDate checkInDate, LocalDate checkOutDate) {
-        if (roomTypeId == null || checkInDate == null || checkOutDate == null) return 0;
+        if (roomTypeId == null || checkInDate == null || checkOutDate == null)
+            return 0;
         long nights = java.time.temporal.ChronoUnit.DAYS.between(checkInDate, checkOutDate);
-        if (nights <= 0) return 0;
+        if (nights <= 0)
+            return 0;
         RoomType roomType = roomTypeRepository.findById(roomTypeId).orElse(null);
-        if (roomType == null || roomType.getPricePerNight() == null) return 0;
+        if (roomType == null || roomType.getPricePerNight() == null)
+            return 0;
         return roomType.getPricePerNight() * (int) nights;
     }
 
@@ -308,12 +331,14 @@ public class BookingServiceImpl implements BookingService {
         List<Booking> unassignedBookings = bookingRepository.findAll().stream()
                 .filter(b -> b.getRoomId() == null)
                 .filter(b -> !b.getCheckInDate().isAfter(today) && !b.getCheckOutDate().isBefore(today))
-                .filter(b -> BookingStatus.PENDING.equals(b.getBookingStatus()) || BookingStatus.CHECKED_IN.equals(b.getBookingStatus()))
+                .filter(b -> BookingStatus.PENDING.equals(b.getBookingStatus())
+                        || BookingStatus.CHECKED_IN.equals(b.getBookingStatus()))
                 .collect(Collectors.toList());
 
         for (Booking b : unassignedBookings) {
             try {
-                Integer roomId = assignAvailableRoom(b.getRoomTypeId(), b.getCheckInDate(), b.getCheckOutDate(), b.getBookingId());
+                Integer roomId = assignAvailableRoom(b.getRoomTypeId(), b.getCheckInDate(), b.getCheckOutDate(),
+                        b.getBookingId());
                 b.setRoomId(roomId);
                 bookingRepository.save(b);
                 log.info("為訂單 ID {} 自動分配了房間 ID {}", b.getBookingId(), roomId);
@@ -321,5 +346,52 @@ public class BookingServiceImpl implements BookingService {
                 log.warn("無法為訂單 ID {} 自動分配房間：{}", b.getBookingId(), e.getMessage());
             }
         }
+    }
+
+    @Override
+    public BookingDTO cancelBooking(Integer bookingId, Integer currentMemberId, boolean isAdmin) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + bookingId + " 的預訂紀錄"));
+
+        if (!isAdmin && currentMemberId != null && !currentMemberId.equals(booking.getMemberId())) {
+            throw new IllegalArgumentException("無權限取消其他會員的預訂");
+        }
+
+        if (!BookingStatus.PENDING.equals(booking.getBookingStatus())) {
+            throw new IllegalStateException("只有「待入住」狀態的訂單可以線上取消");
+        }
+
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Taipei"));
+        long daysUntilCheckIn = java.time.temporal.ChronoUnit.DAYS.between(today, booking.getCheckInDate());
+
+        if (daysUntilCheckIn <= 3) {
+            throw new IllegalStateException("入住前 3 天內無法線上取消訂房，請洽飯店客服專線");
+        }
+
+        String oldStatus = booking.getBookingStatus();
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        handleStatusTransition(booking, oldStatus, BookingStatus.CANCELLED);
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // 處理關聯付款紀錄
+        bookingPaymentRepository.findByBookingId(bookingId).ifPresent(payment -> {
+            if ("已付款".equals(payment.getPaymentStatus())) {
+                payment.setPaymentStatus("已退款");
+                bookingPaymentRepository.save(payment);
+            } else if ("待付款".equals(payment.getPaymentStatus()) || "未付款".equals(payment.getPaymentStatus())) {
+                payment.setPaymentStatus("已取消");
+                bookingPaymentRepository.save(payment);
+            }
+        });
+
+        // 發送取消與退款確認信
+        try {
+            mailUtil.sendBookingCancellation(bookingId);
+        } catch (Exception e) {
+            log.error("發送取消訂房確認信失敗 (Booking ID: {}): {}", bookingId, e.getMessage());
+        }
+
+        return convertToDTO(savedBooking);
     }
 }
