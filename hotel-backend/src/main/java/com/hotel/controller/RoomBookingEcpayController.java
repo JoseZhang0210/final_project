@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.BookingDTO;
@@ -42,7 +41,8 @@ public class RoomBookingEcpayController {
     @Value("${app.frontend.checkout-url:http://localhost:5173/room-checkout}")
     private String frontendCheckoutUrl;
 
-    public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService, BookingPaymentService bookingPaymentService, MailUtil mailUtil) {
+    public RoomBookingEcpayController(RoomBookingEcpayService ecpayService, BookingService bookingService,
+            BookingPaymentService bookingPaymentService, MailUtil mailUtil) {
         this.ecpayService = ecpayService;
         this.bookingService = bookingService;
         this.bookingPaymentService = bookingPaymentService;
@@ -52,7 +52,8 @@ public class RoomBookingEcpayController {
     // 1. 前端結帳時呼叫，取得綠界 HTML 表單
     @PostMapping("/checkout")
     public ResponseEntity<String> checkout(@RequestBody Map<String, Object> request) {
-        Integer bookingId = request.get("bookingId") != null ? Integer.valueOf(request.get("bookingId").toString()) : null;
+        Integer bookingId = request.get("bookingId") != null ? Integer.valueOf(request.get("bookingId").toString())
+                : null;
         String frontendUrl = (String) request.get("frontendUrl");
 
         if (bookingId == null) {
@@ -60,8 +61,7 @@ public class RoomBookingEcpayController {
         }
 
         BookingDTO booking = bookingService.findById(bookingId).orElseThrow(
-            () -> new RuntimeException("找不到訂單")
-        );
+                () -> new RuntimeException("找不到訂單"));
 
         // 階段一：建立「待付款」紀錄
         try {
@@ -89,11 +89,12 @@ public class RoomBookingEcpayController {
         if (frontendUrl != null && frontendUrl.contains("localhost")) {
             // 本地開發環境：由後端處理再跳轉
             RETURN_URL = "https://httpbin.org/post";
-            CLIENT_BACK_URL = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId() + "?local=true";
+            CLIENT_BACK_URL = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId()
+                    + "?local=true";
         } else {
             // 上機環境：使用環境變數設定的網址
             RETURN_URL = ecpayReturnUrl;
-            
+
             // 如果 teammate 設的是後端網址，補上 bookingId；如果是前端網址，補上成功標記
             if (ecpayResultUrlPrefix.contains("client-return")) {
                 CLIENT_BACK_URL = ecpayResultUrlPrefix + booking.getBookingId();
@@ -126,7 +127,8 @@ public class RoomBookingEcpayController {
 
     // 3. 綠界免 Ngrok 零配置：藍色按鈕跳轉 (Client-Return)
     @GetMapping("/client-return/{bookingId}")
-    public ResponseEntity<Void> handleClientReturn(@PathVariable("bookingId") Integer bookingId, @RequestParam(value = "local", required = false) String local) {
+    public ResponseEntity<Void> handleClientReturn(@PathVariable("bookingId") Integer bookingId,
+            @RequestParam(value = "local", required = false) String local) {
         System.out.println("收到綠界藍色按鈕跳轉，訂單編號: " + bookingId);
 
         try {
@@ -134,9 +136,11 @@ public class RoomBookingEcpayController {
             BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
             // 查出訂單金額
             BookingDTO booking = bookingService.findById(bookingId).orElseThrow(() -> new RuntimeException("訂單不存在"));
-            
+
             // 產生一組假的交易序號，符合您的圖表 TXN...
-            String tradeNo = "TXN" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + (System.currentTimeMillis() % 10000);
+            String tradeNo = "TXN"
+                    + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                    + (System.currentTimeMillis() % 10000);
 
             if (payment == null) {
                 payment = new BookingPaymentDTO();
@@ -199,7 +203,9 @@ public class RoomBookingEcpayController {
         try {
             BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
             if (payment != null && "待付款".equals(payment.getPaymentStatus())) {
-                String tradeNo = "TXN" + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + (System.currentTimeMillis() % 10000);
+                String tradeNo = "TXN"
+                        + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                        + (System.currentTimeMillis() % 10000);
                 payment.setPaymentStatus("已付款");
                 payment.setTransactionId(tradeNo);
                 payment.setPaidAt(LocalDateTime.now());
