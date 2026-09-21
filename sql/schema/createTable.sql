@@ -297,6 +297,22 @@ CONSTRAINT [PK_product] PRIMARY KEY CLUSTERED
 ) ON [PRIMARY]
 GO
 
+/****** Object: Table [dbo].[cart_item] ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cart_item](
+    [member_id] [int] NOT NULL,
+    [product_id] [int] NOT NULL,
+    [quantity] [int] NOT NULL,
+    [created_at] [datetime2] NOT NULL CONSTRAINT [DF_cart_item_created_at] DEFAULT (SYSDATETIME()),
+    [updated_at] [datetime2] NOT NULL CONSTRAINT [DF_cart_item_updated_at] DEFAULT (SYSDATETIME()),
+ CONSTRAINT [PK_cart_item] PRIMARY KEY CLUSTERED ([member_id] ASC, [product_id] ASC),
+ CONSTRAINT [CK_cart_item_quantity] CHECK ([quantity] > 0)
+) ON [PRIMARY]
+GO
+
 /****** 物件:  Table [dbo].[product_review] ******/
 CREATE TABLE [dbo].[product_review] (
     [review_id] INT IDENTITY(1,1) NOT NULL,
@@ -647,6 +663,18 @@ ALTER TABLE [dbo].[order_item] WITH CHECK ADD CONSTRAINT [FK_order_item_product]
 REFERENCES [dbo].[product] ([product_id])
 GO
 ALTER TABLE [dbo].[order_item] CHECK CONSTRAINT [FK_order_item_product]
+GO
+
+ALTER TABLE [dbo].[cart_item] WITH CHECK ADD CONSTRAINT [FK_cart_item_member] FOREIGN KEY([member_id])
+REFERENCES [dbo].[member] ([member_id]) ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[cart_item] CHECK CONSTRAINT [FK_cart_item_member]
+GO
+
+ALTER TABLE [dbo].[cart_item] WITH CHECK ADD CONSTRAINT [FK_cart_item_product] FOREIGN KEY([product_id])
+REFERENCES [dbo].[product] ([product_id])
+GO
+ALTER TABLE [dbo].[cart_item] CHECK CONSTRAINT [FK_cart_item_product]
 GO
 
 ALTER TABLE [dbo].[profile] WITH CHECK ADD CONSTRAINT [FK_user_profile_account] FOREIGN KEY([account_id])

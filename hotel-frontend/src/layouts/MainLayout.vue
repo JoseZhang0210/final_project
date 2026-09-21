@@ -1,12 +1,22 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
 
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { isLoggedIn, name, authorities } = storeToRefs(authStore);
+const { itemCount: cartCount } = storeToRefs(cartStore);
 
-const cartCount = ref(0);
+function loadCartSafely() {
+  cartStore.load().catch(error => console.error("購物車載入失敗：", error));
+}
+onMounted(() => { if (isLoggedIn.value) loadCartSafely(); });
+watch(isLoggedIn, loggedIn => {
+  if (loggedIn) loadCartSafely();
+  else cartStore.resetLocalState();
+});
 
 const displayName = computed(() => {
   return name.value || "會員";
