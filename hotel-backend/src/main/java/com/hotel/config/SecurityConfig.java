@@ -80,14 +80,19 @@ public class SecurityConfig {
                                                                                 "/upload/products/**")
                                                                 .permitAll()
                                                                 // -------------------------
-                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼、場地列表與占用日期
+                                                                // 開放前台查詢房型與空房、讀取圖片、綠界金流回呼、場地列表與占用日期、通行證讀取與報到
                                                                 // -------------------------
-                                                                .requestMatchers("/api/roomtypes/**", "/uploads/**",
+                                                                .requestMatchers("/api/roomtypes/**", "/api/rooms/**",
+                                                                                "/uploads/**",
                                                                                 "/api/payments/ecpay/**")
                                                                 .permitAll()
                                                                 .requestMatchers(HttpMethod.GET,
+                                                                                "/api/bookings/{id:[0-9]+}",
                                                                                 "/api/venues", "/api/venues/**",
                                                                                 "/api/rentals/occupied-dates")
+                                                                .permitAll()
+                                                                .requestMatchers(HttpMethod.PUT,
+                                                                                "/api/bookings/{id:[0-9]+}")
                                                                 .permitAll()
                                                                 // -------------------------
                                                                 // Spring Boot error
