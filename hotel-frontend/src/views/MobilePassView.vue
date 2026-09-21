@@ -250,22 +250,9 @@
           {{ submitting ? "處理報到中..." : "🛎️ 確認辦理入住報到 (Check-in)" }}
         </button>
 
-        <!-- 狀態 3: 已入住 (前往官方網站申請房務或回首頁) -->
-        <div
-          v-else-if="passData.bookingStatus === '已入住'"
-          class="checked-in-actions"
-        >
-          <button class="action-btn active-btn" @click="goToMemberBookings">
-            🏨 前往星澄飯店網站（申請房務服務）
-          </button>
-          <button class="action-btn secondary-btn" @click="goToHome">
-            回到首頁
-          </button>
-        </div>
-
-        <!-- 狀態 4: 已取消或過期 -->
+        <!-- 狀態 3: 已入住或其它狀態 (回到首頁) -->
         <button v-else class="action-btn secondary-btn" @click="goToHome">
-          返回首頁
+          回到首頁
         </button>
       </div>
     </div>
@@ -558,10 +545,6 @@ async function handleCheckIn() {
   } finally {
     submitting.value = false;
   }
-}
-
-function goToMemberBookings() {
-  router.push("/member/bookings");
 }
 
 function goToHome() {
