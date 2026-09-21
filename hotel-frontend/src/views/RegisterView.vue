@@ -323,6 +323,15 @@
               {{ loading ? "註冊處理中..." : "確認註冊" }}
             </button>
 
+            <button
+              type="button"
+              class="quick-fill-btn"
+              :disabled="loading"
+              @click="fillDemoData"
+            >
+              一鍵帶入
+            </button>
+
             <RouterLink to="/" class="btn-auth-outline"> 回首頁 </RouterLink>
           </div>
         </form>
@@ -442,6 +451,31 @@ onMounted(() => {
     toastStore.showToast("🌟 已為您帶入 Google 帳號資料，請設定密碼完成註冊！", "info");
   }
 });
+
+function fillDemoData() {
+  form.username = "vic0129";
+  form.password = "123456";
+  form.confirmPassword = "123456";
+  form.email = "vic00000129@gmail.com";
+  form.verificationCode = "";
+  form.name = "李維克";
+  form.avatarUrl = "";
+  form.gender = "男";
+  form.phone = "0988129129";
+  form.birthday = "1996-01-29";
+  form.zipcode = "100";
+  form.city = "臺北市";
+  form.district = "中正區";
+  form.address = "重慶南路一段122號";
+
+  // 清除錯誤提示
+  errors.username = "";
+  errors.password = "";
+  errors.confirmPassword = "";
+  errors.email = "";
+
+  toastStore.showToast("已為您帶入示範註冊資料", "info");
+}
 
 async function checkUsername() {
   const username = form.username.trim();
@@ -680,5 +714,31 @@ async function register() {
 
 .toggle-pwd-btn:hover {
   color: #4a3b2a;
+}
+
+.quick-fill-btn {
+  padding: 12px 16px;
+  border: 1px solid #b58a46;
+  border-radius: 8px;
+  background-color: #fff8ee;
+  color: #b58a46;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.25s;
+}
+
+.quick-fill-btn:hover {
+  background-color: #b58a46;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.quick-fill-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>
