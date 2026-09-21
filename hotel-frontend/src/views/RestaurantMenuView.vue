@@ -77,7 +77,7 @@ const restaurants = [
   <div class="restaurant-page">
     <section class="hero">
       <div class="hero-content">
-        <p class="eyebrow">DINING AT XINGCHENG HOTEL</p>
+        <p class="eyebrow">DINING AT STARLIGHT HOTEL</p>
         <h1>品味每一段美好時光</h1>
         <p>
           從豐盛自助餐、精緻西式料理，到浪漫義式餐點與夜晚駐唱酒吧，<br />
