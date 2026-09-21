@@ -12,6 +12,7 @@ services:
       - MSSQL_SA_PASSWORD=SaAdminPassword123!   # SA 管理員密碼（僅供初始化容器使用）
       - MSSQL_PID=Developer
       - MSSQL_COLLATION=Chinese_Taiwan_Stroke_CI_AS # 設定伺服器與資料庫預設定序為繁體中文
+      - TZ=Asia/Taipei
     ports:
       - "1433:1433"
     volumes:
@@ -31,6 +32,8 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: hotel-sqlserver-init
     user: root
+    environment:
+      - TZ=Asia/Taipei
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -60,6 +63,7 @@ services:
     ports:
       - "8082:8081"
     environment:
+      - TZ=Asia/Taipei
       # 連線字串將 host 指向 sqlserver 容器，帳號密碼沿用 hotel_app / 123456
       - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=finalproject;encrypt=true;trustServerCertificate=true
       - SPRING_DATASOURCE_USERNAME=hotel_app
@@ -83,6 +87,7 @@ services:
     container_name: hotel-tunnel
     restart: unless-stopped
     environment:
+      - TZ=Asia/Taipei
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     command:
       - "http"
