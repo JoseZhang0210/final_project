@@ -84,7 +84,8 @@
 
         <div class="crop-modal-footer">
           <button type="button" class="btn-crop-cancel" @click="closeModal">
-            取消
+            <X :size="15" class="inline-icon" />
+            <span>取消</span>
           </button>
           <button
             type="button"
@@ -92,7 +93,8 @@
             :disabled="isGeneratingBlob"
             @click="handleConfirm"
           >
-            <Check :size="16" class="inline-icon" />
+            <span v-if="isGeneratingBlob" class="btn-spinner"></span>
+            <Check v-else :size="16" class="inline-icon" />
             <span>{{ isGeneratingBlob ? '處理中...' : confirmText }}</span>
           </button>
         </div>
@@ -176,19 +178,23 @@ let initialOffsetX = 0;
 let initialOffsetY = 0;
 
 function initImageDimensions() {
-  if (!rawImgRef.value) return;
-  const nw = rawImgRef.value.naturalWidth || props.outputWidth;
-  const nh = rawImgRef.value.naturalHeight || props.outputHeight;
+  if (!props.imageSrc) return;
+  const tempImg = new Image();
+  tempImg.onload = () => {
+    const nw = tempImg.naturalWidth || props.outputWidth;
+    const nh = tempImg.naturalHeight || props.outputHeight;
 
-  originalWidth.value = nw;
-  originalHeight.value = nh;
+    originalWidth.value = nw;
+    originalHeight.value = nh;
 
-  // 計算可完整填滿視窗的 baseScale
-  const scaleX = props.viewportWidth / nw;
-  const scaleY = props.viewportHeight / nh;
-  baseScale.value = Math.max(scaleX, scaleY);
+    // 計算可完整填滿視窗的 baseScale
+    const scaleX = props.viewportWidth / nw;
+    const scaleY = props.viewportHeight / nh;
+    baseScale.value = Math.max(scaleX, scaleY);
 
-  resetCrop();
+    resetCrop();
+  };
+  tempImg.src = props.imageSrc;
 }
 
 function resetCrop() {
@@ -201,18 +207,19 @@ function resetCrop() {
 
 watch(
   () => props.imageSrc,
-  () => {
-    if (props.imageSrc) {
-      setTimeout(() => initImageDimensions(), 20);
+  (src) => {
+    if (src) {
+      initImageDimensions();
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
   () => props.modelValue,
   (val) => {
-    if (val) {
-      setTimeout(() => initImageDimensions(), 20);
+    if (val && props.imageSrc) {
+      initImageDimensions();
     } else {
       stopDrag();
       stopTouchDrag();
@@ -305,7 +312,7 @@ function closeModal() {
 }
 
 async function handleConfirm() {
-  if (!rawImgRef.value || isGeneratingBlob.value) return;
+  if (!props.imageSrc || isGeneratingBlob.value) return;
   isGeneratingBlob.value = true;
 
   try {
@@ -314,39 +321,34 @@ async function handleConfirm() {
     canvas.height = props.outputHeight;
     const ctx = canvas.getContext("2d");
 
-    const img = rawImgRef.value;
-    const currentScale = baseScale.value * scale.value;
+    // 填充底色避免透明圖出現黑底
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, props.outputWidth, props.outputHeight);
 
-    const viewportCenterX = props.viewportWidth / 2;
-    const viewportCenterY = props.viewportHeight / 2;
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = props.imageSrc;
+    });
 
-    const imgCenterRenderX = offsetX.value + (originalWidth.value * baseScale.value) / 2;
-    const imgCenterRenderY = offsetY.value + (originalHeight.value * baseScale.value) / 2;
+    const ratio = props.outputWidth / props.viewportWidth;
+    ctx.scale(ratio, ratio);
 
-    const diffX = viewportCenterX - imgCenterRenderX;
-    const diffY = viewportCenterY - imgCenterRenderY;
+    const currentW = originalWidth.value * baseScale.value;
+    const currentH = originalHeight.value * baseScale.value;
+    const cx = offsetX.value + currentW / 2;
+    const cy = offsetY.value + currentH / 2;
 
-    const cropHalfWidthInImg = (props.viewportWidth / 2) / currentScale;
-    const cropHalfHeightInImg = (props.viewportHeight / 2) / currentScale;
-
-    const cropCenterXInImg = (originalWidth.value / 2) - (diffX / currentScale);
-    const cropCenterYInImg = (originalHeight.value / 2) - (diffY / currentScale);
-
-    const sourceX = cropCenterXInImg - cropHalfWidthInImg;
-    const sourceY = cropCenterYInImg - cropHalfHeightInImg;
-    const sourceWidth = cropHalfWidthInImg * 2;
-    const sourceHeight = cropHalfHeightInImg * 2;
-
+    // 套用與 Viewport 完全一致的平移與縮放轉換
+    ctx.translate(cx, cy);
+    ctx.scale(scale.value, scale.value);
     ctx.drawImage(
       img,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      props.outputWidth,
-      props.outputHeight
+      -currentW / 2,
+      -currentH / 2,
+      currentW,
+      currentH
     );
 
     const blob = await new Promise((resolve) => {
@@ -355,8 +357,9 @@ async function handleConfirm() {
 
     if (blob) {
       const ext = props.outputType.includes("png") ? "png" : "jpg";
-      const croppedFile = new File([blob], `cropped_${Date.now()}.${ext}`, {
+      const croppedFile = new File([blob], `avatar_${Date.now()}.${ext}`, {
         type: props.outputType,
+        lastModified: Date.now(),
       });
       emit("confirm", croppedFile);
       emit("update:modelValue", false);
@@ -551,12 +554,31 @@ onBeforeUnmount(() => {
   border: 1px solid #dfd3c3;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 
 .btn-crop-cancel:hover {
   background: #f7f3eb;
   color: #4a3b2a;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-crop-confirm {
