@@ -84,7 +84,8 @@
 
         <div class="crop-modal-footer">
           <button type="button" class="btn-crop-cancel" @click="closeModal">
-            取消
+            <X :size="15" class="inline-icon" />
+            <span>取消</span>
           </button>
           <button
             type="button"
@@ -92,7 +93,8 @@
             :disabled="isGeneratingBlob"
             @click="handleConfirm"
           >
-            <Check :size="16" class="inline-icon" />
+            <span v-if="isGeneratingBlob" class="btn-spinner"></span>
+            <Check v-else :size="16" class="inline-icon" />
             <span>{{ isGeneratingBlob ? '處理中...' : confirmText }}</span>
           </button>
         </div>
@@ -552,12 +554,31 @@ onBeforeUnmount(() => {
   border: 1px solid #dfd3c3;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 
 .btn-crop-cancel:hover {
   background: #f7f3eb;
   color: #4a3b2a;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-crop-confirm {
