@@ -70,9 +70,9 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123456
       - VENUE_PAYMENT_DEMO=${VENUE_PAYMENT_DEMO:-false}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-xingchenghotel2026@gmail.com}
-      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-vrzhtezczjumjtau}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
       - MAIL_USERNAME=${MAIL_USERNAME:-xingchenghotel2026@gmail.com}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-vrzhtezczjumjtau}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
     volumes:
       - backend_uploads:/app/uploads           # 交由 Docker 管理具名 Volume，不汙染本機目錄
     depends_on:
