@@ -9,62 +9,83 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import jakarta.annotation.PostConstruct;
 
 import com.hotel.model.dto.BookingDTO;
-import com.hotel.model.entity.RoomTask;
-import com.hotel.repository.RoomTaskRepository;
-import com.hotel.service.BookingService;
-import com.hotel.service.RoomTaskService;
-import com.hotel.service.BookingPaymentService;
 import com.hotel.model.dto.BookingPaymentDTO;
+import com.hotel.model.dto.RoomTaskDTO;
+import com.hotel.model.entity.Booking;
+import com.hotel.model.entity.RoomTask;
+import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomTaskRepository;
+import com.hotel.service.BookingPaymentService;
+import com.hotel.service.BookingService;
+import com.hotel.service.RoomService;
+import com.hotel.service.RoomTaskService;
 
+import jakarta.annotation.PostConstruct;
+
+/**
+ * 飯店自動化排程任務 (Hotel Automated Scheduler)
+ * 負責定時推進訂單狀態、同步空房、執行退房清潔與逾期未付款清理
+ */
 @Component
 public class HotelScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(HotelScheduler.class);
 
     private final BookingService bookingService;
+    private final BookingRepository bookingRepository;
     private final RoomTaskService roomTaskService;
     private final RoomTaskRepository roomTaskRepository;
-    private final com.hotel.service.RoomService roomService;
+    private final RoomService roomService;
     private final BookingPaymentService bookingPaymentService;
 
-    public HotelScheduler(BookingService bookingService, RoomTaskService roomTaskService, RoomTaskRepository roomTaskRepository, com.hotel.service.RoomService roomService, BookingPaymentService bookingPaymentService) {
+    public HotelScheduler(
+            BookingService bookingService,
+            BookingRepository bookingRepository,
+            RoomTaskService roomTaskService,
+            RoomTaskRepository roomTaskRepository,
+            RoomService roomService,
+            BookingPaymentService bookingPaymentService) {
         this.bookingService = bookingService;
+        this.bookingRepository = bookingRepository;
         this.roomTaskService = roomTaskService;
         this.roomTaskRepository = roomTaskRepository;
         this.roomService = roomService;
         this.bookingPaymentService = bookingPaymentService;
     }
 
+    /**
+     * 每 5 分鐘自動根據當前日期與時間推進活躍訂單狀態 (使用精確條件查詢，消除歷史全表掃描)
+     */
     @PostConstruct
     @Scheduled(cron = "0 */5 * * * *")
     public void autoAdvanceBookingStates() {
-        log.info("系統啟動：自動根據當前日期修正訂單狀態...");
+        log.info("系統排程：自動根據當前日期修正活躍訂單狀態...");
         LocalDate today = LocalDate.now();
         int currentHour = LocalDateTime.now().getHour();
 
-        List<BookingDTO> allBookings = bookingService.findAll();
-        for (BookingDTO b : allBookings) {
+        // 僅查詢未完成且未取消的活躍訂單，大幅降低資料庫與記憶體負擔
+        List<Booking> activeBookings = bookingRepository.findActiveIncompleteBookings();
+        for (Booking b : activeBookings) {
             try {
                 boolean isUpdated = false;
                 BookingDTO updateDto = new BookingDTO();
 
-                // 1. 自動修正不正確的房價 (對所有訂單生效)
-                Integer correctPrice = bookingService.calculateBookingPrice(b.getRoomTypeId(), b.getCheckInDate(), b.getCheckOutDate());
+                // 1. 自動修正不正確的房價 (防止價格計算不一致)
+                Integer correctPrice = bookingService.calculateBookingPrice(b.getRoomTypeId(), b.getCheckInDate(),
+                        b.getCheckOutDate());
                 if (correctPrice != null && !correctPrice.equals(b.getBookingPrice())) {
                     log.info("自動修正：訂單 ID {} 房價錯誤 (原: {}, 新: {})", b.getBookingId(), b.getBookingPrice(), correctPrice);
                     updateDto.setBookingPrice(correctPrice);
                     isUpdated = true;
                 }
 
-                // 2. 自動修正過期狀態 (排除已完成或已取消)
+                // 2. 自動修正過期狀態 (退房日已過或今日中午 12:00 後)
                 String currentStatus = b.getBookingStatus();
                 if (!"已完成".equals(currentStatus) && !"已取消".equals(currentStatus)) {
-                    
-                    boolean isCheckoutOverdue = today.isAfter(b.getCheckOutDate()) || 
-                                              (today.isEqual(b.getCheckOutDate()) && currentHour >= 12);
+                    boolean isCheckoutOverdue = today.isAfter(b.getCheckOutDate()) ||
+                            (today.isEqual(b.getCheckOutDate()) && currentHour >= 12);
 
                     if (isCheckoutOverdue) {
                         log.info("自動修正：訂單 ID {} 退房時間已過，轉為已完成", b.getBookingId());
@@ -107,20 +128,19 @@ public class HotelScheduler {
 
     /**
      * 每天中午 12:00 執行自動退房程序
-     * 掃描今日以前應退房但仍為「已入住」的訂單，自動更新為「已完成」
      */
     @Scheduled(cron = "0 0 12 * * *")
     public void autoCheckout() {
         log.info("開始執行每日 12:00 自動退房排程...");
         LocalDate today = LocalDate.now();
 
-        List<BookingDTO> allBookings = bookingService.findAll();
-        List<BookingDTO> toCheckout = allBookings.stream()
+        List<Booking> activeBookings = bookingRepository.findActiveIncompleteBookings();
+        List<Booking> toCheckout = activeBookings.stream()
                 .filter(b -> "已入住".equals(b.getBookingStatus()))
                 .filter(b -> !b.getCheckOutDate().isAfter(today))
                 .collect(Collectors.toList());
 
-        for (BookingDTO booking : toCheckout) {
+        for (Booking booking : toCheckout) {
             log.info("自動退房處理：訂單 ID {}", booking.getBookingId());
             BookingDTO updateDto = new BookingDTO();
             updateDto.setBookingStatus("已完成");
@@ -139,17 +159,17 @@ public class HotelScheduler {
     @Scheduled(cron = "0 45 14 * * *")
     public void autoCompleteCheckoutTasks() {
         log.info("開始執行每日 14:45 自動完成退房清潔排程...");
-        
+
         List<RoomTask> allTasks = roomTaskRepository.findAll();
         List<RoomTask> tasksToComplete = allTasks.stream()
                 .filter(t -> "退房清潔".equals(t.getTaskType()))
                 .filter(t -> !"已完成".equals(t.getTaskStatus()) && !"已取消".equals(t.getTaskStatus()))
                 .collect(Collectors.toList());
-                
+
         for (RoomTask task : tasksToComplete) {
             log.info("自動完成清潔工單：ID {}", task.getTaskId());
             try {
-                com.hotel.model.dto.RoomTaskDTO updateDto = new com.hotel.model.dto.RoomTaskDTO();
+                RoomTaskDTO updateDto = new RoomTaskDTO();
                 updateDto.setTaskStatus("已完成");
                 roomTaskService.update(task.getTaskId(), updateDto);
             } catch (Exception e) {
@@ -160,8 +180,7 @@ public class HotelScheduler {
     }
 
     /**
-     * 每天凌晨 00:00 執行過期工單刪除程序
-     * 刪除所有「已完成」且完成時間超過 24 小時前的工單
+     * 每天凌晨 00:00 執行過期工單刪除程序 (刪除完成時間超過 24 小時的已完成工單)
      */
     @Scheduled(cron = "0 0 0 * * *")
     public void cleanupOldTasks() {
@@ -185,27 +204,31 @@ public class HotelScheduler {
         log.info("每日 00:00 過期工單清理排程執行完畢，共刪除 {} 筆。", toDelete.size());
     }
 
+    /**
+     * 每分鐘自動取消超過 15 分鐘未付款的「已預訂」訂單
+     */
     @Scheduled(cron = "0 * * * * *")
     public void cancelUnpaidBookings() {
         log.info("排程執行：自動取消 15 分鐘未付款訂單...");
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(15);
-        List<BookingDTO> allBookings = bookingService.findAll();
-        
+        List<Booking> activeBookings = bookingRepository.findActiveIncompleteBookings();
+
         int canceledCount = 0;
-        for (BookingDTO b : allBookings) {
+        for (Booking b : activeBookings) {
             // 只處理「已預訂」狀態，且建立時間超過 15 分鐘的訂單
-            if ("已預訂".equals(b.getBookingStatus()) && b.getCreatedAt() != null && b.getCreatedAt().isBefore(threshold)) {
+            if ("已預訂".equals(b.getBookingStatus()) && b.getCreatedAt() != null
+                    && b.getCreatedAt().isBefore(threshold)) {
                 try {
                     BookingPaymentDTO payment = bookingPaymentService.findByBookingId(b.getBookingId());
                     // 如果沒有付款紀錄，或者付款紀錄不是「已付款」，就自動取消
                     if (payment == null || !"已付款".equals(payment.getPaymentStatus())) {
-                        b.setBookingStatus("已取消");
-                        bookingService.updateBooking(b.getBookingId(), b);
+                        BookingDTO updateDto = new BookingDTO();
+                        updateDto.setBookingStatus("已取消");
+                        bookingService.updateBooking(b.getBookingId(), updateDto);
                         log.info("自動取消逾時未付訂單：Booking ID = {}", b.getBookingId());
                         canceledCount++;
                     }
                 } catch (Exception e) {
-                    // findByBookingId 可能拋出 NotFoundException 或其他錯誤
                     log.warn("無法確認訂單付款狀態或無法取消 (Booking ID: {}): {}", b.getBookingId(), e.getMessage());
                 }
             }

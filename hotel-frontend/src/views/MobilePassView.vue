@@ -161,7 +161,7 @@
           </div>
         </div>
 
-        <!-- 狀態 3 (已入住)：顯示電子房卡與開門 QR Code (支援 CR522 門禁) -->
+        <!-- 狀態 3 (已入住)：顯示電子房卡與開門 QR Code -->
         <div v-if="passData.bookingStatus === '已入住'" class="door-key-card">
           <div class="door-key-header">
             <span class="key-badge">🔑 智慧客房電子鑰匙</span>
@@ -180,8 +180,7 @@
           </div>
           <p class="door-instruction">
             📶 <strong>門禁開門說明：</strong><br />
-            抵達房門口時，請將此 QR Code 對準門鎖鏡頭或感應
-            <strong>CR522 門禁讀卡機</strong> 即可解鎖。
+            抵達房門口時，請將此 QR Code 對準門鎖鏡頭或智慧感應區即可解鎖。
           </p>
         </div>
 
@@ -364,7 +363,7 @@ const cardStateClass = computed(() => {
   return "card-expired";
 });
 
-// 門禁開門專用金鑰憑證 (供 CR522 / 門鎖讀卡機感應使用)
+// 門禁開門專用金鑰憑證 (供智慧門鎖與 QR Code 讀卡感應使用)
 const doorAccessKey = computed(() => {
   const room = passData.roomNumber || "VIP";
   const code = passData.verificationCode || "PASS";
@@ -875,7 +874,7 @@ onUnmounted(() => {
   font-family: Consolas, Monaco, monospace;
 }
 
-/* 電子開門鑰匙卡片 (支援 CR522 門禁) */
+/* 電子開門鑰匙卡片 */
 .door-key-card {
   background: #fdfaf6;
   border: 1px solid #ebd9b9;

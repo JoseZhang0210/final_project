@@ -1,24 +1,24 @@
 package com.hotel.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hotel.model.dto.RoomTaskDTO;
-import com.hotel.model.entity.RoomTask;
-import com.hotel.model.entity.Room;
-import com.hotel.repository.RoomTaskRepository;
-import com.hotel.repository.RoomRepository;
-import com.hotel.repository.BookingRepository;
-import com.hotel.service.RoomTaskService;
 import com.hotel.constant.RoomStatus;
 import com.hotel.constant.RoomTaskStatus;
-import com.hotel.constant.BookingStatus;
-import org.springframework.beans.factory.annotation.Value;
+import com.hotel.model.dto.RoomTaskDTO;
+import com.hotel.model.entity.Room;
+import com.hotel.model.entity.RoomTask;
+import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomRepository;
+import com.hotel.repository.RoomTaskRepository;
+import com.hotel.service.RoomTaskService;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -33,7 +33,8 @@ public class RoomTaskServiceImpl implements RoomTaskService {
     @Value("${hotel.default.housekeeper.id:13}")
     private Integer defaultHousekeeperId;
 
-    public RoomTaskServiceImpl(RoomTaskRepository roomTaskRepository, RoomRepository roomRepository, BookingRepository bookingRepository) {
+    public RoomTaskServiceImpl(RoomTaskRepository roomTaskRepository, RoomRepository roomRepository,
+            BookingRepository bookingRepository) {
         this.roomTaskRepository = roomTaskRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
@@ -102,7 +103,8 @@ public class RoomTaskServiceImpl implements RoomTaskService {
             existingTask.setRemark(updatedTaskDTO.getRemark());
         }
 
-        if (updatedTaskDTO.getTaskStatus() != null && !updatedTaskDTO.getTaskStatus().equals(existingTask.getTaskStatus())) {
+        if (updatedTaskDTO.getTaskStatus() != null
+                && !updatedTaskDTO.getTaskStatus().equals(existingTask.getTaskStatus())) {
             String newStatus = updatedTaskDTO.getTaskStatus();
             existingTask.setTaskStatus(newStatus);
 
@@ -110,14 +112,15 @@ public class RoomTaskServiceImpl implements RoomTaskService {
                 existingTask.setCompletedAt(updatedTaskDTO.getCompletedAt() != null
                         ? updatedTaskDTO.getCompletedAt()
                         : LocalDateTime.now());
-                
+
                 // 連動房間：根據工單類型決定狀態
                 syncRoomStatusByTask(existingTask);
             } else {
                 existingTask.setCompletedAt(null);
-                
+
                 // 連動房間：清潔中
-                if (RoomStatus.CLEANING.equals(newStatus) || RoomTaskStatus.STATUS_PROCESSING.equals(newStatus) || RoomTaskStatus.STATUS_IN_PROGRESS.equals(newStatus)) {
+                if (RoomStatus.CLEANING.equals(newStatus) || RoomTaskStatus.STATUS_PROCESSING.equals(newStatus)
+                        || RoomTaskStatus.STATUS_IN_PROGRESS.equals(newStatus)) {
                     if (existingTask.getRoomId() != null) {
                         Room room = roomRepository.findById(existingTask.getRoomId()).orElse(null);
                         if (room != null) {
@@ -137,19 +140,19 @@ public class RoomTaskServiceImpl implements RoomTaskService {
             Room room = roomRepository.findById(existingTask.getRoomId()).orElse(null);
             if (room != null) {
                 String taskType = existingTask.getTaskType();
-                if (RoomTaskStatus.TYPE_CHECKOUT_CLEANING.equals(taskType) || RoomTaskStatus.TYPE_MAINTENANCE.equals(taskType)) {
-                    java.time.LocalDate today = java.time.LocalDate.now();
-                    boolean hasBookingToday = bookingRepository.findAll().stream()
-                            .filter(b -> b.getRoomId() != null && b.getRoomId().equals(room.getRoomId()))
-                            .filter(b -> !b.getCheckInDate().isAfter(today) && !b.getCheckOutDate().isBefore(today))
-                            .anyMatch(b -> BookingStatus.PENDING.equals(b.getBookingStatus()) || BookingStatus.CHECKED_IN.equals(b.getBookingStatus()));
-                            
+                if (RoomTaskStatus.TYPE_CHECKOUT_CLEANING.equals(taskType)
+                        || RoomTaskStatus.TYPE_MAINTENANCE.equals(taskType)) {
+                    // 使用精確 JPQL 查詢取代全表掃描
+                    boolean hasBookingToday = bookingRepository.hasActiveBookingForRoomOnDate(room.getRoomId(),
+                            LocalDate.now());
+
                     if (hasBookingToday) {
                         room.setRoomStatus(RoomStatus.BOOKED);
                     } else {
                         room.setRoomStatus(RoomStatus.AVAILABLE);
                     }
-                } else if (RoomTaskStatus.TYPE_DAILY_CLEANING.equals(taskType) || RoomTaskStatus.TYPE_SUPPLY_REFILL.equals(taskType)) {
+                } else if (RoomTaskStatus.TYPE_DAILY_CLEANING.equals(taskType)
+                        || RoomTaskStatus.TYPE_SUPPLY_REFILL.equals(taskType)) {
                     room.setRoomStatus(RoomStatus.OCCUPIED);
                 } else {
                     room.setRoomStatus(RoomStatus.AVAILABLE); // 預設防呆
@@ -160,11 +163,50 @@ public class RoomTaskServiceImpl implements RoomTaskService {
     }
 
     @Override
+    public RoomTaskDTO createCheckoutCleaningTask(Integer roomId, LocalDateTime createdAt, String remark) {
+        RoomTask task = new RoomTask();
+        task.setRoomId(roomId);
+        task.setPriority(RoomTaskStatus.PRIORITY_NORMAL);
+        task.setTaskType(RoomTaskStatus.TYPE_CHECKOUT_CLEANING);
+        task.setTaskStatus(RoomTaskStatus.STATUS_IN_PROGRESS);
+        task.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now());
+
+        Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
+        task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : defaultHousekeeperId);
+        task.setRemark(remark);
+        RoomTask saved = roomTaskRepository.save(task);
+        return convertToDTO(saved);
+    }
+
+    @Override
     public void deleteById(Integer id) {
         if (!roomTaskRepository.existsById(id)) {
             throw new EntityNotFoundException("欲刪除的任務 ID: " + id + " 不存在");
         }
         roomTaskRepository.deleteById(id);
+    }
+
+    @Override
+    public int autoCreateTasksFromRooms() {
+        int createdCount = 0;
+        // 找出所有退房待清潔的房間
+        List<Room> roomsToClean = roomRepository.findAll().stream()
+                .filter(r -> RoomStatus.CHECKOUT_CLEANING_PENDING.equals(r.getRoomStatus()))
+                .collect(Collectors.toList());
+
+        for (Room room : roomsToClean) {
+            // 檢查是否已經有這個房間且還沒完成的退房清潔工單
+            boolean hasPendingTask = roomTaskRepository.findByRoomId(room.getRoomId()).stream()
+                    .anyMatch(t -> RoomTaskStatus.TYPE_CHECKOUT_CLEANING.equals(t.getTaskType()) &&
+                            (RoomTaskStatus.STATUS_PENDING.equals(t.getTaskStatus())
+                                    || RoomTaskStatus.STATUS_IN_PROGRESS.equals(t.getTaskStatus())));
+
+            if (!hasPendingTask) {
+                createCheckoutCleaningTask(room.getRoomId(), LocalDateTime.now(), "系統自動偵測房間狀態產生");
+                createdCount++;
+            }
+        }
+        return createdCount;
     }
 
     private RoomTaskDTO convertToDTO(RoomTask task) {
@@ -179,40 +221,6 @@ public class RoomTaskServiceImpl implements RoomTaskService {
         dto.setCreatedAt(task.getCreatedAt());
         dto.setCompletedAt(task.getCompletedAt());
         return dto;
-    }
-
-    @Override
-    public int autoCreateTasksFromRooms() {
-        int createdCount = 0;
-        // 找出所有退房待清潔的房間
-        List<Room> roomsToClean = roomRepository.findAll().stream()
-                .filter(r -> RoomStatus.CHECKOUT_CLEANING_PENDING.equals(r.getRoomStatus()))
-                .collect(Collectors.toList());
-
-        for (Room room : roomsToClean) {
-            // 檢查是否已經有這個房間且還沒完成的退房清潔工單
-            boolean hasPendingTask = roomTaskRepository.findByRoomId(room.getRoomId()).stream()
-                    .anyMatch(t -> RoomTaskStatus.TYPE_CHECKOUT_CLEANING.equals(t.getTaskType()) && 
-                                  (RoomTaskStatus.STATUS_PENDING.equals(t.getTaskStatus()) || RoomTaskStatus.STATUS_IN_PROGRESS.equals(t.getTaskStatus())));
-
-            if (!hasPendingTask) {
-                RoomTask task = new RoomTask();
-                task.setRoomId(room.getRoomId());
-                
-                // 自動指派給工作量最少的房務專員，若無則預設
-                Integer leastLoadedEmployee = roomTaskRepository.findLeastLoadedHousekeeper();
-                task.setEmployeeId(leastLoadedEmployee != null ? leastLoadedEmployee : defaultHousekeeperId);
-                
-                task.setPriority(RoomTaskStatus.PRIORITY_NORMAL);
-                task.setTaskType(RoomTaskStatus.TYPE_CHECKOUT_CLEANING);
-                task.setTaskStatus(RoomTaskStatus.STATUS_IN_PROGRESS);
-                task.setRemark("系統自動偵測房間狀態產生");
-                task.setCreatedAt(LocalDateTime.now());
-                roomTaskRepository.save(task);
-                createdCount++;
-            }
-        }
-        return createdCount;
     }
 
     private RoomTask convertToEntity(RoomTaskDTO dto) {
