@@ -145,7 +145,7 @@ npm run dev
 
 ## 自動化測試與 CI/CD
 
-專案整合 GitHub Actions 實現全自動化測試與容器映像發布：
+專案整合 GitHub Actions 實現全自動化測試、容器映像發布與本機自動部署：
 
 ### 1. 本地執行單元測試
 在提交程式碼前，可在本機快速執行驗證：
@@ -159,12 +159,22 @@ cd ../hotel-frontend
 npm run build
 ```
 
-### 2. CI/CD 自動化流程
+### 2. 雲端 CI/CD 自動化流程 (`cicd.yml`)
 - **Pull Request / Push 觸發 (CI)**：
-  - **後端**：安裝相依、執行單元測試，並完成 Spring Boot JAR 打包驗證。
+  - **後端**：安裝相依套件、執行單元測試，並完成 Spring Boot JAR 打包驗證。
   - **前端**：安裝相依套件並執行 Vite 生產環境編譯打包。
 - **合併至 `main` 分支 (CD)**：
   - 前後端 CI 通過後，自動透過 Docker Buildx 建置後端映像檔，並推送至 GitHub Container Registry (`ghcr.io/josezhang0210/final_project-backend`)，自動標註 `:latest` 與 commit SHA。
+
+### 3. 本地後端自動更新部署 (`deploy-local.yml`)
+針對「本地後端 + ngrok 穿透 + Vercel 前端」架構，專案配置了 GitHub Actions Self-hosted Runner：
+- **自動觸發**：當代碼合併至 `main` 分支時，GitHub 會通知本機 Runner 自動執行：
+  ```sh
+  git fetch origin main && git reset --hard origin/main
+  docker compose up -d --build backend
+  ```
+- **無縫更新**：僅單獨重建並重啟 `backend` 容器，資料庫 (`sqlserver`) 與 ngrok (`tunnel`) 保持連線不中斷。
+- **Runner 運行與維護**：Runner 位於 `C:\actions-runner\`，可透過 `.\run.cmd` 啟動背景監聽。
 
 ---
 
