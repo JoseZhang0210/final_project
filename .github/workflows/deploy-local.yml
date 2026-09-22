@@ -27,7 +27,8 @@ jobs:
           if ($env:GH_MAIL_PASSWORD) { $env:MAIL_PASSWORD = $env:GH_MAIL_PASSWORD }
           if ($env:GH_NGROK_AUTHTOKEN) { $env:NGROK_AUTHTOKEN = $env:GH_NGROK_AUTHTOKEN }
 
-          docker compose up -d --build backend
+          docker compose up -d --build
           Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "✅ 本地後端服務已成功拉取最新代碼並完成重新啟動！" -ForegroundColor Green
+          Write-Host "✅ 本地後端服務與穿透隧道已成功更新並保持運行！" -ForegroundColor Green
           Write-Host "==========================================" -ForegroundColor Green
+
