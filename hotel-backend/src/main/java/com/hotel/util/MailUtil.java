@@ -1213,7 +1213,7 @@ public class MailUtil {
                 sb.append("</div>");
 
                 sb.append("<div style='font-size:13px;color:#666666;line-height:1.6;margin-bottom:18px;'>");
-                sb.append("抵達房門前，請將此 QR Code 對準房門光學感應區或 CR522 門禁設備即可開門。");
+                sb.append("抵達房門前，請將此 QR Code 對準房門智慧感應區或掃描器即可開門。");
                 sb.append("</div>");
 
                 // QR CODE IMAGE

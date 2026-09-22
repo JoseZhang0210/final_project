@@ -1,5 +1,6 @@
 package com.hotel.service.impl;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -7,12 +8,14 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hotel.constant.BookingStatus;
+import com.hotel.constant.RoomStatus;
 import com.hotel.model.dto.RoomDTO;
+import com.hotel.model.entity.Booking;
 import com.hotel.model.entity.Room;
+import com.hotel.repository.BookingRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.service.RoomService;
-import com.hotel.constant.RoomStatus;
-import com.hotel.constant.BookingStatus;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -21,9 +24,9 @@ import jakarta.persistence.EntityNotFoundException;
 public class RoomServiceImpl implements RoomService {
 
     private final RoomRepository roomRepository;
-    private final com.hotel.repository.BookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
 
-    public RoomServiceImpl(RoomRepository roomRepository, com.hotel.repository.BookingRepository bookingRepository) {
+    public RoomServiceImpl(RoomRepository roomRepository, BookingRepository bookingRepository) {
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
     }
@@ -62,10 +65,12 @@ public class RoomServiceImpl implements RoomService {
         Room existingRoom = roomRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的房間資料"));
 
-        
         if (updatedRoomDTO.getRoomStatus() != null) {
-            if ((RoomStatus.MAINTENANCE.equals(updatedRoomDTO.getRoomStatus()) || RoomStatus.DISABLED.equals(updatedRoomDTO.getRoomStatus())) && !updatedRoomDTO.getRoomStatus().equals(existingRoom.getRoomStatus())) {
-                boolean hasFutureBookings = bookingRepository.existsByRoomIdAndCheckOutDateGreaterThanEqual(id, java.time.LocalDate.now());
+            if ((RoomStatus.MAINTENANCE.equals(updatedRoomDTO.getRoomStatus())
+                    || RoomStatus.DISABLED.equals(updatedRoomDTO.getRoomStatus()))
+                    && !updatedRoomDTO.getRoomStatus().equals(existingRoom.getRoomStatus())) {
+                boolean hasFutureBookings = bookingRepository.existsByRoomIdAndCheckOutDateGreaterThanEqual(id,
+                        LocalDate.now());
                 if (hasFutureBookings) {
                     throw new IllegalStateException("該房間有未來的預訂，請為顧客更換房間或免費升等");
                 }
@@ -76,7 +81,7 @@ public class RoomServiceImpl implements RoomService {
         if (updatedRoomDTO.getRoomTypeId() != null) {
             existingRoom.setRoomTypeId(updatedRoomDTO.getRoomTypeId());
         }
-        
+
         return convertToDTO(existingRoom);
     }
 
@@ -108,26 +113,23 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    @Transactional
     public void syncRoomStatuses() {
-        java.time.LocalDate today = java.time.LocalDate.now();
+        LocalDate today = LocalDate.now();
         List<Room> allRooms = roomRepository.findAll();
-        List<com.hotel.model.entity.Booking> todayBookings = bookingRepository.findAll().stream()
-                .filter(b -> b.getRoomId() != null)
-                .filter(b -> !b.getCheckInDate().isAfter(today) && !b.getCheckOutDate().isBefore(today))
-                .filter(b -> !BookingStatus.CANCELLED.equals(b.getBookingStatus()) && !BookingStatus.COMPLETED.equals(b.getBookingStatus()))
-                .collect(Collectors.toList());
+        // 使用高效 JPQL 查詢當日有效訂房，消除全表掃描
+        List<Booking> todayBookings = bookingRepository.findActiveBookingsForDate(today);
 
         for (Room room : allRooms) {
             String currentRoomStatus = room.getRoomStatus();
-            
+
             // 系統不應強制覆蓋實體維運狀態
-            if (RoomStatus.MAINTENANCE.equals(currentRoomStatus) || RoomStatus.DISABLED.equals(currentRoomStatus) || 
-                RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus) || RoomStatus.CLEANING.equals(currentRoomStatus)) {
+            if (RoomStatus.MAINTENANCE.equals(currentRoomStatus) || RoomStatus.DISABLED.equals(currentRoomStatus) ||
+                    RoomStatus.CHECKOUT_CLEANING_PENDING.equals(currentRoomStatus)
+                    || RoomStatus.CLEANING.equals(currentRoomStatus)) {
                 continue;
             }
 
-            Optional<com.hotel.model.entity.Booking> activeBooking = todayBookings.stream()
+            Optional<Booking> activeBooking = todayBookings.stream()
                     .filter(b -> b.getRoomId().equals(room.getRoomId()))
                     .findFirst();
 
@@ -136,7 +138,8 @@ public class RoomServiceImpl implements RoomService {
                 if (BookingStatus.CHECKED_IN.equals(bookingStatus) && !RoomStatus.OCCUPIED.equals(currentRoomStatus)) {
                     room.setRoomStatus(RoomStatus.OCCUPIED);
                     roomRepository.save(room);
-                } else if (BookingStatus.PENDING.equals(bookingStatus) && !RoomStatus.BOOKED.equals(currentRoomStatus)) {
+                } else if (BookingStatus.PENDING.equals(bookingStatus)
+                        && !RoomStatus.BOOKED.equals(currentRoomStatus)) {
                     room.setRoomStatus(RoomStatus.BOOKED);
                     roomRepository.save(room);
                 }
