@@ -8,7 +8,7 @@
     "reservationDate": "2026-08-21",
     "timeId": 3,
     "peopleCount": 2,
-    "status": "已訂位"
+    "status": "已完成"
   },
   {
     "reservationId": 2,
@@ -19,7 +19,7 @@
     "reservationDate": "2026-08-22",
     "timeId": 1,
     "peopleCount": 3,
-    "status": "已訂位"
+    "status": "已完成"
   },
   {
     "reservationId": 3,
@@ -28,9 +28,140 @@
     "contactPhone": "0945678901",
     "restaurantId": 2,
     "reservationDate": "2026-08-23",
+    "timeId": 5,
+    "peopleCount": 2,
+    "status": "已完成"
+  },
+  {
+    "reservationId": 4,
+    "memberId": 3,
+    "contactName": "林大偉",
+    "contactPhone": "0934567890",
+    "restaurantId": 2,
+    "reservationDate": "2026-09-10",
     "timeId": 4,
+    "peopleCount": 4,
+    "status": "已完成"
+  },
+  {
+    "reservationId": 5,
+    "memberId": 4,
+    "contactName": "張雅婷",
+    "contactPhone": "0945678901",
+    "restaurantId": 3,
+    "reservationDate": "2026-09-15",
+    "timeId": 8,
+    "peopleCount": 2,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 6,
+    "memberId": 5,
+    "contactName": "李承翰",
+    "contactPhone": "0956789012",
+    "restaurantId": 1,
+    "reservationDate": "2026-09-18",
+    "timeId": 2,
+    "peopleCount": 6,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 7,
+    "memberId": 6,
+    "contactName": "黃詩涵",
+    "contactPhone": "0967890123",
+    "restaurantId": 4,
+    "reservationDate": "2026-09-20",
+    "timeId": 9,
+    "peopleCount": 4,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 8,
+    "memberId": 7,
+    "contactName": "吳俊傑",
+    "contactPhone": "0978901234",
+    "restaurantId": 3,
+    "reservationDate": "2026-09-25",
+    "timeId": 7,
+    "peopleCount": 3,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 9,
+    "memberId": 8,
+    "contactName": "周怡君",
+    "contactPhone": "0989012345",
+    "restaurantId": 2,
+    "reservationDate": "2026-10-01",
+    "timeId": 6,
+    "peopleCount": 2,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 10,
+    "memberId": 9,
+    "contactName": "許家豪",
+    "contactPhone": "0901234567",
+    "restaurantId": 1,
+    "reservationDate": "2026-10-05",
+    "timeId": 3,
+    "peopleCount": 8,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 11,
+    "memberId": 10,
+    "contactName": "鄭惠文",
+    "contactPhone": "0911234567",
+    "restaurantId": 2,
+    "reservationDate": "2026-10-10",
+    "timeId": 5,
+    "peopleCount": 2,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 12,
+    "memberId": 11,
+    "contactName": "蔡明哲",
+    "contactPhone": "0921234567",
+    "restaurantId": 4,
+    "reservationDate": "2026-10-15",
+    "timeId": 9,
+    "peopleCount": 5,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 13,
+    "memberId": 12,
+    "contactName": "楊淑芬",
+    "contactPhone": "0931234567",
+    "restaurantId": 3,
+    "reservationDate": "2026-10-20",
+    "timeId": 8,
+    "peopleCount": 4,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 14,
+    "memberId": 13,
+    "contactName": "曾冠宇",
+    "contactPhone": "0941234567",
+    "restaurantId": 1,
+    "reservationDate": "2026-10-25",
+    "timeId": 2,
+    "peopleCount": 2,
+    "status": "已訂位"
+  },
+  {
+    "reservationId": 15,
+    "memberId": 14,
+    "contactName": "劉欣怡",
+    "contactPhone": "0951234567",
+    "restaurantId": 2,
+    "reservationDate": "2026-11-01",
+    "timeId": 6,
     "peopleCount": 2,
     "status": "已訂位"
   }
 ]
-

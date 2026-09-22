@@ -103,6 +103,7 @@
   { "accountId": 102, "username": "customer57", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" },
   { "accountId": 103, "username": "customer58", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" },
   { "accountId": 104, "username": "customer59", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" },
-  { "accountId": 105, "username": "customer60", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" }
+  { "accountId": 105, "username": "customer60", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" },
+  { "accountId": 106, "username": "vic0129", "password": "$2b$10$yuWhzVEDpGIaJA3UKpTY5.vNPT9XD517KyLRzYeAjtC3zlf08BJ6C", "status": "1" }
 ]
 

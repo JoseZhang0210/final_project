@@ -23,9 +23,50 @@
   {
     "timeId": 4,
     "restaurantId": 2,
+    "mealType": "午餐",
+    "openTime": "11:30:00",
+    "closeTime": "14:30:00"
+  },
+  {
+    "timeId": 5,
+    "restaurantId": 2,
     "mealType": "下午茶",
-    "openTime": "14:00:00",
+    "openTime": "14:30:00",
     "closeTime": "17:00:00"
+  },
+  {
+    "timeId": 6,
+    "restaurantId": 2,
+    "mealType": "晚餐",
+    "openTime": "18:00:00",
+    "closeTime": "21:30:00"
+  },
+  {
+    "timeId": 7,
+    "restaurantId": 3,
+    "mealType": "午餐",
+    "openTime": "11:30:00",
+    "closeTime": "14:30:00"
+  },
+  {
+    "timeId": 8,
+    "restaurantId": 3,
+    "mealType": "晚餐",
+    "openTime": "17:30:00",
+    "closeTime": "21:30:00"
+  },
+  {
+    "timeId": 9,
+    "restaurantId": 4,
+    "mealType": "微醺時光",
+    "openTime": "19:00:00",
+    "closeTime": "00:00:00"
+  },
+  {
+    "timeId": 10,
+    "restaurantId": 4,
+    "mealType": "深夜時段",
+    "openTime": "00:00:00",
+    "closeTime": "02:00:00"
   }
 ]
-
