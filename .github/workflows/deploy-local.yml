@@ -1,0 +1,34 @@
+name: "Deploy Local Backend"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  local-deploy:
+    name: "Pull and Restart Backend"
+    runs-on: self-hosted
+
+    steps:
+      - name: Update Code and Rebuild Backend
+        shell: powershell
+        env:
+          GH_MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          GH_MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          GH_NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+        run: |
+          cd C:\Users\User\Documents\final_project
+          git fetch origin main
+          git reset --hard origin/main
+
+          # 雙重相容邏輯：若 GitHub Secrets 有設定則優先覆蓋；若未設定則自動沿用本地 .env
+          if ($env:GH_MAIL_USERNAME) { $env:MAIL_USERNAME = $env:GH_MAIL_USERNAME }
+          if ($env:GH_MAIL_PASSWORD) { $env:MAIL_PASSWORD = $env:GH_MAIL_PASSWORD }
+          if ($env:GH_NGROK_AUTHTOKEN) { $env:NGROK_AUTHTOKEN = $env:GH_NGROK_AUTHTOKEN }
+
+          docker compose up -d --build
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "✅ 本地後端服務與穿透隧道已成功更新並保持運行！" -ForegroundColor Green
+          Write-Host "==========================================" -ForegroundColor Green
+
