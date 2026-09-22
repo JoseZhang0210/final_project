@@ -1,0 +1,24 @@
+name: "Deploy Local Backend"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  local-deploy:
+    name: "Pull and Restart Backend"
+    runs-on: self-hosted
+
+    steps:
+      - name: Update Code and Rebuild Backend
+        shell: powershell
+        run: |
+          cd C:\Users\User\Documents\final_project
+          git fetch origin main
+          git reset --hard origin/main
+          docker compose up -d --build backend
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "✅ 本地後端服務已成功拉取最新代碼並完成重新啟動！" -ForegroundColor Green
+          Write-Host "==========================================" -ForegroundColor Green
+

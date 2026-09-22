@@ -1,6 +1,8 @@
 # 星澄飯店管理與線上服務系統 (Starlight Hotel)
 > EEIT 23 第一組 期末專題成果
 
+[![Full-Stack CI/CD](https://github.com/JoseZhang0210/final_project/actions/workflows/cicd.yml/badge.svg)](https://github.com/JoseZhang0210/final_project/actions/workflows/cicd.yml)
+
 本專案為前後端分離架構的綜合飯店服務與營運管理系統，涵蓋前台旅客線上預約服務（訂房、訂位、周邊商城、場地租借與會員中心）以及後台員工營運管理（房態房務、商品庫存、訂單管理、細部權限控制與營運儀表板）。
 
 ---
@@ -20,8 +22,9 @@
 - **網路請求**：Axios (攔截器整合 JWT 自動攜帶與 Token 刷新)
 - **UI 與元件**：Vue Datepicker (`@vuepic/vue-datepicker`)
 
-### 容器化與維運
+### 容器化與 DevOps
 - **容器管理**：Docker、Docker Compose
+- **持續整合與交付 (CI/CD)**：GitHub Actions（自動化單元測試、前端建置、GHCR 容器映像發布、本地 Self-hosted Runner 自動部署）
 - **外部連線與穿透**：ngrok Tunnel
 
 ---
@@ -43,6 +46,10 @@
 
 ```text
 final_project/
+├── .github/workflows/         # GitHub Actions CI/CD 與本地部署工作流程
+│   ├── cicd.yml               # 全端測試、打包與 GHCR 映像發布
+│   └── deploy-local.yml       # 本地 Self-hosted Runner 自動拉取與重啟
+
 ├── .env.example               # 環境變數設定範本 (複製為 .env 使用)
 ├── docker-compose.yml         # Docker 容器編排 (SQL Server、Backend、ngrok)
 ├── init-db.sql                # SQL Server 資料庫初始化腳本
@@ -133,6 +140,31 @@ npm run dev
    npm run dev
    ```
 3. 前端開發伺服器啟動後（預設 `http://localhost:5173`），Vite 會自動將 `/api` 與 `/uploads` 請求代理至後端 `http://localhost:8081`。
+
+---
+
+## 自動化測試與 CI/CD
+
+專案整合 GitHub Actions 實現全自動化測試與容器映像發布：
+
+### 1. 本地執行單元測試
+在提交程式碼前，可在本機快速執行驗證：
+```sh
+# 後端執行 34+ 個核心業務單元測試
+cd hotel-backend
+./mvnw test
+
+# 前端執行編譯與打包檢查
+cd ../hotel-frontend
+npm run build
+```
+
+### 2. CI/CD 自動化流程
+- **Pull Request / Push 觸發 (CI)**：
+  - **後端**：安裝相依、執行單元測試，並完成 Spring Boot JAR 打包驗證。
+  - **前端**：安裝相依套件並執行 Vite 生產環境編譯打包。
+- **合併至 `main` 分支 (CD)**：
+  - 前後端 CI 通過後，自動透過 Docker Buildx 建置後端映像檔，並推送至 GitHub Container Registry (`ghcr.io/josezhang0210/final_project-backend`)，自動標註 `:latest` 與 commit SHA。
 
 ---
 
