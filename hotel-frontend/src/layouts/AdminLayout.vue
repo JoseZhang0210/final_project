@@ -325,19 +325,37 @@ const accountOpen = ref(true);
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sidebar-title-with-icon {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-link .lucide-icon,
+.sidebar-title-with-icon .lucide-icon,
+.sidebar-back-link .lucide-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-arrow {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
   color: #aaa;
   transition: transform 0.25s ease;
-  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sidebar-arrow.is-open {
@@ -369,9 +387,11 @@ const accountOpen = ref(true);
 }
 
 .sidebar-back-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lucide-icon {
