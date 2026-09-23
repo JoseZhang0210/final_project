@@ -38,6 +38,7 @@
             type="button"
             class="sidebar-group-title"
             @click="restaurantOpen = !restaurantOpen"
+            :aria-expanded="restaurantOpen"
           >
             <span class="sidebar-title-with-icon">
               <Utensils :size="18" class="lucide-icon" />
@@ -51,10 +52,17 @@
             />
           </button>
 
-          <div v-show="restaurantOpen" class="sidebar-submenu">
-            <RouterLink to="/admin/restaurants"> 餐廳資料管理 </RouterLink>
-            <RouterLink to="/admin/restaurant-times"> 餐廳時段管理 </RouterLink>
-            <RouterLink to="/admin/reservations"> 餐廳訂位管理 </RouterLink>
+          <div
+            class="sidebar-submenu-wrapper"
+            :class="{ 'is-open': restaurantOpen }"
+          >
+            <div class="sidebar-submenu-inner">
+              <div class="sidebar-submenu">
+                <RouterLink to="/admin/restaurants"> 餐廳資料管理 </RouterLink>
+                <RouterLink to="/admin/restaurant-times"> 餐廳時段管理 </RouterLink>
+                <RouterLink to="/admin/reservations"> 餐廳訂位管理 </RouterLink>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -67,6 +75,7 @@
             type="button"
             class="sidebar-group-title"
             @click="roombookingOpen = !roombookingOpen"
+            :aria-expanded="roombookingOpen"
           >
             <span class="sidebar-title-with-icon">
               <Bed :size="18" class="lucide-icon" />
@@ -80,37 +89,44 @@
             />
           </button>
 
-          <div v-show="roombookingOpen" class="sidebar-submenu">
-            <RouterLink
-              v-if="authStore.hasPermission('BOOKING_MANAGE')"
-              to="/admin/room-booking"
-              >訂房明細</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('ROOM_MANAGE')"
-              to="/admin/room-status"
-              >房間管理</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('ROOM_MANAGE')"
-              to="/admin/room-task"
-              >房務工單</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('ROOM_MANAGE')"
-              to="/admin/room-types"
-              >房間類型</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('ROOM_MANAGE')"
-              to="/admin/room-images"
-              >房型圖片</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('BOOKING_MANAGE')"
-              to="/admin/booking-payments"
-              >付款紀錄</RouterLink
-            >
+          <div
+            class="sidebar-submenu-wrapper"
+            :class="{ 'is-open': roombookingOpen }"
+          >
+            <div class="sidebar-submenu-inner">
+              <div class="sidebar-submenu">
+                <RouterLink
+                  v-if="authStore.hasPermission('BOOKING_MANAGE')"
+                  to="/admin/room-booking"
+                  >訂房明細</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('ROOM_MANAGE')"
+                  to="/admin/room-status"
+                  >房間管理</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('ROOM_MANAGE')"
+                  to="/admin/room-task"
+                  >房務工單</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('ROOM_MANAGE')"
+                  to="/admin/room-types"
+                  >房間類型</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('ROOM_MANAGE')"
+                  to="/admin/room-images"
+                  >房型圖片</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('BOOKING_MANAGE')"
+                  to="/admin/booking-payments"
+                  >付款紀錄</RouterLink
+                >
+              </div>
+            </div>
           </div>
         </div>
         <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
@@ -124,6 +140,7 @@
             type="button"
             class="sidebar-group-title"
             @click="accountOpen = !accountOpen"
+            :aria-expanded="accountOpen"
           >
             <span class="sidebar-title-with-icon">
               <Users :size="18" class="lucide-icon" />
@@ -137,17 +154,24 @@
             />
           </button>
 
-          <div v-show="accountOpen" class="sidebar-submenu">
-            <RouterLink
-              v-if="authStore.hasPermission('MEMBER_MANAGE')"
-              to="/admin/members"
-              >會員管理</RouterLink
-            >
-            <RouterLink
-              v-if="authStore.hasPermission('EMPLOYEE_MANAGE')"
-              to="/admin/employees"
-              >員工管理</RouterLink
-            >
+          <div
+            class="sidebar-submenu-wrapper"
+            :class="{ 'is-open': accountOpen }"
+          >
+            <div class="sidebar-submenu-inner">
+              <div class="sidebar-submenu">
+                <RouterLink
+                  v-if="authStore.hasPermission('MEMBER_MANAGE')"
+                  to="/admin/members"
+                  >會員管理</RouterLink
+                >
+                <RouterLink
+                  v-if="authStore.hasPermission('EMPLOYEE_MANAGE')"
+                  to="/admin/employees"
+                  >員工管理</RouterLink
+                >
+              </div>
+            </div>
           </div>
         </div>
 
@@ -318,6 +342,30 @@ const accountOpen = ref(true);
 
 .sidebar-arrow.is-open {
   transform: rotate(180deg);
+}
+
+/* =========================================
+   子選單平滑滑動展開/收起動畫
+   ========================================= */
+.sidebar-submenu-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    visibility 0.3s ease;
+}
+
+.sidebar-submenu-wrapper.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-submenu-inner {
+  overflow: hidden;
 }
 
 .sidebar-back-link {
