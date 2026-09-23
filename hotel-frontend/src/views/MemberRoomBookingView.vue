@@ -5,7 +5,7 @@
         <div class="header-title">
           <div class="header-with-back" v-if="selectedBooking">
             <button class="back-btn" @click="selectedBooking = null">
-              <ArrowLeft :size="16" class="icon" /> 返回
+              <span class="icon">←</span> 返回
             </button>
             <h2>訂單明細 (第 {{ getBookingIndex(selectedBooking) }} 次訂房)</h2>
           </div>
@@ -160,10 +160,8 @@
 
       <div v-else class="booking-list-view">
         <div v-if="bookings.length === 0" class="empty-state">
-          <div class="empty-icon">
-            <Bed :size="48" :stroke-width="1.5" />
-          </div>
-          <h3>暫無訂單</h3>
+          <div class="empty-icon">🛏️</div>
+          <h3>空資料</h3>
           <p>您目前沒有訂房訂單</p>
         </div>
 
@@ -422,7 +420,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { Bed, ArrowLeft } from "@lucide/vue";
 import { bookingApi } from "@/api/bookingApi";
 
 const currentDomain = window.location.origin;
