@@ -160,9 +160,11 @@
               "
               @click.stop="handleToggleWishlist(product.productId)"
             >
-              <span aria-hidden="true">
-                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
-              </span>
+              <Heart
+                :size="18"
+                :fill="isProductInWishlist(product.productId) ? 'currentColor' : 'none'"
+                aria-hidden="true"
+              />
             </button>
 
             <!-- 缺貨 -->
@@ -421,6 +423,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref } from "vue";
+import { Heart } from "@lucide/vue";
 
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";

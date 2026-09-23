@@ -12,90 +12,194 @@
 
       <nav class="sidebar-nav">
         <!-- Dashboard -->
-        <RouterLink to="/admin"> 📊 Dashboard </RouterLink>
+        <RouterLink to="/admin" class="sidebar-link">
+          <LayoutDashboard :size="18" class="lucide-icon" />
+          <span>Dashboard</span>
+        </RouterLink>
 
         <!-- 商品管理 -->
-        <RouterLink v-if="authStore.hasPermission('PRODUCT_MANAGE')" to="/admin/products"> 🛍 商品管理 </RouterLink>
+        <RouterLink
+          v-if="authStore.hasPermission('PRODUCT_MANAGE')"
+          to="/admin/products"
+          class="sidebar-link"
+        >
+          <ShoppingBag :size="18" class="lucide-icon" />
+          <span>商品管理</span>
+        </RouterLink>
 
         <!-- =========================
              餐廳管理群組
              ========================= -->
-        <div v-if="authStore.hasPermission('RESTAURANT_MANAGE')" class="sidebar-group">
-          <button type="button" class="sidebar-group-title" @click="restaurantOpen = !restaurantOpen">
-            <span> 🍽 餐廳管理 </span>
-
-            <span class="arrow">
-              {{ restaurantOpen ? "▲" : "▼" }}
+        <div
+          v-if="authStore.hasPermission('RESTAURANT_MANAGE')"
+          class="sidebar-group"
+        >
+          <button
+            type="button"
+            class="sidebar-group-title"
+            @click="restaurantOpen = !restaurantOpen"
+          >
+            <span class="sidebar-title-with-icon">
+              <Utensils :size="18" class="lucide-icon" />
+              <span>餐廳管理</span>
             </span>
+
+            <ChevronDown
+              :size="16"
+              class="sidebar-arrow"
+              :class="{ 'is-open': restaurantOpen }"
+            />
           </button>
 
           <div v-show="restaurantOpen" class="sidebar-submenu">
             <RouterLink to="/admin/restaurants"> 餐廳資料管理 </RouterLink>
-
             <RouterLink to="/admin/restaurant-times"> 餐廳時段管理 </RouterLink>
-
             <RouterLink to="/admin/reservations"> 餐廳訂位管理 </RouterLink>
           </div>
         </div>
 
         <!-- ＝＝＝＝＝訂房管理＝＝＝＝＝ -->
-        <div v-if="authStore.hasAnyPermission(['ROOM_MANAGE', 'BOOKING_MANAGE'])" class="sidebar-group">
-          <button type="button" class="sidebar-group-title" @click="roombookingOpen = !roombookingOpen">
-            <span> 🛏 訂房管理 </span>
-
-            <span class="arrow">
-              {{ roombookingOpen ? "▲" : "▼" }}
+        <div
+          v-if="authStore.hasAnyPermission(['ROOM_MANAGE', 'BOOKING_MANAGE'])"
+          class="sidebar-group"
+        >
+          <button
+            type="button"
+            class="sidebar-group-title"
+            @click="roombookingOpen = !roombookingOpen"
+          >
+            <span class="sidebar-title-with-icon">
+              <Bed :size="18" class="lucide-icon" />
+              <span>訂房管理</span>
             </span>
+
+            <ChevronDown
+              :size="16"
+              class="sidebar-arrow"
+              :class="{ 'is-open': roombookingOpen }"
+            />
           </button>
 
           <div v-show="roombookingOpen" class="sidebar-submenu">
-            <RouterLink v-if="authStore.hasPermission('BOOKING_MANAGE')" to="/admin/room-booking">訂房明細</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-status">房間管理</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-task">房務工單</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-types">房間類型</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('ROOM_MANAGE')" to="/admin/room-images">房型圖片</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('BOOKING_MANAGE')" to="/admin/booking-payments">付款紀錄</RouterLink>
+            <RouterLink
+              v-if="authStore.hasPermission('BOOKING_MANAGE')"
+              to="/admin/room-booking"
+              >訂房明細</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('ROOM_MANAGE')"
+              to="/admin/room-status"
+              >房間管理</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('ROOM_MANAGE')"
+              to="/admin/room-task"
+              >房務工單</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('ROOM_MANAGE')"
+              to="/admin/room-types"
+              >房間類型</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('ROOM_MANAGE')"
+              to="/admin/room-images"
+              >房型圖片</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('BOOKING_MANAGE')"
+              to="/admin/booking-payments"
+              >付款紀錄</RouterLink
+            >
           </div>
         </div>
         <!-- ＝＝＝＝＝＝＝＝＝＝＝＝＝＝ -->
 
         <!-- 帳號管理群組 -->
-        <div v-if="authStore.hasAnyPermission(['MEMBER_MANAGE', 'EMPLOYEE_MANAGE'])" class="sidebar-group">
-          <button type="button" class="sidebar-group-title" @click="accountOpen = !accountOpen">
+        <div
+          v-if="authStore.hasAnyPermission(['MEMBER_MANAGE', 'EMPLOYEE_MANAGE'])"
+          class="sidebar-group"
+        >
+          <button
+            type="button"
+            class="sidebar-group-title"
+            @click="accountOpen = !accountOpen"
+          >
             <span class="sidebar-title-with-icon">
               <Users :size="18" class="lucide-icon" />
-              帳號管理
+              <span>帳號管理</span>
             </span>
 
-            <span class="arrow">
-              {{ accountOpen ? "▲" : "▼" }}
-            </span>
+            <ChevronDown
+              :size="16"
+              class="sidebar-arrow"
+              :class="{ 'is-open': accountOpen }"
+            />
           </button>
 
           <div v-show="accountOpen" class="sidebar-submenu">
-            <RouterLink v-if="authStore.hasPermission('MEMBER_MANAGE')" to="/admin/members">會員管理</RouterLink>
-            <RouterLink v-if="authStore.hasPermission('EMPLOYEE_MANAGE')" to="/admin/employees">員工管理</RouterLink>
+            <RouterLink
+              v-if="authStore.hasPermission('MEMBER_MANAGE')"
+              to="/admin/members"
+              >會員管理</RouterLink
+            >
+            <RouterLink
+              v-if="authStore.hasPermission('EMPLOYEE_MANAGE')"
+              to="/admin/employees"
+              >員工管理</RouterLink
+            >
           </div>
         </div>
-        
+
         <!-- 訂單管理 -->
-        <RouterLink v-if="authStore.hasPermission('ORDER_MANAGE')" to="/admin/orders"> 📦 訂單管理 </RouterLink>
+        <RouterLink
+          v-if="authStore.hasPermission('ORDER_MANAGE')"
+          to="/admin/orders"
+          class="sidebar-link"
+        >
+          <Package :size="18" class="lucide-icon" />
+          <span>訂單管理</span>
+        </RouterLink>
 
         <!-- 優惠券管理 -->
-        <RouterLink v-if="authStore.hasPermission('COUPON_MANAGE')" to="/admin/coupons"> 🎟 優惠券管理 </RouterLink>
+        <RouterLink
+          v-if="authStore.hasPermission('COUPON_MANAGE')"
+          to="/admin/coupons"
+          class="sidebar-link"
+        >
+          <Ticket :size="18" class="lucide-icon" />
+          <span>優惠券管理</span>
+        </RouterLink>
 
         <!-- 場地管理 -->
-        <RouterLink v-if="authStore.hasPermission('VENUE_MANAGE')" to="/admin/venues"> 🏛️場地管理 </RouterLink>
+        <RouterLink
+          v-if="authStore.hasPermission('VENUE_MANAGE')"
+          to="/admin/venues"
+          class="sidebar-link"
+        >
+          <Landmark :size="18" class="lucide-icon" />
+          <span>場地管理</span>
+        </RouterLink>
 
         <!-- 場地租借管理 -->
-        <RouterLink v-if="authStore.hasPermission('VENUE_MANAGE')" to="/admin/rental"> 📝場地租借管理 </RouterLink>
+        <RouterLink
+          v-if="authStore.hasPermission('VENUE_MANAGE')"
+          to="/admin/rental"
+          class="sidebar-link"
+        >
+          <CalendarCheck :size="18" class="lucide-icon" />
+          <span>場地租借管理</span>
+        </RouterLink>
       </nav>
 
       <!-- =========================
            Sidebar 底部
            ========================= -->
       <div class="sidebar-bottom">
-        <RouterLink to="/"> ← 回前台首頁 </RouterLink>
+        <RouterLink to="/" class="sidebar-back-link">
+          <ArrowLeft :size="16" class="lucide-icon" />
+          <span>回前台首頁</span>
+        </RouterLink>
       </div>
     </aside>
 
@@ -145,7 +249,20 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
-import { Users, Home } from "@lucide/vue";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Utensils,
+  Bed,
+  Users,
+  Package,
+  Ticket,
+  Landmark,
+  CalendarCheck,
+  ChevronDown,
+  ArrowLeft,
+  Home,
+} from "@lucide/vue";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 
@@ -181,8 +298,30 @@ const accountOpen = ref(true);
 </script>
 
 <style scoped>
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .sidebar-title-with-icon {
   display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-arrow {
+  color: #aaa;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-arrow.is-open {
+  transform: rotate(180deg);
+}
+
+.sidebar-back-link {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
