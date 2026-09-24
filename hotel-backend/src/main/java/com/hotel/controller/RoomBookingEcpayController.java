@@ -42,7 +42,7 @@ public class RoomBookingEcpayController {
     @Value("${ecpay.payment.result-url:http://localhost:8081/api/payments/ecpay/client-return/}")
     private String ecpayResultUrlPrefix;
 
-    @Value("${app.frontend.checkout-url:http://localhost:5173/room-checkout}")
+    @Value("${app.frontend.checkout-url:https://starlight-hotel.vercel.app/room-checkout}")
     private String frontendCheckoutUrl;
 
     public RoomBookingEcpayController(
@@ -87,12 +87,16 @@ public class RoomBookingEcpayController {
             clientBackUrl = "http://localhost:8081/api/payments/ecpay/client-return/" + booking.getBookingId()
                     + "?local=true";
         } else {
-            // 線上環境：使用環境變數設定的網址
+            // 線上環境：直接跳轉回前端結帳頁面（完全不經 ngrok 後端，避開防釣魚警示）
             returnUrl = ecpayReturnUrl;
-            if (ecpayResultUrlPrefix.contains("client-return")) {
-                clientBackUrl = ecpayResultUrlPrefix + booking.getBookingId();
+            if (frontendUrl != null && !frontendUrl.isBlank()) {
+                String baseUrl = frontendUrl.split("\\?")[0];
+                clientBackUrl = baseUrl + "?paymentSuccess=true&bookingId=" + booking.getBookingId();
+            } else if (ecpayResultUrlPrefix != null && !ecpayResultUrlPrefix.isBlank()) {
+                clientBackUrl = ecpayResultUrlPrefix + (ecpayResultUrlPrefix.contains("?") ? "&" : "?")
+                        + "bookingId=" + booking.getBookingId();
             } else {
-                clientBackUrl = ecpayResultUrlPrefix + "?paymentSuccess=true";
+                clientBackUrl = frontendCheckoutUrl + "?paymentSuccess=true&bookingId=" + booking.getBookingId();
             }
         }
 
@@ -151,6 +155,39 @@ public class RoomBookingEcpayController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(targetUrl))
                 .build();
+    }
+
+    /**
+     * 前端跳轉回呼同步 API：確保線上跳過 ngrok 時，狀態即時同步並發送郵件與 QR Code
+     */
+    @PostMapping("/client-confirm/{bookingId}")
+    public ResponseEntity<Map<String, Object>> confirmPaymentSuccess(@PathVariable("bookingId") Integer bookingId) {
+        log.info("收到前端付款完成確認請求，訂單編號: {}", bookingId);
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            BookingDTO booking = bookingService.findById(bookingId).orElse(null);
+            if (booking == null) {
+                response.put("status", "error");
+                response.put("message", "找不到訂單 ID: " + bookingId);
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            Integer amount = booking.getBookingPrice() != null ? booking.getBookingPrice() : 0;
+            // 透過統一的 Service 處理付款成功 (內建冪等性防護與非同步發信)
+            boolean updated = bookingPaymentService.processSuccessfulPayment(bookingId, amount, "信用卡", null);
+
+            response.put("status", "success");
+            response.put("updated", updated);
+            response.put("bookingId", bookingId);
+            response.put("message", updated ? "付款成功確認完成" : "訂單已為付款狀態");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("同步確認付款狀態失敗 (Booking ID: {}): {}", bookingId, e.getMessage());
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     /**
