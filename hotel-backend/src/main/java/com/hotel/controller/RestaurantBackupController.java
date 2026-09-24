@@ -55,6 +55,8 @@ public class RestaurantBackupController {
     // 匯出餐廳、時段與訂位資料，可依訂位日期篩選。
     @GetMapping("/export")
     public BackupData exportData(
+            @RequestParam(required = false) Integer restaurantId,
+            @RequestParam(required = false) Integer timeId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
@@ -69,6 +71,16 @@ public class RestaurantBackupController {
         boolean hasDateFilter = startDate != null || endDate != null;
 
         for (Reservation reservation : reservationService.findAllReservations()) {
+            if (restaurantId != null
+                    && !Objects.equals(reservation.getRestaurantId(), restaurantId)) {
+                continue;
+            }
+
+            if (timeId != null
+                    && !Objects.equals(reservation.getTimeId(), timeId)) {
+                continue;
+            }
+
             if (!isWithinDateRange(reservation.getReservationDate(), startDate, endDate)) {
                 continue;
             }
