@@ -577,7 +577,7 @@ body {
   font-weight: bold;
 }
 
-.admin-form-group input,
+.admin-form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 .admin-form-group select,
 .admin-form-group textarea,
 .admin-input,
@@ -599,7 +599,7 @@ body {
   transition: 0.25s;
 }
 
-.admin-form-group input:focus,
+.admin-form-group input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
 .admin-form-group select:focus,
 .admin-form-group textarea:focus,
 .admin-input:focus,
