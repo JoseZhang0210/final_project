@@ -245,11 +245,33 @@ function closeAlert() {
   if (onClose) onClose();
 }
 
-const authStore = useAuthStore();
+// 預訂完成狀態管理 (第一時間同步判斷，防止畫面閃爍)
+const isPaymentSuccess = ref(Boolean(route.query.paymentSuccess));
+const completedBookingId = ref(
+  route.query.bookingId ? Number(route.query.bookingId) : null,
+);
 
-// 預訂完成狀態管理
-const isPaymentSuccess = ref(false);
-const completedBookingId = ref(null);
+// 若由金流跳回付款成功，第一時間同步載入儲存的訂單明細
+if (isPaymentSuccess.value) {
+  const savedParams = localStorage.getItem("checkoutParams");
+  if (savedParams) {
+    try {
+      const parsed = JSON.parse(savedParams);
+      if (parsed.roomTypeId) roomTypeId.value = parsed.roomTypeId;
+      if (parsed.roomName) roomName.value = parsed.roomName;
+      if (parsed.checkIn) checkIn.value = parsed.checkIn;
+      if (parsed.checkOut) checkOut.value = parsed.checkOut;
+      if (parsed.guests) guests.value = parsed.guests;
+      if (parsed.price) totalPrice.value = Number(parsed.price) || 0;
+      if (parsed.name) form.value.name = parsed.name;
+      if (parsed.email) form.value.email = parsed.email;
+      if (parsed.phone) form.value.phone = parsed.phone;
+      if (parsed.remark) form.value.remark = parsed.remark;
+    } catch (e) {
+      console.error("解析 checkoutParams 失敗", e);
+    }
+  }
+}
 
 function goToMyOrders() {
   router.push({ name: "member-room-bookings" });
@@ -435,33 +457,13 @@ onMounted(async () => {
       }
     }
 
-    // 還原訂單資訊
-    const savedParams = localStorage.getItem("checkoutParams");
-    if (savedParams) {
-      try {
-        const parsed = JSON.parse(savedParams);
-        if (parsed.roomTypeId) roomTypeId.value = parsed.roomTypeId;
-        if (parsed.roomName) roomName.value = parsed.roomName;
-        if (parsed.checkIn) checkIn.value = parsed.checkIn;
-        if (parsed.checkOut) checkOut.value = parsed.checkOut;
-        if (parsed.guests) guests.value = parsed.guests;
-        if (parsed.price) totalPrice.value = Number(parsed.price) || 0;
-        if (parsed.name) form.value.name = parsed.name;
-        if (parsed.email) form.value.email = parsed.email;
-        if (parsed.phone) form.value.phone = parsed.phone;
-        if (parsed.remark) form.value.remark = parsed.remark;
-      } catch (e) {
-        console.error("解析 checkoutParams 失敗", e);
-      }
-    }
-
     // 若在新開的分頁完成，嘗試自動關閉該分頁並讓主分頁接手；若不給關閉則直接展示成功畫面
     if (window.name === "ECPayTab" || window.opener) {
       setTimeout(() => {
         try {
           window.close();
         } catch (e) {}
-      }, 1000);
+      }, 500);
     }
 
     isPaymentSuccess.value = true;
