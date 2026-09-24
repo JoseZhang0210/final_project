@@ -252,7 +252,7 @@ const isPaymentSuccess = ref(false);
 const completedBookingId = ref(null);
 
 function goToMyOrders() {
-  router.push("/my-orders");
+  router.push({ name: "member-room-bookings" });
 }
 
 function goToHome() {
