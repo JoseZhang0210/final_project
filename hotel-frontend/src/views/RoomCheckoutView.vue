@@ -309,9 +309,21 @@ async function forceMockFail() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 如果是從綠界跳轉回來且帶有成功標記
   if (route.query.paymentSuccess) {
+    const bookingId = route.query.bookingId;
+    if (bookingId) {
+      try {
+        // 主動通知後端更新狀態為「已付款」，並觸發寄送確認信與 QR Code (具備冪等性防護)
+        await fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
+          method: "POST",
+        });
+      } catch (err) {
+        console.warn("付款狀態同步失敗:", err);
+      }
+    }
+
     // 透過 window.name 完美判斷這是不是我們開的「綠界新分頁」
     if (window.name === "ECPayPopup" || window.opener) {
       // 這是彈出視窗！嘗試自動關掉
