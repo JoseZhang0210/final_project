@@ -347,11 +347,44 @@ onUnmounted(() => {
 });
 
 const form = ref({
-  name: "",
+  name: localStorage.getItem("name") || "",
   email: "",
   phone: "",
   remark: "",
 });
+
+async function loadMemberProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  // 1. 若有快取的姓名，先立即帶入
+  const cachedName = localStorage.getItem("name") || authStore.name;
+  if (cachedName && !form.value.name) {
+    form.value.name = cachedName;
+  }
+
+  // 2. 向後端取得最新、完整的會員個人資料 (姓名、Email、手機)
+  try {
+    const res = await fetch("/api/members/me", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        if (data.name) form.value.name = data.name;
+        if (data.email) form.value.email = data.email;
+        if (data.phone) form.value.phone = data.phone;
+      }
+    }
+  } catch (err) {
+    console.warn("載入會員資料失敗:", err);
+  }
+}
+
+// 若非付款完成跳轉，第一時間載入當前登入會員資料
+if (!isPaymentSuccess.value) {
+  loadMemberProfile();
+}
 
 function startPolling(bookingId) {
   currentBookingId.value = bookingId;
@@ -471,23 +504,7 @@ onMounted(async () => {
   }
 
   // 若已登入，自動載入會員資料填入聯絡人表單
-  if (authStore.isLoggedIn) {
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetch("/api/members/me", {
-        headers: { Authorization: "Bearer " + token },
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) {
-            if (data.name && !form.value.name) form.value.name = data.name;
-            if (data.email && !form.value.email) form.value.email = data.email;
-            if (data.phone && !form.value.phone) form.value.phone = data.phone;
-          }
-        })
-        .catch((err) => console.warn("載入會員資料失敗:", err));
-    }
-  }
+  await loadMemberProfile();
 
   // 正常進入檢查參數
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
