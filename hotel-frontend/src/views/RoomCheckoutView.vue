@@ -520,12 +520,25 @@ async function submitCheckout() {
     return;
   }
 
+  if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
+    showAlert(
+      "error",
+      "缺少預訂參數",
+      "缺少房型或日期參數，請重新選擇房型！",
+      () => {
+        router.push("/room-booking");
+      },
+    );
+    return;
+  }
+
   isProcessing.value = true;
   try {
+    const token = localStorage.getItem("token");
     let currentMemberId = 1;
-    if (authStore.isLoggedIn) {
+
+    if (token) {
       try {
-        const token = localStorage.getItem("token");
         const profileRes = await fetch("/api/members/me", {
           headers: { Authorization: "Bearer " + token },
         });
@@ -540,20 +553,25 @@ async function submitCheckout() {
       }
     }
 
+    // 1. 建立訂單
     const bookingPayload = {
       memberId: currentMemberId,
-      roomTypeId: roomTypeId.value,
+      roomTypeId: Number(roomTypeId.value),
       checkInDate: checkIn.value,
       checkOutDate: checkOut.value,
-      guestNum: guests.value,
-      bookingPrice: totalPrice.value,
+      guestNum: Number(guests.value) || 1,
+      bookingPrice: Number(totalPrice.value) || 0,
       bookingStatus: "待入住",
     };
 
     const createdBooking = await bookingApi.createBooking(bookingPayload);
-    const bookingId = createdBooking.bookingId;
+    const bookingId = createdBooking?.bookingId || createdBooking?.id;
 
-    // 儲存預訂資料到 localStorage 供同步還原
+    if (!bookingId) {
+      throw new Error("建立訂單失敗：未取得訂單編號");
+    }
+
+    // 儲存預訂資料到 localStorage 供跳轉回來時還原
     const checkoutInfo = {
       ...route.query,
       roomTypeId: roomTypeId.value,
@@ -569,10 +587,15 @@ async function submitCheckout() {
     };
     localStorage.setItem("checkoutParams", JSON.stringify(checkoutInfo));
 
-    // 取得綠界表單
+    // 2. 取得綠界金流 HTML 表單
+    const checkoutHeaders = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+    };
+
     const res = await fetch("/api/payments/ecpay/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: checkoutHeaders,
       body: JSON.stringify({
         bookingId: bookingId,
         frontendUrl: window.location.href,
@@ -580,25 +603,30 @@ async function submitCheckout() {
     });
 
     if (!res.ok) {
-      throw new Error("取得綠界金流表單失敗");
+      const errorMsg = await res.text();
+      throw new Error(errorMsg || "取得綠界金流表單失敗");
     }
 
     const htmlForm = await res.text();
 
-    // 在新分頁 (ECPayTab) 開啟綠界付款
+    // 3. 在新分頁開啟綠界付款
     ecpayFormContainer.value.innerHTML = htmlForm;
     await nextTick();
     const formElement = ecpayFormContainer.value.querySelector("form");
     if (formElement) {
-      formElement.target = "ECPayTab"; // ★ 新分頁開啟綠界
+      formElement.target = "ECPayTab";
       formElement.submit();
     }
 
-    // 原分頁開始輪詢與監聽
+    // 4. 原分頁開始輪詢與監聽
     startPolling(bookingId);
   } catch (error) {
     console.error("Checkout failed:", error);
-    showAlert("error", "結帳錯誤", "結帳發生錯誤，請稍後再試！");
+    showAlert(
+      "error",
+      "結帳錯誤",
+      error.message || "結帳發生錯誤，請稍後再試！",
+    );
   } finally {
     isProcessing.value = false;
   }
