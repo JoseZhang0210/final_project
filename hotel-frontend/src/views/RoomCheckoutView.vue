@@ -354,16 +354,7 @@ onMounted(async () => {
   if (route.query.paymentSuccess) {
     const bookingId = route.query.bookingId;
     if (bookingId) {
-      try {
-        // 主動通知後端更新狀態為「已付款」，並觸發寄送確認信與 QR Code (具備冪等性防護)
-        await fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
-          method: "POST",
-        });
-      } catch (err) {
-        console.warn("付款狀態同步失敗:", err);
-      }
-
-      // 跨分頁通知原本的主視窗
+      // 1. 跨分頁通知原本的主視窗 (立即廣播)
       try {
         localStorage.setItem(
           "ecpay_booking_success",
@@ -372,15 +363,23 @@ onMounted(async () => {
       } catch (err) {
         console.warn("跨分頁通知失敗:", err);
       }
+
+      // 2. 非同步背景發送確認請求，keepalive: true 確保即使分頁立刻關閉，請求仍會由瀏覽器送達後端觸發寄信與狀態更新
+      fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
+        method: "POST",
+        keepalive: true,
+      }).catch((err) => console.warn("付款狀態背景同步失敗:", err));
     }
 
-    // 1. 嘗試關閉這個綠界分頁
+    // 3. 立即關閉這個綠界分頁（不等待網路回傳，達成毫秒級秒關）
     try {
       window.close();
     } catch (e) {}
 
-    // 2. 若瀏覽器安全限制不給關閉，直接導向首頁，絕不顯示空結帳畫面！
-    router.replace("/");
+    // 4. 若瀏覽器安全性限制不允許自動關閉（例如非腳本開啟的視窗），0.5 秒後才導向首頁作為備援
+    setTimeout(() => {
+      router.replace("/");
+    }, 500);
     return;
   }
 
