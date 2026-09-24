@@ -15,7 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hotel.model.dto.EmailDTO;
 import com.hotel.model.entity.Reservation;
+import com.hotel.model.entity.Restaurant;
+import com.hotel.model.entity.RestaurantTime;
 import com.hotel.service.ReservationService;
+import com.hotel.service.RestaurantService;
+import com.hotel.service.RestaurantTimeService;
 import com.hotel.util.MailUtil;
 
 @RestController
@@ -23,13 +27,19 @@ import com.hotel.util.MailUtil;
 public class ReservationController {
 
     private final ReservationService reservationService;
+    private final RestaurantService restaurantService;
+    private final RestaurantTimeService restaurantTimeService;
     private final MailUtil mailUtil;
 
     public ReservationController(
             ReservationService reservationService,
+            RestaurantService restaurantService,
+            RestaurantTimeService restaurantTimeService,
             MailUtil mailUtil) {
 
         this.reservationService = reservationService;
+        this.restaurantService = restaurantService;
+        this.restaurantTimeService = restaurantTimeService;
         this.mailUtil = mailUtil;
     }
 
@@ -138,22 +148,135 @@ public class ReservationController {
     }
 
     private void sendReservationEmail(Reservation reservation) {
+        Restaurant restaurant = restaurantService.findById(
+                reservation.getRestaurantId());
+
+        RestaurantTime restaurantTime = restaurantTimeService.findById(
+                reservation.getTimeId());
+
+        String restaurantName = restaurant != null
+                ? restaurant.getRestaurantName()
+                : "未提供";
+
+        String diningTime = restaurantTime != null
+                ? restaurantTime.getMealType() + "（"
+                        + restaurantTime.getOpenTime() + " - "
+                        + restaurantTime.getCloseTime() + "）"
+                : "未提供";
         String subject = "【星澄飯店】訂位確認 #" + reservation.getReservationId();
         String content = """
-                <h2>訂位已完成</h2>
-                <p>親愛的 %s，您好：</p>
-                <p>感謝您的訂位，以下是您的訂位資訊。</p>
-                <ul>
-                    <li>訂位編號：#%s</li>
-                    <li>訂位日期：%s</li>
-                    <li>訂位人數：%s 人</li>
-                </ul>
-                <p>星澄飯店期待您的蒞臨。</p>
-                """.formatted(
-                escapeHtml(reservation.getContactName()),
-                reservation.getReservationId(),
-                reservation.getReservationDate(),
-                reservation.getPeopleCount());
+                                                                                                                <!DOCTYPE html>
+                                                                                                                <html>
+                                                                                                                <body style="margin:0;padding:0;background:#f5f1eb;
+                                                                                                                             font-family:'Microsoft JhengHei',Arial,sans-serif;color:#3d3328;">
+                                                                                                                    <table role="presentation" width="100%%" cellspacing="0" cellpadding="0"
+                                                                                                                           style="padding:32px 12px;background:#f5f1eb;">
+                                                                                                                        <tr>
+                                                                                                                            <td align="center">
+                                                                                                                                <table role="presentation" width="600" cellspacing="0" cellpadding="0"
+                                                                                                                                       style="max-width:600px;background:#ffffff;border-radius:12px;
+                                                                                                                                              overflow:hidden;border:1px solid #e6dccf;">
+
+                                                                                                                                    <tr>
+                                                                                    <td style="padding:24px 32px;background:#3f3326;color:#ffffff;text-align:center;">
+                                                                                        <div style="font-size:25px;font-weight:bold;letter-spacing:3px;color:#e7c44d;">
+                                                                                            星澄飯店
+                                                                                        </div>
+                                                                                        <div style="margin-top:8px;font-size:14px;letter-spacing:0.5px;color:#f5f1eb;">
+                                                                                            Grand Aster Hotel &amp; Resorts
+                                                                                        </div>
+                                                                                    </td>
+                                                                                </tr>
+
+                                                                                                                                    <tr>
+                                                                                                                                        <td style="padding:30px 32px;">
+                                                                                                                                            <h2 style="margin:0 0 16px;font-size:25px;color:#4d3c2b;">
+                                                                                                                                                您的訂位已完成
+                                                                                                                                            </h2>
+
+                                                                                                                                            <p style="margin:0 0 22px;line-height:1.9;font-size:16px;color:#4d3c2b;">
+                                                                                                                                                親愛的 %s，您好：<br>
+                                                                                                                                                感謝您的訂位，以下是本次用餐資訊。
+                                                                                                                                            </p>
+
+                                                                                                                                            <table role="presentation" width="100%%" cellspacing="0" cellpadding="0"
+                                                                                                                                                   style="border:1px solid #eadfce;border-radius:8px;background:#fcfaf7;">
+                                                                                                                                                <tr>
+                                                                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;color:#80684b;font-size:16px">
+                                                                                                                                                        訂位編號
+                                                                                                                                                    </td>
+                                                                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;font-weight:bold;">
+                                                                                                                                                        #%s
+                                                                                                                                                    </td>
+                                                                                                                                                </tr>
+                                                                                                                                                <tr>
+                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;
+                                                                                                               color:#80684b;font-size:16px;">
+                                                                                                        用餐餐廳
+                                                                                                    </td>
+                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;font-size:16px;">
+                                                                                                        %s
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                                <tr>
+                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;
+                                                                                                               color:#80684b;font-size:16px;">
+                                                                                                        用餐時段
+                                                                                                    </td>
+                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;font-size:16px;">
+                                                                                                        %s
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                                                                                <tr>
+                                                                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;color:#80684b;font-size:16px;">
+                                                                                                                                                        訂位日期
+                                                                                                                                                    </td>
+                                                                                                                                                    <td style="padding:12px 16px;border-bottom:1px solid #eadfce;">
+                                                                                                                                                        %s
+                                                                                                                                                    </td>
+                                                                                                                                                </tr>
+                                                                                                                                                <tr>
+                                                                                                                                                    <td style="padding:12px 16px;color:#80684b;font-size:16px;">
+                                                                                                                                                        用餐人數
+                                                                                                                                                    </td>
+                                                                                                                                                    <td style="padding:12px 16px;font-size:16px;">
+                                                                                                                                                        %s 人
+                                                                                                                                                    </td>
+                                                                                                                                                </tr>
+                                                                                                                                            </table>
+
+                                                                                                                                            <p style="margin:22px 0 0;line-height:1.8;font-size:16px;">
+                                                                                                                                                星澄飯店期待您的蒞臨，祝您有愉快的用餐時光。
+                                                                                                                                            </p>
+                                                                                                                                        </td>
+                                                                                                                                    </tr>
+
+                                                                                                                                    <tr>
+                    <td style="padding:18px 32px;background:#f5f1eb;
+                               text-align:center;border-top:1px solid #e8dfd5;">
+                        <div style="font-size:14px;color:#6b5137;">
+                            此為系統自動寄送通知，請勿直接回覆本信件。
+                        </div>
+
+                        <div style="margin-top:10px;font-size:12px;color:#9a8d7e;">
+                            © 2026 星澄飯店 Grand Aster Hotel. All rights reserved.
+                        </div>
+                    </td>
+                </tr>
+                                                                                                                                </table>
+                                                                                                                            </td>
+                                                                                                                        </tr>
+                                                                                                                    </table>
+                                                                                                                </body>
+                                                                                                                </html>
+                                                                                                                """
+                .formatted(
+                        escapeHtml(reservation.getContactName()),
+                        reservation.getReservationId(),
+                        restaurantName,
+                        diningTime,
+                        reservation.getReservationDate(),
+                        reservation.getPeopleCount());
 
         try {
             mailUtil.sendEmail(new EmailDTO(
