@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue"; // 路由或場地切換時同步更新安全的畫面資料。
 import { useRouter, useRoute } from "vue-router"; // 路由僅用於切換顯示，後端仍獨立驗證權限。
 import { getOccupiedDates, getRentalPayment, checkoutRental } from "../api/venueRentalApi"; // 使用場地專用占用與付款 API。
+import VenueHelper from "../components/venue/VenueHelper.vue";
 
 import {
   cancelMyRental,
@@ -1681,6 +1682,8 @@ function money(value) {
         </p>
       </section>
     </div>
+
+    <VenueHelper />
 </main>
 </template>
 
