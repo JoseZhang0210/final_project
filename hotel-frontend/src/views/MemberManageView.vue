@@ -380,6 +380,14 @@
           </div>
 
           <div class="admin-modal-footer">
+            <button
+              v-if="editingMemberId === null"
+              type="button"
+              class="admin-btn quick-fill-btn"
+              @click="fillDemoData"
+            >
+              一鍵帶入
+            </button>
             <button type="button" class="admin-btn admin-btn-secondary" @click="closeModal">取消</button>
             <button type="submit" class="admin-btn admin-btn-primary" :disabled="saving">
               {{ saving ? "儲存中..." : "儲存" }}
@@ -580,6 +588,23 @@ async function loadMembers() {
   } finally {
     loading.value = false;
   }
+}
+
+function fillDemoData() {
+  const randomNum = Math.floor(100 + Math.random() * 900);
+  form.username = `demo_user${randomNum}`;
+  form.password = "123456";
+  form.status = "1";
+  form.name = "王小明";
+  form.gender = "男";
+  form.email = `demo_user${randomNum}@example.com`;
+  form.phone = "0912345678";
+  form.birthday = "1995-08-15";
+  form.zipcode = "320";
+  form.city = "桃園市";
+  form.district = "中壢區";
+  form.address = "中大路300號";
+  showMessage("已成功一鍵帶入假資料", "success");
 }
 
 function openCreateModal() {
@@ -966,5 +991,23 @@ onMounted(async () => {
 <style scoped>
 .member-manage-page {
   width: 100%;
+}
+
+.quick-fill-btn {
+  margin-right: auto;
+  padding: 8px 16px;
+  border: 1px solid #b58a46;
+  border-radius: 6px;
+  background-color: #fff8ee;
+  color: #b58a46;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-fill-btn:hover {
+  background-color: #b58a46;
+  color: #ffffff;
 }
 </style>
