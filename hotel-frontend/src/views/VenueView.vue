@@ -49,10 +49,10 @@ const venueStatuses = [
 
 /* 四個固定宴會廳各自的核定容量，管理畫面不可提高此上限。 */
 const fixedVenueCapacityLimits = Object.freeze({
-  1: 50,
-  2: 100,
-  3: 200,
-  4: 300,
+  1: 200,
+  2: 150,
+  3: 60,
+  4: 100,
 });
 
 /* 依目前表單的場地 ID 取得固定上限；自行新增的其他場地不套用固定值。 */
@@ -770,6 +770,17 @@ function money(value) {
                 </button>
 
                 <button
+                  v-if="venue.venueId >= 1 && venue.venueId <= 4"
+                  type="button"
+                  class="secondary"
+                  disabled
+                  title="系統預設場地不可刪除，可改為維護中或停用"
+                >
+                  系統預設場地
+                </button>
+
+                <button
+                  v-else
                   type="button"
                   class="danger"
                   @click="handleDelete(venue)"
