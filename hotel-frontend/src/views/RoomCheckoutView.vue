@@ -197,39 +197,85 @@ onUnmounted(() => {
 });
 
 const form = ref({
-  name: "",
+  name: localStorage.getItem("name") || "",
   email: "",
   phone: "",
   remark: "",
 });
 
+async function loadMemberProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const cachedName = localStorage.getItem("name") || authStore.name;
+  if (cachedName && !form.value.name) {
+    form.value.name = cachedName;
+  }
+
+  try {
+    const res = await fetch("/api/members/me", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        if (data.name) form.value.name = data.name;
+        if (data.email) form.value.email = data.email;
+        if (data.phone) form.value.phone = data.phone;
+      }
+    }
+  } catch (err) {
+    console.warn("載入會員資料失敗:", err);
+  }
+}
+
+// 跨分頁即時通訊監聽
+function handleStorageChange(event) {
+  if (event.key === "ecpay_booking_success" && event.newValue) {
+    try {
+      const data = JSON.parse(event.newValue);
+      if (data && data.bookingId) {
+        onPaymentFinished();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+function onPaymentFinished() {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
+  showPaymentModal.value = false;
+  showAlert(
+    "success",
+    "付款成功",
+    "感謝您的預訂！即將為您跳轉至飯店首頁。",
+    () => {
+      router.push("/");
+    },
+  );
+}
+
 function startPolling(bookingId) {
   currentBookingId.value = bookingId;
   showPaymentModal.value = true;
 
-  // 每 3 秒詢問一次後端狀態
+  // 每 2 秒詢問一次後端狀態
   pollingInterval.value = setInterval(async () => {
     try {
       const res = await fetch(`/api/payments/ecpay/status/${bookingId}`);
       if (res.ok) {
         const data = await res.json();
         if (data.status === "已付款") {
-          clearInterval(pollingInterval.value);
-          showPaymentModal.value = false;
-          showAlert(
-            "success",
-            "付款成功",
-            "感謝您的預訂！即將為您跳轉至首頁。",
-            () => {
-              router.push("/");
-            },
-          );
+          onPaymentFinished();
         }
       }
     } catch (e) {
       console.error("輪詢狀態失敗", e);
     }
-  }, 3000);
+  }, 2000);
 }
 
 async function cancelPaymentWait() {
@@ -264,16 +310,7 @@ async function forceMockSuccess() {
       },
     );
     if (res.ok) {
-      // 輪詢會自動抓到並跳轉，或者我們直接跳轉
-      clearInterval(pollingInterval.value);
-      showAlert(
-        "success",
-        "開發模式：付款成功",
-        "已強制模擬付款成功！即將為您跳轉至首頁。",
-        () => {
-          router.push("/");
-        },
-      );
+      onPaymentFinished();
     } else {
       showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
     }
@@ -310,7 +347,10 @@ async function forceMockFail() {
 }
 
 onMounted(async () => {
-  // 如果是從綠界跳轉回來且帶有成功標記
+  // 設定跨分頁監聽器
+  window.addEventListener("storage", handleStorageChange);
+
+  // 如果是在新分頁付款完成跳回
   if (route.query.paymentSuccess) {
     const bookingId = route.query.bookingId;
     if (bookingId) {
@@ -322,87 +362,32 @@ onMounted(async () => {
       } catch (err) {
         console.warn("付款狀態同步失敗:", err);
       }
-    }
 
-    // 透過 window.name 完美判斷這是不是我們開的「綠界新分頁」
-    if (window.name === "ECPayPopup" || window.opener) {
-      // 這是彈出視窗！嘗試自動關掉
-      window.close();
-
-      // 如果瀏覽器不給關，就顯示專屬的提示，千萬不要還原畫面，以免產生「兩個 Vue 畫面」的錯覺
-      setTimeout(() => {
-        showAlert(
-          "success",
-          "結帳完畢",
-          "綠界金流處理成功！\n\n請直接「關閉此分頁」，並回到您原本的訂房視窗查看結果。",
+      // 跨分頁通知原本的主視窗
+      try {
+        localStorage.setItem(
+          "ecpay_booking_success",
+          JSON.stringify({ bookingId, time: Date.now() }),
         );
-      }, 300);
-      return;
+      } catch (err) {
+        console.warn("跨分頁通知失敗:", err);
+      }
     }
 
-    // ==========================================
-    // 若程式走到這裡，代表使用者是用 target="_self" (同一個分頁) 跳轉，
-    // 這時我們才需要還原畫面！
-    // ==========================================
-    const savedParams = localStorage.getItem("checkoutParams");
-    if (savedParams) {
-      const parsed = JSON.parse(savedParams);
-      roomTypeId.value = parsed.roomTypeId;
-      roomName.value = parsed.roomName;
-      checkIn.value = parsed.checkIn;
-      checkOut.value = parsed.checkOut;
-      guests.value = parsed.guests;
-      totalPrice.value = Number(parsed.price) || 0;
+    // 1. 嘗試關閉這個綠界分頁
+    try {
+      window.close();
+    } catch (e) {}
 
-      // 將網址列改寫回原本帶著所有參數的樣子，這樣重整才不會不見
-      router.replace({
-        path: "/room-checkout",
-        query: {
-          roomTypeId: parsed.roomTypeId,
-          roomName: parsed.roomName,
-          checkIn: parsed.checkIn,
-          checkOut: parsed.checkOut,
-          guests: parsed.guests,
-          price: parsed.price,
-          paymentSuccess: "true",
-        },
-      });
-    }
-
-    // 延遲一下確保畫面已渲染，再顯示成功訊息
-    setTimeout(() => {
-      showAlert(
-        "success",
-        "付款成功",
-        "感謝您的預訂！即將為您跳轉至首頁。",
-        () => {
-          router.push("/");
-        },
-      );
-    }, 100);
-    return; // 成功還原畫面，結束
+    // 2. 若瀏覽器安全限制不給關閉，直接導向首頁，絕不顯示空結帳畫面！
+    router.replace("/");
+    return;
   }
 
-  // 若已登入，自動載入會員資料填入聯絡人表單
-  if (authStore.isLoggedIn) {
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetch("/api/members/me", {
-        headers: { Authorization: "Bearer " + token },
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) {
-            if (data.name && !form.value.name) form.value.name = data.name;
-            if (data.email && !form.value.email) form.value.email = data.email;
-            if (data.phone && !form.value.phone) form.value.phone = data.phone;
-          }
-        })
-        .catch((err) => console.warn("載入會員資料失敗:", err));
-    }
-  }
+  // 正常進入結帳頁，載入會員資料
+  await loadMemberProfile();
 
-  // 以下為正常進入此頁面 (沒有 paymentSuccess) 的邏輯：檢查是否有缺少必要參數
+  // 檢查參數
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
     showAlert("error", "缺少參數", "缺少訂房參數，請重新選擇房型", () => {
       router.push("/room-booking");
