@@ -2,19 +2,22 @@
   <Transition name="toast-fade">
     <div v-if="toastStore.visible" :class="['toast-wrapper', toastStore.type]">
       <div class="toast-icon">
-        <span v-if="toastStore.type === 'success'">✓</span>
-        <span v-else-if="toastStore.type === 'error'">✕</span>
-        <span v-else>ℹ</span>
+        <Check v-if="toastStore.type === 'success'" :size="15" :stroke-width="2.5" />
+        <X v-else-if="toastStore.type === 'error'" :size="15" :stroke-width="2.5" />
+        <Info v-else :size="15" :stroke-width="2.5" />
       </div>
       <div class="toast-message">
         {{ toastStore.message }}
       </div>
-      <button class="toast-close" @click="toastStore.hideToast">×</button>
+      <button class="toast-close" aria-label="關閉提示" @click="toastStore.hideToast">
+        <X :size="16" :stroke-width="2" />
+      </button>
     </div>
   </Transition>
 </template>
 
 <script setup>
+import { Check, X, Info } from '@lucide/vue';
 import { useToastStore } from '@/stores/toast';
 
 const toastStore = useToastStore();
@@ -77,11 +80,13 @@ const toastStore = useToastStore();
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 20px;
-  line-height: 1;
   cursor: pointer;
   opacity: 0.8;
-  padding: 0 4px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   transition: opacity 0.2s;
 }
 

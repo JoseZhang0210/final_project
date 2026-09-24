@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class OrderItemId implements Serializable {
 
-    private Integer orderId;
-    private Integer productId;
+  private Integer orderId;
+  private Integer productId;
 }

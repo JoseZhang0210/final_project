@@ -1,5 +1,7 @@
-# 星澄飯店管理與線上服務系統 (Xingcheng Hotel)
+# 星澄飯店管理與線上服務系統 (Starlight Hotel)
 > EEIT 23 第一組 期末專題成果
+
+[![Full-Stack CI/CD](https://github.com/JoseZhang0210/final_project/actions/workflows/cicd.yml/badge.svg)](https://github.com/JoseZhang0210/final_project/actions/workflows/cicd.yml)
 
 本專案為前後端分離架構的綜合飯店服務與營運管理系統，涵蓋前台旅客線上預約服務（訂房、訂位、周邊商城、場地租借與會員中心）以及後台員工營運管理（房態房務、商品庫存、訂單管理、細部權限控制與營運儀表板）。
 
@@ -8,17 +10,22 @@
 ## 技術棧
 
 ### 後端 (hotel-backend)
-- **核心框架**：Java、Spring Boot 
+- **核心框架**：Java 21、Spring Boot 3
 - **資料庫存取**：Spring Data JPA (Hibernate)、Microsoft SQL Server
-- **安全性與驗證**：Spring Security、JJWT  Token 認證機制
+- **安全性與驗證**：Spring Security、JJWT Token 認證機制
 - **第三方整合**：綠界金流 (ECPay)、Spring Mail (Gmail SMTP 密碼重設與通知)、SMS 簡訊服務
 - **輔助工具**：Lombok、Spring Boot Actuator
 
 ### 前端 (hotel-frontend)
-- **核心框架**：Vue  (Composition API)、Vite 
-- **狀態管理與路由**：Pinia 、Vue Router 
+- **核心框架**：Vue 3 (Composition API)、Vite
+- **狀態管理與路由**：Pinia、Vue Router
 - **網路請求**：Axios (攔截器整合 JWT 自動攜帶與 Token 刷新)
 - **UI 與元件**：Vue Datepicker (`@vuepic/vue-datepicker`)
+
+### 容器化與 DevOps
+- **容器管理**：Docker、Docker Compose
+- **持續整合與交付 (CI/CD)**：GitHub Actions（自動化單元測試、前端建置、GHCR 容器映像發布、本地 Self-hosted Runner 自動部署）
+- **外部連線與穿透**：ngrok Tunnel
 
 ---
 
@@ -39,6 +46,13 @@
 
 ```text
 final_project/
+├── .github/workflows/         # GitHub Actions CI/CD 與本地部署工作流程
+│   ├── cicd.yml               # 全端測試、打包與 GHCR 映像發布
+│   └── deploy-local.yml       # 本地 Self-hosted Runner 自動拉取與重啟
+
+├── .env.example               # 環境變數設定範本 (複製為 .env 使用)
+├── docker-compose.yml         # Docker 容器編排 (SQL Server、Backend、ngrok)
+├── init-db.sql                # SQL Server 資料庫初始化腳本
 ├── hotel-backend/             # Spring Boot 後端專案
 │   ├── src/main/java/         # 控制器、業務邏輯、資料模型與安全過濾器
 │   │   └── com/hotel/
@@ -46,7 +60,8 @@ final_project/
 │   │       ├── controller/    # REST API 控制器 (Auth, Booking, Product, Room, etc.)
 │   │       ├── model/         # Entity 與 DTO 定義
 │   │       ├── repository/    # Spring Data JPA 資料存取層
-│   │       └── service/       # 核心商業邏輯實作
+│   │       ├── service/       # 核心商業邏輯實作
+│   │       └── util/          # 工具類 (MailUtil, JwtUtil, etc.)
 │   ├── src/main/resources/    # application.properties 與靜態資源
 │   └── pom.xml                # Maven 依賴設定
 ├── hotel-frontend/            # Vue 3 前端專案
@@ -58,44 +73,108 @@ final_project/
 │   │   └── views/             # 頁面元件 (顧客前台、會員中心、後台管理)
 │   ├── package.json           # 前端套件依賴
 │   └── vite.config.js         # Vite 開發代理與打包設定
-├── sql/                       # 資料庫腳本
-│   ├── schema/                # 資料表結構建立與清理腳本 (deprecated)
-│   └── data/                  # 預設種子資料 (deprecated)
 └── doc/                       # 專案規格文件、網站架構圖 (Sitemap) 與初期提案
 ```
 
 ---
 
-## 本地環境建置與執行
+## 環境建置與啟動
 
-### 1. 資料庫配置
+### 1. 環境變數設定 (.env)
+專案支援透過根目錄的 `.env` 檔案管理機密資訊（如 Google 應用程式密碼、ngrok token）。
+在專案根目錄複製範本並填入設定：
+```sh
+cp .env.example .env
+```
+主要參數說明：
+- `NGROK_AUTHTOKEN`：ngrok 穿透 Authtoken。
+- `MAIL_USERNAME`：Gmail 寄件信箱（預設：`xingchenghotel2026@gmail.com`）。
+- `MAIL_PASSWORD`：Google 應用程式密碼（16 位字元，用於寄送會員驗證信與通知信）。
+
+> 💡 後端 Spring Boot 在本地啟動或透過 Docker Compose 啟動時，均會自動載入 `.env` 變數。
+
+---
+
+### 2. 方式 A：Docker 一鍵啟動 (推薦)
+若已安裝 Docker Desktop，可直接使用 Docker Compose 啟動所有後端服務與資料庫：
+```sh
+# 啟動 SQL Server、資料庫初始化、Spring Boot 後端及 ngrok
+docker compose up -d
+```
+服務啟動後：
+- 後端 API：`http://localhost:8082` (本機映射埠號)
+- 資料庫 SQL Server：`localhost:1433`
+
+接著啟動前端：
+```sh
+cd hotel-frontend
+npm install
+npm run dev
+```
+
+---
+
+### 3. 方式 B：本地手動啟動 (開發除錯)
+
+#### 步驟 1：資料庫配置
 1. 確認本機已安裝 Microsoft SQL Server。
 2. 建立名稱為 `finalproject` 的資料庫。
-3. 依序執行 SQL 腳本建立資料表與初始資料：
-   - 執行 `sql/schema/createTable.sql`
-   - 執行 `sql/data/insertAll_v2.sql`
+3. 執行資料表建立與初始化種子資料腳本（或讓 Spring Boot `ddl-auto=update` 自動建立）。
 
-### 2. 後端啟動 (Spring Boot)
+#### 步驟 2：後端啟動 (Spring Boot)
 1. 進入 `hotel-backend` 目錄。
-2. 檢查 `src/main/resources/application.properties` 中的資料庫帳密與 Mail 設定：
-   ```properties
-   spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=finalproject;encrypt=true;trustServerCertificate=true
-   spring.datasource.username=YOUR_DB_USERNAME
-   spring.datasource.password=YOUR_DB_PASSWORD
-   ```
+2. 確認根目錄 `.env` 已正確配置（或直接在 `application.properties` 修改）。
 3. 透過 Maven 啟動後端（預設監聽埠號 `8081`）：
    ```sh
+   # Windows
+   .\mvnw.cmd spring-boot:run
+   # Linux / macOS
    ./mvnw spring-boot:run
    ```
 
-### 3. 前端啟動 (Vue 3 + Vite)
+#### 步驟 3：前端啟動 (Vue 3 + Vite)
 1. 進入 `hotel-frontend` 目錄。
 2. 安裝相依套件並啟動開發伺服器：
    ```sh
    npm install
    npm run dev
    ```
-3. 前端開發伺服器啟動後，Vite 會自動將 `/api` 與 `/uploads` 請求代理至後端 `http://localhost:8081`。
+3. 前端開發伺服器啟動後（預設 `http://localhost:5173`），Vite 會自動將 `/api` 與 `/uploads` 請求代理至後端 `http://localhost:8081`。
+
+---
+
+## 自動化測試與 CI/CD
+
+專案整合 GitHub Actions 實現全自動化測試、容器映像發布與本機自動部署：
+
+### 1. 本地執行單元測試
+在提交程式碼前，可在本機快速執行驗證：
+```sh
+# 後端執行 34+ 個核心業務單元測試
+cd hotel-backend
+./mvnw test
+
+# 前端執行編譯與打包檢查
+cd ../hotel-frontend
+npm run build
+```
+
+### 2. 雲端 CI/CD 自動化流程 (`cicd.yml`)
+- **Pull Request / Push 觸發 (CI)**：
+  - **後端**：安裝相依套件、執行單元測試，並完成 Spring Boot JAR 打包驗證。
+  - **前端**：安裝相依套件並執行 Vite 生產環境編譯打包。
+- **合併至 `main` 分支 (CD)**：
+  - 前後端 CI 通過後，自動透過 Docker Buildx 建置後端映像檔，並推送至 GitHub Container Registry (`ghcr.io/josezhang0210/final_project-backend`)，自動標註 `:latest` 與 commit SHA。
+
+### 3. 本地後端自動更新部署 (`deploy-local.yml`)
+針對「本地後端 + ngrok 穿透 + Vercel 前端」架構，專案配置了 GitHub Actions Self-hosted Runner：
+- **自動觸發**：當代碼合併至 `main` 分支時，GitHub 會通知本機 Runner 自動執行：
+  ```sh
+  git fetch origin main && git reset --hard origin/main
+  docker compose up -d --build backend
+  ```
+- **無縫更新**：僅單獨重建並重啟 `backend` 容器，資料庫 (`sqlserver`) 與 ngrok (`tunnel`) 保持連線不中斷。
+- **Runner 運行與維護**：Runner 位於 `C:\actions-runner\`，可透過 `.\run.cmd` 啟動背景監聽。
 
 ---
 
@@ -105,6 +184,7 @@ final_project/
 <summary> 展開檢視設計圖與功能清單 </summary>
 <br>
 
+- [專案功能整理與系統架構分析報告](./doc/PROJECT_FUNCTION_REPORT.md)
 - [功能清單詳細說明](./doc/function_List.md)
 - 顧客端網站架構圖：`./doc/sitemap_client.drawio.svg`
 - 員工端網站架構圖：`./doc/sitemap_employee.drawio.svg`

@@ -2,6 +2,10 @@
 import { onMounted, ref, computed } from "vue";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { bookingApi } from "@/api/bookingApi";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
+import { formatPrice, formatDateTimeShort } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 const payments = ref([]);
 const bookings = ref([]);
@@ -63,7 +67,7 @@ const filteredPayments = computed(() => {
 function clearSearch() {
   searchBookingId.value = "";
   searchStatus.value = "";
-  currentPage.value = 1;
+  resetPage();
 }
 
 // 開啟行內狀態修改
@@ -91,18 +95,6 @@ async function saveStatus(payment) {
   }
 }
 
-function formatPrice(price) {
-  return new Intl.NumberFormat("zh-TW", {
-    style: "currency",
-    currency: "TWD",
-    maximumFractionDigits: 0,
-  }).format(price || 0);
-}
-
-function formatDateTimeShort(dateTimeStr) {
-  if (!dateTimeStr) return "—";
-  return String(dateTimeStr).replace("T", " ").slice(0, 16);
-}
 
 function getStatusClass(status) {
   return {
@@ -116,35 +108,9 @@ onMounted(() => {
   loadPayments();
 });
 
-// 分頁（基於篩選後的資料）
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(filteredPayments.value.length / itemsPerPage));
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage.value - 2);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  for (let page = start; page <= end; page++) {
-    pages.push(page);
-  }
-  return pages;
-});
-const sortKey = ref("paymentId");
-const sortOrder = ref("desc");
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('paymentId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedFilteredPayments = computed(() => {
   return [...filteredPayments.value].sort((a, b) => {
@@ -158,23 +124,14 @@ const sortedFilteredPayments = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedFilteredPayments.value.slice(start, start + itemsPerPage);
-});
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedFilteredPayments, 20);
 </script>
 
 <template>
@@ -293,30 +250,15 @@ function prevPage() {
         </table>
       </div>
 
-      <div class="pagination-area" v-if="totalPages > 1">
-        <div class="pagination-info">
-          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
-        </div>
-
-        <div class="pagination">
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
-          
-          <button 
-            v-for="page in visiblePages" 
-            :key="page" 
-            type="button" 
-            class="page-button" 
-            :class="{ active: currentPage === page }" 
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
-        </div>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="sortedFilteredPayments.length"
+        @page-change="goToPage"
+      />
     </section>
   </main>
 </template>
@@ -552,15 +494,6 @@ tbody tr:hover td {
   cursor: pointer;
   font-size: 13px;
 }
-
-.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
-.pagination-info { color: #857a70; font-size: 13px; }
-.pagination-info strong { color: #9b7435; }
-.pagination { display: flex; align-items: center; gap: 6px; }
-.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
-.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
-.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
-.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 
 @media (max-width: 768px) {
   .payment-page {

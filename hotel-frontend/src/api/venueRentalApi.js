@@ -2,6 +2,23 @@ import axios from "axios";
 export async function getOccupiedDates(token, from, to) { // 占用資料不含私人活動或付款資訊。
   return (await api.get("/rentals/occupied-dates", { ...authConfig(token), params: { from, to } })).data; // 只傳有限日期範圍。
 }
+export async function getDemoPaymentMode(token) {
+  const response = await api.get(
+    "/rental-payments/demo-mode",
+    authConfig(token),
+  );
+  return response.data;
+}
+
+export async function setDemoPaymentMode(token, enabled) {
+  const response = await api.put(
+    "/rental-payments/demo-mode",
+    { enabled },
+    authConfig(token),
+  );
+  return response.data;
+}
+
 export async function getRentalPayment(token, id) { // 讀取後端驗證過的歷史付款資訊。
   return (await api.get(`/rental-payments/rentals/${id}`, authConfig(token))).data; // 金額不從場地目前價格回推。
 }
@@ -11,6 +28,9 @@ export async function checkoutRental(token, id) { // 付款請求只傳租借編
 
 const api = axios.create({
   baseURL: "/api",
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 function authConfig(token) {
@@ -50,6 +70,9 @@ export async function getVenues(token) {
     "/venues",
     authConfig(token),
   );
+  if (!Array.isArray(response.data)) {
+    throw new Error("場地資料格式錯誤，請確認網路連線或伺服器回應");
+  }
   return response.data;
 }
 

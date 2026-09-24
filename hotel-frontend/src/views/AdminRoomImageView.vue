@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted , computed } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { roomImageApi } from "@/api/roomImageApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
 

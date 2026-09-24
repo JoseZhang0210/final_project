@@ -1,8 +1,10 @@
 <script setup>
-import { onMounted, ref , computed } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { roomApi } from "@/api/roomApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
-import { fetchClient } from "@/api/apiClient";
+import { fetchClient } from "@/api/apiClient"; // syncRoomStatuses 用到
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 // 從 API 載入真實房型清單
 const roomTypes = ref([]);
@@ -67,7 +69,6 @@ async function loadRooms() {
   try {
     const data = await roomApi.getAllRooms();
     rooms.value = Array.isArray(data) ? data : data.content || [];
-    console.log("SQL room 資料：", rooms.value);
   } catch (error) {
     console.error("讀取房間錯誤：", error);
     showMessage(error.message || "無法連線至房間 API", "error");
@@ -192,9 +193,7 @@ onMounted(async () => {
   loadRooms();
 });
 
-const currentPage = ref(1);
 const currentFilter = ref('all');
-const itemsPerPage = 20;
 
 // 各狀態筆數統計
 const statusCount = computed(() => {
@@ -205,39 +204,19 @@ const statusCount = computed(() => {
   return counts;
 });
 
-// 依籾選過濾後的房間列表
+// 依過濾條件篩選後的房間列表
 const filteredRooms = computed(() => {
   if (currentFilter.value === 'all') return rooms.value;
   return rooms.value.filter(r => (r.roomStatus ?? r.room_status) === currentFilter.value);
 });
 
-const totalPages = computed(() => Math.ceil(filteredRooms.value.length / itemsPerPage));
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage.value - 2);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  for (let page = start; page <= end; page++) {
-    pages.push(page);
-  }
-  return pages;
-});
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredRooms.value.slice(start, start + itemsPerPage);
-});
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(filteredRooms, 20);
 
 function setFilter(status) {
   currentFilter.value = status;
-  currentPage.value = 1;
+  resetPage();
 }
-
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 
 </script>
 
@@ -405,30 +384,15 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-area" v-if="totalPages > 1">
-        <div class="pagination-info">
-          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
-        </div>
-
-        <div class="pagination">
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
-          
-          <button 
-            v-for="page in visiblePages" 
-            :key="page" 
-            type="button" 
-            class="page-button" 
-            :class="{ active: currentPage === page }" 
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
-        </div>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="filteredRooms.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
@@ -739,12 +703,4 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
   }
 }
-.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
-.pagination-info { color: #857a70; font-size: 13px; }
-.pagination-info strong { color: #9b7435; }
-.pagination { display: flex; align-items: center; gap: 6px; }
-.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
-.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
-.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
-.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 </style>

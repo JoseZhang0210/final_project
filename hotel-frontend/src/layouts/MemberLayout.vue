@@ -13,7 +13,13 @@
       <aside class="member-sidebar">
         <div class="member-profile-summary">
           <div class="avatar-circle">
-            <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-circle-img" />
+            <img
+              v-if="avatarUrl && !hasAvatarError"
+              :src="avatarUrl"
+              alt="Avatar"
+              class="avatar-circle-img"
+              @error="hasAvatarError = true"
+            />
             <span v-else>{{ userInitial }}</span>
           </div>
           <div class="user-info">
@@ -24,38 +30,38 @@
 
         <nav class="member-nav">
           <RouterLink to="/member/profile" class="nav-item" active-class="active">
-            <span class="icon">👤</span>
+            <User :size="18" class="icon" />
             <span>個人資料</span>
           </RouterLink>
 
           <RouterLink to="/member/password" class="nav-item" active-class="active">
-            <span class="icon">🔒</span>
+            <Lock :size="18" class="icon" />
             <span>修改密碼</span>
           </RouterLink>
 
           <RouterLink to="/member/orders" class="nav-item" active-class="active">
-            <span class="icon">📦</span>
+            <Package :size="18" class="icon" />
             <span>我的訂單</span>
           </RouterLink>
 
-          <!-- 新增會員場地預約導覽連結。 -->
+          <!-- 會員場地預約導覽連結 -->
           <RouterLink to="/member/rentals" class="nav-item" active-class="active">
-            <!-- 顯示場地預約入口名稱。 -->
-            <span>🎫 我的場地預約</span>
+            <CalendarCheck :size="18" class="icon" />
+            <span>我的場地預約</span>
           </RouterLink>
 
           <RouterLink to="/member/wishlist" class="nav-item" active-class="active">
-            <span class="icon">♥</span>
+            <Heart :size="18" class="icon" />
             <span>願望清單</span>
           </RouterLink>
 
           <RouterLink to="/member/room-bookings" class="nav-item" active-class="active">
-            <span class="icon">🛏️</span>
+            <Bed :size="18" class="icon" />
             <span>訂房紀錄</span>
           </RouterLink>
 
           <RouterLink to="/logout" class="nav-item logout-item">
-            <span class="icon">🚪</span>
+            <LogOut :size="18" class="icon" />
             <span>登出帳號</span>
           </RouterLink>
         </nav>
@@ -69,12 +75,26 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import {
+  User,
+  Lock,
+  Package,
+  CalendarCheck,
+  Heart,
+  Bed,
+  LogOut,
+} from '@lucide/vue';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 const { name, avatarUrl } = storeToRefs(authStore);
+const hasAvatarError = ref(false);
+
+watch(avatarUrl, () => {
+  hasAvatarError.value = false;
+});
 
 const displayName = computed(() => {
   return name.value || '貴賓';
@@ -220,7 +240,10 @@ const userInitial = computed(() => {
 }
 
 .nav-item .icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .nav-item:hover {

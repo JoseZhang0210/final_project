@@ -168,7 +168,7 @@ const GOOGLE_CLIENT_ID =
   "435883818253-r7egh6k5m1lmhglil16b9a24o6ic63qu.apps.googleusercontent.com";
 
 function fillDemoAccount() {
-  username.value = "customer01";
+  username.value = "vic0129";
   password.value = "123456";
 }
 

@@ -135,6 +135,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { roomTypeApi } from '../api/roomTypeApi';
+import { getTodayYYYYMMDD } from '../utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
@@ -148,11 +149,7 @@ const loading = ref(true);
 
 const isSameDayBooking = computed(() => {
   if (!checkIn.value) return false;
-  // Use local date string format for accurate today comparison
-  const today = new Date();
-  const tzOffset = today.getTimezoneOffset() * 60000;
-  const localToday = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-  return checkIn.value === localToday;
+  return checkIn.value === getTodayYYYYMMDD();
 });
 
 // Modal State

@@ -7,9 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.persistence.EntityNotFoundException;
 
+/**
+ * 全域例外攔截處理器 (Global Exception Handler)
+ * 統一前後端例外回應契約，確保業務拒絕回傳 400 系列狀態碼而非 500
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -20,7 +25,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(
+            DataIntegrityViolationException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("message", "資料庫約束錯誤：這筆資料可能已被其他資料關聯，或是必填欄位缺失。"));
     }
@@ -31,15 +37,27 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", "請求參數錯誤：" + e.getMessage()));
     }
 
-    /** 將未預期例外轉為一般伺服器錯誤回應。 */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "操作狀態不符合要求"));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResourceFoundException(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "找不到該靜態資源檔案"));
+    }
+
+    /**
+     * 將未預期例外轉為伺服器錯誤回應 (500)
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception e) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
                         "message",
-                        "伺服器內部錯誤："
-                                + String.valueOf(
-                                        e.getMessage())));
+                        "伺服器內部錯誤：" + (e.getMessage() != null ? e.getMessage() : "系統忙碌中，請稍後再試")));
     }
 }

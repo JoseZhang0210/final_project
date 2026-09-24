@@ -1,8 +1,12 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch } from "vue";
+import { onMounted, onUnmounted, ref, computed } from "vue";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
 import { roomTaskApi } from "@/api/roomTaskApi";
 import { roomApi } from "@/api/roomApi";
 import { fetchClient } from "@/api/apiClient"; // for employees API
+import { formatDateTimeShort } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 // 下拉選單資料 (透過 API 動態載入)
 const rooms = ref([]);
@@ -25,9 +29,9 @@ const taskTypes = ["退房清潔", "日常清潔", "設備報修", "停用維護
 const taskTypeToRoomStatus = {
   '退房清潔': { doing: '清潔中',  done: '可預訂' }, // 退房 → 清潔中 → 可預訂
   '日常清潔': { doing: '已入住',  done: '已入住' }, // 續住清潔，維持已入住
-  '設備維修': { doing: '維修中',  done: '可預訂' }, // 維修 → 維修中 → 可預訂
+  '設備報修': { doing: '維修中',  done: '可預訂' }, // 維修 → 維修中 → 可預訂
   '停用維護': { doing: '停用',    done: '可預訂' }, // 停用 → 停用 → 可預訂
-  '補充備品': { doing: null,      done: null     }, // 不改變房間狀態
+  '備品補充': { doing: null,      done: null     }, // 不改變房間狀態
   '其他':     { doing: null,      done: null     },
 };
 
@@ -146,11 +150,6 @@ function getCurrentDateTime() {
   return new Date(now.getTime() - tzOffset).toISOString().slice(0, 19);
 }
 
-// 前端畫面顯示用的時間格式：只保留到幾點幾分 (長度 16)
-function formatDateTimeShort(dateTimeStr) {
-  if (!dateTimeStr) return "—";
-  return String(dateTimeStr).replace("T", " ").slice(0, 16);
-}
 
 // 確保傳給後端的時間格式包含秒數，並將空格替換為 T（Java LocalDateTime 要求）
 function ensureSecondsFormat(dateTimeStr) {
@@ -192,7 +191,7 @@ function resetSearch() {
   quickFilterType.value = "all";
   quickFilterPriority.value = "all";
   quickFilterStatus.value = "all";
-  currentPage.value = 1;
+  resetPage();
   loadRoomTasks();
 }
 
@@ -254,7 +253,7 @@ async function saveRoomTask() {
             roomStatus: targetRoomStatus,
           };
           await roomApi.updateRoom(payload.roomId, updatedRoom);
-          console.log(`房間 ${payload.roomId} 狀態已同步更新為 ${targetRoomStatus}`);
+
         } catch (roomErr) {
           console.warn("房間狀態更新失敗：", roomErr);
         }
@@ -501,6 +500,7 @@ onUnmounted(() => {
   }
 });
 
+// ==== 快速過濾 ====
 const quickFilterType = ref("all");
 const quickFilterPriority = ref("all");
 const quickFilterStatus = ref("all");
@@ -514,34 +514,9 @@ const filteredTasks = computed(() => {
   });
 });
 
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(filteredTasks.value.length / itemsPerPage));
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage.value - 2);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  for (let page = start; page <= end; page++) {
-    pages.push(page);
-  }
-  return pages;
-});
-const sortKey = ref("taskId");
-const sortOrder = ref("desc");
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('taskId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedTasks = computed(() => {
   return [...filteredTasks.value].sort((a, b) => {
@@ -550,7 +525,6 @@ const sortedTasks = computed(() => {
       valA = Number(a.taskId ?? a.task_id);
       valB = Number(b.taskId ?? b.task_id);
     } else if (sortKey.value === 'reminder') {
-      // 提醒狀態排序：未完成的排前面，並依照 expectedTime 排序
       const expA = getExpectedCompletionTime(a);
       const expB = getExpectedCompletionTime(b);
       if (expA && expB) {
@@ -567,19 +541,14 @@ const sortedTasks = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedTasks.value.slice(start, start + itemsPerPage);
-});
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedTasks, 20);
 
 </script>
 
@@ -659,7 +628,7 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
       </div>
 
     <!-- 新增 / 編輯表單小視窗 (Modal) -->
-    <div v-if="showFormModal" class="modal-overlay">
+    <div v-if="showFormModal" class="modal-overlay" @click.self="closeFormModal">
       <div class="modal-content" style="max-width: 800px; width: 90%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0;">{{ formTitle }}</h2>
@@ -820,30 +789,15 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-area" v-if="totalPages > 1">
-        <div class="pagination-info">
-          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
-        </div>
-
-        <div class="pagination">
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
-          
-          <button 
-            v-for="page in visiblePages" 
-            :key="page" 
-            type="button" 
-            class="page-button" 
-            :class="{ active: currentPage === page }" 
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
-        </div>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :loading="loading"
+        :total-count="sortedTasks.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
@@ -1100,14 +1054,6 @@ tr.late-warning:hover td {
     grid-column: auto;
   }
 }
-.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
-.pagination-info { color: #857a70; font-size: 13px; }
-.pagination-info strong { color: #9b7435; }
-.pagination { display: flex; align-items: center; gap: 6px; }
-.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
-.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
-.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
-.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 
 .quick-filter-select {
   padding: 6px 10px;

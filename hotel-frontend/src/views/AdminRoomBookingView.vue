@@ -1,11 +1,15 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useAdminPagination } from "@/composables/useAdminPagination";
+import { useTableSort } from "@/composables/useTableSort";
 import { bookingApi } from "@/api/bookingApi";
 import { roomTypeApi } from "@/api/roomTypeApi";
 import { roomApi } from "@/api/roomApi";
 import { bookingPaymentApi } from "@/api/bookingPaymentApi";
 import { fetchClient } from "@/api/apiClient"; // for BOOKING_ORDER_API_URL
 import { useRouter, useRoute } from "vue-router";
+import { formatPrice } from "@/utils/formatters";
+import AdminPagination from "@/components/admin/AdminPagination.vue";
 
 const BOOKING_API_URL = "/api/bookings";
 const BOOKING_ORDER_API_URL = "/api/orders";
@@ -34,9 +38,13 @@ const searchCriteria = ref({
 
 watch(() => searchCriteria.value.checkInDate, (newVal) => {
   if (newVal) {
-    const nextDay = new Date(newVal);
+    const parts = newVal.split('-');
+    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
     nextDay.setDate(nextDay.getDate() + 1);
-    searchCriteria.value.checkOutDate = nextDay.toISOString().split('T')[0];
+    const y = nextDay.getFullYear();
+    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+    const d = String(nextDay.getDate()).padStart(2, '0');
+    searchCriteria.value.checkOutDate = `${y}-${m}-${d}`;
   }
 });
 
@@ -111,9 +119,13 @@ const paymentForm = ref({
 
 watch(() => form.value.checkInDate, (newVal) => {
   if (newVal) {
-    const nextDay = new Date(newVal);
+    const parts = newVal.split('-');
+    const nextDay = new Date(parts[0], parts[1] - 1, parts[2]);
     nextDay.setDate(nextDay.getDate() + 1);
-    form.value.checkOutDate = nextDay.toISOString().split('T')[0];
+    const y = nextDay.getFullYear();
+    const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+    const d = String(nextDay.getDate()).padStart(2, '0');
+    form.value.checkOutDate = `${y}-${m}-${d}`;
     calculatePrice();
   }
 });
@@ -204,7 +216,7 @@ function fillDummyData() {
   const today = new Date();
   const tzOffset = today.getTimezoneOffset() * 60000;
   const todayStr = new Date(today.getTime() - tzOffset).toISOString().split('T')[0];
-  
+
   const tomorrow = new Date(today.getTime() + 86400000);
   const tomorrowStr = new Date(tomorrow.getTime() - tzOffset).toISOString().split('T')[0];
   
@@ -258,7 +270,7 @@ async function loadSelectOptions() {
 
 // 1. 載入與條件查詢 (對應 @GetMapping)
 async function loadBookings() {
-  currentPage.value = 1;
+  resetPage();
   try {
     // 依據條件切換 API Endpoint
     let data;
@@ -320,7 +332,7 @@ async function loadBookings() {
 }
 
 function clearSearch() {
-  currentPage.value = 1;
+  resetPage();
   searchCriteria.value = { memberId: "", checkInDate: "", checkOutDate: "", bookingStatus: "" };
   loadBookings();
 }
@@ -362,7 +374,7 @@ function getPaymentStatus(bookingId) {
   return payment ? (payment.paymentStatus ?? payment.payment_status) : "無付款紀錄";
 }
 
-function goToPayment(bookingId) {
+function goToPayment() {
   router.push({ name: 'admin-booking-payments' });
 }
 
@@ -623,14 +635,6 @@ function formatDateTime(dateStr) {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
-function formatPrice(price) {
-
-  return new Intl.NumberFormat("zh-TW", {
-    style: "currency",
-    currency: "TWD",
-    maximumFractionDigits: 0,
-  }).format(price || 0);
-}
 
 let refreshInterval = null;
 
@@ -656,7 +660,7 @@ const currentFilter = ref("all"); // 預設顯示全部的訂單
 
 function setTabStatus(status) {
   currentFilter.value = status;
-  currentPage.value = 1;
+  resetPage();
 }
 
 const filteredBookings = computed(() => {
@@ -690,34 +694,9 @@ const filteredBookings = computed(() => {
   return result;
 });
 
-const currentPage = ref(1);
-const itemsPerPage = 20;
-const totalPages = computed(() => Math.ceil(filteredBookings.value.length / itemsPerPage));
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage.value - 2);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-  for (let page = start; page <= end; page++) {
-    pages.push(page);
-  }
-  return pages;
-});
-const sortKey = ref("bookingId");
-const sortOrder = ref("desc"); // 預設從新到舊
-
-function toggleSort(key) {
-  if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
-    sortKey.value = key;
-    sortOrder.value = "desc";
-  }
-}
+// ==== 排序 ====
+const { sortKey, sortDirection: sortOrder, changeSort } = useTableSort('bookingId', 'desc');
+function toggleSort(key) { changeSort(key); }
 
 const sortedBookings = computed(() => {
   return [...filteredBookings.value].sort((a, b) => {
@@ -731,19 +710,14 @@ const sortedBookings = computed(() => {
     } else {
       return 0;
     }
-    
     if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
     if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 });
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return sortedBookings.value.slice(start, start + itemsPerPage);
-});
-function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
-function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+// ==== 分頁 ====
+const { currentPage, totalPages, visiblePages, paginatedItems: paginatedData, goToPage, resetPage } = useAdminPagination(sortedBookings, 20);
 
 </script>
 
@@ -774,11 +748,17 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
         </div>
         <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>入住日期</label>
-          <input v-model="searchCriteria.checkInDate" type="date" />
+          <div style="position: relative; width: 100%;">
+            <input v-model="searchCriteria.checkInDate" type="date" style="width: 100%; box-sizing: border-box; padding-right: 35px;" />
+            <button v-if="searchCriteria.checkInDate" @click="searchCriteria.checkInDate = ''" type="button" style="position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 14px; cursor: pointer; color: #999; padding: 4px;" title="清除日期">✖</button>
+          </div>
         </div>
         <div class="form-group" style="flex: 1; min-width: 200px;">
           <label>退房日期</label>
-          <input v-model="searchCriteria.checkOutDate" type="date" />
+          <div style="position: relative; width: 100%;">
+            <input v-model="searchCriteria.checkOutDate" type="date" style="width: 100%; box-sizing: border-box; padding-right: 35px;" />
+            <button v-if="searchCriteria.checkOutDate" @click="searchCriteria.checkOutDate = ''" type="button" style="position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 14px; cursor: pointer; color: #999; padding: 4px;" title="清除日期">✖</button>
+          </div>
         </div>
         <div class="form-actions" style="margin-top: 0;">
           <button type="button" class="btn primary" @click="loadBookings">
@@ -869,37 +849,21 @@ function prevPage() { if (currentPage.value > 1) currentPage.value--; }
           </tbody>
         </table>
 
-      <div class="pagination-area" v-if="totalPages > 1">
-        <div class="pagination-info">
-          第 <strong>{{ currentPage }}</strong> 頁 ／ 共 <strong>{{ totalPages }}</strong> 頁
-        </div>
-
-        <div class="pagination">
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="currentPage = 1">«</button>
-          <button type="button" class="page-button" :disabled="currentPage === 1" @click="prevPage">‹</button>
-          
-          <button 
-            v-for="page in visiblePages" 
-            :key="page" 
-            type="button" 
-            class="page-button" 
-            :class="{ active: currentPage === page }" 
-            @click="currentPage = page"
-          >
-            {{ page }}
-          </button>
-          
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="nextPage">›</button>
-          <button type="button" class="page-button" :disabled="currentPage === totalPages" @click="currentPage = totalPages">»</button>
-        </div>
-      </div>
+      <!-- 分頁元件 -->
+      <AdminPagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :visible-pages="visiblePages"
+        :total-count="sortedBookings.length"
+        @page-change="goToPage"
+      />
   
 
       </div>
     </section>
 
     <!-- 新增 / 編輯表單小視窗 (Modal) -->
-    <div v-if="showFormModal" class="modal-overlay">
+    <div v-if="showFormModal" class="modal-overlay" @click.self="closeFormModal">
       <div class="modal-content" style="max-width: 800px; width: 90%;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0;">{{ formTitle }}</h2>
@@ -1197,14 +1161,6 @@ th {
     grid-template-columns: 1fr;
   }
 }
-.pagination-area { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee7de; }
-.pagination-info { color: #857a70; font-size: 13px; }
-.pagination-info strong { color: #9b7435; }
-.pagination { display: flex; align-items: center; gap: 6px; }
-.page-button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #ded5c9; border-radius: 6px; background-color: white; color: #625649; cursor: pointer; transition: 0.2s; }
-.page-button:hover:not(:disabled) { border-color: #b58a46; color: #9b7435; }
-.page-button.active { border-color: #b58a46; background-color: #b58a46; color: white; font-weight: bold; }
-.page-button:disabled { background-color: #f2f0ec; color: #bbb5ad; cursor: not-allowed; }
 .booking-status {
   display: inline-block;
   padding: 4px 12px;

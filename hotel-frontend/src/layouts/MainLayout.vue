@@ -1,18 +1,38 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter, useRoute } from "vue-router";
 import { User, Package, Heart, Settings, LogOut } from "@lucide/vue";
 import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
 import { useToastStore } from "@/stores/toast";
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const toastStore = useToastStore();
 const { isLoggedIn, name, avatarUrl, authorities } = storeToRefs(authStore);
+const { itemCount: cartCount } = storeToRefs(cartStore);
+const hasAvatarError = ref(false);
 
-const cartCount = ref(0);
+watch(avatarUrl, () => {
+  hasAvatarError.value = false;
+});
+
+
+function loadCartSafely() {
+  cartStore.load().catch(error => console.error("購物車載入失敗：", error));
+}
+
+onMounted(() => {
+  if (isLoggedIn.value) loadCartSafely();
+});
+
+watch(isLoggedIn, loggedIn => {
+  if (loggedIn) loadCartSafely();
+  else cartStore.resetLocalState();
+});
 
 const displayName = computed(() => {
   return name.value || "會員";
@@ -33,7 +53,7 @@ const isAdminOrEmployee = computed(() => {
 });
 
 // =========================================
-// 成果演示專用：特定帳號切換 (customer01 ↔ admin01)
+// 成果演示專用：特定帳號切換 (vic0129 ↔ admin01)
 // =========================================
 
 function parseJwtPayload(token) {
@@ -67,7 +87,7 @@ const currentUsername = computed(() => {
 
 // 判斷是否為演示專用帳號
 const isDemoAccount = computed(() => {
-  return currentUsername.value === "customer01" || currentUsername.value === "admin01";
+  return currentUsername.value === "vic0129" || currentUsername.value === "admin01";
 });
 
 // 判斷目前是否為員工帳號 (admin01)
@@ -80,8 +100,8 @@ const isSwitching = ref(false);
 async function toggleAccount() {
   if (isSwitching.value) return;
 
-  const targetUsername = isEmployeeMode.value ? "customer01" : "admin01";
-  const targetLabel = targetUsername === "admin01" ? "員工 (admin01)" : "會員 (customer01)";
+  const targetUsername = isEmployeeMode.value ? "vic0129" : "admin01";
+  const targetLabel = targetUsername === "admin01" ? "員工 (admin01)" : "會員 (vic0129)";
 
   isSwitching.value = true;
   try {
@@ -106,7 +126,7 @@ async function toggleAccount() {
     toastStore.showToast(`已切換至${targetLabel}`, "success");
 
     // 若切換為會員且目前在後台頁面，自動導向首頁避免權限錯誤
-    if (targetUsername === "customer01" && route.path.startsWith("/admin")) {
+    if (targetUsername === "vic0129" && route.path.startsWith("/admin")) {
       router.push("/");
     }
   } catch (err) {
@@ -126,12 +146,12 @@ async function toggleAccount() {
       </RouterLink>
       
       <nav>
-        <!-- 成果演示切換按鈕：僅在登入特定帳號 (customer01 / admin01) 時顯示 -->
+        <!-- 成果演示切換按鈕：僅在登入特定帳號 (vic0129 / admin01) 時顯示 -->
         <div v-if="isLoggedIn && isDemoAccount" class="demo-toggle-wrapper">
           <div
             class="demo-toggle-switch"
             :class="{ 'is-employee': isEmployeeMode, 'is-loading': isSwitching }"
-            :title="isEmployeeMode ? '點擊切換為會員 (customer01)' : '點擊切換為員工 (admin01)'"
+            :title="isEmployeeMode ? '點擊切換為會員 (vic0129)' : '點擊切換為員工 (admin01)'"
             @click="toggleAccount"
             role="button"
             tabindex="0"
@@ -178,7 +198,13 @@ async function toggleAccount() {
         <div v-else class="user-dropdown-container">
           <button type="button" class="user-dropdown-btn">
             <span class="user-avatar-mini">
-              <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-mini-img" />
+              <img
+                v-if="avatarUrl && !hasAvatarError"
+                :src="avatarUrl"
+                alt="Avatar"
+                class="avatar-mini-img"
+                @error="hasAvatarError = true"
+              />
               <span v-else>{{ userInitial }}</span>
             </span>
             <span class="user-greeting-text">{{ displayName }} 您好</span>

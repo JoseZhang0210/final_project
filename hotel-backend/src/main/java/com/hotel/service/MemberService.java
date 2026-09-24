@@ -428,8 +428,8 @@ public class MemberService {
 
         List<Profile> allProfiles = profileRepository.findAll();
         Map<Integer, Profile> profileMap = allProfiles.stream()
-                .filter(p -> p.getAccountId() != null)
-                .collect(Collectors.toMap(Profile::getAccountId, p -> p, (existing, replacement) -> existing));
+                .filter(p -> p != null && p.getAccountId() != null)
+                .collect(Collectors.toMap(p -> p != null ? p.getAccountId() : null, p -> p, (existing, replacement) -> existing));
 
         long profileCount = 0;
         Map<String, Long> cityCounts = new HashMap<>();

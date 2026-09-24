@@ -10,8 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hotel.model.dto.RoomTypeDTO;
 import com.hotel.model.entity.Room;
+import com.hotel.model.entity.RoomImage;
 import com.hotel.model.entity.RoomType;
 import com.hotel.repository.BookingRepository;
+import com.hotel.repository.RoomImageRepository;
 import com.hotel.repository.RoomRepository;
 import com.hotel.repository.RoomTypeRepository;
 import com.hotel.service.RoomTypeService;
@@ -25,10 +27,10 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
-    private final com.hotel.repository.RoomImageRepository roomImageRepository;
+    private final RoomImageRepository roomImageRepository;
 
     public RoomTypeServiceImpl(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository,
-            BookingRepository bookingRepository, com.hotel.repository.RoomImageRepository roomImageRepository) {
+            BookingRepository bookingRepository, RoomImageRepository roomImageRepository) {
         this.roomTypeRepository = roomTypeRepository;
         this.roomRepository = roomRepository;
         this.bookingRepository = bookingRepository;
@@ -169,11 +171,6 @@ public class RoomTypeServiceImpl implements RoomTypeService {
     }
 
     // 目前日可用數（給後台用）
-    // 目前日可用數（給內部備用，若有需要）
-    private Integer calculateAvailableRoomsToday(Integer roomTypeId) {
-        LocalDate today = LocalDate.now();
-        return calculateAvailableRooms(roomTypeId, today, today.plusDays(1));
-    }
 
     private RoomTypeDTO convertToDTO(RoomType roomType) {
         RoomTypeDTO dto = new RoomTypeDTO();
@@ -189,10 +186,10 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setTodayAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), LocalDate.now(), LocalDate.now().plusDays(1)));
         
         // 載入主圖與所有圖片
-        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        List<RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
-            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+            dto.setImageUrls(images.stream().map(img -> img.getPath()).collect(Collectors.toList()));
         } else {
             dto.setImageUrls(new java.util.ArrayList<>());
         }
@@ -211,10 +208,10 @@ public class RoomTypeServiceImpl implements RoomTypeService {
         dto.setAvailableRooms(calculateAvailableRooms(roomType.getRoomTypeId(), checkIn, checkOut));
         
         // 載入主圖與所有圖片
-        List<com.hotel.model.entity.RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
+        List<RoomImage> images = roomImageRepository.findByRoomTypeId(roomType.getRoomTypeId());
         if (!images.isEmpty()) {
             dto.setMainImageUrl(images.get(0).getPath());
-            dto.setImageUrls(images.stream().map(com.hotel.model.entity.RoomImage::getPath).collect(java.util.stream.Collectors.toList()));
+            dto.setImageUrls(images.stream().map(img -> img.getPath()).collect(Collectors.toList()));
         } else {
             dto.setImageUrls(new java.util.ArrayList<>());
         }

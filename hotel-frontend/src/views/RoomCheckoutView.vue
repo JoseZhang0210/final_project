@@ -16,22 +16,42 @@
     <div class="content-grid">
       <!-- 訂房資料填寫 -->
       <div class="form-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #eaeaea; padding-bottom: 0.5rem;">
-          <h3 style="margin: 0; border: none; padding: 0;">1. 訂房聯絡人資訊</h3>
-          <button type="button" class="btn-demo-fill" @click="fillDemoData">✨ 一鍵帶入</button>
-        </div>
+        <h3 class="section-title">1. 訂房聯絡人資訊</h3>
         <form class="checkout-form">
           <div class="form-group">
             <label>姓名 *</label>
-            <input type="text" v-model="form.name" required placeholder="例如：王小明" />
+            <input
+              type="text"
+              v-model="form.name"
+              required
+              placeholder="例如：王小明"
+            />
+          </div>
+          <div class="form-group">
+            <label>電子信箱 * (確認信與 Check-in QR Code 將寄送至此)</label>
+            <input
+              type="email"
+              v-model="form.email"
+              required
+              placeholder="例如：user@example.com"
+            />
           </div>
           <div class="form-group">
             <label>手機號碼 *</label>
-            <input type="tel" v-model="form.phone" required placeholder="例如：0912345678" />
+            <input
+              type="tel"
+              v-model="form.phone"
+              required
+              placeholder="例如：0912345678"
+            />
           </div>
           <div class="form-group">
             <label>特別需求備註 (選填)</label>
-            <textarea v-model="form.remark" rows="3" placeholder="例如：需要嬰兒床、對某些食物過敏等"></textarea>
+            <textarea
+              v-model="form.remark"
+              rows="3"
+              placeholder="例如：需要嬰兒床、對某些食物過敏等"
+            ></textarea>
           </div>
         </form>
 
@@ -46,12 +66,12 @@
           </label>
         </div>
 
-        <button 
-          class="btn-checkout" 
+        <button
+          class="btn-checkout"
           :disabled="isProcessing"
           @click="submitCheckout"
         >
-          {{ isProcessing ? '處理中，請稍候...' : '確認結帳' }}
+          {{ isProcessing ? "處理中，請稍候..." : "確認結帳" }}
         </button>
       </div>
 
@@ -73,9 +93,9 @@
               <span class="label">入住人數</span>
               <span class="value">{{ guests }} 人</span>
             </div>
-            
+
             <div class="divider"></div>
-            
+
             <div class="summary-row total">
               <span class="label">總金額</span>
               <span class="value">NT$ {{ totalPrice.toLocaleString() }}</span>
@@ -86,61 +106,48 @@
       <!-- 等待付款視窗 (Modal) -->
       <div v-if="showPaymentModal" class="payment-modal-overlay">
         <div class="payment-modal">
-          <h3>💳 等待付款完成中...</h3>
-          <p>已在**新分頁**開啟綠界結帳畫面</p>
-          <p>請在綠界畫面完成付款！</p>
-          
+          <h3>💳 付款中...</h3>
+          <p>請在彈出的安全視窗中完成結帳</p>
+
           <div class="spinner"></div>
 
-          <div class="dev-tools mt-4">
-            <p style="font-size: 0.85rem; color: #888;">開發測試用：</p>
-            <button @click="forceMockSuccess" class="btn-mock">
-              🚀 [開發測試用] 強制模擬付款成功
-            </button>
-            <button @click="forceMockFail" class="btn-mock-fail mt-2">
-              ❌ [開發測試用] 強制模擬付款失敗
-            </button>
-            <button @click="cancelPaymentWait" class="btn-cancel mt-2">
-              返回修改訂單
-            </button>
-          </div>
+          <button @click="cancelPaymentWait" class="btn-cancel mt-4">
+            返回修改訂單
+          </button>
         </div>
       </div>
-  </div>
+    </div>
 
     <!-- 美化版提示 Modal -->
-    <Transition name="fade">
-      <div v-if="alertConfig.show" class="alert-overlay">
-        <div class="alert-modal">
-          <div class="alert-icon" :class="alertConfig.type">
-            <span v-if="alertConfig.type === 'success'">✓</span>
-            <span v-if="alertConfig.type === 'error'">✕</span>
-          </div>
-          <h3 class="alert-title">{{ alertConfig.title }}</h3>
-          <p class="alert-message">{{ alertConfig.message }}</p>
-          <button class="btn-alert" @click="closeAlert">我知道了</button>
-        </div>
-      </div>
-    </Transition>
+    <AlertModal
+      :show="alertConfig.show"
+      :type="alertConfig.type"
+      :title="alertConfig.title"
+      :message="alertConfig.message"
+      @close="closeAlert"
+    />
 
+    <!-- ECPay 隱藏表單容器 -->
+    <div ref="ecpayFormContainer" style="display: none"></div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { bookingApi } from '../api/bookingApi';
-import { useAuthStore } from '../stores/auth';
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { bookingApi } from "../api/bookingApi";
+import { useAuthStore } from "../stores/auth";
+import AlertModal from "../components/common/AlertModal.vue";
 
 const route = useRoute();
 const router = useRouter();
 
 const alertConfig = ref({
   show: false,
-  type: 'success',
-  title: '',
-  message: '',
-  onClose: null
+  type: "success",
+  title: "",
+  message: "",
+  onClose: null,
 });
 
 function showAlert(type, title, message, onClose = null) {
@@ -163,17 +170,17 @@ const guests = ref(Number(route.query.guests));
 const totalPrice = ref(Number(route.query.price) || 0);
 
 function goToSearch() {
-  router.push('/room-booking');
+  router.push("/room-booking");
 }
 
 function goToSelection() {
   router.push({
-    name: 'room-selection',
+    name: "room-selection",
     query: {
       checkIn: checkIn.value,
       checkOut: checkOut.value,
-      guests: guests.value
-    }
+      guests: guests.value,
+    },
   });
 }
 
@@ -181,40 +188,94 @@ const isProcessing = ref(false);
 const showPaymentModal = ref(false);
 const pollingInterval = ref(null);
 const currentBookingId = ref(null);
+const ecpayFormContainer = ref(null);
 
-const form = ref({
-  name: '',
-  phone: '',
-  remark: ''
+onUnmounted(() => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
 });
 
-function fillDemoData() {
-  form.value.name = 'Demo User';
-  form.value.phone = '0912345678';
-  form.value.remark = '這是一筆綠界測試金流的 Demo 訂單';
+const form = ref({
+  name: localStorage.getItem("name") || "",
+  email: "",
+  phone: "",
+  remark: "",
+});
+
+async function loadMemberProfile() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const cachedName = localStorage.getItem("name") || authStore.name;
+  if (cachedName && !form.value.name) {
+    form.value.name = cachedName;
+  }
+
+  try {
+    const res = await fetch("/api/members/me", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        if (data.name) form.value.name = data.name;
+        if (data.email) form.value.email = data.email;
+        if (data.phone) form.value.phone = data.phone;
+      }
+    }
+  } catch (err) {
+    console.warn("載入會員資料失敗:", err);
+  }
+}
+
+// 跨分頁即時通訊監聽
+function handleStorageChange(event) {
+  if (event.key === "ecpay_booking_success" && event.newValue) {
+    try {
+      const data = JSON.parse(event.newValue);
+      if (data && data.bookingId) {
+        onPaymentFinished();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+function onPaymentFinished() {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+  }
+  showPaymentModal.value = false;
+  showAlert(
+    "success",
+    "付款成功",
+    "感謝您的預訂！即將為您跳轉至飯店首頁。",
+    () => {
+      router.push("/");
+    },
+  );
 }
 
 function startPolling(bookingId) {
   currentBookingId.value = bookingId;
   showPaymentModal.value = true;
-  
-  // 每 3 秒詢問一次後端狀態
+
+  // 每 2 秒詢問一次後端狀態
   pollingInterval.value = setInterval(async () => {
     try {
       const res = await fetch(`/api/payments/ecpay/status/${bookingId}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.status === '已付款') {
-          clearInterval(pollingInterval.value);
-          showAlert('success', '付款成功', '即將為您跳轉至首頁。', () => {
-            router.push('/');
-          });
+        if (data.status === "已付款") {
+          onPaymentFinished();
         }
       }
     } catch (e) {
       console.error("輪詢狀態失敗", e);
     }
-  }, 3000);
+  }, 2000);
 }
 
 async function cancelPaymentWait() {
@@ -226,10 +287,10 @@ async function cancelPaymentWait() {
   // 使用者放棄結帳，刪除剛建立的訂單與付款記錄
   if (currentBookingId.value) {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       await fetch(`/api/bookings/${currentBookingId.value}`, {
-        method: 'DELETE',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       console.log(`已刪除未完成之訂單 ID: ${currentBookingId.value}`);
     } catch (e) {
@@ -242,17 +303,16 @@ async function cancelPaymentWait() {
 async function forceMockSuccess() {
   if (!currentBookingId.value) return;
   try {
-    const res = await fetch(`/api/payments/ecpay/mock-pay/${currentBookingId.value}`, {
-      method: 'POST'
-    });
+    const res = await fetch(
+      `/api/payments/ecpay/mock-pay/${currentBookingId.value}`,
+      {
+        method: "POST",
+      },
+    );
     if (res.ok) {
-      // 輪詢會自動抓到並跳轉，或者我們直接跳轉
-      clearInterval(pollingInterval.value);
-      showAlert('success', '開發模式：付款成功', '已強制模擬付款成功！即將為您跳轉至首頁。', () => {
-        router.push('/');
-      });
+      onPaymentFinished();
     } else {
-      showAlert('error', '模擬失敗', '無法完成強制模擬付款！');
+      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
     }
   } catch (e) {
     console.error(e);
@@ -262,34 +322,81 @@ async function forceMockSuccess() {
 async function forceMockFail() {
   if (!currentBookingId.value) return;
   try {
-    const res = await fetch(`/api/payments/ecpay/mock-fail/${currentBookingId.value}`, {
-      method: 'POST'
-    });
+    const res = await fetch(
+      `/api/payments/ecpay/mock-fail/${currentBookingId.value}`,
+      {
+        method: "POST",
+      },
+    );
     if (res.ok) {
       clearInterval(pollingInterval.value);
-      showAlert('error', '開發模式：付款失敗', '已強制模擬付款失敗！即將為您跳轉至首頁。', () => {
-        router.push('/');
-      });
+      showAlert(
+        "error",
+        "開發模式：付款失敗",
+        "已強制模擬付款失敗！即將為您跳轉至首頁。",
+        () => {
+          router.push("/");
+        },
+      );
     } else {
-      showAlert('error', '模擬失敗', '無法完成強制模擬付款！');
+      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
     }
   } catch (e) {
     console.error(e);
   }
 }
 
-onMounted(() => {
-  // 如果缺少必要參數，導回首頁
+onMounted(async () => {
+  // 設定跨分頁監聽器
+  window.addEventListener("storage", handleStorageChange);
+
+  // 如果是在新分頁付款完成跳回
+  if (route.query.paymentSuccess) {
+    const bookingId = route.query.bookingId;
+    if (bookingId) {
+      // 1. 跨分頁通知原本的主視窗 (立即廣播)
+      try {
+        localStorage.setItem(
+          "ecpay_booking_success",
+          JSON.stringify({ bookingId, time: Date.now() }),
+        );
+      } catch (err) {
+        console.warn("跨分頁通知失敗:", err);
+      }
+
+      // 2. 非同步背景發送確認請求，keepalive: true 確保即使分頁立刻關閉，請求仍會由瀏覽器送達後端觸發寄信與狀態更新
+      fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
+        method: "POST",
+        keepalive: true,
+      }).catch((err) => console.warn("付款狀態背景同步失敗:", err));
+    }
+
+    // 3. 立即關閉這個綠界分頁（不等待網路回傳，達成毫秒級秒關）
+    try {
+      window.close();
+    } catch (e) {}
+
+    // 4. 若瀏覽器安全性限制不允許自動關閉（例如非腳本開啟的視窗），0.5 秒後才導向首頁作為備援
+    setTimeout(() => {
+      router.replace("/");
+    }, 500);
+    return;
+  }
+
+  // 正常進入結帳頁，載入會員資料
+  await loadMemberProfile();
+
+  // 檢查參數
   if (!roomTypeId.value || !checkIn.value || !checkOut.value) {
-    showAlert('error', '缺少參數', '缺少訂房參數，請重新選擇房型', () => {
-      router.push('/room-booking');
+    showAlert("error", "缺少參數", "缺少訂房參數，請重新選擇房型", () => {
+      router.push("/room-booking");
     });
   }
 });
 
 async function submitCheckout() {
   if (!form.value.name || !form.value.phone) {
-    showAlert('error', '表單未完成', '請填寫姓名與手機號碼！');
+    showAlert("error", "表單未完成", "請填寫姓名與手機號碼！");
     return;
   }
 
@@ -299,9 +406,9 @@ async function submitCheckout() {
     let currentMemberId = 1; // 預設值 (給未登入或測試用)
     if (authStore.isLoggedIn) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         const profileRes = await fetch("/api/members/me", {
-          headers: { 'Authorization': 'Bearer ' + token }
+          headers: { Authorization: "Bearer " + token },
         });
         if (profileRes.ok) {
           const profileData = await profileRes.json();
@@ -320,41 +427,47 @@ async function submitCheckout() {
       roomTypeId: roomTypeId.value,
       checkInDate: checkIn.value,
       checkOutDate: checkOut.value,
-      guestNum: guests.value,   // 對應 BookingDTO.guestNum
+      guestNum: guests.value, // 對應 BookingDTO.guestNum
       bookingPrice: totalPrice.value,
-      bookingStatus: '待入住'
+      bookingStatus: "待入住",
     };
 
     const createdBooking = await bookingApi.createBooking(bookingPayload);
     const bookingId = createdBooking.bookingId;
 
+    // 在跳轉前，把當前的路由參數存入 localStorage，以便結帳回來後恢復畫面
+    localStorage.setItem("checkoutParams", JSON.stringify(route.query));
+
     // 2. 呼叫後端取得綠界 HTML 表單
-    const res = await fetch('/api/payments/ecpay/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId: bookingId })
+    const res = await fetch("/api/payments/ecpay/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bookingId: bookingId,
+        frontendUrl: window.location.href,
+      }),
     });
-    
+
     if (!res.ok) {
       throw new Error("取得綠界金流表單失敗");
     }
 
     const htmlForm = await res.text();
 
-    // 3. 建立一個虛擬容器並 submit 表單，跳轉至綠界 (新分頁)
-    const div = document.createElement('div');
-    div.innerHTML = htmlForm;
-    document.body.appendChild(div);
-    const formElement = div.querySelector('form');
-    formElement.target = '_blank'; // ★ 關鍵：新開分頁
-    formElement.submit();
+    // 3. 將表單寫入預設的隱藏容器，再觸發 Submit
+    ecpayFormContainer.value.innerHTML = htmlForm;
+    await nextTick();
+    const formElement = ecpayFormContainer.value.querySelector("form");
+    if (formElement) {
+      formElement.target = "ECPayPopup"; // ★ 關鍵：新開分頁，並給予專屬名稱，方便回來時辨識！
+      formElement.submit();
+    }
 
     // 4. 開始在本地輪詢付款狀態
     startPolling(bookingId);
-
   } catch (error) {
     console.error("Checkout failed:", error);
-    showAlert('error', '結帳錯誤', '結帳發生錯誤，請稍後再試！');
+    showAlert("error", "結帳錯誤", "結帳發生錯誤，請稍後再試！");
   } finally {
     isProcessing.value = false;
   }
@@ -362,14 +475,14 @@ async function submitCheckout() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap");
 
 .checkout-container {
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1rem;
-  font-family: 'Inter', sans-serif;
-  color: #2C1810;
+  font-family: "Inter", sans-serif;
+  color: #2c1810;
 }
 
 .step-bar {
@@ -383,10 +496,14 @@ async function submitCheckout() {
   color: #888;
 }
 
-.step { padding: 0 1rem; }
-.step.completed { color: #2C1810; }
+.step {
+  padding: 0 1rem;
+}
+.step.completed {
+  color: #2c1810;
+}
 .step.active {
-  color: #2C1810;
+  color: #2c1810;
   font-weight: 700;
 }
 
@@ -399,19 +516,26 @@ async function submitCheckout() {
   opacity: 0.6;
 }
 
-.step-line { width: 30px; height: 1px; background: #ccc; }
+.step-line {
+  width: 30px;
+  height: 1px;
+  background: #ccc;
+}
 
 .header-title {
   text-align: center;
   margin-bottom: 3rem;
 }
 .header-title h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 2.5rem;
   font-weight: 400;
   letter-spacing: 0.05em;
 }
-.subtitle { color: #C9A96E; font-size: 0.9rem; }
+.subtitle {
+  color: #c9a96e;
+  font-size: 0.9rem;
+}
 
 .content-grid {
   display: flex;
@@ -423,20 +547,13 @@ async function submitCheckout() {
   flex: 1;
 }
 
-.btn-demo-fill {
-  background: #fdfaf6;
-  color: #C9A96E;
-  border: 1px solid #C9A96E;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-demo-fill:hover {
-  background: #C9A96E;
-  color: #fff;
+.section-title {
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #eaeaea;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c1810;
 }
 
 .mt-4 {
@@ -488,24 +605,24 @@ async function submitCheckout() {
 }
 
 .payment-option:hover {
-  border-color: #C9A96E;
+  border-color: #c9a96e;
   background: #fdfaf6;
 }
 
 .payment-option.selected {
-  border-color: #2C1810;
+  border-color: #2c1810;
   background: #fff;
   box-shadow: 0 4px 12px rgba(44, 24, 16, 0.08);
 }
 
 .payment-option.selected::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 4px;
   height: 100%;
-  background: #2C1810;
+  background: #2c1810;
 }
 
 .option-content {
@@ -523,7 +640,7 @@ async function submitCheckout() {
 }
 
 .btn-checkout {
-  background: #2C1810;
+  background: #2c1810;
   color: #fff;
   border: none;
   width: 100%;
@@ -535,7 +652,7 @@ async function submitCheckout() {
   transition: background 0.3s;
 }
 .btn-checkout:hover:not(:disabled) {
-  background: #C9A96E;
+  background: #c9a96e;
 }
 .btn-checkout:disabled {
   background: #ccc;
@@ -548,10 +665,10 @@ async function submitCheckout() {
 .summary-card {
   border: 1px solid #eaeaea;
   background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 .summary-header {
-  background: #2C1810;
+  background: #2c1810;
   color: #fff;
   padding: 1rem;
   text-align: center;
@@ -562,10 +679,10 @@ async function submitCheckout() {
   padding: 1.5rem;
 }
 .summary-content h4 {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.2rem;
   margin-bottom: 1.5rem;
-  color: #2C1810;
+  color: #2c1810;
 }
 .summary-row {
   display: flex;
@@ -573,8 +690,12 @@ async function submitCheckout() {
   margin-bottom: 1rem;
   font-size: 0.95rem;
 }
-.summary-row .label { color: #666; }
-.summary-row .value { font-weight: 500; }
+.summary-row .label {
+  color: #666;
+}
+.summary-row .value {
+  font-weight: 500;
+}
 .divider {
   height: 1px;
   background: #eaeaea;
@@ -598,8 +719,11 @@ async function submitCheckout() {
 /* Modal Styles */
 .payment-modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -613,11 +737,11 @@ async function submitCheckout() {
   text-align: center;
   max-width: 450px;
   width: 90%;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .payment-modal h3 {
-  color: #2C1810;
+  color: #2c1810;
   margin-bottom: 1rem;
 }
 
@@ -626,14 +750,18 @@ async function submitCheckout() {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #C9A96E;
+  border-top: 4px solid #c9a96e;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .dev-tools {
@@ -646,7 +774,7 @@ async function submitCheckout() {
 }
 
 .btn-mock {
-  background: #C9A96E;
+  background: #c9a96e;
   color: white;
   border: none;
   padding: 0.8rem 1.2rem;
@@ -655,7 +783,9 @@ async function submitCheckout() {
   width: 100%;
   font-weight: 600;
 }
-.btn-mock:hover { background: #b54708; }
+.btn-mock:hover {
+  background: #b54708;
+}
 
 .btn-mock-fail {
   background: #dc3545;
@@ -667,7 +797,9 @@ async function submitCheckout() {
   width: 100%;
   font-weight: 600;
 }
-.btn-mock-fail:hover { background: #c82333; }
+.btn-mock-fail:hover {
+  background: #c82333;
+}
 
 .btn-cancel {
   background: transparent;
@@ -679,96 +811,7 @@ async function submitCheckout() {
   width: 100%;
   margin-top: 0.5rem;
 }
-.btn-cancel:hover { background: #f5f5f5; }
-
-/* 美化提示 Modal */
-.alert-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-}
-
-.alert-modal {
-  background: white;
-  width: 90%;
-  max-width: 320px;
-  border-radius: 16px;
-  padding: 32px 24px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  animation: modalScaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.alert-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  margin: 0 auto 16px;
-  color: white;
-}
-
-.alert-icon.success {
-  background: #C9A96E;
-  box-shadow: 0 4px 12px rgba(201, 169, 110, 0.3);
-}
-
-.alert-icon.error {
-  background: #e74c3c;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-}
-
-.alert-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 8px;
-}
-
-.alert-message {
-  font-size: 15px;
-  color: #666;
-  margin: 0 0 24px;
-  line-height: 1.5;
-}
-
-.btn-alert {
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 500;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-alert:hover {
-  background: #555;
-}
-
-@keyframes modalScaleUp {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.btn-cancel:hover {
+  background: #f5f5f5;
 }
 </style>

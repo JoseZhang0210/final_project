@@ -7,11 +7,21 @@ import com.hotel.model.dto.BookingDTO;
 
 public interface BookingService {
     List<BookingDTO> findAll();
+
     Optional<BookingDTO> findById(Integer bookingId);
+
     List<BookingDTO> searchByCriteria(BookingDTO criteria);
+
     BookingDTO updateBooking(Integer id, BookingDTO newBookingData);
+
     void deleteById(Integer id);
+
     BookingDTO insert(BookingDTO bookingDTO);
-    Integer calculateBookingPrice(Integer roomTypeId, java.time.LocalDate checkInDate, java.time.LocalDate checkOutDate);
+
+    Integer calculateBookingPrice(Integer roomTypeId, java.time.LocalDate checkInDate,
+            java.time.LocalDate checkOutDate);
+
     void autoAssignRoomsForToday();
+
+    BookingDTO cancelBooking(Integer bookingId, Integer currentMemberId, boolean isAdmin);
 }

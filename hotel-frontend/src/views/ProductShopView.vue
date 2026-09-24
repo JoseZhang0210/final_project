@@ -160,9 +160,11 @@
               "
               @click.stop="handleToggleWishlist(product.productId)"
             >
-              <span aria-hidden="true">
-                {{ isProductInWishlist(product.productId) ? "♥" : "♡" }}
-              </span>
+              <Heart
+                :size="18"
+                :fill="isProductInWishlist(product.productId) ? 'currentColor' : 'none'"
+                aria-hidden="true"
+              />
             </button>
 
             <!-- 缺貨 -->
@@ -421,12 +423,14 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref } from "vue";
+import { Heart } from "@lucide/vue";
 
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 
 import { getAuthHeaders } from "@/utils/auth";
 import { useAuthStore } from "@/stores/auth";
+import { useCartStore } from "@/stores/cart";
 
 import {
   getRecentlyViewedIds,
@@ -440,6 +444,7 @@ import { normalizeProductId } from "@/utils/productId";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { isLoggedIn } = storeToRefs(authStore);
 
 const ACTIVE_PRODUCT_STATUSES = new Set(["ACTIVE", "上架", "上架中"]);
@@ -859,7 +864,7 @@ function decreaseQuantity(product) {
 // 加入購物車
 // =====================================================
 
-function buyProduct(product) {
+async function buyProduct(product) {
   if (!isLoggedIn.value) return;
 
   if (!canBuy(product)) {
@@ -884,55 +889,13 @@ function buyProduct(product) {
     return;
   }
 
-  const savedCart = localStorage.getItem("cart");
-
-  let cart = [];
-
-  if (savedCart) {
-    try {
-      cart = JSON.parse(savedCart);
-    } catch (error) {
-      console.error("購物車資料格式錯誤：", error);
-
-      cart = [];
-    }
+  try {
+    await cartStore.addItem(product.productId, quantity);
+    alert(`${product.productName} × ${quantity} 已加入購物車`);
+    product.buyQuantity = 1;
+  } catch (error) {
+    alert(error.message || "加入購物車失敗");
   }
-
-  const existingItem = cart.find(
-    (item) => Number(item.productId) === Number(product.productId),
-  );
-
-  if (existingItem) {
-    const newQuantity = Number(existingItem.quantity) + quantity;
-
-    if (newQuantity > stock) {
-      alert(`購物車中的總數量不能超過庫存 ${stock}`);
-
-      return;
-    }
-
-    existingItem.quantity = newQuantity;
-  } else {
-    cart.push({
-      productId: product.productId,
-
-      productName: product.productName,
-
-      price: product.price,
-
-      quantity,
-
-      stock: product.stock,
-
-      imageUrl: product.imageUrl ?? null,
-    });
-  }
-
-  localStorage.setItem("cart", JSON.stringify(cart));
-
-  alert(`${product.productName} × ${quantity} 已加入購物車`);
-
-  product.buyQuantity = 1;
 }
 
 // =====================================================

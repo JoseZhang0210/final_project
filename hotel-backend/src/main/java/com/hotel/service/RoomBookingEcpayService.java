@@ -18,7 +18,7 @@ public class RoomBookingEcpayService {
 
     // 綠界測試環境設定
     private static final String ECPAY_URL = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
-    private static final String MERCHANT_ID = "3002607"; 
+    private static final String MERCHANT_ID = "3002607";
     private static final String HASH_KEY = "pwFHCqoQZGmho4w6";
     private static final String HASH_IV = "EkRm7iFT261dpevs"; // 修正之前的 IV 錯誤
 

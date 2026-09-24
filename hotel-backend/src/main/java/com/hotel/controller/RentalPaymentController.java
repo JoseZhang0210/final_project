@@ -15,6 +15,22 @@ public class RentalPaymentController { // 控制器不處理付款狀態邏輯�
     }
     /** 建立使用指定付款服務的控制器。 */
     public RentalPaymentController(RentalPaymentService service) { this.service=service; } // 保存服務依賴。
+    /** 查詢展示用模擬付款模式開關（僅限管理員）。 */
+    @GetMapping("/demo-mode")
+    public Object getDemoMode(Authentication authentication) {
+        return service.getDemoMode(authentication);
+    }
+
+    /** 設定展示用模擬付款模式開關（僅限管理員）。 */
+    @PutMapping("/demo-mode")
+    public Object setDemoMode(
+        @RequestBody java.util.Map<String, Boolean> body,
+        Authentication authentication
+    ) {
+        boolean enabled = body != null && Boolean.TRUE.equals(body.get("enabled"));
+        return service.setDemoMode(enabled, authentication);
+    }
+
     /** 查詢指定租借的付款狀態。 */
     @GetMapping("/rentals/{id}") // 只有本人或管理員可查历史付款。
     public Object status(@PathVariable Integer id, Authentication authentication) { return service.status(id,authentication); } // 由服务验证所有權。
