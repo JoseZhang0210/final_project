@@ -2052,13 +2052,13 @@ onMounted(async () => {
 
 .perm-checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
 }
 
 .perm-checkbox-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 10px 12px;
   border: 1.5px solid #e8e2d7;
@@ -2067,6 +2067,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .perm-checkbox-card:hover {
@@ -2081,27 +2082,43 @@ onMounted(async () => {
 }
 
 .perm-checkbox-card input[type="checkbox"] {
-  margin-top: 3px;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
   accent-color: #b58a46;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .perm-card-content {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .perm-card-name {
   font-size: 13px;
   font-weight: 600;
   color: #4a3b2a;
+  line-height: 1.3;
 }
 
 .perm-card-code {
   font-size: 11px;
   color: #8c7b6d;
   font-family: monospace;
+  line-height: 1.2;
 }
 
 /* 權限種類管理 Modal */
