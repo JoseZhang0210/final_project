@@ -447,8 +447,10 @@ import { useTableSelection } from "@/composables/useTableSelection";
 import AdminPagination from "@/components/admin/AdminPagination.vue";
 import AdminJsonExportModal from "@/components/admin/AdminJsonExportModal.vue";
 import AdminJsonImportModal from "@/components/admin/AdminJsonImportModal.vue";
+import { useToastStore } from "@/stores/toast";
 import "@/assets/admin-manage.css";
 
+const toastStore = useToastStore();
 const API_URL = "/api/members";
 
 const members = ref([]);
@@ -604,7 +606,7 @@ function fillDemoData() {
   form.city = "桃園市";
   form.district = "中壢區";
   form.address = "中大路300號";
-  showMessage("已成功一鍵帶入假資料", "success");
+  toastStore.showToast("已成功一鍵帶入假資料", "success");
 }
 
 function openCreateModal() {
