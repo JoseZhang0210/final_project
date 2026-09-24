@@ -11,7 +11,8 @@ const importInput = ref(null);
 const importing = ref(false);
 const filterRestaurantId = ref("");
 const filterTimeId = ref("");
-const filterDate = ref("");
+const filterStartDate = ref("");
+const filterEndDate = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
 
@@ -87,7 +88,10 @@ const filteredReservations = computed(() => {
                 || Number(reservation.timeId) === Number(filterTimeId.value);
 
             const matchesDate =
-                !filterDate.value || reservation.reservationDate === filterDate.value;
+                (!filterStartDate.value
+                    || reservation.reservationDate >= filterStartDate.value)
+                && (!filterEndDate.value
+                    || reservation.reservationDate <= filterEndDate.value);
 
             return matchesRestaurant && matchesTime && matchesDate;
         })
@@ -104,7 +108,8 @@ const hasQuery = computed(() => {
     return Boolean(
         filterRestaurantId.value
         || filterTimeId.value
-        || filterDate.value,
+        || filterStartDate.value
+        || filterEndDate.value,
     );
 });
 
@@ -152,7 +157,7 @@ function goToPage(page) {
     }
 }
 
-watch([filterRestaurantId, filterTimeId, filterDate], () => {
+watch([filterRestaurantId, filterTimeId, filterStartDate, filterEndDate], () => {
     currentPage.value = 1;
 });
 
@@ -177,7 +182,8 @@ function handleFilterRestaurantChange() {
 function clearFilters() {
     filterRestaurantId.value = "";
     filterTimeId.value = "";
-    filterDate.value = "";
+    filterStartDate.value = "";
+    filterEndDate.value = "";
 }
 
 function openFilterModal() {
@@ -188,38 +194,58 @@ function closeFilterModal() {
     filterModalOpen.value = false;
 }
 
-function exportFilteredReservations() {
-    if (filteredReservations.value.length === 0) {
-        showMessage("目前沒有可匯出的查詢結果", "error");
-        return;
+async function exportFilteredReservations() {
+    try {
+        const params = new URLSearchParams();
+
+        if (filterRestaurantId.value) {
+            params.set("restaurantId", filterRestaurantId.value);
+        }
+
+        if (filterTimeId.value) {
+            params.set("timeId", filterTimeId.value);
+        }
+
+        if (filterStartDate.value) {
+            params.set("startDate", filterStartDate.value);
+        }
+
+        if (filterEndDate.value) {
+            params.set("endDate", filterEndDate.value);
+        }
+
+        const response = await fetch(
+            `${BACKUP_API_URL}/export?${params.toString()}`,
+            { headers: getAuthHeaders() },
+        );
+
+        if (!response.ok) {
+            throw new Error("查詢結果匯出失敗");
+        }
+
+        const backupData = await response.json();
+
+        const blob = new Blob(
+            [JSON.stringify(backupData, null, 2)],
+            { type: "application/json;charset=utf-8" },
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = `訂位查詢備份_${new Date()
+            .toISOString()
+            .slice(0, 10)}.json`;
+
+        link.click();
+        URL.revokeObjectURL(url);
+
+        showMessage("查詢結果已匯出 JSON", "success");
+    } catch (error) {
+        console.error(error);
+        showMessage("查詢結果匯出失敗", "error");
     }
-
-    const exportData = {
-        exportedAt: new Date().toISOString(),
-        filters: {
-            restaurant: filterRestaurantId.value
-                ? getRestaurantName(filterRestaurantId.value)
-                : "全部餐廳",
-            time: filterTimeId.value ? getTimeName(filterTimeId.value) : "全部時段",
-            reservationDate: filterDate.value || "全部日期",
-        },
-        totalReservations: filteredReservations.value.length,
-        totalPeople: totalPeople.value,
-        reservations: filteredReservations.value,
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = `訂位查詢結果_${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-
-    URL.revokeObjectURL(url);
-    showMessage("查詢結果已匯出 JSON", "success");
 }
 
 function formatTime(time) {
@@ -728,7 +754,6 @@ onMounted(async () => {
                                 <span class="reservation-status" :class="{
                                     'status-booked': getDisplayStatus(reservation) === '已訂位',
                                     'status-cancelled': getDisplayStatus(reservation) === '已取消',
-                                    'status-completed': getDisplayStatus(reservation) === '已完成',
                                     'status-expired': getDisplayStatus(reservation) === '已逾期',
                                 }">
                                     {{ getDisplayStatus(reservation) }}
@@ -841,7 +866,6 @@ onMounted(async () => {
                                 <select v-model="form.status" required>
                                     <option value="已訂位">訂位</option>
                                     <option value="已取消">取消</option>
-                                    <option value="已完成">已完成</option>
                                 </select>
                             </div>
                         </div>
@@ -896,9 +920,13 @@ onMounted(async () => {
                                 </select>
                             </label>
 
-                            <label class="filter-field">
+                            <label class="filter-field date-range-field">
                                 訂位日期
-                                <input v-model="filterDate" type="date" />
+                                <div class="date-range-inputs">
+                                    <input v-model="filterStartDate" type="date" />
+                                    <span>至</span>
+                                    <input v-model="filterEndDate" type="date" />
+                                </div>
                             </label>
 
                             <div class="reservation-summary">
@@ -982,8 +1010,12 @@ onMounted(async () => {
     gap: 5px;
     min-width: 0;
     color: #6f5328;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
+}
+
+.date-range-field {
+    margin-top: 12px;
 }
 
 .filter-field select,
@@ -995,6 +1027,24 @@ onMounted(async () => {
     background: #fff;
     font: inherit;
     font-weight: normal;
+}
+
+.date-range-inputs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+}
+
+.date-range-inputs input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.date-range-inputs span {
+    color: #7a6955;
+    white-space: nowrap;
 }
 
 .clear-filter-button {
@@ -1086,11 +1136,6 @@ onMounted(async () => {
     color: #b3443c;
 }
 
-.status-completed {
-    background-color: #eee9e1;
-
-    color: #5c4d3d;
-}
 
 .status-expired {
     background-color: #f7eddc;

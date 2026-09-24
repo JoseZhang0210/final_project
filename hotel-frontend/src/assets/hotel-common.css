@@ -306,7 +306,7 @@ label {
   font-size: 14px;
   font-weight: bold;
 }
-input,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]),
 select,
 textarea {
   width: 100%;
@@ -318,7 +318,7 @@ textarea {
   background: #fff;
   transition: 0.25s;
 }
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
