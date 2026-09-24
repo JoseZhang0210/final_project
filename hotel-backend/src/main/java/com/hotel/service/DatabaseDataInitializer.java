@@ -351,10 +351,20 @@ public class DatabaseDataInitializer implements ApplicationRunner {
     // -------------------------------------------------------------------------
     @Transactional
     public void seedVenues() {
-        if (venueRepository.count() == 0) {
-            List<Venue> list = loadListFromClasspath("data/seed/13_venues.json", Venue.class);
-            venueRepository.saveAll(list);
-            log.info("【場地模組】已成功初始化 {} 筆場地資料。", list.size());
+        List<Venue> seedList = loadListFromClasspath("data/seed/13_venues.json", Venue.class);
+        List<Venue> venuesToInsert = new ArrayList<>();
+
+        for (Venue seedVenue : seedList) {
+            if (seedVenue.getVenueId() != null && seedVenue.getVenueId() >= 1 && seedVenue.getVenueId() <= 4) {
+                if (!venueRepository.existsById(seedVenue.getVenueId())) {
+                    venuesToInsert.add(seedVenue);
+                }
+            }
+        }
+
+        if (!venuesToInsert.isEmpty()) {
+            venueRepository.saveAll(venuesToInsert);
+            log.info("【場地模組】已成功補建 {} 筆被刪除的預設場地資料。", venuesToInsert.size());
         }
     }
 
