@@ -760,7 +760,6 @@
       :open="exportModalOpen"
       title="匯出員工資料"
       subtitle="匯出 JSON 格式的員工帳號、職位部門與檔案資料"
-      notice-text="💡 系統將調用後端 <code>/api/employees/export</code> API，匯出包含 <code>password</code>、部門與職位完整資訊的格式化 <code>employees.json</code> 檔案並自動下載。"
       :exporting="exporting"
       :filtered-count="sortedEmployees.length"
       :total-count="employees.length"

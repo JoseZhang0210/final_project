@@ -72,7 +72,7 @@
           </div>
         </div>
 
-        <div class="export-notice" v-html="noticeText"></div>
+        <div v-if="noticeText" class="export-notice" v-html="noticeText"></div>
       </div>
 
       <div class="admin-modal-footer">

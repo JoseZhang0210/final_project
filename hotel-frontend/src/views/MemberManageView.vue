@@ -402,7 +402,6 @@
       :open="exportModalOpen"
       title="匯出會員資料"
       subtitle="匯出 JSON 格式的會員帳號與檔案資料"
-      notice-text="💡 系統將調用後端 <code>/api/members/export</code> API，匯出包含 <code>password</code> 且排除驗證碼的格式化 <code>members.json</code> 檔案並自動下載。"
       :exporting="exporting"
       :filtered-count="sortedMembers.length"
       :total-count="members.length"
