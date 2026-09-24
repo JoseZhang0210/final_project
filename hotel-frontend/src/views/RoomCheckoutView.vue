@@ -274,7 +274,7 @@ if (isPaymentSuccess.value) {
 }
 
 function goToMyOrders() {
-  router.push({ name: "member-room-bookings" });
+  router.push("/my-orders");
 }
 
 function goToHome() {
