@@ -92,7 +92,13 @@ public class SecurityConfig {
                                                                                 "/api/venues", "/api/venues/**",
                                                                                 "/api/rentals/occupied-dates")
                                                                 .permitAll()
+                                                                .requestMatchers(HttpMethod.POST,
+                                                                                "/api/bookings", "/api/bookings/search")
+                                                                .permitAll()
                                                                 .requestMatchers(HttpMethod.PUT,
+                                                                                "/api/bookings/{id:[0-9]+}")
+                                                                .permitAll()
+                                                                .requestMatchers(HttpMethod.DELETE,
                                                                                 "/api/bookings/{id:[0-9]+}")
                                                                 .permitAll()
                                                                 // -------------------------
