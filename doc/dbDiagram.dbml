@@ -1,294 +1,339 @@
+// 星澄飯店管理系統 (Starlight Hotel) - 資料庫結構定義 (DBML)
+// 適用於 dbdiagram.io 與現代關聯資料庫視覺化工具
+// 對應資料庫：Microsoft SQL Server 2022 (finalproject)
+
+Project StarlightHotel {
+  database_type: 'Microsoft SQL Server'
+  Note: '星澄飯店管理與線上服務系統 - 27 張實體資料表結構定義'
+}
+
+// -------------------------------------------------------------
+// 1. 會員與權限模組 (Auth & RBAC)
+// -------------------------------------------------------------
+
 Table account [headercolor: #175e7a] {
-	account_id integer [ pk, increment ]
-	username varchar(50) [ not null ]
-	password varchar(255) [ not null ]
-	status varchar(20) [ not null ]
-}
-
-Table department [headercolor: #175e7a] {
-	department_id integer [ pk, increment ]
-	department_name varchar(50) [ not null ]
-}
-
-Table employee [headercolor: #175e7a] {
-	employee_id integer [ pk, increment ]
-	department_id integer [ not null ]
-	account_id integer [ not null ]
-	position varchar(50) [ not null ]
-}
-
-Table permission [headercolor: #175e7a] {
-	permission_id integer [ pk ]
-	permission_code varchar(50) [ not null ]
-	permission_name varchar(50) [ not null ]
-}
-
-Table employee_permission [headercolor: #175e7a] {
-	permission_id integer [ pk, not null ]
-	employee_id integer [ pk, not null ]
-}
-
-Table member [headercolor: #175e7a] {
-	member_id integer [ pk, increment ]
-	account_id integer [ not null ]
+  account_id int [pk, increment, note: '帳號識別碼 (PK)']
+  username varchar(50) [not null, unique, note: '登入帳號 / Email']
+  password varchar(255) [not null, note: 'BCrypt 加密密碼']
+  status varchar(20) [not null, default: 'ACTIVE', note: '帳號狀態 (ACTIVE / INACTIVE)']
 }
 
 Table profile [headercolor: #175e7a] {
-	profile_id integer [ pk, increment ]
-	account_id integer [ not null ]
-	name varchar(50) [ not null ]
-	email varchar(100)
-	phone varchar(20)
-	zipcode varchar(10)
-	city varchar(50)
-	district varchar(50)
-	address varchar(200)
-	created_at datetime [ not null ]
-	birthday date
-	gender varchar(10)
-	updated_at datetime
+  profile_id int [pk, increment, note: '個人資料識別碼 (PK)']
+  account_id int [not null, unique, note: '關聯帳號 ID (FK)']
+  name varchar(50) [not null, note: '真實姓名']
+  email varchar(100) [note: '聯絡電子郵件']
+  phone varchar(20) [note: '聯絡手機號碼']
+  zipcode varchar(10) [note: '郵遞區號']
+  city varchar(50) [note: '居住縣市']
+  district varchar(50) [note: '居住行政區']
+  address varchar(200) [note: '詳細地址']
+  birthday date [note: '出生年月日']
+  gender varchar(10) [note: '性別']
+  avatar_url varchar(255) [note: '大頭貼圖片路徑']
+  created_at datetime [not null, default: `getdate()`, note: '建立時間']
+  updated_at datetime [not null, default: `getdate()`, note: '最後更新時間']
 }
 
-Table image [headercolor: #175e7a] {
-	image_id integer [ pk ]
-	path varchar(50) [ not null ]
-	image_desc varchar(10)
+Table member [headercolor: #175e7a] {
+  member_id int [pk, increment, note: '會員識別碼 (PK)']
+  account_id int [not null, unique, note: '關聯帳號 ID (FK)']
 }
 
-Table category [headercolor: #175e7a] {
-	category_id integer [ pk ]
-	category_name varchar(50)
-	parent_category integer
+Table department [headercolor: #175e7a] {
+  department_id int [pk, increment, note: '部門識別碼 (PK)']
+  department_name varchar(50) [not null, note: '部門名稱 (如：客務部、餐飲部、房務部)']
 }
 
-Table product [headercolor: #175e7a] {
-	product_id integer [ pk ]
-	product_name varchar(50) [ not null ]
-	category_id integer [ not null ]
-	description varchar(50) [ not null ]
-	price integer [ not null ]
-	stock integer [ not null ]
-	image_id integer
-	status varchar(50)
+Table employee [headercolor: #175e7a] {
+  employee_id int [pk, increment, note: '員工識別碼 (PK)']
+  department_id int [not null, note: '所屬部門 ID (FK)']
+  account_id int [not null, unique, note: '關聯帳號 ID (FK)']
+  position varchar(50) [not null, note: '職位名稱']
 }
 
-Table payment [headercolor: #175e7a] {
-	payment_id integer [ pk ]
-	payment_method varchar(50)
-	payment_time datetime
-	total_price integer [ not null ]
-	payment_status varchar(50) [ not null ]
-	member_id integer
+Table permission [headercolor: #175e7a] {
+  permission_id int [pk, increment, note: '權限識別碼 (PK)']
+  permission_code varchar(50) [not null, note: '權限代碼 (如：ROOM_MANAGE)']
+  permission_name varchar(50) [not null, note: '權限名稱 (如：客房管理)']
 }
 
-Table order [headercolor: #175e7a] {
-	order_id integer [ pk ]
-	member_id integer [ not null ]
-	order_date datetime [ not null ]
-	is_ordered bit [ not null ]
-	payment_id integer [ not null ]
+Table employee_permission [headercolor: #175e7a] {
+  employee_id int [not null, note: '員工 ID (PK, FK)']
+  permission_id int [not null, note: '權限 ID (PK, FK)']
+
+  indexes {
+    (employee_id, permission_id) [pk]
+  }
 }
 
-Table order_item [headercolor: #175e7a] {
-	order_id integer [ pk, not null ]
-	product_id integer [ pk, not null ]
-	quantity integer [ not null ]
+// -------------------------------------------------------------
+// 2. 客房預訂與房務管理模組 (Room Booking & Housekeeping)
+// -------------------------------------------------------------
+
+Table room_type [headercolor: #2b825b] {
+  room_type_id int [pk, increment, note: '房型識別碼 (PK)']
+  type_name varchar(50) [not null, note: '房型名稱']
+  bed_type varchar(50) [not null, note: '床型規格']
+  capacity int [not null, note: '建議容納人數']
+  room_description varchar(100) [note: '房型簡介']
+  price_per_night int [not null, note: '每晚定價']
+  available_rooms int [not null, note: '該房型總房間數']
 }
 
-Table room_type [headercolor: #175e7a] {
-	room_type_id integer [ pk, increment ]
-	type_name varchar(50) [ not null ]
-	bed_type varchar(50) [ not null ]
-	description varchar(50)
-	price_per_night integer [ not null ]
-	capacity integer [ not null ]
-	image_id integer
+Table room_image [headercolor: #2b825b] {
+  image_id int [pk, increment, note: '圖片識別碼 (PK)']
+  room_type_id int [not null, note: '關聯房型 ID (FK)']
+  path varchar(255) [not null, note: '圖片儲存路徑']
+  image_description varchar(255) [note: '圖片說明']
 }
 
-Table room [headercolor: #175e7a] {
-	room_id integer [ pk, increment ]
-	room_number integer [ not null ]
-	room_type_id integer [ not null ]
-	floor integer [ not null ]
-	status varchar(50) [ not null ]
+Table room [headercolor: #2b825b] {
+  room_id int [pk, increment, note: '實體房間識別碼 (PK)']
+  room_number varchar(20) [not null, unique, note: '房號 (如：301)']
+  room_type_id int [not null, note: '所屬房型 ID (FK)']
+  floor int [not null, note: '所在樓層']
+  room_status varchar(20) [not null, note: '房間狀態 (AVAILABLE / OCCUPIED / CLEANING / MAINTENANCE)']
 }
 
-Table room_task [headercolor: #175e7a] {
-	task_id integer [ pk, increment ]
-	room_id integer [ not null ]
-	employee_id integer [ not null ]
-	remark varchar(50)
-	priority varchar(50) [ not null ]
-	create_at datetime [ not null ]
-	completed_at datetime
-	task_type varchar(50) [ not null ]
-	task_status varchar(50) [ not null ]
+Table room_task [headercolor: #2b825b] {
+  task_id int [pk, increment, note: '房務工單識別碼 (PK)']
+  room_id int [not null, note: '關聯房間 ID (FK)']
+  employee_id int [not null, note: '指派員工 ID (FK)']
+  priority varchar(20) [not null, note: '優先順序 (LOW / MEDIUM / HIGH / URGENT)']
+  task_type varchar(20) [not null, note: '任務類型 (CLEANING / MAINTENANCE / INSPECTION)']
+  task_status varchar(20) [not null, note: '工單狀態 (PENDING / IN_PROGRESS / COMPLETED / CANCELLED)']
+  remark varchar(100) [note: '備註說明']
+  created_at datetime [not null, default: `getdate()`, note: '指派建立時間']
+  completed_at datetime [note: '完成時間']
 }
 
-Table booking_order [headercolor: #175e7a] {
-	booking_order_id integer [ pk ]
-	member_id integer [ not null ]
-	total_price integer [ not null ]
-	order_status varchar(50) [ not null ]
-	create_at datetime [ not null ]
-	payment_id integer [ not null ]
+Table booking [headercolor: #2b825b] {
+  booking_id int [pk, increment, note: '訂房訂單識別碼 (PK)']
+  member_id int [not null, note: '訂房會員 ID (FK)']
+  room_type_id int [not null, note: '預訂房型 ID (FK)']
+  room_id int [note: '已分配實體房間 ID (FK, 待排房可為空)']
+  check_in_date datetime [not null, note: '預計入住日期']
+  check_out_date datetime [not null, note: '預計退房日期']
+  guest_num int [not null, note: '入住人數']
+  booking_price int [not null, note: '訂單總金額']
+  booking_status varchar(20) [not null, note: '訂單狀態 (BOOKED / PAID / CHECKED_IN / COMPLETED / CANCELLED)']
+  created_at datetime [not null, default: `getdate()`, note: '下單時間']
 }
 
-Table booking [headercolor: #175e7a] {
-	booking_id integer [ pk, increment ]
-	booking_order_id integer [ not null ]
-	check_in_date datetime [ not null ]
-	check_out_date datetime [ not null ]
-	guest_num integer [ not null ]
-	booking_status varchar(50) [ not null ]
-	room_id integer
-	room_type_id integer [ not null ]
+Table booking_payment [headercolor: #2b825b] {
+  payment_id int [pk, increment, note: '訂房金流識別碼 (PK)']
+  booking_id int [not null, note: '關聯訂房訂單 ID (FK)']
+  amount int [not null, note: '付款金額']
+  payment_method varchar(50) [note: '支付方式 (ECPAY / CREDIT_CARD)']
+  payment_status varchar(20) [not null, note: '金流狀態 (PENDING / PAID / REFUNDED / FAILED)']
+  transaction_id varchar(50) [note: '外部金流交易編號']
+  created_at datetime2 [not null, default: `sysdatetime()`, note: '發起時間']
+  paid_at datetime2 [note: '付款完成時間']
 }
 
-Table venue [headercolor: #175e7a] {
-	venue_id integer [ pk ]
-	venue_name varchar(50) [ not null ]
-	capacity integer [ not null ]
-	price_per_day integer [ not null ]
-	venue_status varchar(50) [ not null ]
+// -------------------------------------------------------------
+// 3. 餐廳與線上訂位模組 (Restaurant & Reservation)
+// -------------------------------------------------------------
+
+Table restaurant [headercolor: #d97706] {
+  restaurant_id int [pk, increment, note: '餐廳識別碼 (PK)']
+  restaurant_name varchar(50) [not null, note: '餐廳名稱']
+  address varchar(100) [not null, note: '餐廳位置 / 樓層']
+  phone varchar(20) [not null, note: '聯絡電話']
+  capacity int [not null, note: '總席位數']
+  description varchar(255) [note: '餐廳美饌介紹']
 }
 
-Table rental [headercolor: #175e7a] {
-	rental_id integer [ pk ]
-	venue_id integer [ not null ]
-	member_id integer [ not null ]
-	event_name varchar(50) [ not null ]
-	rental_date datetime [ not null ]
-	guest_count integer [ not null ]
-	payment_id integer [ not null ]
-	rental_status varchar(50)
+Table restaurant_time [headercolor: #d97706] {
+  time_id int [pk, increment, note: '餐期時段識別碼 (PK)']
+  restaurant_id int [not null, note: '所屬餐廳 ID (FK)']
+  meal_type varchar(20) [not null, note: '餐期類型 (BREAKFAST / LUNCH / AFTERNOON_TEA / DINNER)']
+  open_time time [not null, note: '時段開始時間']
+  close_time time [not null, note: '時段結束時間']
 }
 
-Table restaurant [headercolor: #175e7a] {
-	restaurant_id integer [ pk ]
-	restaurant_name varchar(50) [ not null ]
-	address varchar(50) [ not null ]
-	phone varchar(50) [ not null ]
-	open_time varchar(50) [ not null ]
-	close_time varchar(50) [ not null ]
-	capacity varchar(50) [ not null ]
-	description varchar(50)
+Table reservation [headercolor: #d97706] {
+  reservation_id int [pk, increment, note: '訂位預約識別碼 (PK)']
+  restaurant_id int [not null, note: '預約餐廳 ID (FK)']
+  time_id int [not null, note: '餐期時段 ID (FK)']
+  member_id int [note: '預約會員 ID (FK, 非會員可為空)']
+  contact_name varchar(50) [note: '訂位人姓名']
+  contact_phone varchar(20) [note: '訂位人手機號碼']
+  reservation_date date [not null, note: '用餐日期']
+  people_count int [not null, note: '用餐人數']
+  status varchar(20) [not null, default: '已訂位', note: '預約狀態 (已訂位 / 已入座 / 已完成 / 已取消)']
+  create_time datetime [not null, default: `getdate()`, note: '預約時間']
 }
 
-Table reservation [headercolor: #175e7a] {
-	reservation_id integer [ pk ]
-	member_id integer [ not null ]
-	restaurant_id integer [ not null ]
-	reservation_time datetime [ not null ]
-	people_count integer [ not null ]
-	status varchar(50) [ not null ]
-	create_time datetime [ not null ]
+// -------------------------------------------------------------
+// 4. 周邊商城與訂單模組 (E-Commerce & Orders)
+// -------------------------------------------------------------
+
+Table category [headercolor: #7c3aed] {
+  category_id int [pk, increment, note: '商品分類識別碼 (PK)']
+  category_name varchar(50) [note: '分類名稱 (如：生活選品、特色伴手禮)']
 }
 
-Ref fk_employee_department_id_department {
-	employee.department_id > department.department_id [ delete: no action, update: no action ]
+Table product [headercolor: #7c3aed] {
+  product_id int [pk, increment, note: '商品識別碼 (PK)']
+  category_id int [not null, note: '所屬分類 ID (FK)']
+  product_name varchar(50) [not null, note: '商品名稱']
+  description varchar(255) [note: '商品詳情說明']
+  price int [not null, note: '銷售單價']
+  stock int [not null, note: '庫存數量']
+  ImageURL varchar(255) [note: '商品主要圖片路徑']
+  status varchar(50) [note: '上架狀態 (AVAILABLE / OUT_OF_STOCK / DISCONTINUED)']
 }
 
-Ref fk_employee_account_id_account {
-	employee.account_id - account.account_id [ delete: no action, update: no action ]
+Table cart_item [headercolor: #7c3aed] {
+  member_id int [not null, note: '會員 ID (PK, FK)']
+  product_id int [not null, note: '商品 ID (PK, FK)']
+  quantity int [not null, default: 1, note: '購買數量']
+  created_at datetime2 [not null, default: `sysdatetime()`, note: '加入購物車時間']
+  updated_at datetime2 [not null, default: `sysdatetime()`, note: '數量修改時間']
+
+  indexes {
+    (member_id, product_id) [pk]
+  }
 }
 
-Ref fk_employee_permission_permission_id_permission {
-	employee_permission.permission_id - permission.permission_id [ delete: no action, update: no action ]
+Table product_review [headercolor: #7c3aed] {
+  review_id int [pk, increment, note: '商品評價識別碼 (PK)']
+  product_id int [not null, note: '關聯商品 ID (FK)']
+  member_id int [not null, note: '評價會員 ID (FK)']
+  rating int [not null, note: '評分星級 (1~5)']
+  comment nvarchar(1000) [not null, note: '評價文字心得']
+  created_at datetime2 [not null, note: '評價時間']
+  updated_at datetime2 [not null, note: '最後編輯時間']
+
+  indexes {
+    (product_id, member_id) [unique]
+  }
 }
 
-Ref fk_employee_permission_employee_id_employee {
-	employee_permission.employee_id - employee.employee_id [ delete: no action, update: no action ]
+Table coupon [headercolor: #dc2626] {
+  coupon_id int [pk, increment, note: '優惠券識別碼 (PK)']
+  coupon_code varchar(50) [not null, unique, note: '折扣碼 (如：SUMMER2026)']
+  coupon_name varchar(100) [not null, note: '活動名稱']
+  discount_type varchar(20) [not null, note: '折抵類型 (PERCENT / FIXED)']
+  discount_value int [not null, note: '折抵數值 (如：85 代表 85 折, 200 代表折 200)']
+  minimum_amount int [not null, default: 0, note: '最低消費門檻']
+  start_date datetime [not null, note: '生效開始時間']
+  end_date datetime [not null, note: '生效結束時間']
+  status varchar(20) [not null, default: 'ACTIVE', note: '狀態 (ACTIVE / INACTIVE)']
 }
 
-Ref fk_member_account_id_account {
-	member.account_id - account.account_id [ delete: no action, update: no action ]
+Table payment [headercolor: #7c3aed] {
+  payment_id int [pk, increment, note: '商城付款紀錄識別碼 (PK)']
+  member_id int [note: '付款會員 ID (FK)']
+  payment_method varchar(50) [note: '支付方式 (ECPAY / CREDIT_CARD)']
+  transaction_id varchar(100) [note: '綠界交易流水號']
+  total_price int [not null, note: '結帳總金額']
+  payment_status varchar(20) [not null, default: 'PENDING', note: '金流狀態 (PENDING / PAID / FAILED / REFUNDED)']
+  payment_time datetime [note: '付款時間']
+  created_at datetime [not null, default: `getdate()`, note: '建立時間']
 }
 
-Ref fk_profile_account_id_account {
-	profile.account_id - account.account_id [ delete: no action, update: no action ]
+Table "order" [headercolor: #7c3aed] {
+  order_id int [pk, increment, note: '商城訂單識別碼 (PK)']
+  member_id int [not null, note: '下單會員 ID (FK)']
+  coupon_id int [note: '使用之優惠券 ID (FK, 可為空)']
+  payment_id int [note: '關聯付款單 ID (FK, 可為空)']
+  original_amount int [not null, default: 0, note: '原價總計']
+  discount_amount int [not null, default: 0, note: '優惠券折抵金額']
+  final_amount int [not null, default: 0, note: '實付應繳金額']
+  order_status varchar(20) [not null, default: 'PENDING', note: '訂單狀態 (PENDING / COMPLETED / CANCELLED)']
+  order_date datetime [not null, default: `getdate()`, note: '下單時間']
 }
 
-Ref fk_product_category_id_category {
-	product.category_id > category.category_id [ delete: no action, update: no action ]
+Table order_item [headercolor: #7c3aed] {
+  order_id int [not null, note: '訂單 ID (PK, FK)']
+  product_id int [not null, note: '商品 ID (PK, FK)']
+  quantity int [not null, note: '訂購數量']
+  unit_price int [not null, note: '購買時單價']
+  subtotal int [not null, note: '小計金額']
+
+  indexes {
+    (order_id, product_id) [pk]
+  }
 }
 
-Ref fk_category_category_id_category {
-	category.category_id > category.parent_category [ delete: no action, update: no action ]
+// -------------------------------------------------------------
+// 5. 多功能場地租借模組 (Venue & Rental)
+// -------------------------------------------------------------
+
+Table venue [headercolor: #0284c7] {
+  venue_id int [pk, note: '場地識別碼 (PK)']
+  venue_name varchar(50) [not null, note: '場地空間名稱 (如：星澄宴會廳)']
+  capacity int [not null, note: '最大容納人數']
+  price_per_day int [not null, note: '單日租借費用']
+  venue_status varchar(50) [not null, note: '場地狀態 (AVAILABLE / MAINTENANCE / BOOKED)']
 }
 
-Ref fk_payment_member_id_member {
-	payment.member_id > member.member_id [ delete: no action, update: no action ]
+Table rental_payment [headercolor: #0284c7] {
+  payment_id int [pk, increment, note: '場地租借付款識別碼 (PK)']
+  member_id int [note: '付款會員 ID (FK)']
+  payment_method varchar(50) [note: '付款管道 (ECPAY / TRANSFER)']
+  payment_time datetime2 [note: '完成時間']
+  total_price int [not null, note: '租借金額']
+  payment_status varchar(20) [not null, note: '狀態 (PENDING / PAID / REFUNDED)']
 }
 
-Ref fk_reservation_member_id_member {
-	reservation.member_id > member.member_id [ delete: no action, update: no action ]
+Table rental [headercolor: #0284c7] {
+  rental_id int [pk, increment, note: '場地租借申請識別碼 (PK)']
+  venue_id int [not null, note: '租借場地 ID (FK)']
+  member_id int [not null, note: '申請會員 ID (FK)']
+  payment_id int [not null, note: '關聯租借款項 ID (FK)']
+  event_name varchar(50) [not null, note: '活動名稱 / 用途說明']
+  rental_date datetime [not null, note: '預定租借日期']
+  guest_count int [not null, note: '預估參加人數']
+  rental_status varchar(50) [not null, note: '審核狀態 (PENDING / APPROVED / REJECTED / CANCELLED)']
 }
 
-Ref fk_reservation_restaurant_id_restaurant {
-	reservation.restaurant_id > restaurant.restaurant_id [ delete: no action, update: no action ]
-}
+// -------------------------------------------------------------
+// 資料關聯定義 (Relationships / Foreign Keys)
+// -------------------------------------------------------------
 
-Ref fk_booking_booking_order_id_booking_order {
-	booking.booking_order_id > booking_order.booking_order_id [ delete: no action, update: no action ]
-}
+// 會員與權限關聯
+Ref: profile.account_id - account.account_id [delete: cascade]
+Ref: member.account_id - account.account_id [delete: cascade]
+Ref: employee.account_id - account.account_id [delete: cascade]
+Ref: employee.department_id > department.department_id
+Ref: employee_permission.employee_id > employee.employee_id [delete: cascade]
+Ref: employee_permission.permission_id > permission.permission_id [delete: cascade]
 
-Ref fk_booking_room_id_room {
-	booking.room_id > room.room_id [ delete: no action, update: no action ]
-}
+// 客房與房務關聯
+Ref: room_image.room_type_id > room_type.room_type_id [delete: cascade]
+Ref: room.room_type_id > room_type.room_type_id
+Ref: room_task.room_id > room.room_id
+Ref: room_task.employee_id > employee.employee_id
+Ref: booking.member_id > member.member_id
+Ref: booking.room_type_id > room_type.room_type_id
+Ref: booking.room_id > room.room_id
+Ref: booking_payment.booking_id > booking.booking_id [delete: cascade]
 
-Ref fk_booking_room_type_id_room_type {
-	booking.room_type_id > room_type.room_type_id [ delete: no action, update: no action ]
-}
+// 餐廳與訂位關聯
+Ref: restaurant_time.restaurant_id > restaurant.restaurant_id [delete: cascade]
+Ref: reservation.restaurant_id > restaurant.restaurant_id
+Ref: reservation.time_id > restaurant_time.time_id
+Ref: reservation.member_id > member.member_id
 
-Ref fk_booking_order_member_id_member {
-	booking_order.member_id > member.member_id [ delete: no action, update: no action ]
-}
+// 商城與訂單關聯
+Ref: product.category_id > category.category_id
+Ref: cart_item.member_id > member.member_id [delete: cascade]
+Ref: cart_item.product_id > product.product_id [delete: cascade]
+Ref: product_review.product_id > product.product_id [delete: cascade]
+Ref: product_review.member_id > member.member_id
+Ref: payment.member_id > member.member_id
+Ref: "order".member_id > member.member_id
+Ref: "order".coupon_id > coupon.coupon_id
+Ref: "order".payment_id - payment.payment_id
+Ref: order_item.order_id > "order".order_id [delete: cascade]
+Ref: order_item.product_id > product.product_id
 
-Ref fk_booking_order_payment_id_payment {
-	booking_order.payment_id - payment.payment_id [ delete: no action, update: no action ]
-}
-
-Ref fk_room_task_room_id_room {
-	room_task.room_id > room.room_id [ delete: no action, update: no action ]
-}
-
-Ref fk_room_task_employee_id_employee {
-	room_task.employee_id > employee.employee_id [ delete: no action, update: no action ]
-}
-
-Ref fk_room_room_type_id_room_type {
-	room.room_type_id > room_type.room_type_id [ delete: no action, update: no action ]
-}
-
-Ref fk_room_type_image_id_image {
-	room_type.image_id > image.image_id [ delete: no action, update: no action ]
-}
-
-Ref fk_order_item_product_id_product {
-	order_item.product_id > product.product_id [ delete: no action, update: no action ]
-}
-
-Ref fk_order_payment_id_payment {
-	order.payment_id - payment.payment_id [ delete: no action, update: no action ]
-}
-
-Ref fk_order_member_id_member {
-	order.member_id > member.member_id [ delete: no action, update: no action ]
-}
-
-Ref fk_order_item_order_id_order {
-	order_item.order_id > order.order_id [ delete: no action, update: no action ]
-}
-
-Ref fk_rental_venue_id_venue {
-	rental.venue_id > venue.venue_id [ delete: no action, update: no action ]
-}
-
-Ref fk_rental_member_id_member {
-	rental.member_id > member.member_id [ delete: no action, update: no action ]
-}
-
-Ref fk_rental_payment_id_payment {
-	rental.payment_id > payment.payment_id [ delete: no action, update: no action ]
-}
+// 場地租借關聯
+Ref: rental_payment.member_id > member.member_id
+Ref: rental.venue_id > venue.venue_id
+Ref: rental.member_id > member.member_id
+Ref: rental.payment_id - rental_payment.payment_id

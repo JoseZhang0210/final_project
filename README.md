@@ -73,7 +73,7 @@ final_project/
 │   │   └── views/             # 頁面元件 (顧客前台、會員中心、後台管理)
 │   ├── package.json           # 前端套件依賴
 │   └── vite.config.js         # Vite 開發代理與打包設定
-└── doc/                       # 專案規格文件、網站架構圖 (Sitemap) 與初期提案
+└── doc/                       # 專案規格文件、資料庫架構與網站架構圖 (Sitemap)
 ```
 
 ---
@@ -178,24 +178,14 @@ npm run build
 
 ---
 
-## 設計文件與初始提案
-
-<details>
-<summary> 展開檢視設計圖與功能清單 </summary>
-<br>
+## 系統設計與規格文件
 
 - [專案功能整理與系統架構分析報告](./doc/PROJECT_FUNCTION_REPORT.md)
-- [功能清單詳細說明](./doc/function_List.md)
-- 顧客端網站架構圖：`./doc/sitemap_client.drawio.svg`
-- 員工端網站架構圖：`./doc/sitemap_employee.drawio.svg`
+- [資料庫架構規格與 ER 關聯說明](./doc/DATABASE_SCHEMA.md)
+- [資料庫結構定義 (DBML)](./doc/dbDiagram.dbml)
+- [核心功能對照清單](./doc/function_List.md)
+- [網站架構與路由導覽 (Sitemap)](./doc/SITEMAP.md)
 
-#### 初始提案方案
-- 工廠方案：`./doc/proposal/工廠.drawio.svg`
-- 飯店方案：`./doc/proposal/飯店.drawio.svg`
-- 虛擬貨幣交易平台：`./doc/proposal/虛擬貨幣.jpg`
-- 電子書商城：`./doc/proposal/書店.drawio.svg`
-
-</details>
 
 ---
 
