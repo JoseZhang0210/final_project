@@ -332,7 +332,7 @@ async function completeDemoPayment() {
     await loadData();
     demoPaymentStep.value = "success";
     errorMessage.value = "";
-    message.value = `${demoMethodLabel(demoPaymentMethod.value)} 付款完成`;
+    message.value = `${demoMethodLabel(demoPaymentMethod.value)} 付款完成，系統已觸發付款成功 Email 通知`;
   } catch (error) {
     demoPaymentError.value =
       error?.message || "付款狀態更新失敗";
@@ -1671,7 +1671,12 @@ function money(value) {
             <strong>{{ money(demoPaymentAmount()) }}</strong>
             <span>訂單狀態</span>
             <strong>已付款</strong>
+            <span>Email 通知</span>
+            <strong>已觸發</strong>
           </div>
+          <p class="demo-email-notice">
+            系統已觸發場地租借付款成功 Email 通知，請至會員資料中的電子信箱查看付款明細。
+          </p>
           <button type="button" @click="closeDemoPayment">
             返回預約紀錄
           </button>
