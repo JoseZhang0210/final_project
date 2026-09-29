@@ -975,7 +975,7 @@ function money(value) {
 
                   <!-- 金額與付款狀態皆來自付款 API。 -->
                   <p class="payment-summary">
-                    {{ money(payments[rental.rentalId]?.totalPrice) }}
+                    {{ money(payments[rental.rentalId]?.totalPrice) }} / {{ payments[rental.rentalId]?.paymentStatus || '尚未載入' }}
                   </p>
 
                   <!-- 已付款、取消、完成及過去日期不再次開啟付款。 -->
@@ -996,7 +996,7 @@ function money(value) {
               <td class="status-column">
                 <div class="status-cell-content">
                   <span class="payment-status-in-status-column">
-                    {{ payments[rental.rentalId]?.paymentStatus || '尚未載入' }}
+                    {{ rentalStatusLabel(rental.rentalStatus) }}
                   </span>
 
                   <button
