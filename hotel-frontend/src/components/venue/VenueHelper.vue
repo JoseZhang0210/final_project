@@ -72,18 +72,19 @@ function toggleOpen() {
 }
 
 function selectFaq(faq) {
-  messages.value.push({
-    id: Date.now(),
-    sender: "user",
-    text: faq.question,
-  });
-
-  messages.value.push({
-    id: Date.now() + 1,
-    sender: "helper",
-    text: faq.answer,
-    showFaqButtons: true,
-  });
+  messages.value = [
+    {
+      id: Date.now(),
+      sender: "user",
+      text: faq.question,
+    },
+    {
+      id: Date.now() + 1,
+      sender: "helper",
+      text: faq.answer,
+      showFaqButtons: true,
+    },
+  ];
 
   scrollToBottom();
 }
@@ -126,29 +127,21 @@ function handleSend() {
   const query = trimmed;
   userInput.value = "";
 
-  messages.value.push({
-    id: Date.now(),
-    sender: "user",
-    text: query,
-  });
-
   const matched = matchFaqKeyword(query);
 
-  if (matched) {
-    messages.value.push({
+  messages.value = [
+    {
+      id: Date.now(),
+      sender: "user",
+      text: query,
+    },
+    {
       id: Date.now() + 1,
       sender: "helper",
-      text: matched.answer,
+      text: matched ? matched.answer : fallbackAnswer,
       showFaqButtons: true,
-    });
-  } else {
-    messages.value.push({
-      id: Date.now() + 1,
-      sender: "helper",
-      text: fallbackAnswer,
-      showFaqButtons: true,
-    });
-  }
+    },
+  ];
 
   scrollToBottom();
 }
