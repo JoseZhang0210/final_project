@@ -105,19 +105,21 @@ public class RoomBookingEcpayController {
     }
 
     /**
-     * 綠界付款成功後的回呼 (Webhook)
+     * 綠界付款成功 Webhook (server callback)
+     * 核心安全防護：驗證 CheckMacValue 簽名與 RtnCode，為唯一合法更新 DB 付款狀態之入口。
+     * 流程：Frontend -> /checkout -> ECPay Stage -> server callback -> CheckMacValue verification -> Payment DB -> AFTER_COMMIT event -> Email
      */
     @PostMapping("/callback")
     public ResponseEntity<String> handleCallback(@RequestParam Map<String, String> params) {
         log.info("收到綠界付款回呼參數: {}", params);
 
-        // 1. 驗證 CheckMacValue 簽名
+        // 1. 驗證 CheckMacValue 簽名 (防止偽造請求)
         if (!ecpayService.verifyCheckMacValue(params)) {
             log.error("綠界 CheckMacValue 驗證簽名失敗！");
             return ResponseEntity.badRequest().body("0|CheckMacValue Error");
         }
 
-        // 2. 確認付款結果並以冪等方式更新紀錄
+        // 2. 驗證 RtnCode == 1 並以冪等方式更新 DB 狀態與發送信件事件
         processPaymentSuccess(params);
 
         // 綠界規定必須回傳 1|OK
@@ -125,22 +127,14 @@ public class RoomBookingEcpayController {
     }
 
     /**
-     * 綠界免 Ngrok 零配置：藍色按鈕跳轉 (Client-Return)
+     * 綠界瀏覽器返回跳轉 (Client-Return / ClientBackURL)
+     * 安全規範：僅執行 HTTP 302 重導向，不得在此更改 DB 付款狀態。
      */
     @GetMapping("/client-return/{bookingId}")
     public ResponseEntity<Void> handleClientReturn(
             @PathVariable("bookingId") Integer bookingId,
             @RequestParam(value = "local", required = false) String local) {
         log.info("收到綠界返回按鈕跳轉，訂單編號: {}", bookingId);
-
-        try {
-            BookingDTO booking = bookingService.findById(bookingId).orElse(null);
-            Integer amount = booking != null ? booking.getBookingPrice() : 0;
-            // 透過統一的 Service 處理付款成功 (具備冪等性防護)
-            bookingPaymentService.processSuccessfulPayment(bookingId, amount, "信用卡", null);
-        } catch (Exception e) {
-            log.error("更新付款狀態失敗 (Booking ID: {}): {}", bookingId, e.getMessage());
-        }
 
         // 跳轉回前端結帳完成頁
         String targetUrl;
@@ -158,7 +152,7 @@ public class RoomBookingEcpayController {
     }
 
     /**
-     * 前端跳轉回呼同步 API：確保線上跳過 ngrok 時，狀態即時同步並發送郵件與 QR Code
+     * 前端跳轉回呼同步 API：僅查詢與回傳當前 DB 付款狀態，不得自行將待付款改為已付款。
      */
     @PostMapping("/client-confirm/{bookingId}")
     public ResponseEntity<Map<String, Object>> confirmPaymentSuccess(@PathVariable("bookingId") Integer bookingId) {
@@ -173,17 +167,16 @@ public class RoomBookingEcpayController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            Integer amount = booking.getBookingPrice() != null ? booking.getBookingPrice() : 0;
-            // 透過統一的 Service 處理付款成功 (內建冪等性防護與非同步發信)
-            boolean updated = bookingPaymentService.processSuccessfulPayment(bookingId, amount, "信用卡", null);
+            BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
+            String paymentStatus = (payment != null) ? payment.getPaymentStatus() : "未付款";
 
             response.put("status", "success");
-            response.put("updated", updated);
+            response.put("paymentStatus", paymentStatus);
             response.put("bookingId", bookingId);
-            response.put("message", updated ? "付款成功確認完成" : "訂單已為付款狀態");
+            response.put("message", "查詢當前付款狀態成功");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("同步確認付款狀態失敗 (Booking ID: {}): {}", bookingId, e.getMessage());
+            log.error("查詢付款狀態失敗 (Booking ID: {}): {}", bookingId, e.getMessage());
             response.put("status", "error");
             response.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

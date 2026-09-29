@@ -243,15 +243,26 @@ function handleStorageChange(event) {
   }
 }
 
+function maskEmail(email) {
+  if (!email || typeof email !== "string") return "";
+  const parts = email.split("@");
+  if (parts.length !== 2) return email;
+  const [user, domain] = parts;
+  const firstChar = user.length > 0 ? user[0] : "";
+  return `${firstChar}*****@${domain}`;
+}
+
 function onPaymentFinished() {
   if (pollingInterval.value) {
     clearInterval(pollingInterval.value);
   }
   showPaymentModal.value = false;
+  const masked = maskEmail(form.value.email);
+  const successMsg = `訂房已完成，系統已觸發訂房確認 Email 寄送至 ${masked}，您可以至信箱查看訂房明細。`;
   showAlert(
     "success",
     "付款成功",
-    "感謝您的預訂！即將為您跳轉至飯店首頁。",
+    successMsg,
     () => {
       router.push("/");
     },
@@ -300,51 +311,6 @@ async function cancelPaymentWait() {
   }
 }
 
-async function forceMockSuccess() {
-  if (!currentBookingId.value) return;
-  try {
-    const res = await fetch(
-      `/api/payments/ecpay/mock-pay/${currentBookingId.value}`,
-      {
-        method: "POST",
-      },
-    );
-    if (res.ok) {
-      onPaymentFinished();
-    } else {
-      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-async function forceMockFail() {
-  if (!currentBookingId.value) return;
-  try {
-    const res = await fetch(
-      `/api/payments/ecpay/mock-fail/${currentBookingId.value}`,
-      {
-        method: "POST",
-      },
-    );
-    if (res.ok) {
-      clearInterval(pollingInterval.value);
-      showAlert(
-        "error",
-        "開發模式：付款失敗",
-        "已強制模擬付款失敗！即將為您跳轉至首頁。",
-        () => {
-          router.push("/");
-        },
-      );
-    } else {
-      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
 
 onMounted(async () => {
   // 設定跨分頁監聽器
@@ -764,42 +730,6 @@ async function submitCheckout() {
   }
 }
 
-.dev-tools {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed #ccc;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.btn-mock {
-  background: #c9a96e;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  width: 100%;
-  font-weight: 600;
-}
-.btn-mock:hover {
-  background: #b54708;
-}
-
-.btn-mock-fail {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  width: 100%;
-  font-weight: 600;
-}
-.btn-mock-fail:hover {
-  background: #c82333;
-}
 
 .btn-cancel {
   background: transparent;
