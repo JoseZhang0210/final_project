@@ -198,53 +198,6 @@ public class RoomBookingEcpayController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 開發測試用：一鍵強制模擬付款成功 (呼叫統一 Service，消除重複代碼)
-     */
-    @PostMapping("/mock-pay/{bookingId}")
-    public ResponseEntity<Map<String, String>> mockPaymentSuccess(@PathVariable("bookingId") Integer bookingId) {
-        try {
-            BookingDTO booking = bookingService.findById(bookingId).orElse(null);
-            Integer amount = booking != null ? booking.getBookingPrice() : 0;
-            bookingPaymentService.processSuccessfulPayment(bookingId, amount, "信用卡", null);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "模擬付款成功");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("模擬付款成功發生錯誤 (Booking ID: {}): {}", bookingId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * 開發測試用：一鍵強制模擬付款失敗
-     */
-    @PostMapping("/mock-fail/{bookingId}")
-    public ResponseEntity<Map<String, String>> mockPaymentFail(@PathVariable("bookingId") Integer bookingId) {
-        try {
-            // 1. 將訂單改為已取消
-            BookingDTO booking = bookingService.findById(bookingId).orElse(null);
-            if (booking != null) {
-                booking.setBookingStatus("已取消");
-                bookingService.updateBooking(bookingId, booking);
-            }
-
-            // 2. 將付款狀態改為付款失敗
-            BookingPaymentDTO payment = bookingPaymentService.findByBookingId(bookingId);
-            if (payment != null) {
-                payment.setPaymentStatus("付款失敗");
-                bookingPaymentService.update(payment.getPaymentId(), payment);
-            }
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "模擬付款失敗");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("模擬付款失敗發生錯誤 (Booking ID: {}): {}", bookingId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
     /**
      * 處理綠界 Webhook 回傳成功資訊 (DRY 重構)

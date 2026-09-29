@@ -9,12 +9,12 @@ public final class BookingEvents {
     }
 
     /**
-     * 訂房成功建立事件
+     * 訂房付款成功事件 (付款成功後才寄送訂房確認信)
      */
-    public static class BookingCreatedEvent {
+    public static class BookingPaidEvent {
         private final Integer bookingId;
 
-        public BookingCreatedEvent(Integer bookingId) {
+        public BookingPaidEvent(Integer bookingId) {
             this.bookingId = bookingId;
         }
 

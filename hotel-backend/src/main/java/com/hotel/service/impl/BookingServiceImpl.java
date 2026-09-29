@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hotel.constant.BookingStatus;
 import com.hotel.constant.RoomStatus;
 import com.hotel.event.BookingEvents.BookingCancelledEvent;
-import com.hotel.event.BookingEvents.BookingCreatedEvent;
 import com.hotel.event.BookingEvents.CheckInSuccessEvent;
 import com.hotel.model.dto.BookingDTO;
 import com.hotel.model.entity.Booking;
@@ -34,16 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 訂房業務邏輯實作類 (Booking Service Implementation)
- * 
- * 【@Transactional 交易機制說明】：
- * 1. 類別層級宣告 @Transactional：預設為所有公開方法套用 Propagation.REQUIRED 交易傳播行為，
- * 當方法執行時若無現有交易則自動開啟新交易；若遇 RuntimeException / Error 則自動觸發資料庫 Rollback。
- * 2. 唯讀查詢 @Transactional(readOnly = true)：告知 JPA/Hibernate 關閉 Dirty Checking
- * (髒檢查)，
- * 顯著降低記憶體消耗並加速查詢效能。
- * 3. 交易安全與事件解耦：整合 ApplicationEventPublisher
- * 與 @TransactionalEventListener(AFTER_COMMIT)，
- * 保證資料庫完全 Commit 成功後才非同步觸發發信與通知，避免 Dirty Notification。
+ * 整合交易安全控制、併發防排房衝突與事件驅動非同步通知
  */
 @Slf4j
 @Service
@@ -72,9 +62,6 @@ public class BookingServiceImpl implements BookingService {
         this.eventPublisher = eventPublisher;
     }
 
-    /**
-     * 查詢所有訂房清單 (唯讀交易，提升查詢效率)
-     */
     @Override
     @Transactional(readOnly = true)
     public List<BookingDTO> findAll() {
@@ -83,18 +70,12 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 依訂房 ID 查詢訂房詳細資訊 (唯讀交易)
-     */
     @Override
     @Transactional(readOnly = true)
     public Optional<BookingDTO> findById(Integer bookingId) {
         return bookingRepository.findById(bookingId).map(this::convertToDTO);
     }
 
-    /**
-     * 依多條件動態篩選訂房紀錄 (唯讀交易)
-     */
     @Override
     @Transactional(readOnly = true)
     public List<BookingDTO> searchByCriteria(BookingDTO criteria) {
@@ -102,15 +83,6 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * 建立新訂房訂單 (完整 ACID 交易保護)
-     * 
-     * 【交易步驟與邏輯】：
-     * 1. 執行緒安全防超賣：呼叫 synchronized 配房邏輯，排查日期區間重疊衝突。
-     * 2. 金額後端重算：依據房型單價與住宿天數計算總價，杜絕前端竄改。
-     * 3. 儲存訂單實體：將資料寫入 bookings 資料表。
-     * 4. 發布領域事件：由 Spring Event 在 Transaction AFTER_COMMIT 成功提交後非同步發送確認信。
-     */
     @Override
     public BookingDTO insert(BookingDTO bookingDTO) {
         // 1. 自動配發可用房間 (執行緒安全)
@@ -127,12 +99,9 @@ public class BookingServiceImpl implements BookingService {
                 bookingDTO.getCheckInDate(),
                 bookingDTO.getCheckOutDate()));
 
-        // 3. 儲存訂房紀錄
+        // 3. 儲存訂房紀錄 (尚未付款，不在此發布寄信事件)
         Booking booking = convertToEntity(bookingDTO);
         Booking savedBooking = bookingRepository.save(booking);
-
-        // 4. 發布訂房建立事件 (由 TransactionalEventListener 在 AFTER_COMMIT 成功提交後非同步發送確認信)
-        eventPublisher.publishEvent(new BookingCreatedEvent(savedBooking.getBookingId()));
 
         return convertToDTO(savedBooking);
     }

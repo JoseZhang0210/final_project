@@ -1,5 +1,6 @@
 package com.hotel.controller;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -13,11 +14,11 @@ import static org.mockito.Mockito.*;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.bind.annotation.PostMapping;
 
-import com.hotel.event.BookingEvents.BookingCreatedEvent;
+import com.hotel.event.BookingEvents.BookingPaidEvent;
 import com.hotel.model.dto.BookingDTO;
-import com.hotel.model.dto.BookingPaymentDTO;
+import com.hotel.model.entity.BookingPayment;
 import com.hotel.repository.BookingPaymentRepository;
 import com.hotel.service.BookingPaymentService;
 import com.hotel.service.BookingService;
@@ -52,7 +53,7 @@ class RoomBookingEcpayControllerTest {
     }
 
     @Test
-    @DisplayName("Callback CheckMacValue 合法 + RtnCode=1 才能付款成功，並發布 BookingCreatedEvent")
+    @DisplayName("Callback CheckMacValue 合法 + RtnCode=1 才能付款成功，並發布 BookingPaidEvent")
     void handleCallbackSuccess() {
         Map<String, String> params = new HashMap<>();
         params.put("MerchantTradeNo", "HOTEL100T1234");
@@ -69,13 +70,13 @@ class RoomBookingEcpayControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("1|OK", response.getBody());
 
-        // 驗證 EventPublisher 有收到 BookingCreatedEvent
-        verify(eventPublisher, times(1)).publishEvent(any(BookingCreatedEvent.class));
+        // 驗證 EventPublisher 有收到 BookingPaidEvent
+        verify(eventPublisher, times(1)).publishEvent(any(BookingPaidEvent.class));
         verify(bookingPaymentRepository, times(1)).save(any());
     }
 
     @Test
-    @DisplayName("非法 CheckMacValue 不可更新付款")
+    @DisplayName("非法 CheckMacValue 不可更新付款，亦不發布事件")
     void handleCallbackInvalidMac() {
         Map<String, String> params = new HashMap<>();
         params.put("CheckMacValue", "INVALID_MAC");
@@ -102,30 +103,30 @@ class RoomBookingEcpayControllerTest {
     }
 
     @Test
-    @DisplayName("Client-Confirm 僅查詢付款狀態，不可自行將待付款改為已付款")
+    @DisplayName("Client-Confirm 僅查詢付款狀態，若原本為待付款回傳仍必須為待付款，不可自行改已付款")
     void handleClientConfirmDoesNotPay() {
         BookingDTO booking = new BookingDTO();
         booking.setBookingId(100);
         booking.setBookingPrice(3000);
 
-        BookingPaymentDTO pendingPayment = new BookingPaymentDTO();
+        BookingPayment pendingPayment = new BookingPayment();
         pendingPayment.setBookingId(100);
         pendingPayment.setPaymentStatus("待付款");
 
         when(bookingService.findById(100)).thenReturn(Optional.of(booking));
-        when(bookingPaymentRepository.findByBookingId(100)).thenReturn(Optional.empty());
+        when(bookingPaymentRepository.findByBookingId(100)).thenReturn(Optional.of(pendingPayment));
 
         ResponseEntity<Map<String, Object>> response = controller.confirmPaymentSuccess(100);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("未付款", response.getBody().get("paymentStatus"));
+        assertEquals("待付款", response.getBody().get("paymentStatus"));
 
         verifyNoInteractions(eventPublisher);
         verify(bookingPaymentRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("重複 callback 具備冪等性，不重複發布 BookingCreatedEvent")
+    @DisplayName("重複 callback 具備冪等性，不重複發布 BookingPaidEvent")
     void duplicateCallbackIdempotency() {
         Map<String, String> params = new HashMap<>();
         params.put("MerchantTradeNo", "HOTEL100T1234");
@@ -137,7 +138,7 @@ class RoomBookingEcpayControllerTest {
         when(ecpayService.verifyCheckMacValue(params)).thenReturn(true);
 
         // 模擬第一次呼叫前為待付款，第一次呼叫後變更為已付款
-        com.hotel.model.entity.BookingPayment paymentEntity = new com.hotel.model.entity.BookingPayment();
+        BookingPayment paymentEntity = new BookingPayment();
         paymentEntity.setBookingId(100);
         paymentEntity.setPaymentStatus("待付款");
 
@@ -150,7 +151,21 @@ class RoomBookingEcpayControllerTest {
         // 第二次 Callback (重送)
         controller.handleCallback(params);
 
-        // 驗證只發布過一次事件
-        verify(eventPublisher, times(1)).publishEvent(any(BookingCreatedEvent.class));
+        // 驗證只發布過一次事件，避免重複寄信
+        verify(eventPublisher, times(1)).publishEvent(any(BookingPaidEvent.class));
+    }
+
+    @Test
+    @DisplayName("正式 Controller 不得包含 /mock-pay 或 /mock-fail 端點")
+    void testNoMockEndpointsInProductionController() {
+        for (Method method : RoomBookingEcpayController.class.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(PostMapping.class)) {
+                PostMapping mapping = method.getAnnotation(PostMapping.class);
+                for (String path : mapping.value()) {
+                    assertFalse(path.contains("mock-pay"), "控制器不應包含 /mock-pay 端點");
+                    assertFalse(path.contains("mock-fail"), "控制器不應包含 /mock-fail 端點");
+                }
+            }
+        }
     }
 }

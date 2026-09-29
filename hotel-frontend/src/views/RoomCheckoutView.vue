@@ -28,12 +28,14 @@
             />
           </div>
           <div class="form-group">
-            <label>電子信箱 * (確認信與 Check-in QR Code 將寄送至此)</label>
+            <label>電子信箱 * (訂房確認信將寄送至會員資料中的電子信箱)</label>
             <input
               type="email"
               v-model="form.email"
+              readonly
               required
               placeholder="例如：user@example.com"
+              class="readonly-input"
             />
           </div>
           <div class="form-group">
@@ -231,15 +233,30 @@ async function loadMemberProfile() {
 
 // 跨分頁即時通訊監聽
 function handleStorageChange(event) {
-  if (event.key === "ecpay_booking_success" && event.newValue) {
+  if (event.key === "ecpay_booking_returned" && event.newValue) {
     try {
       const data = JSON.parse(event.newValue);
       if (data && data.bookingId) {
-        onPaymentFinished();
+        // 收到瀏覽器返回事件後，查詢後端真實 DB 付款狀態，唯有確認為「已付款」才顯示成功 alert
+        checkPaymentStatusOnce(data.bookingId);
       }
     } catch (e) {
       console.error(e);
     }
+  }
+}
+
+async function checkPaymentStatusOnce(bookingId) {
+  try {
+    const res = await fetch(`/api/payments/ecpay/status/${bookingId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "已付款") {
+        onPaymentFinished();
+      }
+    }
+  } catch (e) {
+    console.error("查詢付款狀態失敗", e);
   }
 }
 
@@ -320,17 +337,17 @@ onMounted(async () => {
   if (route.query.paymentSuccess) {
     const bookingId = route.query.bookingId;
     if (bookingId) {
-      // 1. 跨分頁通知原本的主視窗 (立即廣播)
+      // 1. 跨分頁通知原本的主視窗 (告知瀏覽器已從綠界返回)
       try {
         localStorage.setItem(
-          "ecpay_booking_success",
+          "ecpay_booking_returned",
           JSON.stringify({ bookingId, time: Date.now() }),
         );
       } catch (err) {
         console.warn("跨分頁通知失敗:", err);
       }
 
-      // 2. 非同步背景發送確認請求，keepalive: true 確保即使分頁立刻關閉，請求仍會由瀏覽器送達後端觸發寄信與狀態更新
+      // 2. 非同步背景發送狀態確認請求，由後端回傳最新 DB 付款狀態 (唯讀查詢，不在此修改資料)
       fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
         method: "POST",
         keepalive: true,
@@ -543,6 +560,12 @@ async function submitCheckout() {
   border-radius: 4px;
   font-family: inherit;
   font-size: 1rem;
+}
+
+.checkout-form input.readonly-input {
+  background-color: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
 }
 
 .payment-options {
