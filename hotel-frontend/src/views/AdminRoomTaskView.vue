@@ -65,24 +65,38 @@ function closeFormModal() {
 }
 
 const filteredEmployees = computed(() => {
-  if (!form.value || !form.value.taskType)
+  if (!form.value || !form.value.taskType) {
     return employees.value.filter(
       (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24,
     );
-  if (form.value.taskType.includes("清潔")) {
-    return employees.value.filter(
-      (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24,
-    );
-  } else {
+  }
+  const type = form.value.taskType;
+  // 設備報修、停用維護 -> 工務維修部 (25 ~ 28)
+  if (
+    type === "設備報修" ||
+    type === "停用維護" ||
+    type.includes("維修") ||
+    type.includes("維護")
+  ) {
     return employees.value.filter(
       (e) => Number(e.employeeId) >= 25 && Number(e.employeeId) <= 28,
     );
   }
+  // 退房清潔、日常清潔、備品補充 -> 房務清潔部 (13 ~ 24)
+  if (type.includes("清潔") || type.includes("備品") || type === "備品補充") {
+    return employees.value.filter(
+      (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24,
+    );
+  }
+  // 其他類型 -> 房務與工務人員 (13 ~ 28)
+  return employees.value.filter(
+    (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 28,
+  );
 });
 
 const taskSearchEmployees = computed(() => {
   return employees.value.filter(
-    (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 24,
+    (e) => Number(e.employeeId) >= 13 && Number(e.employeeId) <= 28,
   );
 });
 
