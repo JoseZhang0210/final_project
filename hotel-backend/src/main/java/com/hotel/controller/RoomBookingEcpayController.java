@@ -258,7 +258,7 @@ public class RoomBookingEcpayController {
             int amount = tradeAmtStr != null ? Integer.parseInt(tradeAmtStr) : 0;
 
             try {
-                int bookingId = Integer.parseInt(merchantTradeNo.substring(5, merchantTradeNo.indexOf("T")));
+                int bookingId = Integer.parseInt(merchantTradeNo.substring(5, merchantTradeNo.indexOf("T", 5)));
                 bookingPaymentService.processSuccessfulPayment(bookingId, amount, "信用卡", tradeNo);
             } catch (Exception e) {
                 log.error("解析或更新綠界付款回呼失敗: {}", e.getMessage(), e);
