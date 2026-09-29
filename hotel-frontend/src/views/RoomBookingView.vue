@@ -33,7 +33,7 @@
             </span>
             <div class="field-content">
               <label>Where to?</label>
-              <input type="text" value="星澄飯店" readonly class="readonly-input" />
+              <span class="destination-text">星澄飯店</span>
             </div>
           </div>
           
@@ -386,7 +386,15 @@ function handleSearch() {
   letter-spacing: 0.05em;
 }
 
-.search-field input,
+.destination-text {
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  cursor: default;
+}
+
 .search-field select {
   background: transparent;
   border: none;
@@ -396,11 +404,7 @@ function handleSearch() {
   outline: none;
   cursor: pointer;
   padding: 0;
-}
-
-.readonly-input {
-  cursor: default !important;
-  opacity: 0.9;
+  line-height: 1.5;
 }
 
 .date-inputs {
