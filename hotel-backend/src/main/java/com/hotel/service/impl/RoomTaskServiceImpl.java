@@ -93,6 +93,12 @@ public class RoomTaskServiceImpl implements RoomTaskService {
         RoomTask existingTask = roomTaskRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("找不到 ID 為 " + id + " 的任務資料"));
 
+        if (updatedTaskDTO.getRoomId() != null) {
+            existingTask.setRoomId(updatedTaskDTO.getRoomId());
+        }
+        if (updatedTaskDTO.getEmployeeId() != null) {
+            existingTask.setEmployeeId(updatedTaskDTO.getEmployeeId());
+        }
         if (updatedTaskDTO.getPriority() != null) {
             existingTask.setPriority(updatedTaskDTO.getPriority());
         }
@@ -101,6 +107,9 @@ public class RoomTaskServiceImpl implements RoomTaskService {
         }
         if (updatedTaskDTO.getRemark() != null) {
             existingTask.setRemark(updatedTaskDTO.getRemark());
+        }
+        if (updatedTaskDTO.getCreatedAt() != null) {
+            existingTask.setCreatedAt(updatedTaskDTO.getCreatedAt());
         }
 
         if (updatedTaskDTO.getTaskStatus() != null
