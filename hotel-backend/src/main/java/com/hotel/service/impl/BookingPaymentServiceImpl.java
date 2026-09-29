@@ -125,6 +125,16 @@ public class BookingPaymentServiceImpl implements BookingPaymentService {
         }
     }
 
+    /**
+     * 處理綠界/第三方金流付款成功回呼 (具備 @Transactional 與冪等性防護)
+     * 
+     * 【交易與冪等性說明】：
+     * 1. 交易原子性：更新 booking_payments 資料表在交易內完成，任何異常自動回滾。
+     * 2. 冪等性防護 (Idempotency)：當綠界金流 Client-Confirm 與 Server-ReturnURL 重複發送通知時，
+     * 若狀態已為「已付款」，則直接跳過並回傳 false，絕不重複發送信件或重複扣款。
+     * 3. AFTER_COMMIT 事件發布：透過 eventPublisher 發送事件，只有交易確實 Commit 成功後才由 MailUtil
+     * 寄出確認信與 QR Code。
+     */
     @Override
     public boolean processSuccessfulPayment(Integer bookingId, Integer amount, String paymentMethod,
             String transactionId) {
