@@ -7,7 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.hotel.event.BookingEvents.BookingCancelledEvent;
-import com.hotel.event.BookingEvents.BookingPaidEvent;
+import com.hotel.event.BookingEvents.BookingCreatedEvent;
 import com.hotel.event.BookingEvents.CheckInSuccessEvent;
 import com.hotel.util.MailUtil;
 
@@ -27,11 +27,11 @@ public class BookingEventListener {
     }
 
     /**
-     * 訂房付款成功：交易提交後寄送訂房確認信
+     * 訂房建立成功：交易提交後寄送訂房確認信
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    public void handleBookingPaid(BookingPaidEvent event) {
-        log.info("[Transaction AFTER_COMMIT] 收到訂房付款成功事件，開始非同步發送確認信，Booking ID: {}", event.getBookingId());
+    public void handleBookingCreated(BookingCreatedEvent event) {
+        log.info("[Transaction AFTER_COMMIT] 收到訂房建立事件，開始非同步發送確認信，Booking ID: {}", event.getBookingId());
         try {
             mailUtil.sendBookingConfirmation(event.getBookingId());
         } catch (Exception e) {

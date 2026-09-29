@@ -28,14 +28,12 @@
             />
           </div>
           <div class="form-group">
-            <label>電子信箱 * (訂房確認信將寄送至會員資料中的電子信箱)</label>
+            <label>電子信箱 * (確認信與 Check-in QR Code 將寄送至此)</label>
             <input
               type="email"
               v-model="form.email"
-              readonly
               required
               placeholder="例如：user@example.com"
-              class="readonly-input"
             />
           </div>
           <div class="form-group">
@@ -233,12 +231,11 @@ async function loadMemberProfile() {
 
 // 跨分頁即時通訊監聽
 function handleStorageChange(event) {
-  if (event.key === "ecpay_booking_returned" && event.newValue) {
+  if (event.key === "ecpay_booking_success" && event.newValue) {
     try {
       const data = JSON.parse(event.newValue);
       if (data && data.bookingId) {
-        // 收到瀏覽器返回事件後，查詢後端真實 DB 付款狀態，唯有確認為「已付款」才顯示成功 alert
-        checkPaymentStatusOnce(data.bookingId);
+        onPaymentFinished();
       }
     } catch (e) {
       console.error(e);
@@ -246,40 +243,15 @@ function handleStorageChange(event) {
   }
 }
 
-async function checkPaymentStatusOnce(bookingId) {
-  try {
-    const res = await fetch(`/api/payments/ecpay/status/${bookingId}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === "已付款") {
-        onPaymentFinished();
-      }
-    }
-  } catch (e) {
-    console.error("查詢付款狀態失敗", e);
-  }
-}
-
-function maskEmail(email) {
-  if (!email || typeof email !== "string") return "";
-  const parts = email.split("@");
-  if (parts.length !== 2) return email;
-  const [user, domain] = parts;
-  const firstChar = user.length > 0 ? user[0] : "";
-  return `${firstChar}*****@${domain}`;
-}
-
 function onPaymentFinished() {
   if (pollingInterval.value) {
     clearInterval(pollingInterval.value);
   }
   showPaymentModal.value = false;
-  const masked = maskEmail(form.value.email);
-  const successMsg = `訂房已完成，系統已觸發訂房確認 Email 寄送至 ${masked}，您可以至信箱查看訂房明細。`;
   showAlert(
     "success",
     "付款成功",
-    successMsg,
+    "感謝您的預訂！即將為您跳轉至飯店首頁。",
     () => {
       router.push("/");
     },
@@ -328,6 +300,51 @@ async function cancelPaymentWait() {
   }
 }
 
+async function forceMockSuccess() {
+  if (!currentBookingId.value) return;
+  try {
+    const res = await fetch(
+      `/api/payments/ecpay/mock-pay/${currentBookingId.value}`,
+      {
+        method: "POST",
+      },
+    );
+    if (res.ok) {
+      onPaymentFinished();
+    } else {
+      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function forceMockFail() {
+  if (!currentBookingId.value) return;
+  try {
+    const res = await fetch(
+      `/api/payments/ecpay/mock-fail/${currentBookingId.value}`,
+      {
+        method: "POST",
+      },
+    );
+    if (res.ok) {
+      clearInterval(pollingInterval.value);
+      showAlert(
+        "error",
+        "開發模式：付款失敗",
+        "已強制模擬付款失敗！即將為您跳轉至首頁。",
+        () => {
+          router.push("/");
+        },
+      );
+    } else {
+      showAlert("error", "模擬失敗", "無法完成強制模擬付款！");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 onMounted(async () => {
   // 設定跨分頁監聽器
@@ -337,17 +354,17 @@ onMounted(async () => {
   if (route.query.paymentSuccess) {
     const bookingId = route.query.bookingId;
     if (bookingId) {
-      // 1. 跨分頁通知原本的主視窗 (告知瀏覽器已從綠界返回)
+      // 1. 跨分頁通知原本的主視窗 (立即廣播)
       try {
         localStorage.setItem(
-          "ecpay_booking_returned",
+          "ecpay_booking_success",
           JSON.stringify({ bookingId, time: Date.now() }),
         );
       } catch (err) {
         console.warn("跨分頁通知失敗:", err);
       }
 
-      // 2. 非同步背景發送狀態確認請求，由後端回傳最新 DB 付款狀態 (唯讀查詢，不在此修改資料)
+      // 2. 非同步背景發送確認請求，keepalive: true 確保即使分頁立刻關閉，請求仍會由瀏覽器送達後端觸發寄信與狀態更新
       fetch(`/api/payments/ecpay/client-confirm/${bookingId}`, {
         method: "POST",
         keepalive: true,
@@ -562,12 +579,6 @@ async function submitCheckout() {
   font-size: 1rem;
 }
 
-.checkout-form input.readonly-input {
-  background-color: #f5f5f5;
-  color: #666;
-  cursor: not-allowed;
-}
-
 .payment-options {
   margin-bottom: 2rem;
 }
@@ -753,6 +764,42 @@ async function submitCheckout() {
   }
 }
 
+.dev-tools {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-mock {
+  background: #c9a96e;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-mock:hover {
+  background: #b54708;
+}
+
+.btn-mock-fail {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-mock-fail:hover {
+  background: #c82333;
+}
 
 .btn-cancel {
   background: transparent;
