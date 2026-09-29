@@ -2,18 +2,25 @@ package com.hotel.service;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotel.model.entity.Venue;
 import com.hotel.repository.RentalRepository;
 import com.hotel.repository.VenueRepository;
@@ -86,15 +93,15 @@ class VenueServiceTest {
         verify(venueRepository).findById(1);
     }
 
-    /** 驗證固定場地拒絕超過核定上限的容量。 */
+    /** 驗證固定場地容量限制與 13_venues.json 一致。 */
     @Test
     void fixedVenueCapacitiesRejectValuesAboveConfiguredMaximum() {
         int[][] boundaryCases = {
-                {1, 50},
-                {2, 100},
-                {3, 200},
-                {4, 300}
-        }; // 每個固定場地都以自己的核定容量作為硬上限。
+                {1, 200},
+                {2, 150},
+                {3, 60},
+                {4, 100}
+        }; // 依 13_venues.json：1=200, 2=150, 3=60, 4=100
 
         for (int[] boundaryCase : boundaryCases) {
             int venueId = boundaryCase[0];
@@ -107,7 +114,7 @@ class VenueServiceTest {
             IllegalArgumentException exception =
                     assertThrows(
                             IllegalArgumentException.class,
-                            () -> venueService.updateExisting(incoming)); // 超過一人也必須在寫入前拒絕。
+                            () -> venueService.updateExisting(incoming));
 
             assertEquals(
                     "場地「宴會廳甲」容量不可超過 "
@@ -115,6 +122,47 @@ class VenueServiceTest {
                             + " 人",
                     exception.getMessage());
         }
+    }
+
+    /** 測試 ID 1~4 不可刪除。 */
+    @Test
+    void deleteById_defaultVenues1To4_throwsIllegalStateException() {
+        for (int id = 1; id <= 4; id++) {
+            final int venueId = id;
+            IllegalStateException exception = assertThrows(
+                    IllegalStateException.class,
+                    () -> venueService.deleteById(venueId));
+            assertEquals("系統預設場地不可刪除，如暫停使用請將狀態改為維護中或停用", exception.getMessage());
+        }
+    }
+
+    /** 測試 ID > 4 且無 rental 可維持既有刪除行為。 */
+    @Test
+    void deleteById_customVenueWithoutRental_deletesSuccessfully() {
+        int id = 5;
+        when(venueRepository.existsById(id)).thenReturn(true);
+        when(rentalRepository.existsByVenueId(id)).thenReturn(false);
+
+        boolean result = venueService.deleteById(id);
+
+        assertTrue(result);
+        verify(venueRepository).deleteById(id);
+        verify(venueRepository).flush();
+    }
+
+    /** 測試 ID > 4 有 rental 仍不可刪。 */
+    @Test
+    void deleteById_customVenueWithRental_throwsIllegalStateException() {
+        int id = 5;
+        when(venueRepository.existsById(id)).thenReturn(true);
+        when(rentalRepository.existsByVenueId(id)).thenReturn(true);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> venueService.deleteById(id));
+
+        assertEquals("此場地已有租借紀錄，無法刪除", exception.getMessage());
+        verify(venueRepository, never()).deleteById(id);
     }
 
     /**

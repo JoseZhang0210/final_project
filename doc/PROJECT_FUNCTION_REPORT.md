@@ -15,6 +15,7 @@
 3. [排程自動化機制 (HotelScheduler)](#三-排程自動化機制-hotelscheduler)
 4. [前後台路由與頁面功能對應總覽表](#四-前後台路由與頁面功能對應總覽表)
 5. [技術特點與實作說明](#五-技術特點與實作說明)
+6. [相關設計與規格文件](#六-相關設計與規格文件)
 
 ---
 
@@ -339,3 +340,13 @@ sequenceDiagram
    - 整合營收趨勢圖、房態佔比、熱銷排行、會員人口學分佈與今日待辦異常中心。
 6. **容器化部署**
    - 提供 `docker-compose.yml` 與初始化 SQL 腳本 `init-db.sql`，支援 SQL Server、Spring Boot 與 ngrok 穿透環境部署。
+
+---
+
+### 六、 相關設計與規格文件
+
+- [資料庫架構規格與 ER 關聯說明 (DATABASE_SCHEMA.md)](./DATABASE_SCHEMA.md)
+- [資料庫結構 DBML 定義 (dbDiagram.dbml)](./dbDiagram.dbml)
+- [核心功能對照清單 (function_List.md)](./function_List.md)
+- [網站架構與路由導覽 (SITEMAP.md)](./SITEMAP.md)
+

@@ -165,6 +165,21 @@
   box-sizing: border-box;
 }
 
+.admin-table input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  accent-color: #b58a46;
+  vertical-align: middle;
+}
+
 .admin-table td {
   color: #555;
   font-size: 14px;

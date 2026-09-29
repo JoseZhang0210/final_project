@@ -24,10 +24,10 @@ public class VenueService {
     /* 四個既有宴會廳的核定容量上限，後台不得提高後繞過租借人數限制。 */
     private static final Map<Integer, Integer> FIXED_VENUE_CAPACITY_LIMITS =
             Map.of(
-                    1, 50,
-                    2, 100,
-                    3, 200,
-                    4, 300);
+                    1, 200,
+                    2, 150,
+                    3, 60,
+                    4, 100);
 
     private final VenueRepository venueRepository;
     private final RentalRepository rentalRepository;
@@ -224,6 +224,11 @@ public class VenueService {
      * 也不允許刪掉已被租借紀錄使用的 Venue。
      */
     public boolean deleteById(Integer id) {
+
+        if (id != null && id >= 1 && id <= 4) {
+            throw new IllegalStateException(
+                    "系統預設場地不可刪除，如暫停使用請將狀態改為維護中或停用");
+        }
 
         if (!venueRepository.existsById(id)) {
             return false;
